@@ -1,0 +1,192 @@
+{
+    "pages": {
+        "configuration": {
+            "description": "Set up your add-on", 
+            "tabs": [
+                {
+                    "entity": [
+                        {
+                            "label": "Protocol", 
+                            "field": "cortex_protocol", 
+                            "defaultValue": "http", 
+                            "options": {
+                                "autoCompleteFields": [
+                                    {
+                                        "label": "http", 
+                                        "value": "http"
+                                    }, 
+                                    {
+                                        "label": "https", 
+                                        "value": "https"
+                                    }
+                                ], 
+                                "disableSearch": true
+                            }, 
+                            "type": "singleSelect"
+                        }, 
+                        {
+                            "label": "Host", 
+                            "field": "cortex_host", 
+                            "validators": [
+                                {
+                                    "minLength": 0, 
+                                    "maxLength": 4096, 
+                                    "errorMsg": "Max host length is 4096", 
+                                    "type": "string"
+                                }
+                            ], 
+                            "type": "text"
+                        }, 
+                        {
+                            "label": "Port", 
+                            "field": "cortex_port", 
+                            "validators": [
+                                {
+                                    "range": [
+                                        1, 
+                                        65535
+                                    ], 
+                                    "type": "number"
+                                }
+                            ], 
+                            "type": "text"
+                        }, 
+                        {
+                            "label": "API Key", 
+                            "field": "cortex_api_key", 
+                            "validators": [
+                                {
+                                    "minLength": 0, 
+                                    "maxLength": 8192, 
+                                    "errorMsg": "Max length of password is 8192", 
+                                    "type": "string"
+                                }
+                            ], 
+                            "encrypted": true, 
+                            "type": "text"
+                        } 
+                    ], 
+                    "name": "cortex", 
+                    "title": "Cortex", 
+                    "options": {
+                    }
+                },
+                {
+                    "entity": [
+                        {
+                            "label": "Enable", 
+                            "field": "proxy_enabled", 
+                            "type": "checkbox"
+                        }, 
+                        {
+                            "label": "Proxy Type", 
+                            "field": "proxy_type", 
+                            "defaultValue": "http", 
+                            "options": {
+                                "autoCompleteFields": [
+                                    {
+                                        "label": "http", 
+                                        "value": "http"
+                                    }, 
+                                    {
+                                        "label": "socks4", 
+                                        "value": "socks4"
+                                    }, 
+                                    {
+                                        "label": "socks5", 
+                                        "value": "socks5"
+                                    }
+                                ], 
+                                "disableSearch": true
+                            }, 
+                            "type": "singleSelect"
+                        }, 
+                        {
+                            "label": "Host", 
+                            "field": "proxy_url", 
+                            "validators": [
+                                {
+                                    "minLength": 0, 
+                                    "maxLength": 4096, 
+                                    "errorMsg": "Max host length is 4096", 
+                                    "type": "string"
+                                }
+                            ], 
+                            "type": "text"
+                        }, 
+			{
+                            "label": "Port", 
+                            "field": "proxy_port", 
+                            "validators": [
+                                {
+                                    "range": [
+                                        1, 
+                                        65535
+                                    ], 
+                                    "type": "number"
+                                }
+                            ], 
+                            "type": "text"
+                        }, 
+                        {
+                            "label": "Username", 
+                            "field": "proxy_username", 
+                            "validators": [
+                                {
+                                    "minLength": 0, 
+                                    "maxLength": 50, 
+                                    "errorMsg": "Max length of username is 50", 
+                                    "type": "string"
+                                }
+                            ], 
+                            "type": "text"
+                        }, 
+                        {
+                            "label": "Password", 
+                            "field": "proxy_password", 
+                            "validators": [
+                                {
+                                    "minLength": 0, 
+                                    "maxLength": 8192, 
+                                    "errorMsg": "Max length of password is 8192", 
+                                    "type": "string"
+                                }
+                            ], 
+                            "encrypted": true, 
+                            "type": "text"
+                        }, 
+                        {
+                            "label": "Remote DNS resolution", 
+                            "field": "proxy_rdns", 
+                            "type": "checkbox"
+                        }
+                    ], 
+                    "name": "proxy", 
+                    "title": "Proxy", 
+                    "options": {
+                        "saveValidator": "function(formData) { if(!formData.proxy_enabled || formData.proxy_enabled === '0') {return true; } if(!formData.proxy_url) { return 'Proxy Host can not be empty'; } if(!formData.proxy_port) { return 'Proxy Port can not be empty'; } return true; }"
+                    }
+                },
+	        {
+                    "entity": [
+                        {
+                            "label": "Debug enabled", 
+                            "field": "debug", 
+                            "type": "checkbox"
+                        } 
+                    ], 
+                    "name": "logging", 
+                    "title": "Logging"
+                } 
+            ], 
+            "title": "Configuration"
+        }
+    }, 
+    "meta": {
+        "version": "1.0.0", 
+        "apiVersion": "1.0.0", 
+        "name": "TA_cortex", 
+        "restRoot": "TA_cortex", 
+        "displayName": "Cortex"
+    }
+}

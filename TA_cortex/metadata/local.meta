@@ -1,0 +1,47 @@
+[app/ui]
+version = 7.2.6
+modtime = 1586509911.721088000
+
+[app/launcher]
+version = 7.2.6
+modtime = 1586509911.721722000
+
+[nav/default]
+version = 8.0.2
+modtime = 1586528346.438675000
+
+[ta_cortex_settings/proxy]
+version = 8.0.2
+modtime = 1587029353.905265000
+
+[ta_cortex_settings/cortex]
+version = 8.0.2
+modtime = 1587048552.207523000
+
+[app/install/state]
+version = 8.0.2
+modtime = 1586943610.759880000
+
+[passwords/credential%3A__REST_CREDENTIAL__%23TA_cortex%23configs%2Fconf-ta_cortex_settings%3Acortex%60%60splunk_cred_sep%60%602%3A]
+owner = admin
+version = 8.0.2
+modtime = 1587048552.203936000
+
+[passwords/credential%3A__REST_CREDENTIAL__%23TA_cortex%23configs%2Fconf-ta_cortex_settings%3Aproxy%60%60splunk_cred_sep%60%601%3A]
+owner = admin
+version = 8.0.2
+modtime = 1587029353.893168000
+
+[passwords/credential%3A__REST_CREDENTIAL__%23TA_cortex%23configs%2Fconf-ta_cortex_settings%3Aproxy%60%60splunk_cred_sep%60%602%3A]
+owner = admin
+version = 8.0.2
+modtime = 1587029353.899179000
+
+[ta_cortex_settings/logging]
+version = 8.0.2
+modtime = 1587034592.305360000
+
+[passwords/credential%3A__REST_CREDENTIAL__%23TA_cortex%23configs%2Fconf-ta_cortex_settings%3Acortex%60%60splunk_cred_sep%60%601%3A]
+owner = admin
+version = 8.0.2
+modtime = 1587048552.192408000
