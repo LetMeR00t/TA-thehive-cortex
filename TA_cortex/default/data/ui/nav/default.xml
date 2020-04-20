@@ -1,5 +1,6 @@
 <nav search_view="search" color="#54c4c3">
   <view name="configuration" />
+  <view name="analyzers" />
   <view name="search" default='true' />
   <view name="dashboards" />
 </nav>

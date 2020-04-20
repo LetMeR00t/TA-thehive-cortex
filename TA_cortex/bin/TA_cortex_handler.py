@@ -1,4 +1,5 @@
-import ta_cortex_declare
+import ta_cortex_declare_lib3
+
 from functools import wraps
 import splunk.admin as admin
 from splunktaucclib.rest_handler.handler import RestHandler
