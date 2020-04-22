@@ -1,0 +1,236 @@
+<form>
+  <label>Jobs</label>
+  <fieldset submitButton="true">
+    <input type="dropdown" token="action">
+      <label>Action</label>
+      <choice value="list">LIST</choice>
+      <choice value="run">RUN</choice>
+      <default>list</default>
+      <initialValue>list</initialValue>
+      <change>
+        <condition value="list">
+          <unset token="show_inputs_run"></unset>
+          <unset token="show_dashboards_run"></unset>
+          <unset token="data"></unset>
+          <unset token="form.data"></unset>
+          <unset token="dataType"></unset>
+          <unset token="form.dataType"></unset>
+          <unset token="tlp"></unset>
+          <unset token="form.tlp"></unset>
+          <unset token="pap"></unset>
+          <unset token="form.pap"></unset>
+          <unset token="analyzers"></unset>
+          <unset token="form.analyzers"></unset>
+        </condition>
+        <condition value="run">
+          <set token="show_inputs_run">1</set>
+          <set token="show_dashboards_run">1</set>
+        </condition>
+      </change>
+    </input>
+    <input type="text" token="data" depends="$show_inputs_run$">
+      <label>Data (separated by ";")</label>
+    </input>
+    <input type="dropdown" token="dataType" depends="$show_inputs_run$">
+      <label>Data type</label>
+      <choice value="domain">Domain</choice>
+      <choice value="filename">Filename</choice>
+      <choice value="fqdn">FQDN</choice>
+      <choice value="hash">Hash</choice>
+      <choice value="ip">IP</choice>
+      <choice value="mail">Mail</choice>
+      <choice value="mail_subject">Mail Subject</choice>
+      <choice value="other">Other</choice>
+      <choice value="regexp">Regular Expression</choice>
+      <choice value="registry">Registry</choice>
+      <choice value="uri_path">URI path</choice>
+      <choice value="url">URL</choice>
+      <choice value="user-agent">User-Agent</choice>
+    </input>
+    <input type="dropdown" token="tlp" depends="$show_inputs_run$">
+      <label>TLP</label>
+      <choice value="WHITE">WHITE - 0</choice>
+      <choice value="GREEN">GREEN - 1</choice>
+      <choice value="AMBER">AMBER - 2</choice>
+      <choice value="RED">RED - 3</choice>
+    </input>
+    <input type="dropdown" token="pap" depends="$show_inputs_run$">
+      <label>PAP</label>
+      <choice value="WHITE">WHITE - 0</choice>
+      <choice value="GREEN">GREEN - 1</choice>
+      <choice value="AMBER">AMBER - 2</choice>
+      <choice value="RED">RED - 3</choice>
+    </input>
+    <input type="multiselect" token="analyzers" depends="$show_inputs_run$">
+      <label>Analyzers</label>
+      <choice value="all">Any</choice>
+      <delimiter> ;</delimiter>
+      <fieldForLabel>analyzer</fieldForLabel>
+      <fieldForValue>analyzer</fieldForValue>
+      <search>
+        <query>| inputlookup lookup_cortex_analyzers
+| makemv delim=";" dataTypeAllowed
+| mvexpand dataTypeAllowed
+| where dataTypeAllowed=="$dataType$"</query>
+      </search>
+    </input>
+  </fieldset>
+  <row>
+    <panel depends="$show_dashboards_run$">
+      <viz type="status_indicator_app.status_indicator">
+        <search>
+          <query>| makeresults
+| eval text = "New Analysis", icon = "plus-square", color="#f1813f"
+| table text, icon, color</query>
+          <earliest>-24h@h</earliest>
+          <latest>now</latest>
+          <sampleRatio>1</sampleRatio>
+        </search>
+        <option name="drilldown">none</option>
+        <option name="height">99</option>
+        <option name="status_indicator_app.status_indicator.colorBy">field_value</option>
+        <option name="status_indicator_app.status_indicator.fillTarget">background</option>
+        <option name="status_indicator_app.status_indicator.fixIcon">warning</option>
+        <option name="status_indicator_app.status_indicator.icon">field_value</option>
+        <option name="status_indicator_app.status_indicator.precision">0</option>
+        <option name="status_indicator_app.status_indicator.showOption">1</option>
+        <option name="status_indicator_app.status_indicator.staticColor">#f1813f</option>
+        <option name="status_indicator_app.status_indicator.useColors">true</option>
+        <option name="status_indicator_app.status_indicator.useThousandSeparator">true</option>
+        <option name="trellis.enabled">0</option>
+        <option name="trellis.scales.shared">1</option>
+        <option name="trellis.size">medium</option>
+      </viz>
+    </panel>
+  </row>
+  <row>
+    <panel depends="$show_dashboards_run$">
+      <table>
+        <search>
+          <query>| makeresults
+| eval data = "$data$", dataType = "$dataType$", tlp = "$tlp$", pap = "$pap$", analyzers = "$analyzers$"
+| makemv delim=";" data
+| mvexpand data
+| cortexrun data dataType tlp pap analyzers
+| mvexpand cortex
+| makemv delim="::" cortex
+| eval status = mvindex((split(mvindex(mvfilter(match(cortex,"status")),0),"=")),1), id = mvindex((split(mvindex(mvfilter(match(cortex,"id")),0),"=")),1), analyzer = mvindex((split(mvindex(mvfilter(match(cortex,"analyzer")),0),"=")),1), data = "["+dataType+"] "+data, createdAt = strftime(_time,"%c"), tlp = "TLP:"+tlp, pap = "PAP:"+pap
+| table status, _time, data, analyzer, createdAt, tlp, pap, id
+| rename status as Status, data as Data, analyzer as Analyzer, createdAt as "Created At", tlp as TLP, pap as PAP, id as ID</query>
+          <earliest>-24h@h</earliest>
+          <latest>now</latest>
+          <sampleRatio>1</sampleRatio>
+        </search>
+        <option name="count">20</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">none</option>
+        <option name="percentagesRow">false</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="rowNumbers">false</option>
+        <option name="totalsRow">false</option>
+        <option name="wrap">true</option>
+        <format type="color" field="Status">
+          <colorPalette type="map">{"Failure":#DC4E41,"Success":#53A051,"Waiting":#F8BE34,"InProgress":#F8BE34,"Deleted":#3C444D}</colorPalette>
+        </format>
+        <format type="color" field="TLP">
+          <colorPalette type="map">{"TLP:WHITE":#FFFFFF,"TLP:GREEN":#53A051,"TLP:AMBER":#F8BE34,"TLP:RED":#DC4E41}</colorPalette>
+        </format>
+        <format type="color" field="PAP">
+          <colorPalette type="map">{"PAP:WHITE":#FFFFFF,"PAP:GREEN":#53A051,"PAP:AMBER":#F8BE34,"PAP:RED":#DC4E41}</colorPalette>
+        </format>
+      </table>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <viz type="status_indicator_app.status_indicator">
+        <search>
+          <query>| makeresults
+| eval text = "Jobs History", icon = "history", color="#54c4c3"
+| table text, icon, color</query>
+          <earliest>-24h@h</earliest>
+          <latest>now</latest>
+          <sampleRatio>1</sampleRatio>
+        </search>
+        <option name="drilldown">none</option>
+        <option name="height">99</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="status_indicator_app.status_indicator.colorBy">field_value</option>
+        <option name="status_indicator_app.status_indicator.fillTarget">background</option>
+        <option name="status_indicator_app.status_indicator.fixIcon">warning</option>
+        <option name="status_indicator_app.status_indicator.icon">field_value</option>
+        <option name="status_indicator_app.status_indicator.precision">0</option>
+        <option name="status_indicator_app.status_indicator.showOption">1</option>
+        <option name="status_indicator_app.status_indicator.staticColor">#006d9c</option>
+        <option name="status_indicator_app.status_indicator.useColors">true</option>
+        <option name="status_indicator_app.status_indicator.useThousandSeparator">true</option>
+        <option name="trellis.enabled">0</option>
+        <option name="trellis.scales.shared">1</option>
+        <option name="trellis.size">medium</option>
+      </viz>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <input type="text" token="filter_data" searchWhenChanged="true">
+        <label>Data</label>
+        <default></default>
+      </input>
+      <input type="multiselect" token="filter_datatypes" searchWhenChanged="true">
+        <label>Data Types</label>
+        <delimiter> ;</delimiter>
+        <choice value="*">Any</choice>
+        <default>*</default>
+        <initialValue>*</initialValue>
+        <fieldForLabel>dataTypeAllowed_upper</fieldForLabel>
+        <fieldForValue>dataTypeAllowed</fieldForValue>
+        <search>
+          <query>| inputlookup lookup_cortex_analyzers
+| makemv delim=";" dataTypeAllowed
+| mvexpand dataTypeAllowed
+| stats count by dataTypeAllowed
+| eval dataTypeAllowed_upper = upper(dataTypeAllowed)
+| table dataTypeAllowed_upper, dataTypeAllowed</query>
+        </search>
+      </input>
+      <input type="multiselect" token="filter_analyzers" searchWhenChanged="true">
+        <label>Analyzers</label>
+        <delimiter> ;</delimiter>
+        <choice value="*">Any</choice>
+        <default>*</default>
+        <initialValue>*</initialValue>
+        <fieldForLabel>analyzer</fieldForLabel>
+        <fieldForValue>analyzer</fieldForValue>
+        <search>
+          <query>| inputlookup lookup_cortex_analyzers
+| table analyzer</query>
+        </search>
+      </input>
+      <table>
+        <search>
+          <query>| cortexjobs "$filter_data$" "$filter_datatypes$" "$filter_analyzers$"
+| eval createdAt = strftime(createdAt,"%c"), startDate = strftime(startDate,"%c"), tlp = case(tlp==0,"TLP:WHITE",tlp==1,"TLP:GREEN",tlp==2,"TLP:AMBER",tlp=3,"TLP:RED")
+| table status, data, analyzer, createdAt, startDate, createdBy, tlp, id
+| rename status as Status, data as Data, analyzer as Analyzer, createdAt as "Created At", startDate as "Start Date", createdby as "Created by", tlp as "TLP", id as ID</query>
+          <earliest>-24h@h</earliest>
+          <latest>now</latest>
+          <sampleRatio>1</sampleRatio>
+        </search>
+        <option name="count">20</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">none</option>
+        <option name="percentagesRow">false</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="rowNumbers">false</option>
+        <option name="totalsRow">false</option>
+        <option name="wrap">true</option>
+        <format type="color" field="Status">
+          <colorPalette type="map">{"Failure":#DC4E41,"Success":#53A051,"Waiting":#F8BE34,"InProgress":#F8BE34,"Deleted":#3C444D}</colorPalette>
+        </format>
+        <format type="color" field="TLP">
+          <colorPalette type="map">{"TLP:WHITE":#FFFFFF,"TLP:GREEN":#53A051,"TLP:AMBER":#F8BE34,"TLP:RED":#DC4E41}</colorPalette>
+        </format>
+      </table>
+    </panel>
+  </row>
+</form>
