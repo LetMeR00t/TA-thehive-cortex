@@ -68,20 +68,20 @@ class Cortex(object):
             self.logger.error("[21-WRONG DATA TYPE] This data type ("+dataType+") is not allowed")
             sys.exit(21)
 
+        analyzersObj = []
         # If all analyzers are chosen, we recover them usin the datatype
         if analyzers == "all":
-            analyzers = self.api.analyzers.get_by_type(dataType)
+            analyzersObj = self.api.analyzers.get_by_type(dataType)
         else:
-            analyzers = []
-            for analyzer in analyzers.split(";"):
+            for analyzer in analyzers.replace(" ","").split(";"):
                 a = self.api.analyzers.get_by_name(analyzer)
                 if a is not None:
-                    analyzers.append(a)
+                    analyzersObj.append(a)
                 else:
                     self.logger.error("[22-ANALYZER NOT FOUND] This analyzer ("+analyzer+") doesn't exist")
                     sys.exit(22)
 
-        job = CortexJob(data, dataType, tlp, pap, analyzers, self.logger)
+        job = CortexJob(data, dataType, tlp, pap, analyzersObj, self.logger)
         self.__jobs.append(job)
 
     def runJobs(self):
@@ -92,6 +92,7 @@ class Cortex(object):
                 job_json = job.jsonify()
                 job_json["message"] = "sid:"+self.__sid
                 for a in job.analyzers:
+                    self.logger.debug("JOB sent: "+str(job_json))
                     results.append(self.api.analyzers.run_by_id(a.id, job_json, force=1))
     
             except Exception as e:
@@ -177,7 +178,7 @@ class CortexJob(object):
         self.logger.debug("["+self.data+"] Analyzers "+str([a.name for a in self.analyzers]))
 
     @classmethod
-    def convert(value, default):
+    def convert(cls, value, default):
         """ This function is used to convert any "WHITE/GREEN/AMBER/RED" value in an integer """
     
         if (isinstance(value, int)):
@@ -205,7 +206,7 @@ class CortexJob(object):
 
         json["data"] = self.data
         json["dataType"] = self.dataType
-        json["tlp"] = "tlp"
-        json["pap"] = "pap"
+        json["tlp"] = self.tlp
+        json["pap"] = self.pap
 
         return json

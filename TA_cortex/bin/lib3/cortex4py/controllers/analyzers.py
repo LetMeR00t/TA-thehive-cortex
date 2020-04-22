@@ -48,11 +48,13 @@ class AnalyzersController(AbstractController):
 
     def run_by_id(self, analyzer_id, observable, **kwargs) -> Job:
         tlp = observable.get('tlp', 2)
+        pap = observable.get('pap', 2)
         data_type = observable.get('dataType', None)
 
         post = {
             'dataType': data_type,
-            'tlp': tlp
+            'tlp': tlp,
+            'pap': pap
         }
 
         params = {}

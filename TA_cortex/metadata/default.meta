@@ -38,6 +38,6 @@ export = system
 [commands/cortexrun]
 export=system
 
-[commands/cortexanalyzers]
+[commands/cortexjobs]
 export=system
 

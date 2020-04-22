@@ -4,6 +4,7 @@ import logging, logging.handlers
 import json
 import traceback
 import time
+import splunk
 from splunk.persistconn.application import PersistentServerConnectionApplication
 
 sys.path.insert(0, os.path.dirname(__file__))
