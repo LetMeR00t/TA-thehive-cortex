@@ -7,6 +7,8 @@
 * [ Installation ](#installation)
 	* [ Requirements ](#requirements)
 	* [ Configuration ](#configuration)
+		* [ Cortex ](#cortex)
+		* [ Logging ](#logging)
 	* [ Refresh the available analyzers ](#refresh-the-available-analyzers)
 * [ Usage ](#usage)
 	* [ Cortex "Jobs" dashboard ](#cortex-jobs-dashboard)
@@ -45,6 +47,8 @@ This application contains all the python libraries to work autonomously.
 You should create a specific user and organization in your Cortex instance to interact with Splunk.
 
 ## Configuration
+
+### Cortex
 Once you've downloaded this application, you must configure your Cortex instance :
 
 1. Go to the **Cortex application > Configuration** (in the navigation bar)
@@ -57,7 +61,12 @@ Once you've downloaded this application, you must configure your Cortex instance
 
 ![](images/configure.png)
 
-**Note**: You can active a "debug" logging mode to have more information in searches/logs. 
+### Logging
+
+You can enable a "debug" logging mode to have more information in searches/logs.
+By default, a logging file is created under `$SPLUNK_HOME/var/log/splunk/` with the file name starting with "command_"
+
+You will be able to have these logs in your search.log.
 
 ## Refresh the available analyzers
 Once you've configured these settings, you can refresh the list of analyzers in the application.
