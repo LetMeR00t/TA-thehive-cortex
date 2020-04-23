@@ -61,10 +61,10 @@ Once the application is configured and the analyzers are retrieved, you have sev
 ## Cortex "Jobs" dashboard
 The application integrates a preconfigured dashboard with searches allowing you to easily interface with Cortex.
 
-![](images/jobs.png)
+![](images/jobs_list.png)
 
 ### History
-You can retrieve the history of jobs in Cortex. By default, it's recovering the last 10 jobs.
+You can retrieve the history of jobs in Cortex using the action "LIST". By default, it's recovering the last 10 jobs.
 For each job, you can see :
 * **Status**: Current status for the job
 * **Data**: Data and datatype for the job
@@ -77,7 +77,22 @@ For each job, you can see :
 
 **Note: You can click on the link to view the result of the job directly on Cortex** (you should be authenticated to Cortex)
 
+You can set filters for the history:
+* **Data**: filtering the "data" field, regular expressions are not working, it must be the exact match string
+* **Data Types**: filtering on the "data types", several values can be specified
+* **Analyzers**: filtering on the "analyzers", several values can be specified
+
 ### Run new tasks
+You can start new analyses from Splunk using the "RUN" action.
+
+![](images/jobs_run.png)
+
+You have to specify some inputs:
+* **Data**: IOCs you want to analyze separated by a semicolon, they must be of the same data type
+* **Data type**: corresponding to the data type of data
+* **TLP**: TLP level to use for this analysis
+* **PAP**  PAP level to use for this analysis
+* **Analyzers**: analyzers to use, if "any" is set, it will use any enabled analyzers for the given data type.
 
 ## Commands in searches
 
