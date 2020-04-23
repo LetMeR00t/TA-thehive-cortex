@@ -1,6 +1,6 @@
 ![](images/logo.png)
 
-# TA_cortex
+# Introduction
 This TA allows to **add interaction features** between [Cortex (TheHive project)](https://thehive-project.org/) and Splunk. It allows to retrieve all tasks in Cortex and to execute new tasks from Splunk, from a search or from a predefined dashboard.
 All data types work with the exception of "file" because Splunk does not allow to send a file easily.
 
@@ -24,12 +24,27 @@ You should create a specific user and organization in your Cortex instance to in
 ## Configure
 Once you've downloaded this application, you must configure your Cortex instance :
 
-1) Go to the Cortex application
-2) You need to specify the host/port of your Cortex instance and specify an API key (the user/organization will be determined automatically by Cortex)
+1. Go to the **Cortex application -> Configuration** (in the navigation bar)
+2. You need to specify the following settings :
+-- **Protocol**: Choose "http" or "https"
+-- **Host**: Hostname/IP of the Cortex instance
+-- **Port**: Port used by Cortex
+-- **API Key**: Corresponds to the API key used by the user/organization to be used (the user/organization will be determined automatically by Cortex)
 
 ![](images/configure.png)
 
 **Note**: You can active a "debug" logging mode to have more information in searches/logs. 
+
+## Refresh the available analyzers
+Once you've configured these settings, you can refresh the list of analyzers in the application.
+
+1. Go to the **Cortex application -> Analyzers** (in the navigation bar)
+2. Click on the **Refresh Analyzers** button
+3. After a while, a message indicating that "your analyzers have been reloaded" should appear with the current date. You should see the list of analyzers on the search below.
+
+![](images/analyzers.png)
+
+**Note**: If you have any trouble, please create an issue.
 
 # Use Cases
 TODO
