@@ -13,6 +13,7 @@
 		* [ History ](#history)
 		* [ Run new tasks ](#run-new-tasks)
 	* [ Commands in searches ](#commands-in-searches)
+* [ Support ](#support)
 * [ Credits ](#credits)
 * [ Licence ](#licence)
 
@@ -70,7 +71,7 @@ Once you've configured these settings, you can refresh the list of analyzers in 
 **Note**: Only enabled analyzers will be loaded
 
 These information are stored in Splunk in order to have a mapping between available analyzers and data types.
-If you have any trouble, please create an issue.
+
 
 # Usage
 Once the application is configured and the analyzers are retrieved, you have several options for interfacing with Cortex.
@@ -113,6 +114,9 @@ You have to specify some inputs:
 The search will execute all jobs (one IOC with one analyzer) and return information such as the job ID.
 
 ## Commands in searches
+You can use new commands within your searches. For more information, please [read the associated documentation](https://github.com/LetMeR00t/TA-cortex/tree/master/docs/commands.md).
+# Support
+Please [open an issue on GitHub](https://github.com/LetMeR00t/TA-cortex/issues) if you'd like to report a bug or request a feature.
 
 # Credits
 This app was inspired by [this Splunk app](https://splunkbase.splunk.com/app/4380/)
