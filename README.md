@@ -74,7 +74,7 @@ These information are stored in Splunk in order to have a mapping between availa
 
 
 # Usage
-Once the application is configured and the analyzers are retrieved, you have several options for interfacing with Cortex.
+Once the application is configured and the analyzers are loaded, you have several options for interfacing with Cortex.
 ## Cortex "Jobs" dashboard
 The application integrates a preconfigured dashboard with searches allowing you to easily interface with Cortex.
 
@@ -105,13 +105,13 @@ You can start new analyses from Splunk using the "RUN" action.
 ![](images/jobs_run.png)
 
 You have to specify some inputs:
-* **Data**: IOCs you want to analyze separated by a semicolon, they must be of the same data type
+* **Data**: data you want to analyze separated by a semicolon, they must be of the same data type
 * **Data type**: corresponding to the data type of data
 * **TLP**: TLP level to use for this analysis
 * **PAP**  PAP level to use for this analysis
 * **Analyzers**: analyzers to use, if "any" is set, it will use any enabled analyzers for the given data type
 
-The search will execute all jobs (one IOC with one analyzer) and return information such as the job ID.
+The search will execute all jobs (one data with one analyzer) and return information such as the job ID.
 
 ## Commands in searches
 You can use new commands within your searches. For more information, please [read the associated documentation](https://github.com/LetMeR00t/TA-cortex/tree/master/docs/commands.md).

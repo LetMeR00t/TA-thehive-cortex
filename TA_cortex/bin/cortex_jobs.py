@@ -76,7 +76,6 @@ if __name__ == '__main__':
     # Create the Cortex instance
     cortex = Cortex(configuration.getURL(), configuration.getApiKey(), settings["sid"], logger)
 
-    results = []
     # Get jobs 
     jobs = cortex.api.jobs.find_all(query ,range='0-10', sort='-createdAt')
     for job in jobs:
