@@ -1,4 +1,4 @@
-<form>
+<form script="cortex_jobs.js">
   <label>Jobs</label>
   <fieldset submitButton="true">
     <input type="dropdown" token="action">
@@ -138,6 +138,9 @@
         <format type="color" field="PAP">
           <colorPalette type="map">{"PAP:WHITE":#FFFFFF,"PAP:GREEN":#53A051,"PAP:AMBER":#F8BE34,"PAP:RED":#DC4E41}</colorPalette>
         </format>
+        <drilldown>
+          <link target="_blank">$cortex_protocol$://$cortex_host$:$cortex_port$/index.html#!/jobs/$row.ID$</link>
+        </drilldown>
       </table>
     </panel>
   </row>
@@ -152,7 +155,7 @@
           <latest>now</latest>
           <sampleRatio>1</sampleRatio>
         </search>
-        <option name="drilldown">none</option>
+        <option name="drilldown">all</option>
         <option name="height">99</option>
         <option name="refresh.display">progressbar</option>
         <option name="status_indicator_app.status_indicator.colorBy">field_value</option>
@@ -211,14 +214,14 @@
           <query>| cortexjobs "$filter_data$" "$filter_datatypes$" "$filter_analyzers$"
 | eval createdAt = strftime(createdAt,"%c"), startDate = strftime(startDate,"%c"), tlp = case(tlp==0,"TLP:WHITE",tlp==1,"TLP:GREEN",tlp==2,"TLP:AMBER",tlp=3,"TLP:RED")
 | table status, data, analyzer, createdAt, startDate, createdBy, tlp, id
-| rename status as Status, data as Data, analyzer as Analyzer, createdAt as "Created At", startDate as "Start Date", createdby as "Created by", tlp as "TLP", id as ID</query>
+| rename status as Status, data as Data, analyzer as Analyzer, createdAt as "Created At", startDate as "Start Date", createdBy as "Created by", tlp as "TLP", id as ID</query>
           <earliest>-24h@h</earliest>
           <latest>now</latest>
           <sampleRatio>1</sampleRatio>
         </search>
         <option name="count">20</option>
         <option name="dataOverlayMode">none</option>
-        <option name="drilldown">none</option>
+        <option name="drilldown">row</option>
         <option name="percentagesRow">false</option>
         <option name="refresh.display">progressbar</option>
         <option name="rowNumbers">false</option>
@@ -230,6 +233,9 @@
         <format type="color" field="TLP">
           <colorPalette type="map">{"TLP:WHITE":#FFFFFF,"TLP:GREEN":#53A051,"TLP:AMBER":#F8BE34,"TLP:RED":#DC4E41}</colorPalette>
         </format>
+        <drilldown>
+          <link target="_blank">$cortex_protocol$://$cortex_host$:$cortex_port$/index.html#!/jobs/$row.ID$</link>
+        </drilldown>
       </table>
     </panel>
   </row>
