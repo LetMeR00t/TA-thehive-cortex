@@ -1,5 +1,21 @@
 ![](images/logo.png)
 
+# Table of content
+* [ Introduction ](#introduction)  
+* [ What is Cortex ? ](#what-is-cortex-)
+* [ Use Cases ](#use-cases)
+* [ Installation ](#installation)
+	* [ Requirements ](#requirements)
+	* [ Configuration ](#configuration)
+	* [ Refresh the available analyzers ](#refresh-the-available-analyzers)
+* [ Usage ](#usage)
+	* [ Cortex "Jobs" dashboard ](#cortex-jobs-dashboard)
+		* [ History ](#history)
+		* [ Run new tasks ](#run-new-tasks)
+	* [ Commands in searches ](#commands-in-searches)
+* [ Credits ](#credits)
+* [ Licence ](#licence)
+
 # Introduction
 This TA allows to **add interaction features** between [Cortex (TheHive project)](https://thehive-project.org/) and Splunk. It allows to retrieve all tasks in Cortex and to execute new tasks from Splunk, from a search or from a predefined dashboard.
 All data types work with the exception of "file" because Splunk does not allow to send a file easily.
@@ -27,7 +43,7 @@ This application contains all the python libraries to work autonomously.
 
 You should create a specific user and organization in your Cortex instance to interact with Splunk.
 
-## Configure
+## Configuration
 Once you've downloaded this application, you must configure your Cortex instance :
 
 1. Go to the **Cortex application > Configuration** (in the navigation bar)
@@ -92,7 +108,9 @@ You have to specify some inputs:
 * **Data type**: corresponding to the data type of data
 * **TLP**: TLP level to use for this analysis
 * **PAP**  PAP level to use for this analysis
-* **Analyzers**: analyzers to use, if "any" is set, it will use any enabled analyzers for the given data type.
+* **Analyzers**: analyzers to use, if "any" is set, it will use any enabled analyzers for the given data type
+
+The search will execute all jobs (one IOC with one analyzer) and return information such as the job ID.
 
 ## Commands in searches
 
