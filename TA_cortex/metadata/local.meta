@@ -16,7 +16,7 @@ modtime = 1587029353.905265000
 
 [ta_cortex_settings/cortex]
 version = 8.0.2
-modtime = 1587630665.437424000
+modtime = 1587634945.135893000
 
 [app/install/state]
 version = 8.0.2
@@ -25,7 +25,7 @@ modtime = 1586943610.759880000
 [passwords/credential%3A__REST_CREDENTIAL__%23TA_cortex%23configs%2Fconf-ta_cortex_settings%3Acortex%60%60splunk_cred_sep%60%602%3A]
 owner = admin
 version = 8.0.2
-modtime = 1587630665.432715000
+modtime = 1587634945.132249000
 
 [passwords/credential%3A__REST_CREDENTIAL__%23TA_cortex%23configs%2Fconf-ta_cortex_settings%3Aproxy%60%60splunk_cred_sep%60%601%3A]
 owner = admin
@@ -44,7 +44,7 @@ modtime = 1587541568.162194000
 [passwords/credential%3A__REST_CREDENTIAL__%23TA_cortex%23configs%2Fconf-ta_cortex_settings%3Acortex%60%60splunk_cred_sep%60%601%3A]
 owner = admin
 version = 8.0.2
-modtime = 1587630665.420313000
+modtime = 1587634945.120367000
 
 [views/analyzers]
 version = 8.0.2
@@ -53,4 +53,4 @@ modtime = 1587370581.937307000
 [views/jobs]
 owner = admin
 version = 8.0.2
-modtime = 1587626169.856765000
+modtime = 1587639677.229943000
