@@ -24,12 +24,13 @@ You should create a specific user and organization in your Cortex instance to in
 ## Configure
 Once you've downloaded this application, you must configure your Cortex instance :
 
-1. Go to the **Cortex application -> Configuration** (in the navigation bar)
+1. Go to the **Cortex application > Configuration** (in the navigation bar)
 2. You need to specify the following settings :
--- **Protocol**: Choose "http" or "https"
--- **Host**: Hostname/IP of the Cortex instance
--- **Port**: Port used by Cortex
--- **API Key**: Corresponds to the API key used by the user/organization to be used (the user/organization will be determined automatically by Cortex)
+
+* **Protocol**: Choose "http" or "https"
+* **Host**: Hostname/IP of the Cortex instance
+* **Port**: Port used by Cortex
+* **API Key**: Corresponds to the API key used by the user/organization to be used (the user/organization will be determined automatically by Cortex)
 
 ![](images/configure.png)
 
@@ -38,13 +39,15 @@ Once you've downloaded this application, you must configure your Cortex instance
 ## Refresh the available analyzers
 Once you've configured these settings, you can refresh the list of analyzers in the application.
 
-1. Go to the **Cortex application -> Analyzers** (in the navigation bar)
+1. Go to the **Cortex application > Analyzers** (in the navigation bar)
 2. Click on the **Refresh Analyzers** button
 3. After a while, a message indicating that "your analyzers have been reloaded" should appear with the current date. You should see the list of analyzers on the search below.
 
 ![](images/analyzers.png)
 
-**Note**: If you have any trouble, please create an issue.
+**Note**: Only enabled analyzers will be loaded
+
+If you have any trouble, please create an issue.
 
 # Use Cases
 TODO
@@ -57,4 +60,3 @@ This app was inspired by [this Splunk app](https://splunkbase.splunk.com/app/438
 
 # Licence
 This app TA_cortex is licensed under the GNU Lesser General Public License v3.0.
-
