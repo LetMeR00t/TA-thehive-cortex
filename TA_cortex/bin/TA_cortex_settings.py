@@ -1,4 +1,4 @@
-import ta_cortex_declare_lib3
+import ta_cortex_declare_lib
 from TA_cortex_handler import CortexConfigurationHandler
 import splunk.admin as admin
 from splunktaucclib.rest_handler.endpoint import field, validator, RestModel, MultipleModel

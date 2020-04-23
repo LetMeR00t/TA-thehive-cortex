@@ -1,8 +1,5 @@
 import sys
-if sys.version >= (3,0,0):
-    import ta_cortex_declare_lib3
-else:
-    import ta_cortex_declare_lib2
+import ta_cortex_declare_lib
 
 from cortex4py.api import Api
 import cortex4py.exceptions

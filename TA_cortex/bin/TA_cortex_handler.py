@@ -1,4 +1,4 @@
-import ta_cortex_declare_lib3
+import ta_cortex_declare_lib
 
 from functools import wraps
 import splunk.admin as admin

@@ -9,10 +9,7 @@ from splunk.persistconn.application import PersistentServerConnectionApplication
 
 sys.path.insert(0, os.path.dirname(__file__))
 
-if sys.version >= (3,0,0):
-    import ta_cortex_declare_lib3
-else:
-    import ta_cortex_declare_lib2
+import ta_cortex_declare_lib
 
 from cortex import Cortex, CortexJob, Settings
 import splunklib.client as client
