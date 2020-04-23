@@ -1,5 +1,10 @@
 # encoding = utf-8
-import ta_cortex_declare_lib3
+import sys
+if sys.version >= (3,0,0):
+    import ta_cortex_declare_lib3
+else:
+    import ta_cortex_declare_lib2
+
 import os
 import splunk.Intersplunk
 import logging, logging.handlers

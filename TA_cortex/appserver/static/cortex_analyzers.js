@@ -14,7 +14,7 @@ require([
     
 	// Create a service and request a refresh for analyzers
         var service = mvc.createService();
-        service.get('/services/TA_cortex_analyzers', "", function(err, response) {
+        service.get('TA_cortex_analyzers', "", function(err, response) {
     
             if(err) {
 		// Something is not working during the recovering process

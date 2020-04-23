@@ -1,8 +1,12 @@
-import ta_cortex_declare_lib3
+import sys
+if sys.version >= (3,0,0):
+    import ta_cortex_declare_lib3
+else:
+    import ta_cortex_declare_lib2
+
 from cortex4py.api import Api
 import cortex4py.exceptions
 import json
-import sys
 import traceback
 import splunklib.client as client
 
@@ -37,7 +41,7 @@ class Cortex(object):
     def __init__(self, url = None, apiKey = None, sid = "", logger = None):
         self.logger = logger
         try :
-            self.api = Api(url, apiKey)
+            self.api = Api(str(url), str(apiKey))
             # Try to connect to the API by recovering all enabled analyzers
             self.api.analyzers.find_all({}, range='all')
         except cortex4py.exceptions.NotFoundError as e:
