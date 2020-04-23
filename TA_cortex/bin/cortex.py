@@ -125,18 +125,22 @@ class Settings(object):
             if not i in self.__cortex_settings:
                 self.logger.error("[10-FIELD MISSING] No \""+i+"\" setting set in \"Configuration\", please configure your Cortex instance under \"Configuration\"")
                 sys.exit(10)
-    
-        # Initiliaze class variables for Cortex
-        self.url = self.__cortex_settings["cortex_protocol"]+"://"+self.__cortex_settings["cortex_host"]+":"+self.__cortex_settings["cortex_port"]
-        self.apiKey = self.__cortex_settings["cortex_api_key"]
-
+   
     def getURL(self):
         """ This function returns the URL of the Cortex instance """
-        return self.url
+        return self.__cortex_settings["cortex_protocol"]+"://"+self.__cortex_settings["cortex_host"]+":"+self.__cortex_settings["cortex_port"]
 
     def getApiKey(self):
         """ This function returns the API key of the Cortex instance """
-        return self.apiKey
+        return self.__cortex_settings["cortex_api_key"]
+
+    def getJobsMax(self):
+        """ This function returns the maximum number of jobs to return of the Cortex instance """
+        return self.__cortex_settings["cortex_jobs_max"]
+
+    def getJobsSort(self):
+        """ This function returns the sort key to use for jobs of the Cortex instance """
+        return self.__cortex_settings["cortex_jobs_sort"]
 
     def getSetting(self, page, key):
         """ This function returns the settings for the concerned page and key """

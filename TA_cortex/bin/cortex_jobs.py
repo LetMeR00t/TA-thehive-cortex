@@ -77,7 +77,7 @@ if __name__ == '__main__':
     cortex = Cortex(configuration.getURL(), configuration.getApiKey(), settings["sid"], logger)
 
     # Get jobs 
-    jobs = cortex.api.jobs.find_all(query ,range='0-10', sort='-createdAt')
+    jobs = cortex.api.jobs.find_all(query ,range='0-'+configuration.getJobsMax(), sort=configuration.getJobsSort())
     for job in jobs:
          logger.debug("Get job ID \""+job.id+"\"")
          report = cortex.api.jobs.get_report(job.id).report
