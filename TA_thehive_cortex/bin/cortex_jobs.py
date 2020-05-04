@@ -80,6 +80,7 @@ if __name__ == '__main__':
     jobs = cortex.api.jobs.find_all(query ,range='0-'+configuration.getJobsMax(), sort=configuration.getJobsSort())
     for job in jobs:
          logger.debug("Get job ID \""+job.id+"\"")
+         logger.debug("Job details: "+str(job))
          report = cortex.api.jobs.get_report(job.id).report
          summaries = []
          if job.status == "Success":
@@ -89,6 +90,11 @@ if __name__ == '__main__':
              summaries.append(report.get("errorMessage", ""))
 
          logger.debug("Report for \""+job.id+"\": "+str(report))
+         data = ""
+         if (job.dataType == "file"):
+             data = job.attachment["name"]
+         else:
+             data = job.data
          event = {"id": job.id,"data": "["+job.dataType.upper()+"] "+job.data ,"analyzer": job.analyzerName ,"createdAt": job.createdAt/1000 ,"createdBy": job.organization+"/"+job.createdBy ,"tlp": job.tlp ,"status": job.status ,"summary": summaries}
          if "startDate" in dir(job):
              event["startDate"] = job.startDate/1000
