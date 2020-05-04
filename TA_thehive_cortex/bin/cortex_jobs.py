@@ -95,7 +95,7 @@ if __name__ == '__main__':
              data = job.attachment["name"]
          else:
              data = job.data
-         event = {"id": job.id,"data": "["+job.dataType.upper()+"] "+job.data ,"analyzer": job.analyzerName ,"createdAt": job.createdAt/1000 ,"createdBy": job.organization+"/"+job.createdBy ,"tlp": job.tlp ,"status": job.status ,"summary": summaries}
+         event = {"id": job.id,"data": "["+job.dataType.upper()+"] "+data ,"analyzer": job.analyzerName ,"createdAt": job.createdAt/1000 ,"createdBy": job.organization+"/"+job.createdBy ,"tlp": job.tlp ,"status": job.status ,"summary": summaries}
          if "startDate" in dir(job):
              event["startDate"] = job.startDate/1000
          if "endDate" in dir(job): 
