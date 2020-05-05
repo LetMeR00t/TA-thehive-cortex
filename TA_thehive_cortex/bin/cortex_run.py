@@ -2,30 +2,11 @@
 import ta_thehive_cortex_declare_lib
 import os
 import splunk.Intersplunk
-import logging, logging.handlers
-from cortex import Cortex, CortexJob, Settings
+from common import Settings
+from cortex import Cortex, CortexJob
 import splunklib.client as client
-
-
-def setup_logging():
-    logger = logging.getLogger('command_cortex_run.log')    
-    SPLUNK_HOME = os.environ['SPLUNK_HOME']
-    
-    LOGGING_DEFAULT_CONFIG_FILE = os.path.join(SPLUNK_HOME, 'etc', 'log.cfg')
-    LOGGING_LOCAL_CONFIG_FILE = os.path.join(SPLUNK_HOME, 'etc', 'log-local.cfg')
-    LOGGING_STANZA_NAME = 'python'
-    LOGGING_FILE_NAME = "command_cortex_run.log"
-    BASE_LOG_PATH = os.path.join('var', 'log', 'splunk')
-    LOGGING_FORMAT = "%(asctime)s %(levelname)-s\t%(module)s:%(lineno)d - %(message)s"
-    splunk_log_handler = logging.handlers.RotatingFileHandler(os.path.join(SPLUNK_HOME, BASE_LOG_PATH, LOGGING_FILE_NAME), mode='a') 
-    splunk_log_handler.setFormatter(logging.Formatter(LOGGING_FORMAT))
-    logger.addHandler(splunk_log_handler)
-    splunk.setupSplunkLogger(logger, LOGGING_DEFAULT_CONFIG_FILE, LOGGING_LOCAL_CONFIG_FILE, LOGGING_STANZA_NAME)
-    return logger
-logger = setup_logging()
-# Default logging
-logger.setLevel(logging.INFO)
-
+from ta_logging import setup_logging
+from copy import deepcopy
 
 TLP_DEFAULT = 2 # AMBER
 PAP_DEFAULT = 2 # AMBER
@@ -41,14 +22,12 @@ if __name__ == '__main__':
 
     # Initialiaze settings
     spl = client.connect(app="TA_thehive_cortex",owner="nobody",token=settings["sessionKey"])
+    logger = setup_logging("cortex_run")
     configuration = Settings(spl, logger)
-    if int(configuration.getSetting("logging","debug")) == 1:
-        logger.setLevel(logging.DEBUG)
-        logger.debug("LEVEL changed to DEBUG according to the configuration")
     logger.debug("Fields found = "+str(keywords)) 
 
     # Create the Cortex instance
-    cortex = Cortex(configuration.getURL(), configuration.getApiKey(), settings["sid"], logger)
+    cortex = Cortex(configuration.getCortexURL(), configuration.getCortexApiKey(), settings["sid"], logger)
 
     # MANDATORY FIELDS
     for key in ["data", "dataType"]:
@@ -61,6 +40,7 @@ if __name__ == '__main__':
 
     logger.debug("TLP field? = "+str(hasTLPField)+", PAP field? = "+str(hasPAPField)+", Analyzers field? = "+str(hasAnalyzersField)) 
 
+    outputResults = []
     # Prepare and run all jobs
     for result in results:
         # Check the results to extract interesting fields
@@ -76,8 +56,12 @@ if __name__ == '__main__':
         # Append job id to the result
         cortexResults = []
         for job in jobs:
-            cortexResults.append("id="+job.id+"::analyzer="+job.analyzerName+"::status="+job.status)
-        result["cortex"] = cortexResults
+            event = {}
+            event["cortex_job_id"] = job.id
+            event["cortex_job_analyzer"] = job.analyzerName
+            event["cortex_job_status"] = job.status
+            result.update(event)
+            outputResults.append(deepcopy(result))
     
 
-    splunk.Intersplunk.outputResults(results)
+    splunk.Intersplunk.outputResults(outputResults)

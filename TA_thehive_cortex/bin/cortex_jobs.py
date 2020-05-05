@@ -1,30 +1,18 @@
 # encoding = utf-8
 import sys, os
 import ta_thehive_cortex_declare_lib
-import splunk.Intersplunk
-import logging, logging.handlers
-from cortex import Cortex, CortexJob, Settings
+from common import Settings
+from cortex import Cortex, CortexJob
 import splunklib.client as client
+from ta_logging import setup_logging
+from copy import deepcopy
+import splunk.Intersplunk
 
-
-def setup_logging():
-    logger = logging.getLogger('command_cortex_jobs.log')    
-    SPLUNK_HOME = os.environ['SPLUNK_HOME']
-    
-    LOGGING_DEFAULT_CONFIG_FILE = os.path.join(SPLUNK_HOME, 'etc', 'log.cfg')
-    LOGGING_LOCAL_CONFIG_FILE = os.path.join(SPLUNK_HOME, 'etc', 'log-local.cfg')
-    LOGGING_STANZA_NAME = 'python'
-    LOGGING_FILE_NAME = "command_cortex_jobs.log"
-    BASE_LOG_PATH = os.path.join('var', 'log', 'splunk')
-    LOGGING_FORMAT = "%(asctime)s %(levelname)-s\t%(module)s:%(lineno)d - %(message)s"
-    splunk_log_handler = logging.handlers.RotatingFileHandler(os.path.join(SPLUNK_HOME, BASE_LOG_PATH, LOGGING_FILE_NAME), mode='a') 
-    splunk_log_handler.setFormatter(logging.Formatter(LOGGING_FORMAT))
-    logger.addHandler(splunk_log_handler)
-    splunk.setupSplunkLogger(logger, LOGGING_DEFAULT_CONFIG_FILE, LOGGING_LOCAL_CONFIG_FILE, LOGGING_STANZA_NAME)
-    return logger
-logger = setup_logging()
-# Default logging
-logger.setLevel(logging.INFO)
+FILTER_DATA_DEFAULT = ""
+FILTER_DATATYPES_DEFAULT = "*"
+FILTER_ANALYZERS_DEFAULT = "*"
+MAX_JOBS = None
+SORT_JOBS = None
 
 
 if __name__ == '__main__':
@@ -38,69 +26,91 @@ if __name__ == '__main__':
 
     # Initialiaze settings
     spl = client.connect(app="TA_thehive_cortex",owner="nobody",token=settings["sessionKey"])
+    logger = setup_logging("cortex_jobs")
     configuration = Settings(spl, logger)
-    if int(configuration.getSetting("logging","debug")) == 1:
-        logger.setLevel(logging.DEBUG)
-        logger.debug("LEVEL changed to DEBUG according to the configuration")
+
+    MAX_JOBS_DEFAULT = configuration.getCortexJobsMax()
+    SORT_JOBS_DEFAULT = configuration.getCortexJobsSort()
+
     logger.debug("Fields found = "+str(keywords)) 
+    logger.debug("Results found = "+str(results)) 
+    logger.debug(splunk.Intersplunk.getKeywordsAndOptions())
 
-    # get parameters if any
-    filter_data = sys.argv[1] if len(sys.argv)>1 else ""
-    filter_datatypes = sys.argv[2] if len(sys.argv)>2 else "*"
-    filter_analyzers = sys.argv[3] if len(sys.argv)>3 else "*"
 
-    logger.debug("filter_data: "+filter_data+", filter_datatypes: "+filter_datatypes+", filter_analyzers: "+filter_analyzers)
+    # MANDATORY FIELDS : None
+    # OPTIONAL FIELDS
+    hasFilterData = True if "data" in keywords else False
+    hasFilterDatatypes = True if "datatypes" in keywords else False
+    hasFilterAnalyzers = True if "analyzers" in keywords else False
+    hasMaxJobs = True if "max_jobs" in keywords else False
+    hasSortJobs = True if "sort_jobs" in keywords else False
 
-    # create the query from filters
-    query = {}
-    if filter_data != "":
-        new_query = {"_field":"data","_value":filter_data}
-        query = new_query
-    if filter_datatypes != "*":
-        new_query = {"_in":{"_field":"dataType","_values":filter_datatypes.replace(" ","").split(";")}}
-        if query == {}:
-            query = new_query
-        else:
-            query = {"_and":[query,new_query]}
-    if filter_analyzers != "*":
-        new_query = {"_in":{"_field":"workerDefinitionId","_values":filter_analyzers.replace(" ","").split(";")}}
-        if query == {}:
-            query = new_query
-        elif "_and" in query:
-            query["_and"].append(new_query)
-        else:
-            query = {"_and":[query,new_query]}
-
-    logger.info("Query is: "+str(query))
+    logger.debug("Data filtering? = "+str(hasFilterData)+", Datatypes filtering? = "+str(hasFilterDatatypes)+", Analyzers filtering? = "+str(hasFilterAnalyzers)+", Max jobs filtering? = "+str(hasMaxJobs)+", Sort jobs filtering? = "+str(hasSortJobs)) 
 
     # Create the Cortex instance
-    cortex = Cortex(configuration.getURL(), configuration.getApiKey(), settings["sid"], logger)
+    cortex = Cortex(configuration.getCortexURL(), configuration.getCortexApiKey(), settings["sid"], logger)
 
-    # Get jobs 
-    jobs = cortex.api.jobs.find_all(query ,range='0-'+configuration.getJobsMax(), sort=configuration.getJobsSort())
-    for job in jobs:
-         logger.debug("Get job ID \""+job.id+"\"")
-         logger.debug("Job details: "+str(job))
-         report = cortex.api.jobs.get_report(job.id).report
-         summaries = []
-         if job.status == "Success":
-             for t in report.get("summary", {}).get("taxonomies", {}):
-                 summaries.append("("+t.get("namespace", {})+") "+t.get("predicate", {})+": "+str(t.get("value", {})))
-         elif job.status == "Failure":
-             summaries.append(report.get("errorMessage", ""))
+    outputResults = []
+    # Prepare and get all jobs queries 
+    for result in results:
+        # Check the results to extract interesting fields
+        filterData = result["data"] if hasFilterData else FILTER_DATA_DEFAULT
+        filterDatatypes = result["datatypes"] if hasFilterDatatypes else FILTER_DATATYPES_DEFAULT
+        filterAnalyzers = result["analyzers"] if hasFilterAnalyzers else FILTER_ANALYZERS_DEFAULT
+        maxJobs = result["max_jobs"] if hasMaxJobs else MAX_JOBS_DEFAULT
+        sortJobs = result["sort_jobs"] if hasSortJobs else SORT_JOBS_DEFAULT
 
-         logger.debug("Report for \""+job.id+"\": "+str(report))
-         data = ""
-         if (job.dataType == "file"):
-             data = job.attachment["name"]
-         else:
-             data = job.data
-         event = {"id": job.id,"data": "["+job.dataType.upper()+"] "+data ,"analyzer": job.analyzerName ,"createdAt": job.createdAt/1000 ,"createdBy": job.organization+"/"+job.createdBy ,"tlp": job.tlp ,"status": job.status ,"summary": summaries}
-         if "startDate" in dir(job):
-             event["startDate"] = job.startDate/1000
-         if "endDate" in dir(job): 
-             event["endDate"] = job.endDate/1000 
-         results.append(event)
+        logger.debug("filterData: "+filterData+", filterDatatypes: "+filterDatatypes+", filterAnalyzers: "+filterAnalyzers+", max_jobs: "+maxJobs+", sort_jobs: "+sortJobs)
 
+        # create the query from filters
+        query = {}
+        if filterData != "":
+            new_query = {"_field":"data","_value":filterData}
+            query = new_query
+        if filterDatatypes != "*":
+            new_query = {"_in":{"_field":"dataType","_values":filterDatatypes.replace(" ","").split(";")}}
+            if query == {}:
+                query = new_query
+            else:
+                query = {"_and":[query,new_query]}
+        if filterAnalyzers != "*":
+            new_query = {"_in":{"_field":"workerDefinitionId","_values":filterAnalyzers.replace(" ","").split(";")}}
+            if query == {}:
+                query = new_query
+            elif "_and" in query:
+                query["_and"].append(new_query)
+            else:
+                query = {"_and":[query,new_query]}
+    
+        logger.info("Query is: "+str(query))
+    
+       # Get jobs 
+        jobs = cortex.api.jobs.find_all(query ,range='0-'+maxJobs, sort=sortJobs)
+        for job in jobs:
+             logger.debug("Get job ID \""+job.id+"\"")
+             logger.debug("Job details: "+str(job))
+             report = cortex.api.jobs.get_report(job.id).report
+             summaries = []
+             if job.status == "Success":
+                 for t in report.get("summary", {}).get("taxonomies", {}):
+                     summaries.append("("+t.get("namespace", {})+") "+t.get("predicate", {})+": "+str(t.get("value", {})))
+             elif job.status == "Failure":
+                 summaries.append(report.get("errorMessage", ""))
+    
+             logger.debug("Report for \""+job.id+"\": "+str(report))
+             data = ""
+             if (job.dataType == "file"):
+                 data = job.attachment["name"]
+             else:
+                 data = job.data
+             event = {"cortex_job_id": job.id,"cortex_job_data": "["+job.dataType.upper()+"] "+job.data ,"cortex_job_analyzer": job.analyzerName ,"cortex_job_createdAt": job.createdAt/1000 ,"cortex_job_createdBy": job.createdBy+"/"+job.organization,"cortex_job_tlp": job.tlp ,"cortex_job_status": job.status ,"cortex_job_summary": summaries}
+         
+             if "startDate" in dir(job):
+                 event["cortex_job_startDate"] = job.startDate/1000
+             if "endDate" in dir(job): 
+                 event["cortex_job_endDate"] = job.endDate/1000 
 
-    splunk.Intersplunk.outputResults(results)
+             result.update(event)
+             outputResults.append(deepcopy(result))
+
+    splunk.Intersplunk.outputResults(outputResults)

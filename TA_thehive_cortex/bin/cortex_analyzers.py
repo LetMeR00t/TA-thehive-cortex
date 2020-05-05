@@ -1,39 +1,19 @@
 # encoding = utf-8
 import sys, os
-import logging, logging.handlers
 import json
 import traceback
 import time
-import splunk
 from splunk.persistconn.application import PersistentServerConnectionApplication
 
 sys.path.insert(0, os.path.dirname(__file__))
 
 import ta_thehive_cortex_declare_lib
+from common import Settings
+from ta_logging import setup_logging
 
-from cortex import Cortex, CortexJob, Settings
+from cortex import Cortex, CortexJob
 import splunklib.client as client
 
-
-def setup_logging():
-    logger = logging.getLogger('command_cortex_analyzer.log')
-    SPLUNK_HOME = os.environ['SPLUNK_HOME']
-
-    LOGGING_DEFAULT_CONFIG_FILE = os.path.join(SPLUNK_HOME, 'etc', 'log.cfg')
-    LOGGING_LOCAL_CONFIG_FILE = os.path.join(SPLUNK_HOME, 'etc', 'log-local.cfg')
-    LOGGING_STANZA_NAME = 'python'
-    LOGGING_FILE_NAME = "command_cortex_analyzer.log"
-    BASE_LOG_PATH = os.path.join('var', 'log', 'splunk')
-    LOGGING_FORMAT = "%(asctime)s %(levelname)-s\t%(module)s:%(lineno)d - %(message)s"
-    splunk_log_handler = logging.handlers.RotatingFileHandler(os.path.join(SPLUNK_HOME, BASE_LOG_PATH, LOGGING_FILE_NAME), mode='a')
-    splunk_log_handler.setFormatter(logging.Formatter(LOGGING_FORMAT))
-    logger.addHandler(splunk_log_handler)
-    splunk.setupSplunkLogger(logger, LOGGING_DEFAULT_CONFIG_FILE, LOGGING_LOCAL_CONFIG_FILE, LOGGING_STANZA_NAME)
-    return logger
-
-logger = setup_logging()
-# Default logging
-logger.setLevel(logging.INFO)
 
 class CortexAnalyzers(PersistentServerConnectionApplication):
     def __init__(self, _command_line, _command_arg):
@@ -56,14 +36,12 @@ class CortexAnalyzers(PersistentServerConnectionApplication):
         sessionKey = args['session']['authtoken']
         spl = client.connect(app="TA_thehive_cortex",owner="nobody",token=sessionKey)
 
+        logger = setup_logging("cortex_analyzers")
         # Initialiaze settings
         configuration = Settings(spl, logger)
-        if int(configuration.getSetting("logging","debug")) == 1:
-            logger.setLevel(logging.DEBUG)
-            logger.debug("LEVEL changed to DEBUG according to the configuration")
     
         # Create the Cortex instance
-        cortex = Cortex(configuration.getURL(), configuration.getApiKey(), logger=logger)
+        cortex = Cortex(configuration.getCortexURL(), configuration.getCortexApiKey(), logger=logger)
 
         kv_cortex_analyzers = spl.kvstore["kv_cortex_analyzers"].data
         kv_cortex_analyzers.delete()

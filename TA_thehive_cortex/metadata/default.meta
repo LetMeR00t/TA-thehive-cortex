@@ -35,6 +35,9 @@ access = read : [ * ], write : [ * ]
 export = system
 
 ### COMMANDS
+[commands/thehive:cases]
+export=system
+
 [commands/cortexrun]
 export=system
 

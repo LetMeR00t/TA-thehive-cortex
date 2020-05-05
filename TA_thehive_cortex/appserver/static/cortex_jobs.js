@@ -28,6 +28,10 @@ require([
                 list[t].set("cortex_protocol", content["cortex_protocol"]);
                 list[t].set("cortex_host", content["cortex_host"]);
                 list[t].set("cortex_port", content["cortex_port"]);
+                list[t].set("max_jobs", content["cortex_jobs_max"]);
+                list[t].set("form.max_jobs", content["cortex_jobs_max"]);
+                list[t].set("sort_jobs", content["cortex_jobs_sort"]);
+                list[t].set("form.sort_jobs", content["cortex_jobs_sort"]);
 	    }
 			
         }

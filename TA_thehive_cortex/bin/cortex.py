@@ -6,6 +6,7 @@ import cortex4py.exceptions
 import json
 import traceback
 import splunklib.client as client
+from common import Settings
 
 # All available data types
 dataTypeList = [
@@ -103,62 +104,6 @@ class Cortex(object):
 
         self.__jobs = []
         return results
-
-
-class Settings(object):
-
-    def __init__(self, client, logger = None):
-        self.logger = logger
-        # get cortex settings
-        query = {"output_mode":"json"}
-        self.__cortex_settings = json.loads(client.get("TA_thehive_cortex_settings/cortex", owner="nobody", app="TA_thehive_cortex",**query).body.read())["entry"][0]["content"]
-        self.__logging_settings = json.loads(client.get("TA_thehive_cortex_settings/logging", owner="nobody", app="TA_thehive_cortex",**query).body.read())["entry"][0]["content"]
-        self.__storage_passwords = client.storage_passwords
-        for s in self.__storage_passwords:
-            # Get the API key
-            if "cortex_api_key" in s['clear_password']:
-                self.__cortex_settings['cortex_api_key'] = str(json.loads(s["clear_password"])["cortex_api_key"])
-
-        # Checks before configure
-        cortex_information_required = ["cortex_protocol","cortex_host","cortex_port","cortex_api_key"]
-        for i in cortex_information_required:
-            if not i in self.__cortex_settings:
-                self.logger.error("[10-FIELD MISSING] No \""+i+"\" setting set in \"Configuration\", please configure your Cortex instance under \"Configuration\"")
-                sys.exit(10)
-   
-    def getURL(self):
-        """ This function returns the URL of the Cortex instance """
-        return self.__cortex_settings["cortex_protocol"]+"://"+self.__cortex_settings["cortex_host"]+":"+self.__cortex_settings["cortex_port"]
-
-    def getApiKey(self):
-        """ This function returns the API key of the Cortex instance """
-        return self.__cortex_settings["cortex_api_key"]
-
-    def getJobsMax(self):
-        """ This function returns the maximum number of jobs to return of the Cortex instance """
-        return self.__cortex_settings["cortex_jobs_max"]
-
-    def getJobsSort(self):
-        """ This function returns the sort key to use for jobs of the Cortex instance """
-        return self.__cortex_settings["cortex_jobs_sort"]
-
-    def getSetting(self, page, key):
-        """ This function returns the settings for the concerned page and key """
-
-        result = None
-        settings = None
-        if (page == "cortex"):
-            settings = self.__cortex_settings
-        elif (page == "logging"):
-            settings = self.__logging_settings
-
-        try:
-            result = settings[key]
-        except Exception as e:
-            self.logger.error("This settings \""+key+"\" doesn't exist for the page "+page)
-
-        return result
-
 
 class CortexJob(object):
 
