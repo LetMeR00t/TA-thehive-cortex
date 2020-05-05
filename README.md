@@ -20,7 +20,7 @@
 * [ Licence ](#licence)
 
 # Introduction
-This TA allows to **add interaction features** between [Cortex (TheHive project)](https://thehive-project.org/) and Splunk. It allows to retrieve all tasks in Cortex and to execute new tasks from Splunk, from a search or from a predefined dashboard.
+This TA allows to **add interaction features** between [TheHive or Cortex (TheHive project)](https://thehive-project.org/) and Splunk. It allows to retrieve all tasks in Cortex and to execute new tasks from Splunk, from a search or from a predefined dashboard.
 All data types work with the exception of "file" because Splunk does not allow to send a file easily.
 
 **Note**:
