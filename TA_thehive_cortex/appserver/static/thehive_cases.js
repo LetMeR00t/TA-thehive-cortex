@@ -4,11 +4,11 @@ require([
 ], function(mvc) {
 
     // Console feedback
-    console.log("Get Cortex settings"); 
+    console.log("Get TheHive settings"); 
  
     // Create a service and request a refresh for analyzers
     var service = mvc.createService();
-    service.get('TA_thehive_cortex_settings/cortex', "", function(err, response) {
+    service.get('TA_thehive_cortex_settings/thehive', "", function(err, response) {
  
         if(err) {
     	// Something is not working during the recovering process
@@ -25,19 +25,19 @@ require([
 
             var list = [def_tokens, sub_tokens]
 	    for (const t in list) {
-                list[t].set("cortex_protocol", content["cortex_protocol"]);
-                list[t].set("cortex_host", content["cortex_host"]);
-                list[t].set("cortex_port", content["cortex_port"]);
-                list[t].set("max_jobs", content["cortex_jobs_max"]);
-                list[t].set("form.max_jobs", content["cortex_jobs_max"]);
-                list[t].set("sort_jobs", content["cortex_jobs_sort"]);
-                list[t].set("form.sort_jobs", content["cortex_jobs_sort"]);
+                list[t].set("thehive_protocol", content["thehive_protocol"]);
+                list[t].set("thehive_host", content["thehive_host"]);
+                list[t].set("thehive_port", content["thehive_port"]);
+                list[t].set("max_jobs", content["thehive_jobs_max"]);
+                list[t].set("form.max_jobs", content["thehive_jobs_max"]);
+                list[t].set("sort_jobs", content["thehive_jobs_sort"]);
+                list[t].set("form.sort_jobs", content["thehive_jobs_sort"]);
 	    }
 			
         }
     
         // Console feedback
-        console.log("Cortex settings recovered"); 
+        console.log("TheHive settings recovered"); 
  
     })
 });

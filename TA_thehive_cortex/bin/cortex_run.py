@@ -54,14 +54,24 @@ if __name__ == '__main__':
         jobs = cortex.runJobs()
 
         # Append job id to the result
-        cortexResults = []
         for job in jobs:
-            event = {}
-            event["cortex_job_id"] = job.id
-            event["cortex_job_analyzer"] = job.analyzerName
-            event["cortex_job_status"] = job.status
-            result.update(event)
-            outputResults.append(deepcopy(result))
-    
+            result_copy = deepcopy(result)
+            logger.debug("Job details: "+str(job))
+
+            event = { "cortex_job_"+k:v for k,v in vars(job).items() if not k.startswith('_') }
+            
+            # Post processing for Splunk
+            ## DATES ##
+            if "cortex_job_startDate" in event:
+                event["cortex_job_startDate"] = event["cortex_job_startDate"]/1000
+            if "cortex_job_endDate" in event:
+                event["cortex_job_endDate"] = event["cortex_job_endDate"]/1000
+            event["cortex_job_createdAt"] = event["cortex_job_createdAt"]/1000
+            if "cortex_job_updatedAt" in event:
+                event["cortex_job_updatedAt"] = event["cortex_job_updatedAt"]/1000
+
+
+            result_copy.update(event)
+            outputResults.append(deepcopy(result_copy))
 
     splunk.Intersplunk.outputResults(outputResults)

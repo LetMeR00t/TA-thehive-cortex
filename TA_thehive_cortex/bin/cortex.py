@@ -32,16 +32,16 @@ colorCode = {
         "AMBER": 2,
         "RED": 3}
 
-class Cortex(object):
+class Cortex(Api):
 
     """ This class is used to represent a Cortex instance"""
 
     def __init__(self, url = None, apiKey = None, sid = "", logger = None):
         self.logger = logger
         try :
-            self.api = Api(str(url), str(apiKey))
+            super().__init__(str(url), str(apiKey))
             # Try to connect to the API by recovering all enabled analyzers
-            self.api.analyzers.find_all({}, range='all')
+            self.analyzers.find_all({}, range='all')
         except cortex4py.exceptions.NotFoundError as e:
             self.logger.error("[10-RESOURCE NOT FOUND] Cortex service is unavailable, is configuration correct ?")
             sys.exit(10)
@@ -73,10 +73,10 @@ class Cortex(object):
         analyzersObj = []
         # If all analyzers are chosen, we recover them usin the datatype
         if analyzers == "all":
-            analyzersObj = self.api.analyzers.get_by_type(dataType)
+            analyzersObj = self.analyzers.get_by_type(dataType)
         else:
             for analyzer in analyzers.replace(" ","").split(";"):
-                a = self.api.analyzers.get_by_name(analyzer)
+                a = self.analyzers.get_by_name(analyzer)
                 if a is not None:
                     analyzersObj.append(a)
                 else:
@@ -95,7 +95,7 @@ class Cortex(object):
                 job_json["message"] = "sid:"+self.__sid
                 for a in job.analyzers:
                     self.logger.debug("JOB sent: "+str(job_json))
-                    results.append(self.api.analyzers.run_by_id(a.id, job_json, force=1))
+                    results.append(self.analyzers.run_by_id(a.id, job_json, force=1))
     
             except Exception as e:
                 tb = traceback.format_exc()

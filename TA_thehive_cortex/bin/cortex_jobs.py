@@ -33,9 +33,6 @@ if __name__ == '__main__':
     SORT_JOBS_DEFAULT = configuration.getCortexJobsSort()
 
     logger.debug("Fields found = "+str(keywords)) 
-    logger.debug("Results found = "+str(results)) 
-    logger.debug(splunk.Intersplunk.getKeywordsAndOptions())
-
 
     # MANDATORY FIELDS : None
     # OPTIONAL FIELDS
@@ -53,6 +50,7 @@ if __name__ == '__main__':
     outputResults = []
     # Prepare and get all jobs queries 
     for result in results:
+        ## FILTERS ##
         # Check the results to extract interesting fields
         filterData = result["data"] if hasFilterData else FILTER_DATA_DEFAULT
         filterDatatypes = result["datatypes"] if hasFilterDatatypes else FILTER_DATATYPES_DEFAULT
@@ -84,33 +82,37 @@ if __name__ == '__main__':
     
         logger.info("Query is: "+str(query))
     
-       # Get jobs 
-        jobs = cortex.api.jobs.find_all(query ,range='0-'+maxJobs, sort=sortJobs)
+        ## JOBS ##
+        jobs = cortex.jobs.find_all(query ,range='0-'+maxJobs, sort=sortJobs)
         for job in jobs:
-             logger.debug("Get job ID \""+job.id+"\"")
+             result_copy = deepcopy(result)
              logger.debug("Job details: "+str(job))
-             report = cortex.api.jobs.get_report(job.id).report
-             summaries = []
-             if job.status == "Success":
-                 for t in report.get("summary", {}).get("taxonomies", {}):
-                     summaries.append("("+t.get("namespace", {})+") "+t.get("predicate", {})+": "+str(t.get("value", {})))
-             elif job.status == "Failure":
-                 summaries.append(report.get("errorMessage", ""))
-    
-             logger.debug("Report for \""+job.id+"\": "+str(report))
-             data = ""
-             if (job.dataType == "file"):
-                 data = job.attachment["name"]
-             else:
-                 data = job.data
-             event = {"cortex_job_id": job.id,"cortex_job_data": "["+job.dataType.upper()+"] "+job.data ,"cortex_job_analyzer": job.analyzerName ,"cortex_job_createdAt": job.createdAt/1000 ,"cortex_job_createdBy": job.createdBy+"/"+job.organization,"cortex_job_tlp": job.tlp ,"cortex_job_status": job.status ,"cortex_job_summary": summaries}
-         
-             if "startDate" in dir(job):
-                 event["cortex_job_startDate"] = job.startDate/1000
-             if "endDate" in dir(job): 
-                 event["cortex_job_endDate"] = job.endDate/1000 
 
-             result.update(event)
-             outputResults.append(deepcopy(result))
+             report = cortex.jobs.get_report(job.id)
+
+             logger.debug("Report details: \""+job.id+"\": "+str(report))
+    
+             job_report = { "cortex_job_"+k:v for k,v in vars(report).items() if not k.startswith('_') }
+
+             event = { "cortex_job_"+k:v for k,v in vars(job).items() if not k.startswith('_') }
+             
+             # Post processing for Splunk
+             ## REPORT ##
+             keys = []
+             for k in job_report["cortex_job_report"]:
+                 keys.append(k+"::"+str(job_report["cortex_job_report"][k]))
+             event["cortex_job_report"] = keys
+             
+             ## DATES ##
+             if "cortex_job_startDate" in event:
+                 event["cortex_job_startDate"] = event["cortex_job_startDate"]/1000
+             if "cortex_job_endDate" in event:
+                 event["cortex_job_endDate"] = event["cortex_job_endDate"]/1000
+             event["cortex_job_createdAt"] = event["cortex_job_createdAt"]/1000
+             event["cortex_job_updatedAt"] = event["cortex_job_updatedAt"]/1000
+
+
+             result_copy.update(event)
+             outputResults.append(deepcopy(result_copy))
 
     splunk.Intersplunk.outputResults(outputResults)

@@ -47,7 +47,7 @@ class CortexAnalyzers(PersistentServerConnectionApplication):
         kv_cortex_analyzers.delete()
 
         try:
-          analyzers = cortex.api.analyzers.find_all({}, range='all')
+          analyzers = cortex.analyzers.find_all({}, range='all')
   
           # Display enabled analyzers' names
           for analyzer in analyzers:

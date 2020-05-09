@@ -24,15 +24,17 @@ class Settings(object):
                 self.__cortex_settings['cortex_api_key'] = str(json.loads(s["clear_password"])["cortex_api_key"])
 
         # Checks before configure
-        # TheHive #TODO
-
+        # TheHive
+        cortex_information_required = ["thehive_protocol","thehive_host","thehive_port","thehive_api_key"]
+        for i in cortex_information_required:
+            if not i in self.__thehive_settings:
+                self.logger.warning("[10-FIELD MISSING] TheHive: No \""+i+"\" setting set in \"Configuration\", please configure your Cortex instance under \"Configuration\"")
 
         # Cortex
         cortex_information_required = ["cortex_protocol","cortex_host","cortex_port","cortex_api_key"]
         for i in cortex_information_required:
             if not i in self.__cortex_settings:
-                self.logger.error("[10-FIELD MISSING] No \""+i+"\" setting set in \"Configuration\", please configure your Cortex instance under \"Configuration\"")
-                sys.exit(10)
+                self.logger.warning("[10-FIELD MISSING] Cortex: No \""+i+"\" setting set in \"Configuration\", please configure your Cortex instance under \"Configuration\"")
 
         if int(self.getSetting("logging","debug")) == 1:
             logger.setLevel(logging.DEBUG)
@@ -46,6 +48,14 @@ class Settings(object):
     def getTheHiveApiKey(self):
         """ This function returns the API key of the TheHive instance """
         return self.__thehive_settings["thehive_api_key"]
+
+    def getTheHiveJobsMax(self):
+        """ This function returns the maximum number of jobs to return of the TheHive instance """
+        return self.__thehive_settings["thehive_jobs_max"]
+
+    def getTheHiveJobsSort(self):
+        """ This function returns the sort key to use for jobs of the TheHive instance """
+        return self.__thehive_settings["thehive_jobs_sort"]
 
     def getCortexURL(self):
         """ This function returns the URL of the Cortex instance """

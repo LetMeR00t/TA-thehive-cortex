@@ -41,7 +41,28 @@ fields_thehive = [
             max_len=8192, 
             min_len=0, 
         )
+    ),
+    field.RestField(
+        'thehive_jobs_max',
+        required=True,
+        encrypted=False,
+        default="100",
+        validator=validator.Number(
+            max_val=1000, 
+            min_val=1, 
+        )
+    ),
+    field.RestField(
+        'thehive_jobs_sort',
+        required=True,
+        encrypted=False,
+        default="-startDate",
+        validator=validator.String(
+            max_len=512, 
+            min_len=0, 
+        )
     )
+
 ]
 model_thehive = RestModel(fields_thehive, name='thehive')
 
