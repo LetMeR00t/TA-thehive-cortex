@@ -49,13 +49,13 @@ class Settings(object):
         """ This function returns the API key of the TheHive instance """
         return self.__thehive_settings["thehive_api_key"]
 
-    def getTheHiveJobsMax(self):
+    def getTheHiveCasesMax(self):
         """ This function returns the maximum number of jobs to return of the TheHive instance """
-        return self.__thehive_settings["thehive_jobs_max"]
+        return self.__thehive_settings["thehive_cases_max"]
 
-    def getTheHiveJobsSort(self):
+    def getTheHiveCasesSort(self):
         """ This function returns the sort key to use for jobs of the TheHive instance """
-        return self.__thehive_settings["thehive_jobs_sort"]
+        return self.__thehive_settings["thehive_cases_sort"]
 
     def getCortexURL(self):
         """ This function returns the URL of the Cortex instance """

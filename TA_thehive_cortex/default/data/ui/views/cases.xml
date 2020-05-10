@@ -1,93 +1,69 @@
-<form script="cortex_jobs.js">
-  <label>TheHive Cases</label>
-  <fieldset submitButton="true">
+<form script="thehive_cases.js">
+  <label>TheHive: Cases</label>
+  <fieldset submitButton="false" autoRun="false">
     <input type="dropdown" token="action">
       <label>Action</label>
+      <choice value="create">CREATE</choice>
       <choice value="list">LIST</choice>
-      <choice value="run">RUN</choice>
       <default>list</default>
       <initialValue>list</initialValue>
       <change>
         <condition value="list">
-          <unset token="show_inputs_run"></unset>
           <unset token="show_dashboards_run"></unset>
-          <unset token="data"></unset>
-          <unset token="form.data"></unset>
-          <unset token="dataType"></unset>
-          <unset token="form.dataType"></unset>
-          <unset token="tlp"></unset>
-          <unset token="form.tlp"></unset>
-          <unset token="pap"></unset>
-          <unset token="form.pap"></unset>
-          <unset token="analyzers"></unset>
-          <unset token="form.analyzers"></unset>
+          <unset token="filter_keyword"></unset>
+          <unset token="form.filter_keyword"></unset>
+          <unset token="filter_status"></unset>
+          <unset token="form.filter_status"></unset>
+          <unset token="filter_severity"></unset>
+          <unset token="form.filter_severity"></unset>
+          <unset token="filter_tags"></unset>
+          <unset token="form.filter_tags"></unset>
+          <unset token="filter_title"></unset>
+          <unset token="form.filter_title"></unset>
+          <unset token="filter_assignee"></unset>
+          <unset token="form.filter_assignee"></unset>
+          <unset token="filter_date"></unset>
+          <unset token="form.filter_date"></unset>
         </condition>
-        <condition value="run">
-          <set token="show_inputs_run">1</set>
-          <set token="show_dashboards_run">1</set>
+        <condition value="create">
+          <set token="show_dashboards_create">1</set>
         </condition>
       </change>
     </input>
-    <input type="text" token="data" depends="$show_inputs_run$">
-      <label>Data (separated by ";")</label>
-    </input>
-    <input type="dropdown" token="dataType" depends="$show_inputs_run$">
-      <label>Data type</label>
-      <choice value="domain">Domain</choice>
-      <choice value="filename">Filename</choice>
-      <choice value="fqdn">FQDN</choice>
-      <choice value="hash">Hash</choice>
-      <choice value="ip">IP</choice>
-      <choice value="mail">Mail</choice>
-      <choice value="mail_subject">Mail Subject</choice>
-      <choice value="other">Other</choice>
-      <choice value="regexp">Regular Expression</choice>
-      <choice value="registry">Registry</choice>
-      <choice value="uri_path">URI path</choice>
-      <choice value="url">URL</choice>
-      <choice value="user-agent">User-Agent</choice>
-    </input>
-    <input type="dropdown" token="tlp" depends="$show_inputs_run$">
-      <label>TLP</label>
-      <choice value="WHITE">WHITE - 0</choice>
-      <choice value="GREEN">GREEN - 1</choice>
-      <choice value="AMBER">AMBER - 2</choice>
-      <choice value="RED">RED - 3</choice>
-    </input>
-    <input type="dropdown" token="pap" depends="$show_inputs_run$">
-      <label>PAP</label>
-      <choice value="WHITE">WHITE - 0</choice>
-      <choice value="GREEN">GREEN - 1</choice>
-      <choice value="AMBER">AMBER - 2</choice>
-      <choice value="RED">RED - 3</choice>
-    </input>
-    <input type="multiselect" token="analyzers" depends="$show_inputs_run$">
-      <label>Analyzers</label>
-      <choice value="all">Any</choice>
-      <delimiter> ;</delimiter>
-      <fieldForLabel>analyzer</fieldForLabel>
-      <fieldForValue>analyzer</fieldForValue>
-      <search>
-        <query>| inputlookup lookup_cortex_analyzers
-| makemv delim=";" dataTypeAllowed
-| mvexpand dataTypeAllowed
-| where dataTypeAllowed=="$dataType$"</query>
-      </search>
+    <input type="radio" token="view_mode">
+      <label>View mode</label>
+      <choice value="normal">Normal</choice>
+      <choice value="advanced">Advanced</choice>
+      <default>normal</default>
+      <initialValue>normal</initialValue>
+      <change>
+        <condition value="advanced">
+          <set token="show_inputs_advanced">1</set>
+        </condition>
+        <condition>
+          <unset token="show_inputs_advanced"></unset>
+        </condition>
+      </change>
     </input>
   </fieldset>
   <row>
-    <panel depends="$show_dashboards_run$">
+    <panel depends="$show_dashboards_create$">
       <viz type="status_indicator_app.status_indicator">
         <search>
+          <progress>
+            <set token="d1">$job.earliestTime$</set>
+            <set token="d2">$job.latestTime$</set>
+          </progress>
           <query>| makeresults
-| eval text = "New Analysis", icon = "plus-square", color="#f1813f"
+| eval text = "New Case", icon = "plus-square", color="#f1813f"
 | table text, icon, color</query>
-          <earliest>-24h@h</earliest>
-          <latest>now</latest>
+          <earliest>$filter_date.earliest$</earliest>
+          <latest>$filter_date.latest$</latest>
           <sampleRatio>1</sampleRatio>
         </search>
         <option name="drilldown">none</option>
         <option name="height">99</option>
+        <option name="refresh.display">progressbar</option>
         <option name="status_indicator_app.status_indicator.colorBy">field_value</option>
         <option name="status_indicator_app.status_indicator.fillTarget">background</option>
         <option name="status_indicator_app.status_indicator.fixIcon">warning</option>
@@ -104,19 +80,77 @@
     </panel>
   </row>
   <row>
-    <panel depends="$show_dashboards_run$">
+    <panel depends="$show_dashboards_create$">
+      <input type="text" token="title">
+        <label>Title</label>
+        <default></default>
+      </input>
+      <input type="dropdown" token="severity">
+        <label>Severity</label>
+        <choice value="Critical">Critical</choice>
+        <choice value="High">High</choice>
+        <choice value="Medium">Medium</choice>
+        <choice value="Low">Low</choice>
+      </input>
+      <input type="multiselect" token="tags">
+        <label>Tags</label>
+        <delimiter>;</delimiter>
+        <fieldForLabel>thehive_case_tags</fieldForLabel>
+        <fieldForValue>thehive_case_tags</fieldForValue>
+        <search>
+          <query>| makeresults
+| eval max_cases = "$max_cases$", sort_cases = "$sort_cases$"
+| thehivecases max_cases sort_cases
+| stats count by thehive_case_tags
+| table thehive_case_tags
+| sort thehive_case_tags</query>
+        </search>
+        <choice value="other">Other</choice>
+      </input>
+      <input type="text" token="tags_other">
+        <label>Tags: Other</label>
+        <default></default>
+      </input>
+      <input type="dropdown" token="tlp">
+        <label>TLP</label>
+        <choice value="WHITE">WHITE - 0</choice>
+        <choice value="GREEN">GREEN - 1</choice>
+        <choice value="AMBER">AMBER - 2</choice>
+        <choice value="RED">RED - 3</choice>
+      </input>
+      <input type="dropdown" token="pap">
+        <label>PAP</label>
+        <choice value="WHITE">WHITE - 0</choice>
+        <choice value="GREEN">GREEN - 1</choice>
+        <choice value="AMBER">AMBER - 2</choice>
+        <choice value="RED">RED - 3</choice>
+      </input>
+      <input type="dropdown" token="assignee">
+        <label>Assignee</label>
+        <fieldForLabel>thehive_case_owner</fieldForLabel>
+        <fieldForValue>thehive_case_owner</fieldForValue>
+        <search>
+          <query>| makeresults
+| eval max_cases = "$max_cases$", sort_cases = "$sort_cases$"
+| thehivecases max_cases sort_cases
+| stats count by thehive_case_owner
+| table thehive_case_owner
+| sort thehive_case_owner</query>
+        </search>
+      </input>
+      <input type="text" token="tasks">
+        <label>Tasks (separated by ";")</label>
+      </input>
+      <html>
+      <textarea/>
+    </html>
       <table>
         <search>
           <query>| makeresults
 | eval data = "$data$", dataType = "$dataType$", tlp = "$tlp$", pap = "$pap$", analyzers = "$analyzers$"
 | makemv delim=";" data
 | mvexpand data
-| cortexrun data dataType tlp pap analyzers
-| mvexpand cortex
-| makemv delim="::" cortex
-| eval status = mvindex((split(mvindex(mvfilter(match(cortex,"status")),0),"=")),1), id = mvindex((split(mvindex(mvfilter(match(cortex,"id")),0),"=")),1), analyzer = mvindex((split(mvindex(mvfilter(match(cortex,"analyzer")),0),"=")),1), data = "["+dataType+"] "+data, createdAt = strftime(_time,"%c"), tlp = "TLP:"+tlp, pap = "PAP:"+pap
-| table status, _time, data, analyzer, createdAt, tlp, pap, id
-| rename status as Status, data as Data, analyzer as Analyzer, createdAt as "Created At", tlp as TLP, pap as PAP, id as ID</query>
+| cortexrun data dataType tlp pap analyzers</query>
           <earliest>-24h@h</earliest>
           <latest>now</latest>
           <sampleRatio>1</sampleRatio>
@@ -138,8 +172,156 @@
         <format type="color" field="PAP">
           <colorPalette type="map">{"PAP:WHITE":#FFFFFF,"PAP:GREEN":#53A051,"PAP:AMBER":#F8BE34,"PAP:RED":#DC4E41}</colorPalette>
         </format>
+      </table>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <viz type="status_indicator_app.status_indicator">
+        <search>
+          <query>| makeresults
+| eval text = "Cases", icon = "history", color="#f1cf00"
+| table text, icon, color</query>
+          <earliest>-24h@h</earliest>
+          <latest>now</latest>
+          <sampleRatio>1</sampleRatio>
+        </search>
+        <option name="height">99</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="status_indicator_app.status_indicator.colorBy">field_value</option>
+        <option name="status_indicator_app.status_indicator.fillTarget">background</option>
+        <option name="status_indicator_app.status_indicator.fixIcon">warning</option>
+        <option name="status_indicator_app.status_indicator.icon">field_value</option>
+        <option name="status_indicator_app.status_indicator.precision">0</option>
+        <option name="status_indicator_app.status_indicator.showOption">1</option>
+        <option name="status_indicator_app.status_indicator.staticColor">#006d9c</option>
+        <option name="status_indicator_app.status_indicator.useColors">true</option>
+        <option name="status_indicator_app.status_indicator.useThousandSeparator">true</option>
+        <option name="trellis.enabled">0</option>
+        <option name="trellis.scales.shared">1</option>
+        <option name="trellis.size">medium</option>
+      </viz>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <input type="text" token="filter_keyword" searchWhenChanged="true">
+        <label>Keyword</label>
+        <default>*</default>
+        <initialValue>*</initialValue>
+      </input>
+      <input type="multiselect" token="filter_status" searchWhenChanged="true">
+        <label>Status</label>
+        <delimiter>;</delimiter>
+        <choice value="*">Any</choice>
+        <choice value="Open">Open</choice>
+        <choice value="Resolved">Resolved</choice>
+        <default>*</default>
+        <initialValue>*</initialValue>
+      </input>
+      <input type="multiselect" token="filter_severity" searchWhenChanged="true">
+        <label>Severity</label>
+        <delimiter>;</delimiter>
+        <choice value="*">Any</choice>
+        <choice value="Critical">Critical</choice>
+        <choice value="High">High</choice>
+        <choice value="Medium">Medium</choice>
+        <choice value="Low">Low</choice>
+        <default>*</default>
+        <initialValue>*</initialValue>
+      </input>
+      <input type="multiselect" token="filter_tags" searchWhenChanged="true">
+        <label>Tags</label>
+        <choice value="*">Any</choice>
+        <default>*</default>
+        <initialValue>*</initialValue>
+        <delimiter>;</delimiter>
+        <fieldForLabel>thehive_case_tags</fieldForLabel>
+        <fieldForValue>thehive_case_tags</fieldForValue>
+        <search>
+          <query>| makeresults
+| eval max_cases = "$max_cases$", sort_cases = "$sort_cases$"
+| thehivecases max_cases sort_cases
+| stats count by thehive_case_tags
+| table thehive_case_tags
+| sort thehive_case_tags</query>
+        </search>
+      </input>
+      <input type="text" token="filter_title" searchWhenChanged="true">
+        <label>Title</label>
+        <default>*</default>
+        <initialValue>*</initialValue>
+      </input>
+      <input type="multiselect" token="filter_assignee" searchWhenChanged="true">
+        <label>Assignee</label>
+        <choice value="*">Any</choice>
+        <default>*</default>
+        <initialValue>*</initialValue>
+        <delimiter>;</delimiter>
+        <fieldForLabel>thehive_case_owner</fieldForLabel>
+        <fieldForValue>thehive_case_owner</fieldForValue>
+        <search>
+          <query>| makeresults
+| eval max_cases = "$max_cases$", sort_cases = "$sort_cases$"
+| thehivecases max_cases sort_cases
+| stats count by thehive_case_owner
+| table thehive_case_owner
+| sort thehive_case_owner</query>
+        </search>
+      </input>
+      <input type="time" token="filter_date" searchWhenChanged="true">
+        <label>Date (days only)</label>
+        <default>
+          <earliest>0</earliest>
+          <latest></latest>
+        </default>
+      </input>
+      <input type="text" token="max_cases" searchWhenChanged="true" depends="$show_inputs_advanced$">
+        <label>Max cases</label>
+      </input>
+      <input type="text" token="sort_cases" searchWhenChanged="true" depends="$show_inputs_advanced$">
+        <label>Sort cases</label>
+      </input>
+      <table>
+        <title>Click on the title to have more details in Splunk. Otherwise, you can click on the ID to open TheHive with the selected case</title>
+        <search>
+          <query>| makeresults
+| eval keyword = "$filter_keyword$", status = "$filter_status$", severity = "$filter_severity$", tags = "$filter_tags$", title = "$filter_title$", assignee = "$filter_assignee$", date = "$filter_date_d1$ TO $filter_date_d2$", max_cases="$max_cases$", sort_cases="$sort_cases$"
+| thehivecases keyword status severity tags title assignee date max_cases sort_cases
+| eval thehive_case_tlp = case(thehive_case_tlp==0,"TLP:WHITE",thehive_case_tlp==1,"TLP:GREEN",thehive_case_tlp==2,"TLP:AMBER",thehive_case_tlp=3,"TLP:RED"), thehive_case_title = "#"+thehive_case_caseId+" - "+thehive_case_title, thehive_case_severity = case(thehive_case_severity==1,"Low",thehive_case_severity==2,"Medium",thehive_case_severity==3,"High",thehive_case_severity==4,"Critical",1=1,thehive_case_severity), status = if(thehive_case_status!="Open", thehive_case_status+" as "+thehive_case_resolutionStatus,thehive_case_status)+";"+if(thehive_case_status!="Open","Closed at "+strftime(thehive_case_endDate,"%+"),""), thehive_case_startDate = strftime(thehive_case_startDate,"%F %H:%M")
+| makemv delim=";" status
+| fillnull value="No task" thehive_case_tasks
+| table thehive_case_tlp, thehive_case_title, thehive_case_tags, thehive_case_severity, thehive_case_tasks, thehive_case_observables, thehive_case_owner, thehive_case_startDate, status, thehive_case_id
+| rename thehive_case_tlp as TLP, thehive_case_title as Title, thehive_case_tags as Tags, thehive_case_severity as Severity, thehive_case_tasks as Tasks, thehive_case_observables as Observables, thehive_case_owner as "Assignee", thehive_case_startDate as "Start Date", status as Status, thehive_case_id as "ID - Go to TheHive"</query>
+          <earliest>$filter_date.earliest$</earliest>
+          <latest>$filter_date.latest$</latest>
+          <sampleRatio>1</sampleRatio>
+        </search>
+        <option name="count">20</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">cell</option>
+        <option name="percentagesRow">false</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="rowNumbers">false</option>
+        <option name="totalsRow">false</option>
+        <option name="wrap">true</option>
+        <format type="color" field="TLP">
+          <colorPalette type="map">{"TLP:WHITE":#FFFFFF,"TLP:GREEN":#53A051,"TLP:AMBER":#F8BE34,"TLP:RED":#DC4E41}</colorPalette>
+        </format>
+        <format type="color" field="Severity">
+          <colorPalette type="map">{"Low":#10A554,"Medium":#00C0EF,"High":#F39C12,"Critical":#DD4B39}</colorPalette>
+        </format>
         <drilldown>
-          <link target="_blank">$cortex_protocol$://$cortex_host$:$cortex_port$/index.html#!/jobs/$row.ID$</link>
+          <condition field="Tasks">
+            <link target="_blank">$thehive_protocol$://$thehive_host$:$thehive_port$/index.html#!/case/$row.ID - Go to TheHive$/tasks</link>
+          </condition>
+          <condition field="Observables">
+            <link target="_blank">$thehive_protocol$://$thehive_host$:$thehive_port$/index.html#!/case/$row.ID - Go to TheHive$/observables</link>
+          </condition>
+          <condition field="ID - Go to TheHive">
+            <link target="_blank">$thehive_protocol$://$thehive_host$:$thehive_port$/index.html#!/case/$row.ID - Go to TheHive$/details</link>
+          </condition>
+          <condition></condition>
         </drilldown>
       </table>
     </panel>
@@ -149,7 +331,7 @@
       <viz type="status_indicator_app.status_indicator">
         <search>
           <query>| makeresults
-| eval text = "Jobs History", icon = "history", color="#54c4c3"
+| eval text = "Details", icon = "search-plus", color="#5cc05c"
 | table text, icon, color</query>
           <earliest>-24h@h</earliest>
           <latest>now</latest>
@@ -174,68 +356,23 @@
     </panel>
   </row>
   <row>
-    <panel>
-      <input type="text" token="filter_data" searchWhenChanged="true">
-        <label>Data</label>
-        <default></default>
-      </input>
-      <input type="multiselect" token="filter_datatypes" searchWhenChanged="true">
-        <label>Data Types</label>
-        <delimiter> ;</delimiter>
-        <choice value="*">Any</choice>
-        <default>*</default>
-        <initialValue>*</initialValue>
-        <fieldForLabel>dataTypeAllowed_upper</fieldForLabel>
-        <fieldForValue>dataTypeAllowed</fieldForValue>
-        <search>
-          <query>| inputlookup lookup_cortex_analyzers
-| makemv delim=";" dataTypeAllowed
-| mvexpand dataTypeAllowed
-| stats count by dataTypeAllowed
-| eval dataTypeAllowed_upper = upper(dataTypeAllowed)
-| table dataTypeAllowed_upper, dataTypeAllowed</query>
-        </search>
-      </input>
-      <input type="multiselect" token="filter_analyzers" searchWhenChanged="true">
-        <label>Analyzers</label>
-        <delimiter> ;</delimiter>
-        <choice value="*">Any</choice>
-        <default>*</default>
-        <initialValue>*</initialValue>
-        <fieldForLabel>analyzer</fieldForLabel>
-        <fieldForValue>analyzer</fieldForValue>
-        <search>
-          <query>| inputlookup lookup_cortex_analyzers
-| table analyzer</query>
-        </search>
-      </input>
+    <panel depends="$always_hidden$">
       <table>
         <search>
-          <query>| cortexjobs "$filter_data$" "$filter_datatypes$" "$filter_analyzers$"
-| eval createdAt = strftime(createdAt,"%c"), startDate = strftime(startDate,"%c"), tlp = case(tlp==0,"TLP:WHITE",tlp==1,"TLP:GREEN",tlp==2,"TLP:AMBER",tlp=3,"TLP:RED")
-| table status, data, analyzer, createdAt, startDate, createdBy, tlp, id
-| rename status as Status, data as Data, analyzer as Analyzer, createdAt as "Created At", startDate as "Start Date", createdBy as "Created by", tlp as "TLP", id as ID</query>
+          <done>
+            <set token="filter_date_d1">$result.filter_date_d1$</set>
+            <set token="filter_date_d2">$result.filter_date_d2$</set>
+          </done>
+          <query>| makeresults
+| eval filter_date_d1 = if("$d1$" != "1970-01-01T01:00:00.000+01:00",round(relative_time(strptime("$d1$","%F"),"@d")*1000),"*"), filter_date_d2 = if("$d1$" != "1970-01-01T01:00:00.000+01:00",round(relative_time(strptime("$d2$","%F"),"@d+1d")*1000),"*")
+| table filter_date_d1 ,filter_date_d2</query>
           <earliest>-24h@h</earliest>
           <latest>now</latest>
           <sampleRatio>1</sampleRatio>
         </search>
         <option name="count">20</option>
         <option name="dataOverlayMode">none</option>
-        <option name="drilldown">row</option>
-        <option name="percentagesRow">false</option>
         <option name="refresh.display">progressbar</option>
-        <option name="rowNumbers">false</option>
-        <option name="totalsRow">false</option>
-        <option name="wrap">true</option>
-        <format type="color" field="Status">
-          <colorPalette type="map">{"Failure":#DC4E41,"Success":#53A051,"Waiting":#F8BE34,"InProgress":#F8BE34,"Deleted":#3C444D}</colorPalette>
-        </format>
-        <format type="color" field="TLP">
-          <colorPalette type="map">{"TLP:WHITE":#FFFFFF,"TLP:GREEN":#53A051,"TLP:AMBER":#F8BE34,"TLP:RED":#DC4E41}</colorPalette>
-        </format>
-        <drilldown>
-          <link target="_blank">$cortex_protocol$://$cortex_host$:$cortex_port$/index.html#!/jobs/$row.ID$</link>
-        </drilldown>
       </table>
     </panel>
   </row>

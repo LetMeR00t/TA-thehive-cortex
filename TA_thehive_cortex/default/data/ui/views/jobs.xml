@@ -1,5 +1,5 @@
 <form script="cortex_jobs.js">
-  <label>Cortex Jobs</label>
+  <label>Cortex: Jobs</label>
   <fieldset submitButton="true">
     <input type="dropdown" token="action">
       <label>Action</label>
@@ -33,19 +33,21 @@
     </input>
     <input type="dropdown" token="dataType" depends="$show_inputs_run$">
       <label>Data type</label>
-      <choice value="domain">Domain</choice>
-      <choice value="filename">Filename</choice>
-      <choice value="fqdn">FQDN</choice>
-      <choice value="hash">Hash</choice>
-      <choice value="ip">IP</choice>
-      <choice value="mail">Mail</choice>
-      <choice value="mail_subject">Mail Subject</choice>
-      <choice value="other">Other</choice>
-      <choice value="regexp">Regular Expression</choice>
-      <choice value="registry">Registry</choice>
-      <choice value="uri_path">URI path</choice>
-      <choice value="url">URL</choice>
-      <choice value="user-agent">User-Agent</choice>
+      <fieldForLabel>dataTypeAllowed</fieldForLabel>
+      <fieldForValue>dataTypeAllowed</fieldForValue>
+      <search>
+        <query>| inputlookup lookup_cortex_analyzers
+| makemv delim=";" dataTypeAllowed
+| mvexpand dataTypeAllowed
+| stats count by dataTypeAllowed
+| table dataTypeAllowed
+| where dataTypeAllowed!="file"
+| sort dataTypeAllowed</query>
+      </search>
+      <change>
+        <unset token="analyzers"></unset>
+        <unset token="form.analyzers"></unset>
+      </change>
     </input>
     <input type="dropdown" token="tlp" depends="$show_inputs_run$">
       <label>TLP</label>
@@ -112,11 +114,9 @@
 | makemv delim=";" data
 | mvexpand data
 | cortexrun data dataType tlp pap analyzers
-| mvexpand cortex
-| makemv delim="::" cortex
-| eval status = mvindex((split(mvindex(mvfilter(match(cortex,"status")),0),"=")),1), id = mvindex((split(mvindex(mvfilter(match(cortex,"id")),0),"=")),1), analyzer = mvindex((split(mvindex(mvfilter(match(cortex,"analyzer")),0),"=")),1), data = "["+dataType+"] "+data, createdAt = strftime(_time,"%c"), tlp = "TLP:"+tlp, pap = "PAP:"+pap
-| table status, _time, data, analyzer, createdAt, tlp, pap, id
-| rename status as Status, data as Data, analyzer as Analyzer, createdAt as "Created At", tlp as TLP, pap as PAP, id as ID</query>
+| eval data = "["+upper(dataType)+"] "+data, createdAt = strftime(_time,"%c"), tlp = "TLP:"+tlp, pap = "PAP:"+pap
+| table cortex_job_status, _time, data, cortex_job_analyzerName, createdAt, tlp, pap, cortex_job_id
+| rename cortex_job_status as Status, data as Data, cortex_job_analyzerName as Analyzer, createdAt as "Created At", tlp as TLP, pap as PAP, cortex_job_id as ID</query>
           <earliest>-24h@h</earliest>
           <latest>now</latest>
           <sampleRatio>1</sampleRatio>
@@ -209,12 +209,20 @@
 | table analyzer</query>
         </search>
       </input>
+      <input type="text" token="max_jobs">
+        <label>Max jobs</label>
+      </input>
+      <input type="text" token="sort_jobs">
+        <label>Sort jobs</label>
+      </input>
       <table>
         <search>
-          <query>| cortexjobs "$filter_data$" "$filter_datatypes$" "$filter_analyzers$"
-| eval createdAt = strftime(createdAt,"%c"), startDate = strftime(startDate,"%c"), tlp = case(tlp==0,"TLP:WHITE",tlp==1,"TLP:GREEN",tlp==2,"TLP:AMBER",tlp=3,"TLP:RED")
-| table status, data, analyzer, createdAt, startDate, createdBy, tlp, id
-| rename status as Status, data as Data, analyzer as Analyzer, createdAt as "Created At", startDate as "Start Date", createdBy as "Created by", tlp as "TLP", id as ID</query>
+          <query>| makeresults
+| eval data = "$filter_data$", datatypes = "$filter_datatypes$", analyzers = "$filter_analyzers$", max_jobs="$max_jobs$", sort_jobs="$sort_jobs$"
+| cortexjobs data datatypes analyzers max_jobs sort_jobs
+| eval cortex_job_createdAt = strftime(cortex_job_createdAt,"%c"), cortex_job_startDate = strftime(cortex_job_startDate,"%c"), cortex_job_tlp = case(cortex_job_tlp==0,"TLP:WHITE",cortex_job_tlp==1,"TLP:GREEN",cortex_job_tlp==2,"TLP:AMBER",cortex_job_tlp=3,"TLP:RED"), cortex_job_data = "["+upper(cortex_job_dataType)+"] "+cortex_job_data, cortex_job_createdBy = cortex_job_organization+"/"+cortex_job_createdBy
+| table cortex_job_status, cortex_job_data, cortex_job_analyzerName, cortex_job_createdAt, cortex_job_startDate, cortex_job_createdBy, cortex_job_tlp, cortex_job_id
+| rename cortex_job_status as Status, cortex_job_data as Data, cortex_job_analyzerName as Analyzer, cortex_job_createdAt as "Created At", cortex_job_startDate as "Start Date", cortex_job_createdBy as "Created by", cortex_job_tlp as "TLP", cortex_job_id as ID</query>
           <earliest>-24h@h</earliest>
           <latest>now</latest>
           <sampleRatio>1</sampleRatio>

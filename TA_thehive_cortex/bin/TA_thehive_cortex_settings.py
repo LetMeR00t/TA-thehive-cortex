@@ -43,7 +43,7 @@ fields_thehive = [
         )
     ),
     field.RestField(
-        'thehive_jobs_max',
+        'thehive_cases_max',
         required=True,
         encrypted=False,
         default="100",
@@ -53,7 +53,7 @@ fields_thehive = [
         )
     ),
     field.RestField(
-        'thehive_jobs_sort',
+        'thehive_cases_sort',
         required=True,
         encrypted=False,
         default="-startDate",

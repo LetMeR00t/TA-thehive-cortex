@@ -15,8 +15,8 @@ FILTER_TAGS_DEFAULT = "*"
 FILTER_TITLE_DEFAULT = "*"
 FILTER_ASSIGNEE_DEFAULT = "*"
 FILTER_DATE_DEFAULT = "* TO *"
-MAX_JOBS = None
-SORT_JOBS = None
+MAX_CASES = None
+SORT_CASES = None
 
 if __name__ == '__main__':
     
@@ -33,8 +33,8 @@ if __name__ == '__main__':
     configuration = Settings(spl, logger)
     logger.debug("Fields found = "+str(keywords)) 
 
-    MAX_JOBS_DEFAULT = configuration.getTheHiveJobsMax()
-    SORT_JOBS_DEFAULT = configuration.getTheHiveJobsSort()
+    MAX_CASES_DEFAULT = configuration.getTheHiveCasesMax()
+    SORT_CASES_DEFAULT = configuration.getTheHiveCasesSort()
 
     # Create the TheHive instance
     thehive = TheHive(configuration.getTheHiveURL(), configuration.getTheHiveApiKey(), settings["sid"], logger)
@@ -48,12 +48,12 @@ if __name__ == '__main__':
     hasFilterTitle = True if "title" in keywords else False
     hasFilterAssignee = True if "assignee" in keywords else False
     hasFilterDate = True if "date" in keywords else False
-    hasMaxJobs = True if "max_jobs" in keywords else False
-    hasSortJobs = True if "sort_jobs" in keywords else False
+    hasMaxCases = True if "max_cases" in keywords else False
+    hasSortCases = True if "sort_cases" in keywords else False
 
     # Get cases
     outputResults = []
-    # Prepare and get all jobs queries 
+    # Prepare and get all cases queries 
     for result in results:
         ## FILTERS ##
         # Check the results to extract interesting fields
@@ -64,11 +64,11 @@ if __name__ == '__main__':
         filterTitle = result["title"] if hasFilterTitle else FILTER_TITLE_DEFAULT
         filterAssignee = result["assignee"] if hasFilterAssignee else FILTER_ASSIGNEE_DEFAULT
         filterDate = result["date"] if hasFilterDate else FILTER_DATE_DEFAULT
-        maxJobs = result["max_jobs"] if hasMaxJobs else MAX_JOBS_DEFAULT
-        sortJobs = result["sort_jobs"] if hasSortJobs else SORT_JOBS_DEFAULT
+        maxCases = result["max_cases"] if hasMaxCases else MAX_CASES_DEFAULT
+        sortCases = result["sort_cases"] if hasSortCases else SORT_CASES_DEFAULT
 
 
-        logger.debug("filterKeyword: "+filterKeyword+", filterStatus: "+filterStatus+", filterSeverity: "+filterSeverity+", filterTags: "+filterTags+", filterTitle: "+filterTitle+", filterAssignee: "+filterAssignee+", filterDate: "+filterDate+", max_jobs: "+maxJobs+", sort_jobs: "+sortJobs)
+        logger.debug("filterKeyword: "+filterKeyword+", filterStatus: "+filterStatus+", filterSeverity: "+filterSeverity+", filterTags: "+filterTags+", filterTitle: "+filterTitle+", filterAssignee: "+filterAssignee+", filterDate: "+filterDate+", max_cases: "+maxCases+", sort_cases: "+sortCases)
 
         # create the query from filters
         query = {}
@@ -76,50 +76,50 @@ if __name__ == '__main__':
             new_query = {"_string": filterKeyword}
             query = {"_and": [new_query]}
         if filterStatus != "*":
-            new_query = {"_string": " OR ".join(["status:\""+s+"\"" for s in filterStatus.replace(" ","").split(";")])}
+            new_query = {"_string": "("+" OR ".join(["status:\""+s+"\"" for s in filterStatus.replace(" ","").split(";") if s != "*"])+")"}
             if query == {}:
                 query = {"_and": [new_query]}
             else:
-                query["_and"]["_string"] = query["_and"]["_string"]+" AND ("+new_query["_string"]+")"
+                query["_and"][0]["_string"] = query["_and"][0]["_string"]+" AND "+new_query["_string"]
         if filterSeverity != "*":
-            new_query = {"_string": " OR ".join(["severity:\""+s+"\"" for s in filterSeverity.replace(" ","").split(";")])}
+            new_query = {"_string": "("+" OR ".join(["severity:\""+s+"\"" for s in filterSeverity.replace(" ","").split(";") if s != "*"])+")"}
             if query == {}:
                 query = {"_and": [new_query]}
             else:
-                query["_and"]["_string"] = query["_and"]["_string"]+" AND ("+new_query["_string"]+")"
+                query["_and"][0]["_string"] = query["_and"][0]["_string"]+" AND "+new_query["_string"]
         if filterTags != "*":
-            new_query = {"_string": " OR ".join(["tags:\""+s+"\"" for s in filterSeverity.replace(" ","").split(";")])}
+            new_query = {"_string": "("+" OR ".join(["tags:\""+s+"\"" for s in filterTags.replace(" ","").split(";") if s != "*"])+")"}
             if query == {}:
                 query = {"_and": [new_query]}
             else:
-                query["_and"]["_string"] = query["_and"]["_string"]+" AND ("+new_query["_string"]+")"
+                query["_and"][0]["_string"] = query["_and"][0]["_string"]+" AND "+new_query["_string"]
         if filterTitle != "*":
             new_query = {"_string": "title:"+filterTitle}
             if query == {}:
                 query = {"_and": [new_query]}
             else:
-                query["_and"]["_string"] = query["_and"]["_string"]+" AND ("+new_query["_string"]+")"
+                query["_and"][0]["_string"] = query["_and"][0]["_string"]+" AND "+new_query["_string"]
         if filterAssignee != "*":
-            new_query = {"_string": " OR ".join(["owner:\""+s+"\"" for s in filterSeverity.replace(" ","").split(";")])}
+            new_query = {"_string": "("+" OR ".join(["owner:\""+s+"\"" for s in filterAssignee.replace(" ","").split(";") if s != "*"])+")"}
             if query == {}:
                 query = {"_and": [new_query]}
             else:
-                query["_and"]["_string"] = query["_and"]["_string"]+" AND ("+new_query["_string"]+")"
+                query["_and"][0]["_string"] = query["_and"][0]["_string"]+" AND "+new_query["_string"]
         if filterDate != "* TO *":
             filterDate = filterDate.split(" TO ")
             d1 = filterDate[0] if filterDate[0] != "*" else "*"
             d2 = filterDate[1] if filterDate[1] != "*" else "*"
-            new_query = {"_string": "startDate:[ "+d1+" TO "+d2+" ]"}
+            new_query = {"_string": "(startDate:[ "+d1+" TO "+d2+" ])"}
             if query == {}:
                 query = {"_and": [new_query]}
             else:
-                query["_and"]["_string"] = query["_and"]["_string"]+" AND ("+new_query["_string"]+")"
+                query["_and"][0]["_string"] = query["_and"][0]["_string"]+" AND "+new_query["_string"]
 
 
         logger.info("Query is: "+str(query))
     
         ## CASES ##
-        cases = thehive.cases.find_all(query ,range='0-'+maxJobs, sort=sortJobs)
+        cases = thehive.cases.find_all(query ,range='0-'+maxCases, sort=sortCases)
         for case in cases:
              result_copy = deepcopy(result)
              logger.debug("Get case ID \""+case.id+"\"")

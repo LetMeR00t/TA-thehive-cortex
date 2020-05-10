@@ -67,7 +67,7 @@
                         },
 	                {
                             "label": "Maximum number of jobs", 
-                            "field": "thehive_jobs_max", 
+                            "field": "thehive_cases_max", 
                             "defaultValue": "100", 
                             "validators": [
                                 {
@@ -82,7 +82,7 @@
                         },
                         {
                             "label": "Sort by", 
-                            "field": "thehive_jobs_sort", 
+                            "field": "thehive_cases_sort", 
                             "defaultValue": "-startDate", 
                             "validators": [
                                 {

@@ -28,10 +28,10 @@ require([
                 list[t].set("thehive_protocol", content["thehive_protocol"]);
                 list[t].set("thehive_host", content["thehive_host"]);
                 list[t].set("thehive_port", content["thehive_port"]);
-                list[t].set("max_jobs", content["thehive_jobs_max"]);
-                list[t].set("form.max_jobs", content["thehive_jobs_max"]);
-                list[t].set("sort_jobs", content["thehive_jobs_sort"]);
-                list[t].set("form.sort_jobs", content["thehive_jobs_sort"]);
+                list[t].set("max_cases", content["thehive_cases_max"]);
+                list[t].set("form.max_cases", content["thehive_cases_max"]);
+                list[t].set("sort_cases", content["thehive_cases_sort"]);
+                list[t].set("form.sort_cases", content["thehive_cases_sort"]);
 	    }
 			
         }
