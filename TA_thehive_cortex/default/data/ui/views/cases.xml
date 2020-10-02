@@ -9,7 +9,7 @@
       <initialValue>list</initialValue>
       <change>
         <condition value="list">
-          <unset token="show_dashboards_run"></unset>
+          <unset token="show_dashboards_create"></unset>
           <unset token="filter_keyword"></unset>
           <unset token="form.filter_keyword"></unset>
           <unset token="filter_status"></unset>
@@ -55,7 +55,7 @@
             <set token="d2">$job.latestTime$</set>
           </progress>
           <query>| makeresults
-| eval text = "New Case", icon = "plus-square", color="#f1813f"
+| eval text = "Create a new case", icon = "plus-square", color="#f1813f"
 | table text, icon, color</query>
           <earliest>$filter_date.earliest$</earliest>
           <latest>$filter_date.latest$</latest>
@@ -81,98 +81,34 @@
   </row>
   <row>
     <panel depends="$show_dashboards_create$">
-      <input type="text" token="title">
-        <label>Title</label>
-        <default></default>
-      </input>
-      <input type="dropdown" token="severity">
-        <label>Severity</label>
-        <choice value="Critical">Critical</choice>
-        <choice value="High">High</choice>
-        <choice value="Medium">Medium</choice>
-        <choice value="Low">Low</choice>
-      </input>
-      <input type="multiselect" token="tags">
-        <label>Tags</label>
-        <delimiter>;</delimiter>
-        <fieldForLabel>thehive_case_tags</fieldForLabel>
-        <fieldForValue>thehive_case_tags</fieldForValue>
-        <search>
-          <query>| makeresults
-| eval max_cases = "$max_cases$", sort_cases = "$sort_cases$"
-| thehivecases max_cases sort_cases
-| stats count by thehive_case_tags
-| table thehive_case_tags
-| sort thehive_case_tags</query>
-        </search>
-        <choice value="other">Other</choice>
-      </input>
-      <input type="text" token="tags_other">
-        <label>Tags: Other</label>
-        <default></default>
-      </input>
-      <input type="dropdown" token="tlp">
-        <label>TLP</label>
-        <choice value="WHITE">WHITE - 0</choice>
-        <choice value="GREEN">GREEN - 1</choice>
-        <choice value="AMBER">AMBER - 2</choice>
-        <choice value="RED">RED - 3</choice>
-      </input>
-      <input type="dropdown" token="pap">
-        <label>PAP</label>
-        <choice value="WHITE">WHITE - 0</choice>
-        <choice value="GREEN">GREEN - 1</choice>
-        <choice value="AMBER">AMBER - 2</choice>
-        <choice value="RED">RED - 3</choice>
-      </input>
-      <input type="dropdown" token="assignee">
-        <label>Assignee</label>
-        <fieldForLabel>thehive_case_owner</fieldForLabel>
-        <fieldForValue>thehive_case_owner</fieldForValue>
-        <search>
-          <query>| makeresults
-| eval max_cases = "$max_cases$", sort_cases = "$sort_cases$"
-| thehivecases max_cases sort_cases
-| stats count by thehive_case_owner
-| table thehive_case_owner
-| sort thehive_case_owner</query>
-        </search>
-      </input>
-      <input type="text" token="tasks">
-        <label>Tasks (separated by ";")</label>
-      </input>
       <html>
-      <textarea/>
+      <div class="fieldset dashboard-form-fieldset editable" data-view="views/dashboard/form/Fieldset">
+        <div class="input input-text" data-view="views/dashboard/form/Input">
+          <label>Keyword</label>
+          <div class="splunk-view splunk-textinput" data-view="splunkjs/mvc/textinputview">
+            <div data-size="medium" data-test="text" data-test-value="*" data-component="splunk-core:/splunkjs/mvc/components/TextInput">
+              <input aria-multiline="false" data-test="textbox" type="text" />
+            </div>
+          </div>
+        </div>
+        <div class="input input-text" data-view="views/dashboard/form/Input">
+          <label>Status</label>
+          <div class="splunk-view splunk-textinput" data-view="splunkjs/mvc/textinputview">
+            <div data-size="medium" data-test="text" data-test-value="*" data-component="splunk-core:/splunkjs/mvc/components/TextInput">
+              <input aria-multiline="false" data-test="textbox" type="text" />
+            </div>
+          </div>
+        </div>
+        <div class="input input-text" data-view="views/dashboard/form/Input">
+          <label>Description</label>
+          <div class="splunk-view splunk-textinput" data-view="splunkjs/mvc/textinputview">
+            <div data-size="medium" data-test="text" data-test-value="*" data-component="splunk-core:/splunkjs/mvc/components/TextInput">
+              <textarea aria-multiline="false" data-test="textbox" type="text" />
+            </div>
+          </div>
+        </div>
+      </div>
     </html>
-      <table>
-        <search>
-          <query>| makeresults
-| eval data = "$data$", dataType = "$dataType$", tlp = "$tlp$", pap = "$pap$", analyzers = "$analyzers$"
-| makemv delim=";" data
-| mvexpand data
-| cortexrun data dataType tlp pap analyzers</query>
-          <earliest>-24h@h</earliest>
-          <latest>now</latest>
-          <sampleRatio>1</sampleRatio>
-        </search>
-        <option name="count">20</option>
-        <option name="dataOverlayMode">none</option>
-        <option name="drilldown">none</option>
-        <option name="percentagesRow">false</option>
-        <option name="refresh.display">progressbar</option>
-        <option name="rowNumbers">false</option>
-        <option name="totalsRow">false</option>
-        <option name="wrap">true</option>
-        <format type="color" field="Status">
-          <colorPalette type="map">{"Failure":#DC4E41,"Success":#53A051,"Waiting":#F8BE34,"InProgress":#F8BE34,"Deleted":#3C444D}</colorPalette>
-        </format>
-        <format type="color" field="TLP">
-          <colorPalette type="map">{"TLP:WHITE":#FFFFFF,"TLP:GREEN":#53A051,"TLP:AMBER":#F8BE34,"TLP:RED":#DC4E41}</colorPalette>
-        </format>
-        <format type="color" field="PAP">
-          <colorPalette type="map">{"PAP:WHITE":#FFFFFF,"PAP:GREEN":#53A051,"PAP:AMBER":#F8BE34,"PAP:RED":#DC4E41}</colorPalette>
-        </format>
-      </table>
     </panel>
   </row>
   <row>
@@ -186,6 +122,7 @@
           <latest>now</latest>
           <sampleRatio>1</sampleRatio>
         </search>
+        <option name="drilldown">none</option>
         <option name="height">99</option>
         <option name="refresh.display">progressbar</option>
         <option name="status_indicator_app.status_indicator.colorBy">field_value</option>
@@ -197,9 +134,6 @@
         <option name="status_indicator_app.status_indicator.staticColor">#006d9c</option>
         <option name="status_indicator_app.status_indicator.useColors">true</option>
         <option name="status_indicator_app.status_indicator.useThousandSeparator">true</option>
-        <option name="trellis.enabled">0</option>
-        <option name="trellis.scales.shared">1</option>
-        <option name="trellis.size">medium</option>
       </viz>
     </panel>
   </row>
@@ -337,7 +271,7 @@
           <latest>now</latest>
           <sampleRatio>1</sampleRatio>
         </search>
-        <option name="drilldown">all</option>
+        <option name="drilldown">none</option>
         <option name="height">99</option>
         <option name="refresh.display">progressbar</option>
         <option name="status_indicator_app.status_indicator.colorBy">field_value</option>
@@ -349,9 +283,6 @@
         <option name="status_indicator_app.status_indicator.staticColor">#006d9c</option>
         <option name="status_indicator_app.status_indicator.useColors">true</option>
         <option name="status_indicator_app.status_indicator.useThousandSeparator">true</option>
-        <option name="trellis.enabled">0</option>
-        <option name="trellis.scales.shared">1</option>
-        <option name="trellis.size">medium</option>
       </viz>
     </panel>
   </row>
