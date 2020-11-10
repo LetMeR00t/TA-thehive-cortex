@@ -1,6 +1,0 @@
-<nav search_view="search" color="#f2d130">
-  <view name="configuration" />
-  <view name="analyzers" />
-  <view name="cases" default='true'/>
-  <view name="jobs" />
-</nav>

@@ -1,0 +1,31 @@
+<dashboard stylesheet="cortex_analyzers.css" script="cortex_analyzers.js">
+  <label>Analyzers</label>
+  <init>
+    <set token="updated">now()</set>
+  </init>
+  <row>
+    <panel>
+      <title>Informations</title>
+      <table>
+        <search>
+          <query>| inputlookup lookup_cortex_analyzers
+| eval updated = $updated$
+| makemv delim=";" dataTypeAllowed
+| table analyzer, dataTypeAllowed, description
+| rename analyzer as Analyzer, dataTypeAllowed as "Data Type allowed", description as Description</query>
+          <earliest>-24h@h</earliest>
+          <latest>now</latest>
+          <sampleRatio>1</sampleRatio>
+        </search>
+        <option name="count">20</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">none</option>
+        <option name="percentagesRow">false</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="rowNumbers">false</option>
+        <option name="totalsRow">false</option>
+        <option name="wrap">true</option>
+      </table>
+    </panel>
+  </row>
+</dashboard>
