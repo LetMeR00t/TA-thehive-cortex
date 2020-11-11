@@ -65,6 +65,7 @@ We advise you to use a specific local account for this application (not an admin
 2. Under **Add-on Settings**, You need to fill the following settings:
 * Splunk: Username
 * Splunk: Password
+
 ![](images/additional_parameters.png)
 
 *Note*: This will be probably removed in a future version of the application and use instead a CSV lookup.
