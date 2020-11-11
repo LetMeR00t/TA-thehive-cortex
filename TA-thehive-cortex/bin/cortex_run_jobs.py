@@ -44,13 +44,14 @@ if __name__ == '__main__':
     # Prepare and run all jobs
     for result in results:
         # Check the results to extract interesting fields
-        data = check_and_validate(result, "data", is_mandatory=True)
+        data = check_and_validate(result, "data", is_mandatory=True).split(";")
         dataType = check_and_validate(result, "dataType", is_mandatory=True)
         analyzers = check_and_validate(result, "analyzers", is_mandatory=True)
         tlp = int(check_and_validate(result, "tlp", default=TLP_DEFAULT, is_mandatory=False))
         pap = int(check_and_validate(result, "pap", default=PAP_DEFAULT, is_mandatory=False))
 
-        cortex.addJob(data,dataType,tlp,pap,analyzers)
+        for d in data:
+            cortex.addJob(d,dataType,tlp,pap,analyzers)
         jobs = cortex.runJobs()
 
         # Append job id to the result

@@ -111,12 +111,10 @@
         <search>
           <query>| makeresults
 | eval data = "$data$", dataType = "$dataType$", tlp = "$tlp$", pap = "$pap$", analyzers = "$analyzers$"
-| makemv delim=";" data
-| mvexpand data
 | cortexrun
-| eval data = "["+upper(dataType)+"] "+data, createdAt = strftime(_time,"%c"), tlp = "TLP:"+tlp, pap = "PAP:"+pap
-| table cortex_job_status, _time, data, cortex_job_analyzerName, createdAt, tlp, pap, cortex_job_id
-| rename cortex_job_status as Status, data as Data, cortex_job_analyzerName as Analyzer, createdAt as "Created At", tlp as TLP, pap as PAP, cortex_job_id as "ID (Go to Cortex)"</query>
+| eval cortex_job_data = "["+upper(dataType)+"] "+cortex_job_data, createdAt = strftime(_time,"%c"), tlp = "TLP:"+tlp, pap = "PAP:"+pap
+| table cortex_job_status, _time, cortex_job_data, cortex_job_analyzerName, createdAt, tlp, pap, cortex_job_id
+| rename cortex_job_status as Status, cortex_job_data as Data, cortex_job_analyzerName as Analyzer, createdAt as "Created At", tlp as TLP, pap as PAP, cortex_job_id as "ID (Go to Cortex)"</query>
           <earliest>-24h@h</earliest>
           <latest>now</latest>
           <sampleRatio>1</sampleRatio>

@@ -50,7 +50,6 @@
   </fieldset>
   <row>
     <panel depends="$show_dashboards_create$">
-      <title>$create_tags$</title>
       <viz type="status_indicator_app.status_indicator">
         <search>
           <progress>
