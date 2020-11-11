@@ -51,17 +51,17 @@
     </input>
     <input type="dropdown" token="tlp" depends="$show_inputs_run$">
       <label>TLP</label>
-      <choice value="WHITE">WHITE - 0</choice>
-      <choice value="GREEN">GREEN - 1</choice>
-      <choice value="AMBER">AMBER - 2</choice>
-      <choice value="RED">RED - 3</choice>
+      <choice value="0">WHITE - 0</choice>
+      <choice value="1">GREEN - 1</choice>
+      <choice value="2">AMBER - 2</choice>
+      <choice value="3">RED - 3</choice>
     </input>
     <input type="dropdown" token="pap" depends="$show_inputs_run$">
       <label>PAP</label>
-      <choice value="WHITE">WHITE - 0</choice>
-      <choice value="GREEN">GREEN - 1</choice>
-      <choice value="AMBER">AMBER - 2</choice>
-      <choice value="RED">RED - 3</choice>
+      <choice value="0">WHITE - 0</choice>
+      <choice value="1">GREEN - 1</choice>
+      <choice value="2">AMBER - 2</choice>
+      <choice value="3">RED - 3</choice>
     </input>
     <input type="multiselect" token="analyzers" depends="$show_inputs_run$">
       <label>Analyzers</label>
@@ -89,7 +89,7 @@
           <sampleRatio>1</sampleRatio>
         </search>
         <option name="drilldown">none</option>
-        <option name="height">99</option>
+        <option name="height">48</option>
         <option name="status_indicator_app.status_indicator.colorBy">field_value</option>
         <option name="status_indicator_app.status_indicator.fillTarget">background</option>
         <option name="status_indicator_app.status_indicator.fixIcon">warning</option>
@@ -113,17 +113,17 @@
 | eval data = "$data$", dataType = "$dataType$", tlp = "$tlp$", pap = "$pap$", analyzers = "$analyzers$"
 | makemv delim=";" data
 | mvexpand data
-| cortexrun data dataType tlp pap analyzers
+| cortexrun
 | eval data = "["+upper(dataType)+"] "+data, createdAt = strftime(_time,"%c"), tlp = "TLP:"+tlp, pap = "PAP:"+pap
 | table cortex_job_status, _time, data, cortex_job_analyzerName, createdAt, tlp, pap, cortex_job_id
-| rename cortex_job_status as Status, data as Data, cortex_job_analyzerName as Analyzer, createdAt as "Created At", tlp as TLP, pap as PAP, cortex_job_id as ID</query>
+| rename cortex_job_status as Status, data as Data, cortex_job_analyzerName as Analyzer, createdAt as "Created At", tlp as TLP, pap as PAP, cortex_job_id as "ID (Go to Cortex)"</query>
           <earliest>-24h@h</earliest>
           <latest>now</latest>
           <sampleRatio>1</sampleRatio>
         </search>
         <option name="count">20</option>
         <option name="dataOverlayMode">none</option>
-        <option name="drilldown">none</option>
+        <option name="drilldown">row</option>
         <option name="percentagesRow">false</option>
         <option name="refresh.display">progressbar</option>
         <option name="rowNumbers">false</option>
@@ -139,7 +139,7 @@
           <colorPalette type="map">{"PAP:WHITE":#FFFFFF,"PAP:GREEN":#53A051,"PAP:AMBER":#F8BE34,"PAP:RED":#DC4E41}</colorPalette>
         </format>
         <drilldown>
-          <link target="_blank">$cortex_protocol$://$cortex_host$:$cortex_port$/index.html#!/jobs/$row.ID$</link>
+          <link target="_blank">$cortex_protocol$://$cortex_host$:$cortex_port$/index.html#!/jobs/$row.ID (Go to Cortex)$</link>
         </drilldown>
       </table>
     </panel>
@@ -155,8 +155,8 @@
           <latest>now</latest>
           <sampleRatio>1</sampleRatio>
         </search>
-        <option name="drilldown">all</option>
-        <option name="height">99</option>
+        <option name="drilldown">none</option>
+        <option name="height">48</option>
         <option name="refresh.display">progressbar</option>
         <option name="status_indicator_app.status_indicator.colorBy">field_value</option>
         <option name="status_indicator_app.status_indicator.fillTarget">background</option>
@@ -219,10 +219,10 @@
         <search>
           <query>| makeresults
 | eval data = "$filter_data$", datatypes = "$filter_datatypes$", analyzers = "$filter_analyzers$", max_jobs="$max_jobs$", sort_jobs="$sort_jobs$"
-| cortexjobs data datatypes analyzers max_jobs sort_jobs
+| cortexjobs
 | eval cortex_job_createdAt = strftime(cortex_job_createdAt,"%c"), cortex_job_startDate = strftime(cortex_job_startDate,"%c"), cortex_job_tlp = case(cortex_job_tlp==0,"TLP:WHITE",cortex_job_tlp==1,"TLP:GREEN",cortex_job_tlp==2,"TLP:AMBER",cortex_job_tlp=3,"TLP:RED"), cortex_job_data = "["+upper(cortex_job_dataType)+"] "+cortex_job_data, cortex_job_createdBy = cortex_job_organization+"/"+cortex_job_createdBy
 | table cortex_job_status, cortex_job_data, cortex_job_analyzerName, cortex_job_createdAt, cortex_job_startDate, cortex_job_createdBy, cortex_job_tlp, cortex_job_id
-| rename cortex_job_status as Status, cortex_job_data as Data, cortex_job_analyzerName as Analyzer, cortex_job_createdAt as "Created At", cortex_job_startDate as "Start Date", cortex_job_createdBy as "Created by", cortex_job_tlp as "TLP", cortex_job_id as ID</query>
+| rename cortex_job_status as Status, cortex_job_data as Data, cortex_job_analyzerName as Analyzer, cortex_job_createdAt as "Created At", cortex_job_startDate as "Start Date", cortex_job_createdBy as "Created by", cortex_job_tlp as "TLP", cortex_job_id as "ID (Go to Cortex)"</query>
           <earliest>-24h@h</earliest>
           <latest>now</latest>
           <sampleRatio>1</sampleRatio>
@@ -242,7 +242,7 @@
           <colorPalette type="map">{"TLP:WHITE":#FFFFFF,"TLP:GREEN":#53A051,"TLP:AMBER":#F8BE34,"TLP:RED":#DC4E41}</colorPalette>
         </format>
         <drilldown>
-          <link target="_blank">$cortex_protocol$://$cortex_host$:$cortex_port$/index.html#!/jobs/$row.ID$</link>
+          <link target="_blank">$cortex_protocol$://$cortex_host$:$cortex_port$/index.html#!/jobs/$row.ID (Go to Cortex)$</link>
         </drilldown>
       </table>
     </panel>

@@ -15,8 +15,18 @@ FILTER_TAGS_DEFAULT = "*"
 FILTER_TITLE_DEFAULT = "*"
 FILTER_ASSIGNEE_DEFAULT = "*"
 FILTER_DATE_DEFAULT = "* TO *"
-MAX_CASES = None
-SORT_CASES = None
+
+def check_and_validate(d, name, default="", is_mandatory=False):
+    if name in d:
+        logger.info("Found parameter \""+name+"\"="+d[name])
+        return d[name]
+    else:
+        if is_mandatory:
+            logger.error("Missing parameter (no \""+name+"\" field found)")
+            sys.exit(1)
+        else:
+            logger.info("Parameter \""+name+"\" not found, using default value=\""+default+"\"")
+            return default 
 
 if __name__ == '__main__':
     
@@ -31,7 +41,6 @@ if __name__ == '__main__':
     spl = client.connect(app="TA-thehive-cortex",owner="nobody",token=settings["sessionKey"])
     logger = setup_logging("thehive_cases")
     configuration = Settings(spl, logger)
-    logger.debug("Fields found = "+str(keywords)) 
 
     MAX_CASES_DEFAULT = configuration.getTheHiveCasesMax()
     SORT_CASES_DEFAULT = configuration.getTheHiveCasesSort()
@@ -39,33 +48,21 @@ if __name__ == '__main__':
     # Create the TheHive instance
     thehive = TheHive(configuration.getTheHiveURL(), configuration.getTheHiveApiKey(), settings["sid"], logger)
 
-    # MANDATORY FIELDS : None
-    # OPTIONAL FIELDS
-    hasFilterKeyword = True if "keyword" in keywords else False
-    hasFilterStatus = True if "status" in keywords else False
-    hasFilterSeverity = True if "severity" in keywords else False
-    hasFilterTags = True if "tags" in keywords else False
-    hasFilterTitle = True if "title" in keywords else False
-    hasFilterAssignee = True if "assignee" in keywords else False
-    hasFilterDate = True if "date" in keywords else False
-    hasMaxCases = True if "max_cases" in keywords else False
-    hasSortCases = True if "sort_cases" in keywords else False
-
     # Get cases
     outputResults = []
     # Prepare and get all cases queries 
     for result in results:
         ## FILTERS ##
         # Check the results to extract interesting fields
-        filterKeyword = result["keyword"] if hasFilterKeyword else FILTER_KEYWORD_DEFAULT
-        filterStatus = result["status"] if hasFilterStatus else FILTER_STATUS_DEFAULT
-        filterSeverity = result["severity"] if hasFilterSeverity else FILTER_SEVERITY_DEFAULT
-        filterTags = result["tags"] if hasFilterTags else FILTER_TAGS_DEFAULT
-        filterTitle = result["title"] if hasFilterTitle else FILTER_TITLE_DEFAULT
-        filterAssignee = result["assignee"] if hasFilterAssignee else FILTER_ASSIGNEE_DEFAULT
-        filterDate = result["date"] if hasFilterDate else FILTER_DATE_DEFAULT
-        maxCases = result["max_cases"] if hasMaxCases else MAX_CASES_DEFAULT
-        sortCases = result["sort_cases"] if hasSortCases else SORT_CASES_DEFAULT
+        filterKeyword = check_and_validate(result, "keyword", default=FILTER_KEYWORD_DEFAULT, is_mandatory=False)
+        filterStatus = check_and_validate(result, "status", default=FILTER_STATUS_DEFAULT, is_mandatory=False)
+        filterSeverity = check_and_validate(result, "severity", default=FILTER_SEVERITY_DEFAULT, is_mandatory=False)
+        filterTags = check_and_validate(result, "tags", default=FILTER_TAGS_DEFAULT, is_mandatory=False)
+        filterTitle = check_and_validate(result, "title", default=FILTER_TITLE_DEFAULT, is_mandatory=False)
+        filterAssignee = check_and_validate(result, "assignee", default=FILTER_ASSIGNEE_DEFAULT, is_mandatory=False)
+        filterDate = check_and_validate(result, "date", default=FILTER_DATE_DEFAULT, is_mandatory=False)
+        maxCases = check_and_validate(result, "max_cases", default=MAX_CASES_DEFAULT, is_mandatory=False)
+        sortCases = check_and_validate(result, "sort_cases", default=SORT_CASES_DEFAULT, is_mandatory=False)
 
 
         logger.debug("filterKeyword: "+filterKeyword+", filterStatus: "+filterStatus+", filterSeverity: "+filterSeverity+", filterTags: "+filterTags+", filterTitle: "+filterTitle+", filterAssignee: "+filterAssignee+", filterDate: "+filterDate+", max_cases: "+maxCases+", sort_cases: "+sortCases)
@@ -120,6 +117,8 @@ if __name__ == '__main__':
     
         ## CASES ##
         cases = thehive.find_cases(query=query,range='0-'+maxCases, sort=sortCases)
+        if cases.status_code not in (200,201):
+            logger.error(cases.content)
         for case in cases.json():
              result_copy = deepcopy(result)
              logger.debug("Get case ID \""+case["id"]+"\"")

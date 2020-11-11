@@ -65,7 +65,7 @@
           <sampleRatio>1</sampleRatio>
         </search>
         <option name="drilldown">none</option>
-        <option name="height">99</option>
+        <option name="height">48</option>
         <option name="refresh.display">progressbar</option>
         <option name="status_indicator_app.status_indicator.colorBy">field_value</option>
         <option name="status_indicator_app.status_indicator.fillTarget">background</option>
@@ -83,7 +83,7 @@
     </panel>
   </row>
   <row>
-    <panel>
+    <panel depends="$show_dashboards_create$">
       <input type="text" token="create_title" depends="$show_inputs_create$">
         <label>Title</label>
       </input>
@@ -139,8 +139,8 @@
 | eval thehive_case_tlp = case(thehive_case_tlp==0,"TLP:WHITE",thehive_case_tlp==1,"TLP:GREEN",thehive_case_tlp==2,"TLP:AMBER",thehive_case_tlp=3,"TLP:RED"), thehive_case_title = "#"+thehive_case_caseId+" - "+thehive_case_title, thehive_case_severity = case(thehive_case_severity==1,"Low",thehive_case_severity==2,"Medium",thehive_case_severity==3,"High",thehive_case_severity==4,"Critical",1=1,thehive_case_severity), status = if(thehive_case_status!="Open", thehive_case_status+" as "+thehive_case_resolutionStatus,thehive_case_status)+";"+if(thehive_case_status!="Open","Closed at "+strftime(thehive_case_endDate,"%+"),""), thehive_case_startDate = strftime(thehive_case_startDate,"%F %H:%M")
 | makemv delim=";" status
 | fillnull value="No task" thehive_case_tasks
-| table thehive_case_tlp, thehive_case_title, thehive_case_tags, thehive_case_severity, thehive_case_tasks, thehive_case_observables, thehive_case_owner, thehive_case_startDate, status, thehive_case_id
-| rename thehive_case_tlp as TLP, thehive_case_title as Title, thehive_case_tags as Tags, thehive_case_severity as Severity, thehive_case_tasks as Tasks, thehive_case_observables as Observables, thehive_case_owner as "Assignee", thehive_case_startDate as "Start Date", status as Status, thehive_case_id as "ID - Go to TheHive"</query>
+| table thehive_case_tlp, thehive_case_title, thehive_case_tags, thehive_case_severity, thehive_case_tasks, thehive_case_observables, thehive_case_owner, thehive_case_startDate, thehive_case_metrics, thehive_case_customFields, status, thehive_case_id
+| rename thehive_case_tlp as TLP, thehive_case_title as Title, thehive_case_tags as Tags, thehive_case_severity as Severity, thehive_case_tasks as Tasks, thehive_case_observables as Observables, thehive_case_owner as "Assignee", thehive_case_startDate as "Start Date", status as Status, thehive_case_metrics as "Metrics", thehive_case_customFields as "Custom Fields", thehive_case_id as "ID - Go to TheHive"</query>
           <earliest>0</earliest>
           <latest></latest>
           <sampleRatio>1</sampleRatio>
@@ -186,7 +186,7 @@
           <sampleRatio>1</sampleRatio>
         </search>
         <option name="drilldown">none</option>
-        <option name="height">99</option>
+        <option name="height">48</option>
         <option name="refresh.display">progressbar</option>
         <option name="status_indicator_app.status_indicator.colorBy">field_value</option>
         <option name="status_indicator_app.status_indicator.fillTarget">background</option>
@@ -220,10 +220,10 @@
         <label>Severity</label>
         <delimiter>;</delimiter>
         <choice value="*">Any</choice>
-        <choice value="Critical">Critical</choice>
-        <choice value="High">High</choice>
-        <choice value="Medium">Medium</choice>
-        <choice value="Low">Low</choice>
+        <choice value="4">Critical</choice>
+        <choice value="3">High</choice>
+        <choice value="2">Medium</choice>
+        <choice value="1">Low</choice>
         <default>*</default>
         <initialValue>*</initialValue>
       </input>
@@ -284,12 +284,12 @@
         <search>
           <query>| makeresults
 | eval keyword = "$filter_keyword$", status = "$filter_status$", severity = "$filter_severity$", tags = "$filter_tags$", title = "$filter_title$", assignee = "$filter_assignee$", date = "$filter_date_d1$ TO $filter_date_d2$", max_cases="$max_cases$", sort_cases="$sort_cases$"
-| thehivecases keyword status severity tags title assignee date max_cases sort_cases
+| thehivecases
 | eval thehive_case_tlp = case(thehive_case_tlp==0,"TLP:WHITE",thehive_case_tlp==1,"TLP:GREEN",thehive_case_tlp==2,"TLP:AMBER",thehive_case_tlp=3,"TLP:RED"), thehive_case_title = "#"+thehive_case_caseId+" - "+thehive_case_title, thehive_case_severity = case(thehive_case_severity==1,"Low",thehive_case_severity==2,"Medium",thehive_case_severity==3,"High",thehive_case_severity==4,"Critical",1=1,thehive_case_severity), status = if(thehive_case_status!="Open", thehive_case_status+" as "+thehive_case_resolutionStatus,thehive_case_status)+";"+if(thehive_case_status!="Open","Closed at "+strftime(thehive_case_endDate,"%+"),""), thehive_case_startDate = strftime(thehive_case_startDate,"%F %H:%M")
 | makemv delim=";" status
 | fillnull value="No task" thehive_case_tasks
-| table thehive_case_tlp, thehive_case_title, thehive_case_tags, thehive_case_severity, thehive_case_tasks, thehive_case_observables, thehive_case_owner, thehive_case_startDate, status, thehive_case_id
-| rename thehive_case_tlp as TLP, thehive_case_title as Title, thehive_case_tags as Tags, thehive_case_severity as Severity, thehive_case_tasks as Tasks, thehive_case_observables as Observables, thehive_case_owner as "Assignee", thehive_case_startDate as "Start Date", status as Status, thehive_case_id as "ID - Go to TheHive"</query>
+| table thehive_case_tlp, thehive_case_title, thehive_case_tags, thehive_case_severity, thehive_case_tasks, thehive_case_observables, thehive_case_owner, thehive_case_startDate, thehive_case_metrics, thehive_case_customFields, status, thehive_case_id
+| rename thehive_case_tlp as TLP, thehive_case_title as Title, thehive_case_tags as Tags, thehive_case_severity as Severity, thehive_case_tasks as Tasks, thehive_case_observables as Observables, thehive_case_owner as "Assignee", thehive_case_startDate as "Start Date", status as Status, thehive_case_metrics as "Metrics", thehive_case_customFields as "Custom Fields", thehive_case_id as "ID - Go to TheHive"</query>
           <earliest>$filter_date.earliest$</earliest>
           <latest>$filter_date.latest$</latest>
           <sampleRatio>1</sampleRatio>

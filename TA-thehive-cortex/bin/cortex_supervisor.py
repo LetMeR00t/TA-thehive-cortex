@@ -33,7 +33,7 @@ class ModInputcortex_supervisor(modinput_wrapper.base_modinput.BaseModInput):
     def get_scheme(self):
         """overloaded splunklib modularinput method"""
         scheme = super(ModInputcortex_supervisor, self).get_scheme()
-        scheme.title = ("Cortex Supervisor")
+        scheme.title = ("Cortex: Supervisor")
         scheme.description = ("Go to the add-on\'s configuration UI and configure modular inputs under the Inputs menu.")
         scheme.use_external_validation = True
         scheme.streaming_mode_xml = True

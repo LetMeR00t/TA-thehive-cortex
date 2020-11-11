@@ -40,7 +40,6 @@ if __name__ == '__main__':
     spl = client.connect(app="TA-thehive-cortex",owner="nobody",token=settings["sessionKey"])
     logger = setup_logging("thehive_cases")
     configuration = Settings(spl, logger)
-    logger.debug("Fields found = "+str(keywords)) 
 
     # Create the TheHive instance
     thehive = TheHive(configuration.getTheHiveURL(), configuration.getTheHiveApiKey(), settings["sid"], logger)

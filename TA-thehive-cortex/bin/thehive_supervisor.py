@@ -33,7 +33,7 @@ class ModInputthehive_supervisor(modinput_wrapper.base_modinput.BaseModInput):
     def get_scheme(self):
         """overloaded splunklib modularinput method"""
         scheme = super(ModInputthehive_supervisor, self).get_scheme()
-        scheme.title = ("TheHive Supervisor")
+        scheme.title = ("TheHive: Supervisor")
         scheme.description = ("Go to the add-on\'s configuration UI and configure modular inputs under the Inputs menu.")
         scheme.use_external_validation = True
         scheme.streaming_mode_xml = True

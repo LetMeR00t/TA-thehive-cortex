@@ -131,28 +131,6 @@ class CortexJob(object):
         self.logger.debug('['+self.data+'] PAP: "'+str(self.pap)+'"')
         self.logger.debug("["+self.data+"] Analyzers "+str([a.name for a in self.analyzers]))
 
-    @classmethod
-    def convert(cls, value, default):
-        """ This function is used to convert any "WHITE/GREEN/AMBER/RED" value in an integer """
-    
-        if (isinstance(value, int)):
-            if value in range(0,4):
-                return value
-            else:
-                self.logger.debug("Integer value "+str(value)+" is out of range (0-3), "+str(default)+" default value will be used")
-                return default
-        elif (isinstance(value, str)):
-            value = value.upper()
-            if value in colorCode:
-                return colorCode[value]
-            else:
-                self.logger.debug("String value "+str(value)+" is not in ['WHITE','GREEN','AMBER','RED'], "+str(default)+" default value will be used")
-                return default
-        else:
-                self.logger.debug("Value "+str(value)+" is not an integer or a string, "+str(default)+" default value will be used")
-                return default
-
-    # 
     def jsonify(self):
         """ This function returns a JSONified version of the object (used by the Cortex API) """
 

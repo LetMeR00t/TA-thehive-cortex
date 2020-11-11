@@ -14,6 +14,17 @@ FILTER_ANALYZERS_DEFAULT = "*"
 MAX_JOBS = None
 SORT_JOBS = None
 
+def check_and_validate(d, name, default="", is_mandatory=False):
+    if name in d:
+        logger.info("Found parameter \""+name+"\"="+d[name])
+        return d[name]
+    else:
+        if is_mandatory:
+            logger.error("Missing parameter (no \""+name+"\" field found)")
+            sys.exit(1)
+        else:
+            logger.info("Parameter \""+name+"\" not found, using default value=\""+default+"\"")
+            return default 
 
 if __name__ == '__main__':
     
@@ -32,18 +43,6 @@ if __name__ == '__main__':
     MAX_JOBS_DEFAULT = configuration.getCortexJobsMax()
     SORT_JOBS_DEFAULT = configuration.getCortexJobsSort()
 
-    logger.debug("Fields found = "+str(keywords)) 
-
-    # MANDATORY FIELDS : None
-    # OPTIONAL FIELDS
-    hasFilterData = True if "data" in keywords else False
-    hasFilterDatatypes = True if "datatypes" in keywords else False
-    hasFilterAnalyzers = True if "analyzers" in keywords else False
-    hasMaxJobs = True if "max_jobs" in keywords else False
-    hasSortJobs = True if "sort_jobs" in keywords else False
-
-    logger.debug("Data filtering? = "+str(hasFilterData)+", Datatypes filtering? = "+str(hasFilterDatatypes)+", Analyzers filtering? = "+str(hasFilterAnalyzers)+", Max jobs filtering? = "+str(hasMaxJobs)+", Sort jobs filtering? = "+str(hasSortJobs)) 
-
     # Create the Cortex instance
     cortex = Cortex(configuration.getCortexURL(), configuration.getCortexApiKey(), settings["sid"], logger)
 
@@ -52,13 +51,11 @@ if __name__ == '__main__':
     for result in results:
         ## FILTERS ##
         # Check the results to extract interesting fields
-        filterData = result["data"] if hasFilterData else FILTER_DATA_DEFAULT
-        filterDatatypes = result["datatypes"] if hasFilterDatatypes else FILTER_DATATYPES_DEFAULT
-        filterAnalyzers = result["analyzers"] if hasFilterAnalyzers else FILTER_ANALYZERS_DEFAULT
-        maxJobs = result["max_jobs"] if hasMaxJobs else MAX_JOBS_DEFAULT
-        sortJobs = result["sort_jobs"] if hasSortJobs else SORT_JOBS_DEFAULT
-
-        logger.debug("filterData: "+filterData+", filterDatatypes: "+filterDatatypes+", filterAnalyzers: "+filterAnalyzers+", max_jobs: "+maxJobs+", sort_jobs: "+sortJobs)
+        filterData = check_and_validate(result, "data", default=FILTER_DATA_DEFAULT, is_mandatory=False)
+        filterDatatypes = check_and_validate(result, "datatypes", default=FILTER_DATATYPES_DEFAULT, is_mandatory=False)
+        filterAnalyzers = check_and_validate(result, "analyzers", default=FILTER_ANALYZERS_DEFAULT, is_mandatory=False)
+        maxJobs = check_and_validate(result, "max_jobs", default=MAX_JOBS_DEFAULT, is_mandatory=False)
+        sortJobs = check_and_validate(result, "sort_jobs", default=SORT_JOBS_DEFAULT, is_mandatory=False)
 
         # create the query from filters
         query = {}

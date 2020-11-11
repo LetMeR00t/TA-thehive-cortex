@@ -235,7 +235,7 @@
             "services": [
                 {
                     "name": "thehive_supervisor",
-                    "title": "TheHive Supervisor",
+                    "title": "TheHive: Supervisor",
                     "entity": [
                         {
                             "field": "name",
@@ -364,7 +364,7 @@
                 },
                 {
                     "name": "cortex_supervisor",
-                    "title": "Cortex Supervisor",
+                    "title": "Cortex: Supervisor",
                     "entity": [
                         {
                             "field": "name",

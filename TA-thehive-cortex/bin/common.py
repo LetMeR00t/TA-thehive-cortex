@@ -11,9 +11,9 @@ class Settings(object):
         # get settings
         query = {"output_mode":"json"}
         for i in client.inputs:
-            if i["name"]=="Cortex":
+            if "sourcetype" in i.content and i.content["sourcetype"]=="cortex:supervisor":
                 self.__cortex_settings = i.content
-            if i["name"]=="TheHive":
+            if "sourcetype" in i.content and i.content["sourcetype"]=="thehive:supervisor":
                 self.__thehive_settings = i.content
         self.__logging_settings = json.loads(client.get("TA_thehive_cortex_settings/logging", owner="nobody", app="TA-thehive-cortex",**query).body.read())["entry"][0]["content"]
         self.__additional_parameters = json.loads(client.get("TA_thehive_cortex_settings/additional_parameters", owner="nobody", app="TA-thehive-cortex",**query).body.read())["entry"][0]["content"]
