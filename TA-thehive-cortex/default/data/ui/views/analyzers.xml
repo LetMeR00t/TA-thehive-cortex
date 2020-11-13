@@ -1,4 +1,4 @@
-<dashboard stylesheet="cortex_analyzers.css" script="cortex_analyzers.js">
+<dashboard>
   <label>Analyzers</label>
   <init>
     <set token="updated">now()</set>
