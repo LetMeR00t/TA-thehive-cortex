@@ -2,7 +2,7 @@
     "meta": {
         "name": "TA-thehive-cortex",
         "displayName": "TheHive-Cortex",
-        "version": "1.1.0",
+        "version": "1.1.1",
         "apiVersion": "3.0.0",
         "restRoot": "TA_thehive_cortex"
     },
@@ -193,22 +193,6 @@
                         "label": "Status"
                     },
                     {
-                        "field": "thehive_protocol",
-                        "label": "TheHive: Protocol"
-                    },
-                    {
-                        "field": "thehive_host",
-                        "label": "TheHive: Host"
-                    },
-                    {
-                        "field": "thehive_port",
-                        "label": "TheHive: Port"
-                    },
-                    {
-                        "field": "thehive_api_key",
-                        "label": "TheHive: API Key"
-                    },
-                    {
                         "field": "cortex_protocol",
                         "label": "Cortex: Protocol"
                     },
@@ -223,6 +207,22 @@
                     {
                         "field": "cortex_api_key",
                         "label": "Cortex: API Key"
+                    },
+                    {
+                        "field": "thehive_protocol",
+                        "label": "TheHive: Protocol"
+                    },
+                    {
+                        "field": "thehive_host",
+                        "label": "TheHive: Host"
+                    },
+                    {
+                        "field": "thehive_port",
+                        "label": "TheHive: Port"
+                    },
+                    {
+                        "field": "thehive_api_key",
+                        "label": "TheHive: API Key"
                     }
                 ],
                 "actions": [
@@ -233,135 +233,6 @@
                 ]
             },
             "services": [
-                {
-                    "name": "thehive_supervisor",
-                    "title": "TheHive: Supervisor",
-                    "entity": [
-                        {
-                            "field": "name",
-                            "label": "Name",
-                            "type": "text",
-                            "help": "Enter a unique name for the data input",
-                            "required": true,
-                            "validators": [
-                                {
-                                    "type": "regex",
-                                    "pattern": "^[a-zA-Z]\\w*$",
-                                    "errorMsg": "Input Name must start with a letter and followed by alphabetic letters, digits or underscores."
-                                },
-                                {
-                                    "type": "string",
-                                    "minLength": 1,
-                                    "maxLength": 100,
-                                    "errorMsg": "Length of input name should be between 1 and 100"
-                                }
-                            ]
-                        },
-                        {
-                            "field": "interval",
-                            "label": "Interval",
-                            "type": "text",
-                            "required": true,
-                            "help": "Time interval of input in seconds.",
-                            "validators": [
-                                {
-                                    "type": "regex",
-                                    "pattern": "^\\-[1-9]\\d*$|^\\d*$",
-                                    "errorMsg": "Interval must be an integer."
-                                }
-                            ]
-                        },
-                        {
-                            "field": "index",
-                            "label": "Index",
-                            "type": "singleSelect",
-                            "defaultValue": "default",
-                            "options": {
-                                "endpointUrl": "data/indexes",
-                                "blackList": "^_.*$",
-                                "createSearchChoice": true
-                            },
-                            "required": true,
-                            "validators": [
-                                {
-                                    "type": "string",
-                                    "minLength": 1,
-                                    "maxLength": 80,
-                                    "errorMsg": "Length of index name should be between 1 and 80."
-                                }
-                            ]
-                        },
-                        {
-                            "field": "thehive_protocol",
-                            "label": "TheHive: Protocol",
-                            "help": "",
-                            "required": true,
-                            "type": "singleSelect",
-                            "defaultValue": "http",
-                            "options": {
-                                "disableSearch": true,
-                                "autoCompleteFields": [
-                                    {
-                                        "value": "http",
-                                        "label": "HTTP"
-                                    },
-                                    {
-                                        "value": "https",
-                                        "label": "HTTPS"
-                                    }
-                                ]
-                            }
-                        },
-                        {
-                            "field": "thehive_host",
-                            "label": "TheHive: Host",
-                            "help": "Specify the host used by the TheHive instance",
-                            "required": true,
-                            "type": "text",
-                            "defaultValue": "localhost",
-                            "validators": [
-                                {
-                                    "type": "string",
-                                    "minLength": 0,
-                                    "maxLength": 8192,
-                                    "errorMsg": "Max length of text input is 8192"
-                                }
-                            ]
-                        },
-                        {
-                            "field": "thehive_port",
-                            "label": "TheHive: Port",
-                            "help": "Specify the port used by the TheHive instance",
-                            "required": true,
-                            "type": "text",
-                            "defaultValue": "9000",
-                            "validators": [
-                                {
-                                    "type": "string",
-                                    "minLength": 0,
-                                    "maxLength": 8192,
-                                    "errorMsg": "Max length of text input is 8192"
-                                }
-                            ]
-                        },
-                        {
-                            "field": "thehive_api_key",
-                            "label": "TheHive: API Key",
-                            "help": "",
-                            "required": true,
-                            "type": "text",
-                            "encrypted": true,
-                            "validators": [
-                                {
-                                    "type": "string",
-                                    "minLength": 0,
-                                    "maxLength": 8192,
-                                    "errorMsg": "Max length of password is 8192"
-                                }
-                            ]
-                        }
-                    ]
-                },
                 {
                     "name": "cortex_supervisor",
                     "title": "Cortex: Supervisor",
@@ -476,6 +347,135 @@
                         {
                             "field": "cortex_api_key",
                             "label": "Cortex: API Key",
+                            "help": "",
+                            "required": true,
+                            "type": "text",
+                            "encrypted": true,
+                            "validators": [
+                                {
+                                    "type": "string",
+                                    "minLength": 0,
+                                    "maxLength": 8192,
+                                    "errorMsg": "Max length of password is 8192"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "name": "thehive_supervisor",
+                    "title": "TheHive: Supervisor",
+                    "entity": [
+                        {
+                            "field": "name",
+                            "label": "Name",
+                            "type": "text",
+                            "help": "Enter a unique name for the data input",
+                            "required": true,
+                            "validators": [
+                                {
+                                    "type": "regex",
+                                    "pattern": "^[a-zA-Z]\\w*$",
+                                    "errorMsg": "Input Name must start with a letter and followed by alphabetic letters, digits or underscores."
+                                },
+                                {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 100,
+                                    "errorMsg": "Length of input name should be between 1 and 100"
+                                }
+                            ]
+                        },
+                        {
+                            "field": "interval",
+                            "label": "Interval",
+                            "type": "text",
+                            "required": true,
+                            "help": "Time interval of input in seconds.",
+                            "validators": [
+                                {
+                                    "type": "regex",
+                                    "pattern": "^\\-[1-9]\\d*$|^\\d*$",
+                                    "errorMsg": "Interval must be an integer."
+                                }
+                            ]
+                        },
+                        {
+                            "field": "index",
+                            "label": "Index",
+                            "type": "singleSelect",
+                            "defaultValue": "default",
+                            "options": {
+                                "endpointUrl": "data/indexes",
+                                "blackList": "^_.*$",
+                                "createSearchChoice": true
+                            },
+                            "required": true,
+                            "validators": [
+                                {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 80,
+                                    "errorMsg": "Length of index name should be between 1 and 80."
+                                }
+                            ]
+                        },
+                        {
+                            "field": "thehive_protocol",
+                            "label": "TheHive: Protocol",
+                            "help": "",
+                            "required": true,
+                            "type": "singleSelect",
+                            "defaultValue": "http",
+                            "options": {
+                                "disableSearch": true,
+                                "autoCompleteFields": [
+                                    {
+                                        "value": "http",
+                                        "label": "HTTP"
+                                    },
+                                    {
+                                        "value": "https",
+                                        "label": "HTTPS"
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            "field": "thehive_host",
+                            "label": "TheHive: Host",
+                            "help": "Specify the host used by the TheHive instance",
+                            "required": true,
+                            "type": "text",
+                            "defaultValue": "localhost",
+                            "validators": [
+                                {
+                                    "type": "string",
+                                    "minLength": 0,
+                                    "maxLength": 8192,
+                                    "errorMsg": "Max length of text input is 8192"
+                                }
+                            ]
+                        },
+                        {
+                            "field": "thehive_port",
+                            "label": "TheHive: Port",
+                            "help": "Specify the port used by the TheHive instance",
+                            "required": true,
+                            "type": "text",
+                            "defaultValue": "9000",
+                            "validators": [
+                                {
+                                    "type": "string",
+                                    "minLength": 0,
+                                    "maxLength": 8192,
+                                    "errorMsg": "Max length of text input is 8192"
+                                }
+                            ]
+                        },
+                        {
+                            "field": "thehive_api_key",
+                            "label": "TheHive: API Key",
                             "help": "",
                             "required": true,
                             "type": "text",
