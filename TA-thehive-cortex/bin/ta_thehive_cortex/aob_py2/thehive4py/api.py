@@ -4,11 +4,9 @@
 import json
 import sys
 
-import magic
 import os
 import warnings
 import json
-import magic
 import requests
 
 from thehive4py.auth import BasicAuth, BearerAuth
@@ -280,7 +278,7 @@ class TheHiveApi:
         data = {'_json': json.dumps({"message": case_task_log.message})}
 
         if case_task_log.file:
-            f = {'attachment': (os.path.basename(case_task_log.file), open(case_task_log.file, 'rb'), magic.Magic(mime=True).from_file(case_task_log.file))}
+            f = {'attachment': (os.path.basename(case_task_log.file), open(case_task_log.file, 'rb'), None)}
             try:
                 return requests.post(req, data=data, files=f, proxies=self.proxies, auth=self.auth, verify=self.cert)
             except requests.exceptions.RequestException as e:

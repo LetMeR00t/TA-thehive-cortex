@@ -1,6 +1,5 @@
 import os
 
-import magic
 import json
 from typing import List
 
@@ -68,7 +67,7 @@ class AnalyzersController(AbstractController):
             file_path = observable.get('data', None)
             file_def = {
                 "data": (os.path.basename(file_path), open(file_path, 'rb'),
-                         magic.Magic(mime=True).from_file(file_path))
+                         None)
             }
 
             data = {

@@ -67,10 +67,9 @@ class AnalyzersController(AbstractController):
         if observable.get('dataType') == "file":
             file_path = observable.get('data', None)
 
-            import magic
             file_def = {
                 "data": (os.path.basename(file_path), open(file_path, 'rb'),
-                         magic.Magic(mime=True).from_file(file_path))
+                         None)
             }
 
             data = {
