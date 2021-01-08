@@ -128,14 +128,14 @@ if __name__ == '__main__':
              
              # Post processing for Splunk
              ## CUSTOM FIELDS ##
-             if event["thehive_case_customFields"] != {}:
+             if "thehive_case_customFields" in event and event["thehive_case_customFields"] != {}:
                  customFields = []
                  for cf in event["thehive_case_customFields"]:
                      customFields.append(cf+"::"+event["thehive_case_customFields"][cf]["string"])
                  event["thehive_case_customFields"] = customFields
 
              ## METRICS ##
-             if event["thehive_case_metrics"] != {}:
+             if "thehive_case_metrics" in event and event["thehive_case_metrics"] != {}:
                  metrics = []
                  for m in event["thehive_case_metrics"]:
                      metrics.append(m+"::"+str(event["thehive_case_metrics"][m]))

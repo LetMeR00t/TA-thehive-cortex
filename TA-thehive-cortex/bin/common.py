@@ -8,6 +8,8 @@ class Settings(object):
 
     def __init__(self, client, logger = None):
         self.logger = logger
+        self.__cortex_settings = None
+        self.__thehive_settings = None
         # get settings
         query = {"output_mode":"json"}
         for i in client.inputs:
@@ -29,16 +31,18 @@ class Settings(object):
 
         # Checks before configure
         # TheHive
-        cortex_information_required = ["thehive_protocol","thehive_host","thehive_port","thehive_api_key"]
-        for i in cortex_information_required:
-            if not i in self.__thehive_settings:
-                self.logger.warning("[10-FIELD MISSING] TheHive: No \""+i+"\" setting set in \"Configuration\", please configure your Cortex instance under \"Configuration\"")
+        if self.__thehive_settings is not None:
+            cortex_information_required = ["thehive_protocol","thehive_host","thehive_port","thehive_api_key"]
+            for i in cortex_information_required:
+                if not i in self.__thehive_settings:
+                    self.logger.warning("[10-FIELD MISSING] TheHive: No \""+i+"\" setting set in \"Configuration\", please configure your Cortex instance under \"Configuration\"")
 
         # Cortex
         cortex_information_required = ["cortex_protocol","cortex_host","cortex_port","cortex_api_key"]
-        for i in cortex_information_required:
-            if not i in self.__cortex_settings:
-                self.logger.warning("[10-FIELD MISSING] Cortex: No \""+i+"\" setting set in \"Configuration\", please configure your Cortex instance under \"Configuration\"")
+        if self.__cortex_settings is not None:
+            for i in cortex_information_required:
+                if not i in self.__cortex_settings:
+                    self.logger.warning("[10-FIELD MISSING] Cortex: No \""+i+"\" setting set in \"Configuration\", please configure your Cortex instance under \"Configuration\"")
 
         if "loglevel" in self.__logging_settings:
             logger.setLevel(self.__logging_settings["loglevel"])
