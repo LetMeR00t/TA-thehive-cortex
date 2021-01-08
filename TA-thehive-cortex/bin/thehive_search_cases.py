@@ -143,10 +143,10 @@ if __name__ == '__main__':
 
              ## DATES ##
              event["thehive_case_startDate"] = event["thehive_case_startDate"]/1000
-             if "thehive_case_endDate" in event:
+             if "thehive_case_endDate" in event and event["thehive_case_endDate"] is not None:
                  event["thehive_case_endDate"] = event["thehive_case_endDate"]/1000
              event["thehive_case_createdAt"] = event["thehive_case_createdAt"]/1000
-             if "thehive_case_updatedAt" in event: 
+             if "thehive_case_updatedAt" in event and event["thehive_case_updatedAt"] is not None: 
                  event["thehive_case_updatedAt"] = event["thehive_case_updatedAt"]/1000
 
              ## TASKS ##
@@ -161,7 +161,7 @@ if __name__ == '__main__':
 
              ## OBSERVABLES ##
              observables = thehive.get_case_observables(case["id"])
-             event["thehive_case_observables"] = len([o for o in observables.json() if o["status"] == "Ok"])
+             event["thehive_case_observables"] = len([o for o in observables.json() if "status" in o and o["status"] == "Ok"])
 
          
              result_copy.update(event)
