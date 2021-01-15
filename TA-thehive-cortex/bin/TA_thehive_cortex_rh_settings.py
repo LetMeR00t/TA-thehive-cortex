@@ -27,26 +27,6 @@ model_logging = RestModel(fields_logging, name='logging')
 
 fields_additional_parameters = [
     field.RestField(
-        'splunk_username',
-        required=True,
-        encrypted=False,
-        default='',
-        validator=validator.String(
-            min_len=0, 
-            max_len=8192, 
-        )
-    ), 
-    field.RestField(
-        'splunk_password',
-        required=True,
-        encrypted=True,
-        default='',
-        validator=validator.String(
-            min_len=0, 
-            max_len=8192, 
-        )
-    ), 
-    field.RestField(
         'cortex_max_jobs',
         required=True,
         encrypted=False,

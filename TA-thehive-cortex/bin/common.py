@@ -7,10 +7,11 @@ import logging
 class Settings(object):
 
     def __init__(self, client, logger = None):
+        # Initialize all settings to None
         self.logger = logger
         self.__cortex_settings = None
         self.__thehive_settings = None
-        # get settings
+        # Get settings
         query = {"output_mode":"json"}
         for i in client.inputs:
             if "sourcetype" in i.content and i.content["sourcetype"]=="cortex:supervisor":
