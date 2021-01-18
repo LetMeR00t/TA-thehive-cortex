@@ -34,6 +34,7 @@ OBSERVABLE_TLP = {
     "3": "TLP:RED"
 }
 
+
 def process_event(helper, *args, **kwargs):
     """
     # IMPORTANT
@@ -119,11 +120,11 @@ def process_event(helper, *args, **kwargs):
     helper.log_info("server_uri={}".format(helper.settings["server_uri"]))
     [sample_code_macro:end]
     """
-    
+
     # Set the current LOG level
     helper.log_info("LOG level to: "+helper.log_level)
     helper.set_log_level(helper.log_level)
-    
+
     helper.log_info("[AL101] Alert action thehive_ce_alert started at {}".format(time.time()))
 
     # Get the instance connection and initialize settings
@@ -131,11 +132,11 @@ def process_event(helper, *args, **kwargs):
     configuration = Settings(spl, search_settings=None, logger=helper._logger)
 
     instance_id = helper.get_param("thehive_instance_id")
-    
+
     # Create the TheHive instance
     (thehive_username, thehive_api_key) = configuration.getInstanceUsernameApiKey(instance_id)
     thehive = TheHive(configuration.getInstanceURL(instance_id), thehive_api_key, helper.settings["sid"], logger=helper._logger)
-    
+
     # Get alert arguments
     alert_args = {}
     # Get string values from alert form
@@ -159,7 +160,7 @@ def process_event(helper, *args, **kwargs):
     alert_args['severity'] = helper.get_param("severity")
     alert_args['tlp'] = helper.get_param("tlp")
     alert_args['pap'] = helper.get_param("pap")
-    
+
     # Create the alert
     helper.log_debug("[AL103] Alert preparation is finished. Creating the alert...")
     create_alert(helper, thehive, alert_args)
