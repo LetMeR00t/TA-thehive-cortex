@@ -3,8 +3,8 @@
   <view name="cases" default='true'/>
   <view name="jobs" />
   <collection label="Settings">
-    <view name="instances"/>
     <view name="configuration"/>
+    <view name="instances"/>
     <collection label="Splunk App">
       <view name="search"/>
       <view name="dashboards"/>

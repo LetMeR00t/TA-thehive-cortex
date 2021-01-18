@@ -32,6 +32,17 @@
         </condition>
       </change>
     </input>
+    <input type="dropdown" token="instance_id">
+      <label>Instance</label>
+      <fieldForLabel>instance_name</fieldForLabel>
+      <fieldForValue>id</fieldForValue>
+      <search>
+        <query>| inputlookup thehive_cortex_instances.csv where type=TheHive*
+| eval instance_name = account_name+": "+host+":"+port</query>
+        <earliest>-24h@h</earliest>
+        <latest>now</latest>
+      </search>
+    </input>
     <input type="radio" token="view_mode">
       <label>View mode</label>
       <choice value="normal">Normal</choice>
@@ -134,7 +145,7 @@
         <search>
           <query>| makeresults
 | eval title="$create_title$", severity = "$create_severity$", tags="$create_tags$", pap = "$create_pap$", date = now(), tlp = "$create_tlp$", description="$create_description$", tasks = "$create_tasks$"
-| thehivecreate
+| thehivecreate $instance_id$
 | eval thehive_case_tlp = case(thehive_case_tlp==0,"TLP:WHITE",thehive_case_tlp==1,"TLP:GREEN",thehive_case_tlp==2,"TLP:AMBER",thehive_case_tlp=3,"TLP:RED"), thehive_case_title = "#"+thehive_case_caseId+" - "+thehive_case_title, thehive_case_severity = case(thehive_case_severity==1,"Low",thehive_case_severity==2,"Medium",thehive_case_severity==3,"High",thehive_case_severity==4,"Critical",1=1,thehive_case_severity), status = if(thehive_case_status!="Open", thehive_case_status+" as "+thehive_case_resolutionStatus,thehive_case_status)+";"+if(thehive_case_status!="Open","Closed at "+strftime(thehive_case_endDate,"%+"),""), thehive_case_startDate = strftime(thehive_case_startDate,"%F %H:%M")
 | makemv delim=";" status
 | fillnull value="No task" thehive_case_tasks
@@ -283,7 +294,7 @@
         <search>
           <query>| makeresults
 | eval keyword = "$filter_keyword$", status = "$filter_status$", severity = "$filter_severity$", tags = "$filter_tags$", title = "$filter_title$", assignee = "$filter_assignee$", date = "$filter_date_d1$ TO $filter_date_d2$", max_cases="$max_cases$", sort_cases="$sort_cases$"
-| thehivecases
+| thehivecases $instance_id$
 | eval thehive_case_tlp = case(thehive_case_tlp==0,"TLP:WHITE",thehive_case_tlp==1,"TLP:GREEN",thehive_case_tlp==2,"TLP:AMBER",thehive_case_tlp=3,"TLP:RED"), thehive_case_title = "#"+thehive_case_caseId+" - "+thehive_case_title, thehive_case_severity = case(thehive_case_severity==1,"Low",thehive_case_severity==2,"Medium",thehive_case_severity==3,"High",thehive_case_severity==4,"Critical",1=1,thehive_case_severity), status = if(thehive_case_status!="Open", thehive_case_status+" as "+thehive_case_resolutionStatus,thehive_case_status)+";"+if(thehive_case_status!="Open","Closed at "+strftime(thehive_case_endDate,"%+"),""), thehive_case_startDate = strftime(thehive_case_startDate,"%F %H:%M")
 | makemv delim=";" status
 | fillnull value="No task" thehive_case_tasks
@@ -309,13 +320,13 @@
         </format>
         <drilldown>
           <condition field="Tasks">
-            <link target="_blank">$thehive_protocol$://$thehive_host$:$thehive_port$/index.html#!/case/$row.ID - Go to TheHive$/tasks</link>
+            <link target="_blank">$global_thehive_protocol$://$global_thehive_host$:$global_thehive_port$/index.html#!/case/$row.ID - Go to TheHive$/tasks</link>
           </condition>
           <condition field="Observables">
-            <link target="_blank">$thehive_protocol$://$thehive_host$:$thehive_port$/index.html#!/case/$row.ID - Go to TheHive$/observables</link>
+            <link target="_blank">$global_thehive_protocol$://$global_thehive_host$:$global_thehive_port$/index.html#!/case/$row.ID - Go to TheHive$/observables</link>
           </condition>
           <condition field="ID - Go to TheHive">
-            <link target="_blank">$thehive_protocol$://$thehive_host$:$thehive_port$/index.html#!/case/$row.ID - Go to TheHive$/details</link>
+            <link target="_blank">$global_thehive_protocol$://$global_thehive_host$:$global_thehive_port$/index.html#!/case/$row.ID - Go to TheHive$/details</link>
           </condition>
           <condition></condition>
         </drilldown>
@@ -324,6 +335,28 @@
   </row>
   <row>
     <panel depends="$always_hidden$">
+      <title>[Instance] Get information</title>
+      <table>
+        <search>
+          <done>
+            <set token="global_thehive_protocol">$result.protocol$</set>
+            <set token="global_thehive_host">$result.host$</set>
+            <set token="global_thehive_port">$result.port$</set>
+          </done>
+          <query>| inputlookup thehive_cortex_instances.csv where id=$instance_id$</query>
+          <earliest>-24h@h</earliest>
+          <latest>now</latest>
+          <sampleRatio>1</sampleRatio>
+        </search>
+        <option name="count">20</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="refresh.display">progressbar</option>
+      </table>
+    </panel>
+  </row>
+  <row>
+    <panel depends="$always_hidden$">
+      <title>[Date] Format filters</title>
       <table>
         <search>
           <done>

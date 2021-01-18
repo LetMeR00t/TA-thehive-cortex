@@ -20,15 +20,15 @@ A query could be used like below:
 
 ```python
 # Define the query
-query = And([
+query = And(
     Eq('owner', 'admin'),
     Between('tlp', 1, 3),
     Not(Eq('status', 'Deleted')),
-    Child('case_artifact', And([
+    Child('case_artifact', And(
         Eq('ioc', True),
-        In('dataType', 'file', 'ip', 'domain')
-    ]))
-])
+        In('dataType', ['file', 'ip', 'domain'])
+    ))
+)
 
 # Call find_cases method to search for all the case, sorted by descending created date, 
 # and verifying the following set of conditions:
@@ -37,7 +37,7 @@ query = And([
 # - not deleted
 # - having observables of type file, ip or domain that are flagged as IOC
 
-api.find_cases(query=query, sort=[-createdAt], range='all')
+api.find_cases(query=query, sort=['-createdAt'], range='all')
 ```
 """
 
@@ -71,7 +71,7 @@ def Gt(field, value):
     A criterion used to search for a field greater than a certain value. For example
 
     * search for TLP > 2
-    * search for customField.cvss > 4.5
+    * search for customFields.cvss > 4.5
     * search for date > now
 
     Arguments:
@@ -96,7 +96,7 @@ def Gte(field, value):
     A criterion used to search for a field greater or equal than a certain value. For example
 
     * search for TLP >= 2
-    * search for customField.cvss >= 4.5
+    * search for customFields.cvss >= 4.5
     * search for date >= now
 
     Arguments:
@@ -121,7 +121,7 @@ def Lt(field, value):
     A criterion used to search for a field less than a certain value. For example
 
     * search for TLP < 2
-    * search for customField.cvss < 4.5
+    * search for customFields.cvss < 4.5
     * search for date < now
 
     Arguments:
@@ -146,7 +146,7 @@ def Lte(field, value):
     A criterion used to search for a field less or equal than a certain value. For example
 
     * search for TLP <= 2
-    * search for customField.cvss <= 4.5
+    * search for customFields.cvss <= 4.5
     * search for date <= now
 
     Arguments:
@@ -171,7 +171,7 @@ def And(*criteria):
     A criterion used to search for records that verfies all the specified criteria. For example
 
     * search for observables flagged as IOC and having TLP <= 2
-    * search for closed cases related to customField.customer "Company" and having a WHITE tlp
+    * search for closed cases related to customFields.customer "Company" and having a WHITE tlp
 
     Arguments:
         criteria (Array): A set of criteria, can be any operator defined in the query module (`Eq`, `In`, `Not`, `And`...)
@@ -226,10 +226,10 @@ def Or(*criteria):
             # Query to search for cases assigned to jdoe or are flagged and open
             query = Or(
                 Eq('owner', 'jdoe'),
-                And([
+                And(
                     Eq('status', 'Open'),
                     Eq('flag', True),
-                ])
+                )
             )
             ```
             produces
@@ -455,10 +455,10 @@ def Parent(tpe, criterion):
         dict: JSON repsentation of the criterion
             ```python
             # Query to search for tasks belonging to open cases with TLP=RED
-            query = Parent('case', And([
+            query = Parent('case', And(
                 Eq('status', 'Open'),
                 Eq('tlp', 3)
-            ]))
+            ))
             ```
             produces
             ```json
@@ -501,10 +501,10 @@ def Child(tpe, criterion):
         dict: JSON repsentation of the criterion
             ```python
             # Query to search for cases having iocs of type file
-            query = Child('case_artifact', And([
+            query = Child('case_artifact', And(
                 Eq('dataType', 'file'),
                 Eq('ioc', True)
-            ]))
+            ))
             ```
             produces
             ```json

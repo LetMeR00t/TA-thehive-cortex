@@ -38,7 +38,7 @@
       </change>
     </input>
     <input id="global_accounts" type="text" token="add_account_name" depends="$show_action_add$">
-      <label>Account name</label>
+      <label>Account name (Global accounts)</label>
     </input>
     <input type="dropdown" token="add_type" depends="$show_action_add$">
       <label>Type</label>
@@ -116,8 +116,8 @@
         <search>
           <query>| inputlookup thehive_cortex_instances.csv
 | eval last_refresh = "$last_refresh$", action=case("$global_action$"=="remove","$action_remove_instance$",1==1,"-")
-| table account_name, type, protocol, host, port, action
-| rename account_name as "Account name", type as "Type", protocol as "Protocol", host as "Host", port as "Port", action as "Available Action"</query>
+| table id account_name, type, protocol, host, port, action
+| rename id as "ID", account_name as "Account name", type as "Type", protocol as "Protocol", host as "Host", port as "Port", action as "Available Action"</query>
           <earliest>-24h@h</earliest>
           <latest>now</latest>
           <sampleRatio>1</sampleRatio>
@@ -126,6 +126,7 @@
         <option name="dataOverlayMode">none</option>
         <option name="drilldown">cell</option>
         <option name="percentagesRow">false</option>
+        <option name="refresh.display">progressbar</option>
         <option name="rowNumbers">false</option>
         <option name="totalsRow">false</option>
         <option name="wrap">true</option>
@@ -148,15 +149,6 @@
       <table>
         <title>This search is used to add a new instance</title>
         <search>
-          <query>| inputlookup thehive_cortex_instances.csv
-| append [| makeresults
-         | eval account_name = "$add_account_name$", type="$add_type$", protocol="$add_protocol$", host="$add_host$", port="$add_port$"
-         | table account_name, type, protocol, host, port]
-| sort 0 type account_name
-| outputlookup thehive_cortex_instances.csv</query>
-          <earliest>-24h@h</earliest>
-          <latest>now</latest>
-          <sampleRatio>1</sampleRatio>
           <done>
             <eval token="last_refresh">now()</eval>
             <unset token="add_account_name"></unset>
@@ -170,6 +162,15 @@
             <unset token="add_port"></unset>
             <unset token="form.add_port"></unset>
           </done>
+          <query>| inputlookup thehive_cortex_instances.csv
+| append [| makeresults
+         | eval account_name = "$add_account_name$", type="$add_type$", protocol="$add_protocol$", host="$add_host$", port="$add_port$", id=substr(sha1(type+account_name+protocol+host+port),0,8)
+         | table id account_name, type, protocol, host, port]
+| sort 0 type account_name
+| outputlookup thehive_cortex_instances.csv</query>
+          <earliest>-24h@h</earliest>
+          <latest>now</latest>
+          <sampleRatio>1</sampleRatio>
         </search>
         <option name="count">20</option>
         <option name="dataOverlayMode">none</option>

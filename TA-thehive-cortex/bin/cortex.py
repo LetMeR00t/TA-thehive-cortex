@@ -46,6 +46,7 @@ class Cortex(Api):
                 super().__init__(str(url),str(apiKey))
             # Try to connect to the API by recovering all enabled analyzers
             self.analyzers.find_all({}, range='all')
+            self.logger.debug("Cortex API connection to (URL=\""+url+"\",API key=\""+apiKey+"\") is successful")
         except cortex4py.exceptions.NotFoundError as e:
             self.logger.error("[10-RESOURCE NOT FOUND] Cortex service is unavailable, is configuration correct ?")
             sys.exit(10)

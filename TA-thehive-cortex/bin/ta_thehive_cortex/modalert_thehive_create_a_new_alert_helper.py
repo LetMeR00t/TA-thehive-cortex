@@ -8,12 +8,13 @@
 # Copyright: LGPLv3 (https://www.gnu.org/licenses/lgpl-3.0.txt)
 # Feel free to use the code, but please share the changes you've made
 
-from hive_common import get_customField_dict, get_datatype_dict, prepare_config
 import json
 import re
 import requests
 import time
 import splunklib.client as client
+from common import Settings
+from thehive import TheHive
 
 __author__ = "Alexandre Demeyer, Remi Seguy"
 __license__ = "LGPLv3"
@@ -60,8 +61,8 @@ def process_event(helper, *args, **kwargs):
     helper.log_info("thehive_sort_cases={}".format(thehive_sort_cases))
 
     # The following example gets the alert action parameters and prints them to the log
-    thehive_instance = helper.get_param("thehive_instance")
-    helper.log_info("thehive_instance={}".format(thehive_instance))
+    thehive_instance_id = helper.get_param("thehive_instance_id")
+    helper.log_info("thehive_instance_id={}".format(thehive_instance_id))
 
     case_template = helper.get_param("case_template")
     helper.log_info("case_template={}".format(case_template))
@@ -118,94 +119,73 @@ def process_event(helper, *args, **kwargs):
     helper.log_info("server_uri={}".format(helper.settings["server_uri"]))
     [sample_code_macro:end]
     """
-
-    helper.log_info("Alert action thehive_create_a_new_alert started.")
     
+    # Set the current LOG level
+    helper.log_info("LOG level to: "+helper.log_level)
     helper.set_log_level(helper.log_level)
+    
     helper.log_info("[AL101] Alert action thehive_ce_alert started at {}".format(time.time()))
 
-    # TODO: Implement your alert action logic here
-    th_app_name = "TA_thehive_ce"
-    th_config = prepare_alert(helper, th_app_name)
-    if th_config is None:
-        helper.log_error("[AL102] FATAL config dict not initialised")
-        return 1
+    # Get the instance connection and initialize settings
+    spl = client.connect(app="TA-thehive-cortex",owner="nobody",token=helper.settings["session_key"])
+    configuration = Settings(spl, search_settings=None, logger=helper._logger)
+
+    instance_id = helper.get_param("thehive_instance_id")
+    
+    # Create the TheHive instance
+    (thehive_username, thehive_api_key) = configuration.getInstanceUsernameApiKey(instance_id)
+    thehive = TheHive(configuration.getInstanceURL(instance_id), thehive_api_key, helper.settings["sid"], logger=helper._logger)
+    
+    # Get alert arguments
+    alert_args = {}
+    # Get string values from alert form
+    alert_args["caseTemplate"] = helper.get_param("case_template") if helper.get_param("case_template") else "default"
+    alert_args["type"] = helper.get_param("type") if helper.get_param("type") else "alert"
+    alert_args["source"] = helper.get_param("source") if helper.get_param("source") else "splunk"
+    alert_args["unique_id_field"] = helper.get_param("unique_id_field") if helper.get_param("unique_id_field") else "oneEvent" 
+    if not helper.get_param("timestamp"):
+        alert_args['timestamp'] = int(time.time() * 1000)
     else:
-        helper.log_debug("[AL103] config dict is ready to use")
-        helper.log_info("[AL104] Alert action create_alert started at {}".format(time.time()))
-        create_alert(helper, th_config, th_app_name)
-        helper.log_info("[AL105] Alert action create_alert finished at {}".format(time.time()))
+        alert_args['timestamp'] = helper.get_param("timestamp")
+        epoch10 = re.match("^[0-9]{10}$", alert_args['timestamp'])
+        if epoch10 is not None:
+            alert_args['timestamp'] = alert_args['timestamp'] * 1000
+    alert_args["title"] = helper.get_param("title") if helper.get_param("title") else "Notable event" 
+    alert_args["description"] = helper.get_param("description") if helper.get_param("description") else "No description provided"         
+    alert_args["tags"] = list(dict.fromkeys(helper.get_param("tags").split(","))) if helper.get_param("tags") else []
+    helper.log_debug("[X304] scope: {} ".format(helper.get_param("scope")))
+    alert_args["scope"] = True if helper.get_param("scope") else False   
+    # Get numeric values from alert form
+    alert_args['severity'] = helper.get_param("severity")
+    alert_args['tlp'] = helper.get_param("tlp")
+    alert_args['pap'] = helper.get_param("pap")
+    
+    # Create the alert
+    helper.log_debug("[AL103] Alert preparation is finished. Creating the alert...")
+    create_alert(helper, thehive, alert_args)
+    helper.log_debug("[AL104] Alert creation is done.")
+    return 0
+
+def create_alert(helper, api, alert_args):
+    """ This function is used to create the alert using the API, settings and search results """
     return 0
 
 
 
-def prepare_alert(helper, app_name):
-    instance = helper.get_param("th_instance")
-    sessionKey = helper.settings['session_key']
-    splunkService = client.connect(token=sessionKey)
-    storage = splunkService.storage_passwords
-    config_args = prepare_config(helper, app_name, instance, storage)
-    if config_args is None:
-        return None
-    alert_args = dict()
-    # Get string values from alert form
-    if not helper.get_param("th_case_template"):
-        alert_args['caseTemplate'] = "default"
-    else:
-        alert_args['caseTemplate'] = helper.get_param("th_case_template")
-    if not helper.get_param("th_type"):
-        alert_args['type'] = "alert"
-    else:
-        alert_args['type'] = helper.get_param("th_type")
-    if not helper.get_param("th_source"):
-        alert_args['source'] = "splunk"
-    else:
-        alert_args['source'] = helper.get_param("th_source")
-    if not helper.get_param("th_timestamp"):
-        alert_args['timestamp'] = int(time.time() * 1000)
-    else:
-        alert_args['timestamp'] = helper.get_param("th_timestamp")
-        epoch10 = re.match("^[0-9]{10}$", alert_args['timestamp'])
-        if epoch10 is not None:
-            alert_args['timestamp'] = alert_args['timestamp'] * 1000
-    if not helper.get_param("th_unique_id"):
-        alert_args['unique'] = "oneEvent"
-    else:
-        alert_args['unique'] = helper.get_param("th_unique_id")
-    if not helper.get_param("th_title"):
-        alert_args['title'] = "notable event"
-    else:
-        alert_args['title'] = helper.get_param("th_title")
-    if not helper.get_param("th_description"):
-        alert_args['description'] = "No description provided."
-    else:
-        alert_args['description'] = helper.get_param("th_description")
-    myTags = helper.get_param("th_tags")
-    if myTags in [None, '']:
-        alert_args['tags'] = []
-    else:
-        tags = []
-        tag_list = myTags.split(',')
-        for tag in tag_list:
-            if tag not in tags:
-                tags.append(tag)
-        alert_args['tags'] = tags
-    scope = int(helper.get_param("th_scope"))
-    helper.log_debug("[X304] scope: {} ".format(scope))
-    if scope == 0:
-        alert_args['scope'] = True
-    else:
-        alert_args['scope'] = False
-    # Get numeric values from alert form
-    alert_args['severity'] = int(helper.get_param("th_severity"))
-    alert_args['tlp'] = int(helper.get_param("th_tlp"))
-    alert_args['pap'] = int(helper.get_param("th_pap"))
-
-    config_args.update(alert_args)
-    return config_args
 
 
-def create_alert(helper, config, app_name):
+
+
+
+
+
+
+
+
+
+
+
+def create_alert_old(helper, config, app_name):
     # iterate through each row, cleaning multivalue fields
     # and then adding the attributes under same alert key
     # this builds the dict alerts

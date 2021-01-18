@@ -11,18 +11,6 @@ from copy import deepcopy
 TLP_DEFAULT = 2 # AMBER
 PAP_DEFAULT = 2 # AMBER
 
-def check_and_validate(d, name, default="", is_mandatory=False):
-    if name in d:
-        logger.info("Found parameter \""+name+"\"="+d[name])
-        return d[name]
-    else:
-        if is_mandatory:
-            logger.error("Missing parameter (no \""+name+"\" field found)")
-            sys.exit(1)
-        else:
-            logger.info("Parameter \""+name+"\" not found, using default value=\""+default+"\"")
-            return default 
-
 if __name__ == '__main__':
     
     # First, parse the arguments
@@ -32,23 +20,34 @@ if __name__ == '__main__':
     # get the previous search results
     results,dummyresults,settings = splunk.Intersplunk.getOrganizedResults()
 
+    # Check the existence of the instance_id
+    if len(keywords) == 1:
+        instance_id = keywords[0]
+    else:
+        logger.error("[4-MISSING_INSTANCE_ID] No instance ID was given to the script")
+        exit(4)
+
     # Initialiaze settings
     spl = client.connect(app="TA-thehive-cortex",owner="nobody",token=settings["sessionKey"])
     logger = setup_logging("cortex_run")
-    configuration = Settings(spl, logger)
+    configuration = Settings(spl, settings, logger)
+
+    MAX_JOBS_DEFAULT = configuration.getCortexJobsMax()
+    SORT_JOBS_DEFAULT = configuration.getCortexJobsSort()
 
     # Create the Cortex instance
-    cortex = Cortex(configuration.getCortexURL(), configuration.getCortexApiKey(), settings["sid"], logger)
+    (cortex_username, cortex_api_key) = configuration.getInstanceUsernameApiKey(instance_id)
+    cortex = Cortex(configuration.getInstanceURL(instance_id), cortex_api_key, settings["sid"], logger)
 
     outputResults = []
     # Prepare and run all jobs
     for result in results:
         # Check the results to extract interesting fields
-        data = check_and_validate(result, "data", is_mandatory=True).split(";")
-        dataType = check_and_validate(result, "dataType", is_mandatory=True)
-        analyzers = check_and_validate(result, "analyzers", is_mandatory=True)
-        tlp = int(check_and_validate(result, "tlp", default=TLP_DEFAULT, is_mandatory=False))
-        pap = int(check_and_validate(result, "pap", default=PAP_DEFAULT, is_mandatory=False))
+        data = configuration.check_and_validate(result, "data", is_mandatory=True).split(";")
+        dataType = configuration.check_and_validate(result, "dataType", is_mandatory=True)
+        analyzers = configuration.check_and_validate(result, "analyzers", is_mandatory=True)
+        tlp = int(configuration.check_and_validate(result, "tlp", default=TLP_DEFAULT, is_mandatory=False))
+        pap = int(configuration.check_and_validate(result, "pap", default=PAP_DEFAULT, is_mandatory=False))
 
         for d in data:
             cortex.addJob(d,dataType,tlp,pap,analyzers)

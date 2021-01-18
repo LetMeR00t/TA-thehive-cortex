@@ -8,7 +8,7 @@
     },
     "pages": {
         "configuration": {
-            "title": "⚙️  App Configuration",
+            "title": "Configuration",
             "description": "Set up your add-on",
             "tabs": [
                 {

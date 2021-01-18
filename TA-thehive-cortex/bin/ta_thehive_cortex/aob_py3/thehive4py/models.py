@@ -7,10 +7,81 @@ import json
 import os
 import time
 
+from enum import Enum
 import requests
 from future.utils import raise_with_traceback
 
 from thehive4py.exceptions import TheHiveException, CaseException
+
+
+class Version(Enum):
+    """
+    Enumeration representing a version used to specify the version of TheHive instance
+
+    Possible values: THEHIVE_3, THEHIVE_4
+    """
+    THEHIVE_3 = 3
+    THEHIVE_4 = 4
+
+
+class Tlp(Enum):
+    """
+    Enumeration representing TLP, used in cases, observables and alerts
+
+    Possible values: WHITE, GREEN, AMBER, RED
+    """
+    WHITE = 0
+    GREEN = 1
+    AMBER = 2
+    RED = 3
+
+
+class Pap(Enum):
+    """
+    Enumeration representing PAP, used in cases, observables and alerts (TheHive 4 only)
+
+    Possible values: WHITE, GREEN, AMBER, RED
+    """
+    WHITE = 0
+    GREEN = 1
+    AMBER = 2
+    RED = 3
+
+
+class Severity(Enum):
+    """
+    Enumeration representing severity, used in cases and alerts
+
+    Possible values: LOW, MEDIUM, HIGH, CRITICAL
+    """
+    LOW = 1
+    MEDIUM = 2
+    HIGH = 3
+    CRITICAL = 4
+
+
+class CaseStatus(Enum):
+    """
+    Enumeration representing case statuses
+
+    Possible values: OPEN, RESOLVED, DELETED, DUPLICATE
+    """
+    OPEN = 'Open'
+    RESOLVED = 'Resolved'
+    DELETED = 'Deleted'
+    DUPLICATE = 'Duplicate'
+
+
+class TaskStatus(Enum):
+    """
+    Enumeration representing task statuses
+
+    Possible values: WAITING, INPROGRESS, COMPLETED, CANCEL
+    """
+    WAITING = 'Waiting'
+    INPROGRESS = 'InProgress'
+    COMPLETED = 'Completed',
+    CANCEL = 'Cancel'
 
 
 class CustomJsonEncoder(json.JSONEncoder):
@@ -219,9 +290,9 @@ class Case(JSONSerializable):
             'id': None,
             'title': None,
             'description': None,
-            'tlp': 2,
-            'pap': 2,
-            'severity': 2,
+            'tlp': Tlp.AMBER.value,
+            'pap': Pap.AMBER.value,
+            'severity': Severity.MEDIUM.value,
             'flag': False,
             'tags': [],
             'startDate': int(time.time()) * 1000,
@@ -374,7 +445,7 @@ class CaseTask(JSONSerializable):
 
         self.id = attributes.get('id', None)
         self.title = attributes.get('title', None)
-        self.status = attributes.get('status', 'Waiting')
+        self.status = attributes.get('status', TaskStatus.WAITING.value)
         self.flag = attributes.get('flag', False)
         self.description = attributes.get('description', None)
         self.owner = attributes.get('owner', None)
@@ -400,6 +471,21 @@ class CaseTaskLog(JSONSerializable):
         self.message = attributes.get('message', None)
         self.file = attributes.get('file', None)
 
+        if self.file is not None:
+            if isinstance(self.file, tuple):
+                file_object, filename = self.file
+            else:
+                filename = self.file
+                # we are opening this here, but we can't close it
+                # because it gets passed into requests.post. this is
+                # the substance of issue #10.
+                file_object = open(self.file, 'rb')
+
+            # REMOVED FOR SPLUNK
+            #mime = magic.Magic(mime=True).from_buffer(file_object.read())
+            file_object.seek(0)
+            self.attachment = {'attachment': (filename, file_object, None)}
+            
 
 class CaseTemplate(JSONSerializable):
     """
@@ -432,10 +518,10 @@ class CaseTemplate(JSONSerializable):
         self.id = attributes.get('id', None)
         self.titlePrefix = attributes.get('titlePrefix', None)
         self.description = attributes.get('description', None)
-        self.severity = attributes.get('severity', 2)
+        self.severity = attributes.get('severity', Severity.MEDIUM.value)
         self.flag = attributes.get('flag', False)
-        self.tlp = attributes.get('tlp', 2)
-        self.pap = attributes.get('pap', 2)
+        self.tlp = attributes.get('tlp', Tlp.AMBER.value)
+        self.pap = attributes.get('pap', Pap.AMBER.value)
         self.tags = attributes.get('tags', [])
         self.metrics = attributes.get('metrics', {})
         self.customFields = attributes.get('customFields', {})
@@ -458,17 +544,26 @@ class CaseObservable(JSONSerializable):
         dataType (str): Observable's type, must be a valid type, one of the defined data types in TheHive. Default: None
         message (str): Observable's description. Default: None
         tlp (Enum): Case's TLP: `0`, `1`, `2`, `3` for `WHITE`, `GREEN`, `AMBER`, `RED`. Default: `2`
+        pap (Enum): Case's PAP: `0`, `1`, `2`, `3` for `WHITE`, `GREEN`, `AMBER`, `RED`. Default: `2`
         ioc (bool): Observable's ioc flag, `True` to mark an observable as IOC. Default: `False`
         sighted (bool): Observable's sighted flag, `True` to mark the observable as sighted. Default: `False`
+        ignoreSimilarity (bool): Observable's similarity ignore flag. `True`to ignore the observable during similarity computing
         tags (str[]): List of observable tags. Default: `[]`
-        data (str): Observable's data:
+        data (str | (file, str)): Observable's data:
 
-            - If the `dataType` field is set to `file`, the `data` field should contain a file path to be used as attachment
+            - If the `dataType` field is set to `file`, then there are two options:
+
+                * `data` must be equal to a string representing the file's path
+                * `data` must be equal to Tuple composed by an in memory file object, and the file name
+
             - Otherwise, the `data` value is the observable's value
         json (JSON): If the field is not equal to None, the observable is instantiated using the JSON value instead of the arguements
 
     !!! Warning
         At least, one of `tags` or `message` are required. You cannot create an observable without specifying one of those fields
+
+    !!! Warning
+        `ignoreSimilarity` attribute is available in TheHive 4 ONLY
     """
 
     def __init__(self, **attributes):
@@ -478,14 +573,25 @@ class CaseObservable(JSONSerializable):
         self.id = attributes.get('id', None)
         self.dataType = attributes.get('dataType', None)
         self.message = attributes.get('message', None)
-        self.tlp = attributes.get('tlp', 2)
+        self.tlp = attributes.get('tlp', Tlp.AMBER.value)
         self.tags = attributes.get('tags', [])
         self.ioc = attributes.get('ioc', False)
         self.sighted = attributes.get('sighted', False)
+        self.ignoreSimilarity = attributes.get('ignoreSimilarity', False)
 
-        data = attributes.get('data', [])
+        data = attributes.get('data', None)
         if self.dataType == 'file':
-            self.data = [{'attachment': (os.path.basename(data[0]), open(data[0], 'rb'), None)}]
+            if isinstance(data, tuple):
+                file_object, filename = data
+            else:
+                filename = data
+                # we are opening this here, but we can't close it
+                # because it gets passed into requests.post. this is
+                # the substance of issue #10.
+                file_object = open(filename, 'rb')
+            mime = magic.Magic(mime=True).from_buffer(file_object.read())
+            file_object.seek(0)
+            self.data = [{'attachment': (filename, file_object, mime)}]
         else:
             self.data = data
 
@@ -497,6 +603,7 @@ class Alert(JSONSerializable):
     Arguments:
         id (str): Alert's id. Default: None
         tlp (Enum): Alert's TLP: `0`, `1`, `2`, `3` for `WHITE`, `GREEN`, `AMBER`, `RED`. Default: `2`
+        pap (Enum): Alert's PAP: `0`, `1`, `2`, `3` for `WHITE`, `GREEN`, `AMBER`, `RED`. Default: `2` (TheHive 4 ONLY)
         severity (Enum): Alert's severity: `1`, `2`, `3`, `4` for `LOW`, `MEDIUM`, `HIGH`, `CRTICAL`. Default: `2`
         date (datetime): Alert's occur date. Default: `Now()`
         tags (str[]): List of alert tags. Default: `[]`
@@ -505,12 +612,16 @@ class Alert(JSONSerializable):
         type (str): Alert's type. Default: None
         source (str): Alert's source. Default: None
         sourceRef (str): Alert's source reference. Used to specify the unique identifier of the alert. Default: None
+        externalLink (str): Alert's external link. Used to easily navigate to the source of the alert. Default: None
         description (str): Alert's description. Default: None
         customFields (CustomField[]): A set of CustomField instances, or the result of a CustomFieldHelper.build() method. Default: `{}`
 
         caseTemplate (str): Alert template's name. Default: `None`
 
         json (JSON): If the field is not equal to None, the Alert is instantiated using the JSON value instead of the arguements
+
+    !!! Warning
+            `pap`, `externalLink` attributes are available in TheHive 4 ONLY
     """
 
     def __init__(self, **attributes):
@@ -518,11 +629,13 @@ class Alert(JSONSerializable):
             attributes = attributes['json']
 
         self.id = attributes.get('id', None)
-        self.tlp = attributes.get('tlp', 2)
-        self.severity = attributes.get('severity', 2)
+        self.tlp = attributes.get('tlp', Tlp.AMBER.value)
+        self.pap = attributes.get('pap', Pap.AMBER.value)
+        self.severity = attributes.get('severity', Severity.MEDIUM.value)
         self.date = attributes.get('date', int(time.time()) * 1000)
         self.tags = attributes.get('tags', [])
         self.caseTemplate = attributes.get('caseTemplate', None)
+        self.externalLink = attributes.get('externalLink', None)
 
         self.title = self.attr(attributes, 'title', None, 'Missing alert title')
         self.type = self.attr(attributes, 'type', None, 'Missing alert type')
@@ -535,9 +648,9 @@ class Alert(JSONSerializable):
         self.artifacts = []
         for artifact in artifacts:
             if type(artifact) == AlertArtifact:
-                self.artifacts.append(artifact)
+                self.artifacts.append(artifact.as_base64())
             else:
-                self.artifacts.append(AlertArtifact(json=artifact))
+                self.artifacts.append(AlertArtifact(json=artifact).as_base64())
 
 
 class AlertArtifact(JSONSerializable):
@@ -550,12 +663,20 @@ class AlertArtifact(JSONSerializable):
         tlp (Enum): Case's TLP: `0`, `1`, `2`, `3` for `WHITE`, `GREEN`, `AMBER`, `RED`. Default: `2`
         ioc (bool): Observable's ioc flag, `True` to mark an observable as IOC. Default: `False`
         sighted (bool): Observable's sighted flag, `True` to mark the observable as sighted. Default: `False`
+        ignoreSimilarity (bool): Observable's similarity ignore flag. `True`to ignore the observable during similarity computing
         tags (str[]): List of observable tags. Default: `[]`
-        data (str): Observable's data:
+        data (str | (file, str)): Observable's data:
 
-            - If the `dataType` field is set to `file`, the `data` field should contain a file path to be used as attachment
+            - If the `dataType` field is set to `file`, then there are two options:
+
+                * `data` must be equal to a string representing the file's path
+                * `data` must be equal to Tuple composed by an in memory file object, and the file name
+
             - Otherwise, the `data` value is the observable's value
         json (JSON): If the field is not equal to None, the observable is instantiated using the JSON value instead of the arguements
+
+    !!! Warning
+        `ignoreSimilarity` attribute is available in TheHive 4 ONLY
     """
 
     def __init__(self, **attributes):
@@ -564,23 +685,43 @@ class AlertArtifact(JSONSerializable):
 
         self.dataType = attributes.get('dataType', None)
         self.message = attributes.get('message', None)
-        self.tlp = attributes.get('tlp', 2)
+        self.tlp = attributes.get('tlp', Tlp.AMBER.value)
         self.tags = attributes.get('tags', [])
         self.ioc = attributes.get('ioc', False)
         self.sighted = attributes.get('sighted', False)
 
-        if self.dataType == 'file':
-            if 'attachment' in attributes:
-                self.attachment = attributes.get('attachment')
-            else:
-                self.data = self._prepare_file_data(attributes.get('data', None))
+        if 'ignoreSimilarity' in attributes:
+            self.ignoreSimilarity = attributes.get('ignoreSimilarity', False)
+
+        data = attributes.get('data', None)
+        if self.dataType != 'file':
+            self.data = data
         else:
-            self.data = attributes.get('data', None)
+            if data is not None:
+                if isinstance(data, tuple):
+                    file_object, filename = data
+                else:
+                    filename = data
+                    # we are opening this here, but we can't close it
+                    # because it gets passed into requests.post. this is
+                    # the substance of issue #10.
+                    file_object = open(filename, 'rb')
 
-    def _prepare_file_data(self, file_path):
-        with open(file_path, "rb") as file_artifact:
-            filename = os.path.basename(file_path)
-            mime = None 
-            encoded_string = base64.b64encode(file_artifact.read())
+                mime = magic.Magic(mime=True).from_buffer(file_object.read())
+                file_object.seek(0)
 
-        return "{};{};{}".format(filename, mime, encoded_string.decode())
+                self.data = {'attachment': (filename, file_object, mime)}
+            else:
+                self.attachment = attributes.get('attachment', None)
+
+    def as_base64(self):
+        if 'data' in self.__dict__ and self.data is not None and self.dataType == 'file' and isinstance(self.data, dict):
+            filename, file_object, mime = self.data.get('attachment')
+
+            file_object.seek(0)
+            encoded_string = base64.b64encode(file_object.read())
+
+            self.data = "{};{};{}".format(filename, mime, encoded_string.decode())
+
+        return self
+

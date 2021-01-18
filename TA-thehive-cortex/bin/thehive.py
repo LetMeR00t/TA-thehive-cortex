@@ -37,6 +37,7 @@ class TheHive(TheHiveApi):
 
             # Try to connect to the API by recovering all enabled analyzers
             self.find_cases(query={}, range='all')
+            self.logger.debug("TheHive API connection to (URL=\""+url+"\",API key=\""+apiKey+"\") is successful")
         except thehive4py.exceptions.TheHiveException as e:
             self.logger.error("[The Hive] Error: "+e.msg)
             sys.exit(12)

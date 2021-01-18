@@ -1,4 +1,6 @@
 import sys
+import os
+import csv
 import ta_thehive_cortex_declare
 import json
 import splunklib.client as client
@@ -6,57 +8,78 @@ import logging
 
 class Settings(object):
 
-    def __init__(self, client, logger = None):
+    def __init__(self, client, search_settings = None, logger = None):
         # Initialize all settings to None
         self.logger = logger
-        self.__cortex_settings = None
-        self.__thehive_settings = None
-        # Get settings
+
+        namespace = "TA-thehive-cortex"
+        # Prepare the query
         query = {"output_mode":"json"}
-        for i in client.inputs:
-            if "sourcetype" in i.content and i.content["sourcetype"]=="cortex:supervisor":
-                self.__cortex_settings = i.content
-            if "sourcetype" in i.content and i.content["sourcetype"]=="thehive:supervisor":
-                self.__thehive_settings = i.content
-        self.__logging_settings = json.loads(client.get("TA_thehive_cortex_settings/logging", owner="nobody", app="TA-thehive-cortex",**query).body.read())["entry"][0]["content"]
-        self.__additional_parameters = json.loads(client.get("TA_thehive_cortex_settings/additional_parameters", owner="nobody", app="TA-thehive-cortex",**query).body.read())["entry"][0]["content"]
-        self.__storage_passwords = client.storage_passwords
-        for s in self.__storage_passwords:
-            # Get the TheHive API key
-            if "thehive_api_key" in s['clear_password']:
-                self.__thehive_settings['thehive_api_key'] = str(json.loads(s["clear_password"])["thehive_api_key"])
 
-            # Get the Cortex API key
-            if "cortex_api_key" in s['clear_password']:
-                self.__cortex_settings['cortex_api_key'] = str(json.loads(s["clear_password"])["cortex_api_key"])
+        # Get instances
+        if search_settings is not None:
+            namespace = search_settings["namespace"]
+            # Get logging
+            logging_settings = json.loads(client.get("TA_thehive_cortex_settings/logging", owner="nobody", app=namespace,**query).body.read())["entry"][0]["content"]
+            if "loglevel" in logging_settings:
+                logger.setLevel(logging_settings["loglevel"])
 
-        # Checks before configure
-        # TheHive
-        if self.__thehive_settings is not None:
-            cortex_information_required = ["thehive_protocol","thehive_host","thehive_port","thehive_api_key"]
-            for i in cortex_information_required:
-                if not i in self.__thehive_settings:
-                    self.logger.warning("[10-FIELD MISSING] TheHive: No \""+i+"\" setting set in \"Configuration\", please configure your Cortex instance under \"Configuration\"")
+        instances_csv = os.environ["SPLUNK_HOME"]+"/etc/apps/"+namespace+"/lookups/thehive_cortex_instances.csv"
+        self.__instances = {}
+        instances_by_account_name = {}
+        try:
+            content = csv.DictReader(open(instances_csv,"r"))
+            for row in content:
+                # Process the new instance
+                row_id = row["id"]
+                del row["id"]
 
-        # Cortex
-        cortex_information_required = ["cortex_protocol","cortex_host","cortex_port","cortex_api_key"]
-        if self.__cortex_settings is not None:
-            for i in cortex_information_required:
-                if not i in self.__cortex_settings:
-                    self.logger.warning("[10-FIELD MISSING] Cortex: No \""+i+"\" setting set in \"Configuration\", please configure your Cortex instance under \"Configuration\"")
+                # Keep information for storage password
+                if (row["account_name"] not in instances_by_account_name):
+                    instances_by_account_name[row["account_name"]] = [row_id]
+                else:
+                    instances_by_account_name[row["account_name"]].append(row_id)
+                
+                # Store the new instance
+                row_dict = json.loads(json.dumps(row))
+                self.__instances[row_id] = row_dict
+        except IOError as e:
+            self.logger.error("[5-FILE MISSING] Could not open/access/process the following file: "+instances_csv)
+            sys.exit(5)
 
-        if "loglevel" in self.__logging_settings:
-            logger.setLevel(self.__logging_settings["loglevel"])
-            logger.debug("LEVEL changed to DEBUG according to the configuration")
+        # Get additional parameters
+        self.__additional_parameters = json.loads(client.get("TA_thehive_cortex_settings/additional_parameters", owner="nobody", app=namespace,**query).body.read())["entry"][0]["content"]
+
+        # Get username of account name
+        for account_details in json.loads(client.get("TA_thehive_cortex_account", owner="nobody", app=namespace,**query).body.read())["entry"]:
+            account_details_name = account_details["name"]
+            if account_details_name in instances_by_account_name.keys():
+                instances_of_account_name = instances_by_account_name[account_details_name]
+                for i in instances_of_account_name:
+                    self.__instances[i]["username"] = account_details["content"]["username"] 
+
+        # Get storage passwords for account passwords
+        for s in client.storage_passwords:
+            for account in instances_by_account_name.keys():
+                # Get account details by instance
+                if account in s['username'] and "password" in s['clear_password']:
+                    instances_of_account_name = instances_by_account_name[account]
+                    for i in instances_of_account_name:
+                        self.__instances[i]["password"] = str(json.loads(s["clear_password"])["password"])
 
    
-    def getTheHiveURL(self):
-        """ This function returns the URL of the TheHive instance """
-        return self.__thehive_settings["thehive_protocol"]+"://"+self.__thehive_settings["thehive_host"]+":"+self.__thehive_settings["thehive_port"]
+    def getInstanceURL(self, instance_id):
+        """ This function returns the URL of the given instance """
+        instance = self.__instances[instance_id]
+        return instance["protocol"]+"://"+instance["host"]+":"+instance["port"]
 
-    def getTheHiveApiKey(self):
-        """ This function returns the API key of the TheHive instance """
-        return self.__thehive_settings["thehive_api_key"]
+    def getInstanceUsernameApiKey(self, instance_id):
+        """ This function returns the Username/API key of the given instance """
+        instance = self.__instances[instance_id]
+        if "username" not in instance:
+            instance["username"] = "-"
+            instance["password"] = "-"
+        return (instance["username"], instance["password"])
 
     def getTheHiveCasesMax(self):
         """ This function returns the maximum number of jobs to return of the TheHive instance """
@@ -66,14 +89,6 @@ class Settings(object):
         """ This function returns the sort key to use for jobs of the TheHive instance """
         return self.__additional_parameters["thehive_sort_cases"] if "thehive_sort_cases" in self.__additional_parameters else "-startedAt"
 
-    def getCortexURL(self):
-        """ This function returns the URL of the Cortex instance """
-        return self.__cortex_settings["cortex_protocol"]+"://"+self.__cortex_settings["cortex_host"]+":"+self.__cortex_settings["cortex_port"]
-
-    def getCortexApiKey(self):
-        """ This function returns the API key of the Cortex instance """
-        return self.__cortex_settings["cortex_api_key"]
-
     def getCortexJobsMax(self):
         """ This function returns the maximum number of jobs to return of the Cortex instance """
         return self.__additional_parameters["cortex_max_jobs"] if "cortex_max_jobs" in self.__additional_parameters else 100
@@ -82,22 +97,17 @@ class Settings(object):
         """ This function returns the sort key to use for jobs of the Cortex instance """
         return self.__additional_parameters["cortex_sort_jobs"] if "cortex_sort_jobs" in self.__additional_parameters else "-createdAt"
 
-    def getSetting(self, page, key):
-        """ This function returns the settings for the concerned page and key """
+    def checkAndValidate(self, d, name, default="", is_mandatory=False):
+        """ This function is use to check and validate an expected value format """
+        if name in d:
+            self.logger.info("Found parameter \""+name+"\"="+d[name])
+            return d[name]
+        else:
+            if is_mandatory:
+                self.logger.error("Missing parameter (no \""+name+"\" field found)")
+                sys.exit(1)
+            else:
+                self.logger.info("Parameter \""+name+"\" not found, using default value=\""+default+"\"")
+                return default 
 
-        result = None
-        settings = None
-        if (page == "thehive"):
-            settings = self.__thehive_settings
-        elif (page == "cortex"):
-            settings = self.__cortex_settings
-        elif (page == "logging"):
-            settings = self.__logging_settings
-        elif (page == "additional"):
-            settings = self.__additional_parameters
-        try:
-            result = settings[key]
-        except Exception as e:
-            self.logger.error("This settings \""+key+"\" doesn't exist for the page "+page)
 
-        return result

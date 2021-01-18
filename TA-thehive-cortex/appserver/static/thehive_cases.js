@@ -55,35 +55,6 @@ require([
  
     })
 
-    service.get('TA_thehive_cortex_thehive_supervisor', "", function(err, response) {
- 
-        if(err) {
-    	// Something is not working during the recovering process
-            console.log(response.err);
-        }
-        else if(response.status === 200) {
-            console.log('Response: ', response.data);
- 
-            content = response.data["entry"][0]["content"];
-
-    	    // Update default AND submitted tokens
-    	    var def_tokens = mvc.Components.get("default");
-    	    var sub_tokens = mvc.Components.get("submitted");
-
-            def_tokens.set("thehive_protocol", content["thehive_protocol"]);
-            def_tokens.set("thehive_host", content["thehive_host"]);
-            def_tokens.set("thehive_port", content["thehive_port"]);
-            sub_tokens.set("thehive_protocol", content["thehive_protocol"]);
-            sub_tokens.set("thehive_host", content["thehive_host"]);
-            sub_tokens.set("thehive_port", content["thehive_port"]);
-
-			
-        }
-    
-        // Console feedback
-        console.log("TheHive modularinput settings recovered"); 
- 
-    })
 
     // Set configuration for automatically adding a new value for tags and tasks
     var sub_tokens = mvc.Components.get("submitted");

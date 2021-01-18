@@ -55,35 +55,5 @@ require([
  
     })
 
-    service.get('TA_thehive_cortex_cortex_supervisor', "", function(err, response) {
- 
-        if(err) {
-    	// Something is not working during the recovering process
-            console.log(response.err);
-        }
-        else if(response.status === 200) {
-            console.log('Response: ', response.data);
- 
-            content = response.data["entry"][0]["content"];
-
-    	    // Update default AND submitted tokens
-    	    var def_tokens = mvc.Components.get("default");
-    	    var sub_tokens = mvc.Components.get("submitted");
-
-            def_tokens.set("cortex_protocol", content["cortex_protocol"]);
-            def_tokens.set("cortex_host", content["cortex_host"]);
-            def_tokens.set("cortex_port", content["cortex_port"]);
-            sub_tokens.set("cortex_protocol", content["cortex_protocol"]);
-            sub_tokens.set("cortex_host", content["cortex_host"]);
-            sub_tokens.set("cortex_port", content["cortex_port"]);
-
-			
-        }
-    
-        // Console feedback
-        console.log("Cortex modularinput settings recovered"); 
- 
-    })
-
 });
 

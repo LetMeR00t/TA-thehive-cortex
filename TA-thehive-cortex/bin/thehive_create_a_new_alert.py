@@ -32,8 +32,8 @@ class AlertActionWorkerthehive_create_a_new_alert(ModularAlertBase):
             self.log_error('thehive_sort_cases is a mandatory setup parameter, but its value is None.')
             return False
 
-        if not self.get_param("thehive_instance"):
-            self.log_error('thehive_instance is a mandatory parameter, but its value is None.')
+        if not self.get_param("thehive_instance_id"):
+            self.log_error('thehive_instance_id is a mandatory parameter, but its value is None.')
             return False
 
         if not self.get_param("title"):

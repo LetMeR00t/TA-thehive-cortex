@@ -28,6 +28,17 @@
         </condition>
       </change>
     </input>
+    <input type="dropdown" token="instance_id">
+      <label>Instance</label>
+      <fieldForLabel>instance_name</fieldForLabel>
+      <fieldForValue>id</fieldForValue>
+      <search>
+        <query>| inputlookup thehive_cortex_instances.csv where type=Cortex*
+| eval instance_name = account_name+": "+host+":"+port</query>
+        <earliest>-24h@h</earliest>
+        <latest>now</latest>
+      </search>
+    </input>
     <input type="text" token="data" depends="$show_inputs_run$">
       <label>Data (separated by ";")</label>
     </input>
@@ -111,7 +122,7 @@
         <search>
           <query>| makeresults
 | eval data = "$data$", dataType = "$dataType$", tlp = "$tlp$", pap = "$pap$", analyzers = "$analyzers$"
-| cortexrun
+| cortexrun $instance_id$
 | eval cortex_job_data = "["+upper(dataType)+"] "+cortex_job_data, createdAt = strftime(_time,"%c"), tlp = "TLP:"+tlp, pap = "PAP:"+pap
 | table cortex_job_status, _time, cortex_job_data, cortex_job_analyzerName, createdAt, tlp, pap, cortex_job_id
 | rename cortex_job_status as Status, cortex_job_data as Data, cortex_job_analyzerName as Analyzer, createdAt as "Created At", tlp as TLP, pap as PAP, cortex_job_id as "ID (Go to Cortex)"</query>
@@ -217,7 +228,7 @@
         <search>
           <query>| makeresults
 | eval data = "$filter_data$", datatypes = "$filter_datatypes$", analyzers = "$filter_analyzers$", max_jobs="$max_jobs$", sort_jobs="$sort_jobs$"
-| cortexjobs
+| cortexjobs $instance_id$
 | eval cortex_job_createdAt = strftime(cortex_job_createdAt,"%c"), cortex_job_startDate = strftime(cortex_job_startDate,"%c"), cortex_job_tlp = case(cortex_job_tlp==0,"TLP:WHITE",cortex_job_tlp==1,"TLP:GREEN",cortex_job_tlp==2,"TLP:AMBER",cortex_job_tlp=3,"TLP:RED"), cortex_job_data = "["+upper(cortex_job_dataType)+"] "+cortex_job_data, cortex_job_createdBy = cortex_job_organization+"/"+cortex_job_createdBy
 | table cortex_job_status, cortex_job_data, cortex_job_analyzerName, cortex_job_createdAt, cortex_job_startDate, cortex_job_createdBy, cortex_job_tlp, cortex_job_id
 | rename cortex_job_status as Status, cortex_job_data as Data, cortex_job_analyzerName as Analyzer, cortex_job_createdAt as "Created At", cortex_job_startDate as "Start Date", cortex_job_createdBy as "Created by", cortex_job_tlp as "TLP", cortex_job_id as "ID (Go to Cortex)"</query>
@@ -240,8 +251,29 @@
           <colorPalette type="map">{"TLP:WHITE":#FFFFFF,"TLP:GREEN":#53A051,"TLP:AMBER":#F8BE34,"TLP:RED":#DC4E41}</colorPalette>
         </format>
         <drilldown>
-          <link target="_blank">$cortex_protocol$://$cortex_host$:$cortex_port$/index.html#!/jobs/$row.ID (Go to Cortex)$</link>
+          <link target="_blank">$global_cortex_protocol$://$global_cortex_host$:$global_cortex_port$/index.html#!/jobs/$row.ID (Go to Cortex)$</link>
         </drilldown>
+      </table>
+    </panel>
+  </row>
+  <row>
+    <panel depends="$always_hidden$">
+      <title>[Instance] Get information</title>
+      <table>
+        <search>
+          <done>
+            <set token="global_cortex_protocol">$result.protocol$</set>
+            <set token="global_cortex_host">$result.host$</set>
+            <set token="global_cortex_port">$result.port$</set>
+          </done>
+          <query>| inputlookup thehive_cortex_instances.csv where id=$instance_id$</query>
+          <earliest>-24h@h</earliest>
+          <latest>now</latest>
+          <sampleRatio>1</sampleRatio>
+        </search>
+        <option name="count">20</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="refresh.display">progressbar</option>
       </table>
     </panel>
   </row>

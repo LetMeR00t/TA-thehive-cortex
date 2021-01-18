@@ -1,7 +1,7 @@
 
 [thehive_create_a_new_alert]
 python.version = python3
-param.thehive_instance = <string> TheHive instance. It's a required parameter.
+param.thehive_instance_id = <string> TheHive instance ID. It's a required parameter.
 param.case_template = <string> Case Template.
 param.type = <string> Type.  It's default value is alert.
 param.source = <string> Source.  It's default value is splunk.
