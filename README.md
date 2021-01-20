@@ -7,6 +7,7 @@
 * [ Installation ](#installation)
 	* [ Requirements ](#requirements)
 	* [ Configuration ](#configuration)
+		* [ Accounts ](#accounts)
 		* [ TheHive/Cortex instances ](#thehivecortex-instances)
 		* [ Logging ](#logging)
 	* [ Refreshing the available analyzers ](#refreshing-the-available-analyzers)
@@ -55,7 +56,9 @@ You should create a specific user and organization in your TheHive/Cortex instan
 
 ## Configuration
 Before using the application, you need to set up your environment settings. Please note that this application is using a list of accounts and instances, meaning you can configure several instances of TheHive/Cortex in the same app and with different accounts.
-### TheHive/Cortex instances
+
+### Accounts
+
 You have to set up your accounts/instances configuration.
 An account is used to authenticate to one instance. You have to add every account you need to use and store the API Key as the password (**username/password authentication is not supported**)
 1. Go to the **TheHive/Cortex application > Settings > Configuration** (in the navigation bar)
@@ -65,7 +68,9 @@ An account is used to authenticate to one instance. You have to add every accoun
 * **Password**: The password field must be filled with **a valid API key** to use for authentification/
 
 ![](images/accounts.png)
-This image is an example of one registered account named "Splunk_TheHive3"
+*This image is an example of one registered account named "Splunk_TheHive3"*
+
+### TheHive/Cortex instances
 
 Once you've done that, you can configure all your instances. An instance is an endpoint representing a TheHive or Cortex instance.
 1. Go to the **TheHive/Cortex application > Settings > Instances** (in the navigation bar)
@@ -80,7 +85,7 @@ Once you've done that, you can configure all your instances. An instance is an e
 - **Organisation**: The name of the organisation against which api calls will be run. Defaults to "-" meaning None
 
 ![](images/instances_add.png)
-This image shows the addition of a new instance (partially filled fields) by specifying an account name defined beforehand.
+*This image shows the addition of a new instance (partially filled fields) by specifying an account name defined beforehand.*
 
 ### Logging
 
