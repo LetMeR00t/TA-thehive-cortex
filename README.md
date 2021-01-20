@@ -1,4 +1,3 @@
-
 ![](images/logo.png)
 
 # Table of content
@@ -8,9 +7,7 @@
 * [ Installation ](#installation)
 	* [ Requirements ](#requirements)
 	* [ Configuration ](#configuration)
-		* [ Add-on Settings ](#add-on-settings)
-		* [ TheHive ](#thehive)
-		* [ Cortex ](#cortex)
+		* [ TheHive/Cortex instances ](#thehivecortex-instances)
 		* [ Logging ](#logging)
 	* [ Refreshing the available analyzers ](#refreshing-the-available-analyzers)
 * [ Usage ](#usage)
@@ -29,11 +26,12 @@
 This TA allows to **add interaction features** between [TheHive or Cortex (TheHive project)](https://thehive-project.org/) and Splunk. It allows to retrieve all cases/jobs information from TheHive/Cortex and to perform actions on these instances using Splunk, from a search or from a predefined dashboard.
 All data types work with the exception of "file" because Splunk does not allow to send a file easily.
 
+This TA is supporting both versions of TheHive (3 and 4). It's also supporting the Cortex 3 version.
+
 **Note**:
-It's working using Python3 with the official cortex4api library included.
+It's working using Python3 with the official thehive4py and cortex4api library included. Please note that few modifications were performed to avoid using the "magic" library which is difficult to add in this app.
 **A support was added to use Python2**. This is not an official library, it's a syntactically-revised version.
-This application is not available for Splunk version<8.0 due to modular input issue not resolved yet (if you are interested, you can take a look 😉) 
-In other words, **it's working for Splunk 8.0 and higher versions**.
+This application is also available for Splunk version>7.x.
 
 # What is TheHive/Cortex ?
 If you need more information about TheHive/Cortex project, please [follow this link](https://thehive-project.org/).
@@ -56,56 +54,33 @@ This application contains all the python libraries to work autonomously.
 You should create a specific user and organization in your TheHive/Cortex instances to interact with Splunk.
 
 ## Configuration
+Before using the application, you need to set up your environment settings. Please note that this application is using a list of accounts and instances, meaning you can configure several instances of TheHive/Cortex in the same app and with different accounts.
+### TheHive/Cortex instances
+You have to set up your accounts/instances configuration.
+An account is used to authenticate to one instance. You have to add every account you need to use and store the API Key as the password (**username/password authentication is not supported**)
+1. Go to the **TheHive/Cortex application > Settings > Configuration** (in the navigation bar)
+2. Under **Accounts**, you need to add any account you want to use with TheHive/Cortex
+* **Account name**: The name of the account, it will be reused to link an account to an instance.  
+* **Username**: The username of this account. For now, it's not used but we recommand you to keep the same name as you have on your instance (TheHive or Cortex)
+* **Password**: The password field must be filled with **a valid API key** to use for authentification/
 
-### Add-on settings
-First thing you have to do is to configure a valid Splunk account.
-When you add a new Cortex instance, analyzers will be recovered and need to be stored on a KV Store. To do that, the script need to have access to Splunk to perform the storage.
-We advise you to use a specific local account for this application (not an admin one)
-1. Go to the **TheHive/Cortex application > Configuration** (in the navigation bar)
-2. Under **Add-on Settings**, You need to fill the following settings:
-* Splunk: Username
-* Splunk: Password
+![](images/accounts.png)
+This image is an example of one registered account named "Splunk_TheHive3"
 
-![](images/additional_parameters.png)
+Once you've done that, you can configure all your instances. An instance is an endpoint representing a TheHive or Cortex instance.
+1. Go to the **TheHive/Cortex application > Settings > Instances** (in the navigation bar)
+2. On this dashboard, you need to add every instance you want to use. To do so, select the "**Add a new instance**" as action and fill these fields:
+- **Account name (Global accounts)**: This is the name of the account to use that you added under "Accounts". You can automatically fill this field by clicking on one row of the first search named "Global accounts detected" that list you all available accounts.
+- **Type**: Type of your instance (TheHive (v3 or v4) or Cortex (v3))
+- **Protocol**: Protocol to use (HTTP or HTTPS). Default to HTTP.
+- **Host**: Host of your instance (hostname or IP)
+- **Port**: Port used by your instance (Default:9000 for TheHive, 9001 for Cortex)
+- **Proxies**: A dictionary of proxies if needed. If you don't use any proxy, set this input as default ({}). If you use a proxy, it's expecting a dictionary of two keys ("http" and "https") with the proxy value as dictionary value. **Example**: {"http": "http://my_proxy:8080", "https": "http://my_proxy:8080"}
+- **Certificate Verification**: Indicate if the certificate verification is required. If you use an HTTPS connection with a self-signed certificate of a custom certificate authority, you must add your trusted certificate to the "certifi" library. To do so, append your certificate under "\$APP_FOLDER\$/bin/ta_thehive_cortex/aob_py3/certifi/cacert.pem" (or aob_py2 if you use Python 2.7). Default to True
+- **Organisation**: The name of the organisation against which api calls will be run. Defaults to "-" meaning None
 
-*Note*: This will be probably removed in a future version of the application and use instead a CSV lookup.
-### TheHive
-Once you've set the add-on settings, you must configure your TheHive instance :
-
-1. Go to the **TheHive/Cortex application > Inputs** (in the navigation bar)
-2. Click on the right on **Create New Input > TheHive: Supervisor**
-3. You need to specify the following settings :
-
-* **Name**: Choose a custom name for your input
-* **Interval**: An integer representing the interval time in seconds for the supervisor script. This script will be executed to check if the connection is OK.
-* **Index**: Choose an index in which the supervisor will log the result of the connection. The sourcetype used by this script is **"thehive:supervisor"**.
-* **TheHive: Protocol**: Choose "http" or "https"
-* **TheHive: Host**: Hostname/IP of the TheHive instance
-* **TheHive: Port**: Port used by TheHive
-* **TheHive: API Key**: Corresponds to the API key used by the user/organization to be used (the user/organization will be determined automatically by TheHive)
-
-![](images/configure_thehive.png)
-
-*Note*: You can create several instances of TheHive/Cortex but it's not well supported by the entire application for the moment. Please define only one instance of TheHive for the moment.
-
-### Cortex
-Once you've set the add-on settings, you must configure your Cortex instance :
-
-1. Go to the **TheHive/Cortex application > Inputs** (in the navigation bar)
-2. Click on the right on **Create New Input > Cortex: Supervisor**
-3. You need to specify the following settings :
-
-* **Name**: Choose a custom name for your input
-* **Interval**: An integer representing the interval time in seconds for the supervisor script. This script will be executed to check if the connection is OK and recover the list of analyzers (to keep it up to date).
-* **Index**: Choose an index in which the supervisor will log the result of the connection. The sourcetype used by this script is **"cortex:supervisor"**.
-* **Cortex: Protocol**: Choose "http" or "https"
-* **Cortex: Host**: Hostname/IP of the Cortex instance
-* **Cortex: Port**: Port used by Cortex
-* **Cortex: API Key**: Corresponds to the API key used by the user/organization to be used (the user/organization will be determined automatically by Cortex)
-
-![](images/configure_cortex.png)
-
-*Note*: You can create several instances of TheHive/Cortex but it's not well supported by the entire application for the moment. Please define only one instance of Cortex for the moment.
+![](images/instances_add.png)
+This image shows the addition of a new instance (partially filled fields) by specifying an account name defined beforehand.
 
 ### Logging
 
