@@ -1,6 +1,5 @@
 import sys
 import os
-import csv
 import ta_thehive_cortex_declare
 import json
 import splunklib.client as client
@@ -24,12 +23,12 @@ class Settings(object):
             if "loglevel" in logging_settings:
                 logger.setLevel(logging_settings["loglevel"])
 
-        instances_csv = os.environ["SPLUNK_HOME"]+"/etc/apps/"+namespace+"/lookups/thehive_cortex_instances.csv"
         self.__instances = {}
         instances_by_account_name = {}
         try:
-            content = csv.DictReader(open(instances_csv,"r"))
+            content = client.kvstore["kv_thehive_cortex_instances"].data.query()
             for row in content:
+                self.logger.info(row)
                 # Process the new instance
                 row_id = row["id"]
                 del row["id"]
@@ -39,6 +38,10 @@ class Settings(object):
                     instances_by_account_name[row["account_name"]] = [row_id]
                 else:
                     instances_by_account_name[row["account_name"]].append(row_id)
+                
+                # Check some fields
+                row["proxies"] = row["proxies"] if isinstance(row["proxies"], dict) and ("http" in row["proxies"] or "https" in row["proxies"]) else {}
+                row["organisation"] = row["organisation"] if row["organisation"]!="-" else None
                 
                 # Store the new instance
                 row_dict = json.loads(json.dumps(row))
@@ -71,7 +74,7 @@ class Settings(object):
     def getInstanceURL(self, instance_id):
         """ This function returns the URL of the given instance """
         instance = self.__instances[instance_id]
-        return instance["protocol"]+"://"+instance["host"]+":"+instance["port"]
+        return instance["protocol"]+"://"+instance["host"]+":"+str(instance["port"])
 
     def getInstanceUsernameApiKey(self, instance_id):
         """ This function returns the Username/API key of the given instance """
@@ -80,6 +83,14 @@ class Settings(object):
             instance["username"] = "-"
             instance["password"] = "-"
         return (instance["username"], instance["password"])
+
+    def getInstanceSetting(self, instance_id, setting):
+        """ This function returns the setting for the given instance """
+        if instance_id in self.__instances and setting in self.__instances[instance_id]:
+            return self.__instances[instance_id][setting]
+        else:
+            self.logger.warning("Can't recover the setting \""+setting+"\" for the instance \""+instance_id+"\"")
+            return None
 
     def getTheHiveCasesMax(self):
         """ This function returns the maximum number of jobs to return of the TheHive instance """

@@ -37,7 +37,7 @@
       <fieldForLabel>instance_name</fieldForLabel>
       <fieldForValue>id</fieldForValue>
       <search>
-        <query>| inputlookup thehive_cortex_instances.csv where type=TheHive*
+        <query>| inputlookup thehive_cortex_instances where type=TheHive*
 | eval instance_name = account_name+": "+host+":"+port</query>
         <earliest>-24h@h</earliest>
         <latest>now</latest>
@@ -343,7 +343,7 @@
             <set token="global_thehive_host">$result.host$</set>
             <set token="global_thehive_port">$result.port$</set>
           </done>
-          <query>| inputlookup thehive_cortex_instances.csv where id=$instance_id$</query>
+          <query>| inputlookup thehive_cortex_instances where id=$instance_id$</query>
           <earliest>-24h@h</earliest>
           <latest>now</latest>
           <sampleRatio>1</sampleRatio>

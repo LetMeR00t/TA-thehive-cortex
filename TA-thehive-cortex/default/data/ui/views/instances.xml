@@ -57,6 +57,20 @@
     <input type="text" token="add_port" depends="$show_action_add$">
       <label>Port</label>
     </input>
+    <input type="text" token="add_proxies" depends="$show_action_add$">
+      <label>Proxies (Default:None)</label>
+      <default>{}</default>
+    </input>
+    <input type="radio" token="add_cert" depends="$show_action_add$">
+      <label>Certificate verification (Default:True)</label>
+      <choice value="1">True</choice>
+      <choice value="0">False</choice>
+      <default>1</default>
+    </input>
+    <input type="text" token="add_organisation" depends="$show_action_add$">
+      <label>Organisation (Default:None)</label>
+      <default>-</default>
+    </input>
     <input type="radio" token="global_debug">
       <label>Debug</label>
       <choice value="0">No</choice>
@@ -114,10 +128,10 @@
       <table>
         <title>This is the current list of instances configured</title>
         <search>
-          <query>| inputlookup thehive_cortex_instances.csv
-| eval last_refresh = "$last_refresh$", action=case("$global_action$"=="remove","$action_remove_instance$",1==1,"-")
-| table id account_name, type, protocol, host, port, action
-| rename id as "ID", account_name as "Account name", type as "Type", protocol as "Protocol", host as "Host", port as "Port", action as "Available Action"</query>
+          <query>| inputlookup thehive_cortex_instances
+| eval last_refresh = "$last_refresh$", action=case("$global_action$"=="remove","$action_remove_instance$",1==1,"-"), cert = case(cert="1","True",cert="0","False")
+| table id account_name, type, protocol, host, port, proxies, cert, organisation, action
+| rename id as "ID", account_name as "Account name", type as "Type", protocol as "Protocol", host as "Host", port as "Port", action as "Available Action", proxies as "Proxies", cert as "Certificate verification", organisation as "Organisation"</query>
           <earliest>-24h@h</earliest>
           <latest>now</latest>
           <sampleRatio>1</sampleRatio>
@@ -133,6 +147,9 @@
         <format type="color" field="Type">
           <colorPalette type="sharedList"></colorPalette>
           <scale type="sharedCategory"></scale>
+        </format>
+        <format type="color" field="Certificate verification">
+          <colorPalette type="map">{"True":#53A051,"False":#DC4E41}</colorPalette>
         </format>
         <drilldown>
           <condition match="$click.value2$ == $action_remove_instance$">
@@ -161,13 +178,19 @@
             <unset token="form.add_account_name"></unset>
             <unset token="add_port"></unset>
             <unset token="form.add_port"></unset>
+            <unset token="add_proxies"></unset>
+            <unset token="form.add_proxies"></unset>
+            <unset token="add_cert"></unset>
+            <unset token="form.add_cert"></unset>
+            <unset token="add_organisation"></unset>
+            <unset token="form.add_organisation"></unset>
           </done>
-          <query>| inputlookup thehive_cortex_instances.csv
+          <query>| inputlookup thehive_cortex_instances
 | append [| makeresults
-         | eval account_name = "$add_account_name$", type="$add_type$", protocol="$add_protocol$", host="$add_host$", port="$add_port$", id=substr(sha1(type+account_name+protocol+host+port),0,8)
-         | table id account_name, type, protocol, host, port]
+         | eval account_name = "$add_account_name$", type="$add_type$", protocol="$add_protocol$", host="$add_host$", port="$add_port$", proxies="$add_proxies$", cert="$add_cert$", organisation="$add_organisation$", id=substr(sha1(type+account_name+protocol+host+port),0,8)
+         | table id account_name, type, protocol, host, port, proxies, cert, organisation]
 | sort 0 type account_name
-| outputlookup thehive_cortex_instances.csv</query>
+| outputlookup thehive_cortex_instances</query>
           <earliest>-24h@h</earliest>
           <latest>now</latest>
           <sampleRatio>1</sampleRatio>
@@ -189,16 +212,16 @@
       <table>
         <title>This search is used to remove an existing instance</title>
         <search>
-          <query>| inputlookup thehive_cortex_instances.csv
-| where account_name!="$remove_account_name$"
-| outputlookup thehive_cortex_instances.csv</query>
-          <earliest>-24h@h</earliest>
-          <latest>now</latest>
-          <sampleRatio>1</sampleRatio>
           <done>
             <eval token="last_refresh">now()</eval>
             <unset token="remove_account_name"></unset>
           </done>
+          <query>| inputlookup thehive_cortex_instances
+| where account_name!="$remove_account_name$"
+| outputlookup thehive_cortex_instances</query>
+          <earliest>-24h@h</earliest>
+          <latest>now</latest>
+          <sampleRatio>1</sampleRatio>
         </search>
         <option name="count">20</option>
         <option name="dataOverlayMode">none</option>

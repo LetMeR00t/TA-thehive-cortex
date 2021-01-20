@@ -42,7 +42,12 @@ if __name__ == '__main__':
 
     # Create the TheHive instance
     (thehive_username, thehive_api_key) = configuration.getInstanceUsernameApiKey(instance_id)
-    thehive = TheHive(configuration.getInstanceURL(instance_id), thehive_api_key, settings["sid"], logger)
+    thehive_url = configuration.getInstanceURL(instance_id)
+    thehive_proxies = configuration.getInstanceSetting(instance_id,"proxies")
+    thehive_cert = configuration.getInstanceSetting(instance_id,"cert")
+    thehive_organisation = configuration.getInstanceSetting(instance_id,"organisation")
+    thehive_version = configuration.getInstanceSetting(instance_id,"type") 
+    thehive = TheHive(url=thehive_url, apiKey=thehive_api_key, proxies=thehive_proxies, cert=thehive_cert, organisation=thehive_organisation, version=thehive_version, sid=settings["sid"], logger=logger)
 
     # Get cases
     outputResults = []
