@@ -3,7 +3,41 @@ import os
 import ta_thehive_cortex_declare
 import json
 import splunklib.client as client
+from ta_logging import setup_logging
+from thehive import TheHive
 import logging
+
+def initialize_thehive(keywords, settings, logger_name="script"):
+
+    logger = setup_logging(logger_name)
+
+    # Check the existence of the instance_id
+    if len(keywords) == 1:
+        instance_id = keywords[0]
+    else:
+        logger.error("[4-MISSING_INSTANCE_ID] No instance ID was given to the script")
+        exit(4)
+
+    # Initialiaze settings
+    spl = client.connect(app="TA-thehive-cortex",owner="nobody",token=settings["sessionKey"])
+    configuration = Settings(spl, settings, logger)
+
+    defaults = {
+        "MAX_CASES_DEFAULT": configuration.getTheHiveCasesMax(),
+        "SORT_CASES_DEFAULT": configuration.getTheHiveCasesSort()
+    }
+
+    # Create the TheHive instance
+    (thehive_username, thehive_api_key) = configuration.getInstanceUsernameApiKey(instance_id)
+    thehive_url = configuration.getInstanceURL(instance_id)
+    thehive_proxies = configuration.getInstanceSetting(instance_id,"proxies")
+    thehive_cert = configuration.getInstanceSetting(instance_id,"cert")
+    thehive_organisation = configuration.getInstanceSetting(instance_id,"organisation")
+    thehive_version = configuration.getInstanceSetting(instance_id,"type") 
+    thehive = TheHive(url=thehive_url, apiKey=thehive_api_key, proxies=thehive_proxies, cert=thehive_cert, organisation=thehive_organisation, version=thehive_version, sid=settings["sid"], logger=logger)
+
+    return (thehive, configuration, defaults, logger) 
+
 
 class Settings(object):
 
@@ -28,7 +62,6 @@ class Settings(object):
         try:
             content = client.kvstore["kv_thehive_cortex_instances"].data.query()
             for row in content:
-                self.logger.info(row)
                 # Process the new instance
                 row_id = row["id"]
                 del row["id"]

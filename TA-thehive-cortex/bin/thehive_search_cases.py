@@ -2,11 +2,10 @@
 import sys, os
 import ta_thehive_cortex_declare
 import splunk.Intersplunk
-from common import Settings
-from thehive import TheHive
-import splunklib.client as client
-from ta_logging import setup_logging
+from common import Settings, initialize_thehive
+from thehive4py.query import And, Eq, Or, String
 from copy import deepcopy
+import json
 
 FILTER_KEYWORD_DEFAULT = "*"
 FILTER_STATUS_DEFAULT = "*"
@@ -25,31 +24,9 @@ if __name__ == '__main__':
     # get the previous search results
     results,dummyresults,settings = splunk.Intersplunk.getOrganizedResults()
 
-    # Check the existence of the instance_id
-    if len(keywords) == 1:
-        instance_id = keywords[0]
-    else:
-        logger.error("[4-MISSING_INSTANCE_ID] No instance ID was given to the script")
-        exit(4)
+    # Initialize this script and return a thehive instance object, a configuration object and defaults values
+    (thehive, configuration, defaults, logger) = initialize_thehive(keywords, settings ,logger_name="thehive_cases")
 
-    # Initialiaze settings
-    spl = client.connect(app="TA-thehive-cortex",owner="nobody",token=settings["sessionKey"])
-    logger = setup_logging("thehive_cases")
-    configuration = Settings(spl, settings, logger)
-
-    MAX_CASES_DEFAULT = configuration.getTheHiveCasesMax()
-    SORT_CASES_DEFAULT = configuration.getTheHiveCasesSort()
-
-    # Create the TheHive instance
-    (thehive_username, thehive_api_key) = configuration.getInstanceUsernameApiKey(instance_id)
-    thehive_url = configuration.getInstanceURL(instance_id)
-    thehive_proxies = configuration.getInstanceSetting(instance_id,"proxies")
-    thehive_cert = configuration.getInstanceSetting(instance_id,"cert")
-    thehive_organisation = configuration.getInstanceSetting(instance_id,"organisation")
-    thehive_version = configuration.getInstanceSetting(instance_id,"type") 
-    thehive = TheHive(url=thehive_url, apiKey=thehive_api_key, proxies=thehive_proxies, cert=thehive_cert, organisation=thehive_organisation, version=thehive_version, sid=settings["sid"], logger=logger)
-
-    # Get cases
     outputResults = []
     # Prepare and get all cases queries 
     for result in results:
@@ -62,62 +39,47 @@ if __name__ == '__main__':
         filterTitle = configuration.checkAndValidate(result, "title", default=FILTER_TITLE_DEFAULT, is_mandatory=False)
         filterAssignee = configuration.checkAndValidate(result, "assignee", default=FILTER_ASSIGNEE_DEFAULT, is_mandatory=False)
         filterDate = configuration.checkAndValidate(result, "date", default=FILTER_DATE_DEFAULT, is_mandatory=False)
-        maxCases = configuration.checkAndValidate(result, "max_cases", default=MAX_CASES_DEFAULT, is_mandatory=False)
-        sortCases = configuration.checkAndValidate(result, "sort_cases", default=SORT_CASES_DEFAULT, is_mandatory=False)
-
+        maxCases = configuration.checkAndValidate(result, "max_cases", default=defaults["MAX_CASES_DEFAULT"], is_mandatory=False)
+        sortCases = configuration.checkAndValidate(result, "sort_cases", default=defaults["SORT_CASES_DEFAULT"], is_mandatory=False)
 
         logger.debug("filterKeyword: "+filterKeyword+", filterStatus: "+filterStatus+", filterSeverity: "+filterSeverity+", filterTags: "+filterTags+", filterTitle: "+filterTitle+", filterAssignee: "+filterAssignee+", filterDate: "+filterDate+", max_cases: "+maxCases+", sort_cases: "+sortCases)
 
-        # create the query from filters
+        # Format the query
         query = {}
-        if filterKeyword != "*":
-            new_query = {"_string": filterKeyword}
-            query = {"_and": [new_query]}
-        if filterStatus != "*":
-            new_query = {"_string": "("+" OR ".join(["status:\""+s+"\"" for s in filterStatus.replace(" ","").split(";") if s != "*"])+")"}
-            if query == {}:
-                query = {"_and": [new_query]}
-            else:
-                query["_and"][0]["_string"] = query["_and"][0]["_string"]+" AND "+new_query["_string"]
-        if filterSeverity != "*":
-            new_query = {"_string": "("+" OR ".join(["severity:\""+s+"\"" for s in filterSeverity.replace(" ","").split(";") if s != "*"])+")"}
-            if query == {}:
-                query = {"_and": [new_query]}
-            else:
-                query["_and"][0]["_string"] = query["_and"][0]["_string"]+" AND "+new_query["_string"]
-        if filterTags != "*":
-            new_query = {"_string": "("+" OR ".join(["tags:\""+s+"\"" for s in filterTags.replace(" ","").split(";") if s != "*"])+")"}
-            if query == {}:
-                query = {"_and": [new_query]}
-            else:
-                query["_and"][0]["_string"] = query["_and"][0]["_string"]+" AND "+new_query["_string"]
-        if filterTitle != "*":
-            new_query = {"_string": "title:"+filterTitle}
-            if query == {}:
-                query = {"_and": [new_query]}
-            else:
-                query["_and"][0]["_string"] = query["_and"][0]["_string"]+" AND "+new_query["_string"]
-        if filterAssignee != "*":
-            new_query = {"_string": "("+" OR ".join(["owner:\""+s+"\"" for s in filterAssignee.replace(" ","").split(";") if s != "*"])+")"}
-            if query == {}:
-                query = {"_and": [new_query]}
-            else:
-                query["_and"][0]["_string"] = query["_and"][0]["_string"]+" AND "+new_query["_string"]
-        if filterDate != "* TO *":
+        elements = []
+        if filterKeyword != FILTER_KEYWORD_DEFAULT:
+            element = String(filterKeyword)
+            elements.append(element)
+        if filterStatus != FILTER_STATUS_DEFAULT:
+            element = String("("+" OR ".join(["status:\""+s+"\"" for s in filterStatus.replace(" ","").split(";") if s != "*"])+")")
+            elements.append(element)
+        if filterSeverity != FILTER_SEVERITY_DEFAULT:
+            element = String("("+" OR ".join(["severity:\""+s+"\"" for s in filterSeverity.replace(" ","").split(";") if s != "*"])+")")
+            elements.append(element)
+        if filterTags != FILTER_TAGS_DEFAULT:
+            element = String("("+" OR ".join(["tags:\""+s+"\"" for s in filterTags.replace(" ","").split(";") if s != "*"])+")")
+            elements.append(element)
+        if filterTitle != FILTER_TITLE_DEFAULT:
+            element = String("title:"+filterTitle)
+            elements.append(element)
+        if filterAssignee != FILTER_ASSIGNEE_DEFAULT:
+            element = String("("+" OR ".join(["owner:\""+s+"\"" for s in filterAssignee.replace(" ","").split(";") if s != "*"])+")")
+            elements.append(element)
+        if filterDate != FILTER_DATE_DEFAULT:
             filterDate = filterDate.split(" TO ")
             d1 = filterDate[0] if filterDate[0] != "*" else "*"
             d2 = filterDate[1] if filterDate[1] != "*" else "*"
-            new_query = {"_string": "(startDate:[ "+d1+" TO "+d2+" ])"}
-            if query == {}:
-                query = {"_and": [new_query]}
-            else:
-                query["_and"][0]["_string"] = query["_and"][0]["_string"]+" AND "+new_query["_string"]
+            element = String("(startDate:[ "+d1+" TO "+d2+" ])")
+            elements.append(element)
+        query = And(*elements)
 
-
-        logger.info("Query is: "+str(query))
+        logger.info("Query is: "+json.dumps(query))
     
         ## CASES ##
+        # Get cases using the query
         cases = thehive.find_cases(query=query,range='0-'+maxCases, sort=sortCases)
+
+        # Check status_code and process results
         if cases.status_code not in (200,201):
             logger.error(cases.content)
         for case in cases.json():

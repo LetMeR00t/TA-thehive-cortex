@@ -6,7 +6,6 @@ import thehive4py.exceptions
 import json
 import traceback
 import splunklib.client as client
-from common import Settings
 import certifi
 
 

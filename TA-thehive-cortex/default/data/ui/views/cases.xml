@@ -243,15 +243,12 @@
         <default>*</default>
         <initialValue>*</initialValue>
         <delimiter>;</delimiter>
-        <fieldForLabel>thehive_case_tags</fieldForLabel>
-        <fieldForValue>thehive_case_tags</fieldForValue>
+        <fieldForLabel>tags</fieldForLabel>
+        <fieldForValue>tags</fieldForValue>
         <search>
-          <query>| makeresults
-| eval max_cases = "$max_cases$", sort_cases = "$sort_cases$"
-| thehivecases max_cases sort_cases
-| stats count by thehive_case_tags
-| table thehive_case_tags
-| sort thehive_case_tags</query>
+          <query>| loadjob $job_thehive_search_cases$
+| stats values(Tags) as tags
+| mvexpand tags</query>
         </search>
       </input>
       <input type="text" token="filter_title" searchWhenChanged="true">
@@ -265,15 +262,11 @@
         <default>*</default>
         <initialValue>*</initialValue>
         <delimiter>;</delimiter>
-        <fieldForLabel>thehive_case_owner</fieldForLabel>
-        <fieldForValue>thehive_case_owner</fieldForValue>
+        <fieldForLabel>Assignee</fieldForLabel>
+        <fieldForValue>Assignee</fieldForValue>
         <search>
-          <query>| makeresults
-| eval max_cases = "$max_cases$", sort_cases = "$sort_cases$"
-| thehivecases max_cases sort_cases
-| stats count by thehive_case_owner
-| table thehive_case_owner
-| sort thehive_case_owner</query>
+          <query>| loadjob $job_thehive_search_cases$
+| stats count by Assignee</query>
         </search>
       </input>
       <input type="time" token="filter_date" searchWhenChanged="true">
@@ -303,6 +296,9 @@
           <earliest>$filter_date.earliest$</earliest>
           <latest>$filter_date.latest$</latest>
           <sampleRatio>1</sampleRatio>
+          <done>
+            <set token="job_thehive_search_cases">$job.sid$</set>
+          </done>
         </search>
         <option name="count">20</option>
         <option name="dataOverlayMode">none</option>
