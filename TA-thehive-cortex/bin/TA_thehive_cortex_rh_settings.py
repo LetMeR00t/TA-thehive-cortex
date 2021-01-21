@@ -32,38 +32,38 @@ fields_additional_parameters = [
         encrypted=False,
         default='100',
         validator=validator.String(
-            min_len=0, 
-            max_len=8192, 
+            min_len=0,
+            max_len=8192,
         )
-    ), 
+    ),
     field.RestField(
         'cortex_sort_jobs',
         required=True,
         encrypted=False,
         default='-createdAt',
         validator=validator.String(
-            min_len=0, 
-            max_len=8192, 
+            min_len=0,
+            max_len=8192,
         )
-    ), 
+    ),
     field.RestField(
         'thehive_max_cases',
         required=True,
         encrypted=False,
         default='100',
         validator=validator.String(
-            min_len=0, 
-            max_len=8192, 
+            min_len=0,
+            max_len=8192,
         )
-    ), 
+    ),
     field.RestField(
         'thehive_sort_cases',
         required=True,
         encrypted=False,
         default='-startDate',
         validator=validator.String(
-            min_len=0, 
-            max_len=8192, 
+            min_len=0,
+            max_len=8192,
         )
     )
 ]
@@ -73,7 +73,7 @@ model_additional_parameters = RestModel(fields_additional_parameters, name='addi
 endpoint = MultipleModel(
     'ta_thehive_cortex_settings',
     models=[
-        model_logging, 
+        model_logging,
         model_additional_parameters
     ],
 )

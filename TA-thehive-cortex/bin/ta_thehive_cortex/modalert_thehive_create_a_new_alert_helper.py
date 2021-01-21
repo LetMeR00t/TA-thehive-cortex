@@ -125,7 +125,7 @@ def process_event(helper, *args, **kwargs):
     helper.log_info("LOG level to: "+helper.log_level)
     helper.set_log_level(helper.log_level)
 
-    helper.log_info("[AL101] Alert action thehive_ce_alert started at {}".format(time.time()))
+    helper.log_info("[AL101] Alert action thehive_create_a_new_alert started at {}".format(time.time()))
 
     # Get the instance connection and initialize settings
     spl = client.connect(app="TA-thehive-cortex",owner="nobody",token=helper.settings["session_key"])
@@ -166,6 +166,7 @@ def process_event(helper, *args, **kwargs):
     create_alert(helper, thehive, alert_args)
     helper.log_debug("[AL104] Alert creation is done.")
     return 0
+
 
 def create_alert(helper, api, alert_args):
     """ This function is used to create the alert using the API, settings and search results """

@@ -1,0 +1,10 @@
+[<name>]
+thehive_hostname = provide instance hostname.
+thehive_port = provide instance port.
+thehive_type = set type of instance: thehive or cortex
+thehive_key = provide one authkey for the instance
+thehive_verifycert = set to check TLS certificate
+thehive_ca_full_path = Provide full path to CA file (pem, crt)
+thehive_use_proxy = Use proxy settings for default instance
+client_use_cert = Use a client certificate to authenticate on default instance
+client_cert_full_path = Provide full path to client certificate file

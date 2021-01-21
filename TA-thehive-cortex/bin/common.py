@@ -6,15 +6,16 @@ import json
 import splunklib.client as client
 import logging
 
+
 class Settings(object):
 
-    def __init__(self, client, search_settings = None, logger = None):
+    def __init__(self, client, search_settings=None, logger=None):
         # Initialize all settings to None
         self.logger = logger
 
         namespace = "TA-thehive-cortex"
         # Prepare the query
-        query = {"output_mode":"json"}
+        query = {"output_mode": "json"}
 
         # Get instances
         if search_settings is not None:
@@ -24,7 +25,42 @@ class Settings(object):
             if "loglevel" in logging_settings:
                 logger.setLevel(logging_settings["loglevel"])
 
-        instances_csv = os.environ["SPLUNK_HOME"]+"/etc/apps/"+namespace+"/lookups/thehive_cortex_instances.csv"
+    config_args = dict()
+    # get MISP instance to be used
+    response = helper.service.get('misp42splunk_account')
+    if response.status == 200:
+        data_body = splunklib.data.load(response.body.read())
+        helper.log_error("[MC1000] data body {}".format(data_body))
+        misp_instances = data_body['feed']['entry']
+    if len(misp_instances) > 0:
+        foundStanza = False
+        for instance in list(misp_instances):
+            if misp_instance == str(instance['title']):
+                app_config = instance['content']
+                helper.log_error("[MC1000] app config {}".format(app_config))
+                foundStanza = True
+        if not foundStanza:
+            raise Exception("no misp_instance with specified name found: %s ", str(misp_instance))
+            return None
+    else:
+        raise Exception(
+            "no misp instance configured. Please "
+            "configure an entry for %s", misp_instance
+        )
+        return None
+
+
+
+
+
+
+
+
+
+
+
+
+        instances_csv = os.environ["SPLUNK_HOME"] + "/etc/apps/" + namespace + "/lookups/thehive_cortex_instances.csv"
         self.__instances = {}
         instances_by_account_name = {}
         try:
@@ -39,7 +75,7 @@ class Settings(object):
                     instances_by_account_name[row["account_name"]] = [row_id]
                 else:
                     instances_by_account_name[row["account_name"]].append(row_id)
-                
+
                 # Store the new instance
                 row_dict = json.loads(json.dumps(row))
                 self.__instances[row_id] = row_dict
@@ -67,7 +103,7 @@ class Settings(object):
                     for i in instances_of_account_name:
                         self.__instances[i]["password"] = str(json.loads(s["clear_password"])["password"])
 
-   
+
     def getInstanceURL(self, instance_id):
         """ This function returns the URL of the given instance """
         instance = self.__instances[instance_id]
@@ -100,14 +136,12 @@ class Settings(object):
     def checkAndValidate(self, d, name, default="", is_mandatory=False):
         """ This function is use to check and validate an expected value format """
         if name in d:
-            self.logger.info("Found parameter \""+name+"\"="+d[name])
+            self.logger.info("Found parameter \"" + name + "\"="+d[name])
             return d[name]
         else:
             if is_mandatory:
-                self.logger.error("Missing parameter (no \""+name+"\" field found)")
+                self.logger.error("Missing parameter (no \"" + name + "\" field found)")
                 sys.exit(1)
             else:
-                self.logger.info("Parameter \""+name+"\" not found, using default value=\""+default+"\"")
-                return default 
-
-
+                self.logger.info("Parameter \"" + name + "\" not found, using default value=\"" + default + "\"")
+                return default

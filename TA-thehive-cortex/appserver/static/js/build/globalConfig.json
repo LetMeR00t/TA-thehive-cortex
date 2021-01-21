@@ -13,16 +13,21 @@
             "tabs": [
                 {
                     "name": "account",
-                    "title": "Account",
+                    "title": "TheHive_Cortex_instances",
                     "table": {
                         "header": [
                             {
                                 "field": "name",
-                                "label": "Account name"
+                                "label": "TheHive-Cortex instance"
                             },
                             {
-                                "field": "username",
-                                "label": "Username"
+                                "field": "thehive_hostname", 
+                                "label": "Instance hostname"
+                            },
+                            {
+                                "field": "thehive_port",
+                                "label": "Instance port" 
+                            
                             }
                         ],
                         "actions": [
@@ -34,58 +39,146 @@
                     "entity": [
                         {
                             "field": "name",
-                            "label": "Account name",
+                            "label": "TheHive-Cortex instance",
                             "type": "text",
                             "required": true,
-                            "help": "Enter a unique name for this account.",
+                            "help": "Enter a unique name for this TheHive-Cortex instance.",
                             "validators": [
                                 {
                                     "type": "string",
                                     "minLength": 1,
                                     "maxLength": 50,
-                                    "errorMsg": "Length of Account name should be between 1 and 50"
+                                    "errorMsg": "Length of TheHive-Cortex instance name should be between 1 and 50"
                                 },
                                 {
                                     "type": "regex",
                                     "pattern": "^[a-zA-Z]\\w*$",
-                                    "errorMsg": "Account name must start with a letter and followed by alphabetic letters, digits or underscores."
+                                    "errorMsg": "TheHive-Cortex instance name must start with a letter and followed by alphabetic letters, digits or underscores."
                                 }
                             ]
                         },
                         {
-                            "field": "username",
-                            "label": "Username",
+                            "field": "thehive_hostname",
+                            "label": "Instance hostname",
                             "type": "text",
-                            "required": true,
-                            "help": "Enter the username for this account.",
+                            "required": true, 
+                            "help": "provide TheHive-Cortex hostname", 
                             "options": {
-                                "placeholder": "Enter the username here"
-                            },
+                                "placeholder": "thehive-or-cortex.instance.org"
+                            }, 
                             "validators": [
                                 {
-                                    "type": "string",
-                                    "minLength": 1,
-                                    "maxLength": 200,
-                                    "errorMsg": "Length of username should be between 1 and 200"
+                                    "pattern": "^[0-9a-zA-Z\\-\\.]+$", 
+                                    "errorMsg": "Invalid hostname.", 
+                                    "type": "regex"
                                 }
                             ]
+                        }, 
+                        {
+                            "label": "Port", 
+                            "field": "thehive_port",
+                            "required": true,
+                            "validators": [
+                                {
+                                    "range": [
+                                        1, 
+                                        65535
+                                    ], 
+                                    "type": "number"
+                                }
+                            ], 
+                            "type": "text"
                         },
                         {
-                            "field": "password",
-                            "label": "Password",
-                            "type": "text",
-                            "encrypted": true,
-                            "required": true,
-                            "help": "Enter the password for this account.",
+                            "label": "Instance type", 
+                            "field": "thehive_type", 
+                            "defaultValue": "thehive", 
+                            "options": {
+                                "autoCompleteFields": [
+                                    {
+                                        "label": "thehive", 
+                                        "value": "thehive"
+                                    }, 
+                                    {
+                                        "label": "cortex", 
+                                        "value": "cortex"
+                                    }
+                                ], 
+                                "disableSearch": true
+                            }, 
+                            "type": "singleSelect"
+                        }, 
+                        {
+                            "field": "thehive_key", 
+                            "required": true, 
+                            "label": "Instance API key", 
+                            "options": {
+                                "placeholder": "***AUTH KEY***"
+                            }, 
+                            "encrypted": true, 
                             "validators": [
                                 {
-                                    "type": "string",
-                                    "minLength": 1,
-                                    "maxLength": 8192,
-                                    "errorMsg": "Length of password should be between 1 and 8192"
+                                    "minLength": 0, 
+                                    "errorMsg": "Max length of API key is 8192", 
+                                    "maxLength": 8192, 
+                                    "type": "string"
                                 }
-                            ]
-                        }
+                            ], 
+                            "help": "provide one authkey for the instance", 
+                            "type": "text"
+                        },
+                        {
+                            "required": false, 
+                            "label": "Check instance certificate", 
+                            "field": "thehive_verifycert", 
+                            "defaultValue": true, 
+                            "help": "", 
+                            "type": "checkbox"
+                        }, 
+                        {
+                            "required": false,
+                            "label": "Instance CA path",
+                            "field": "thehive_ca_full_path",
+                            "validators": [
+                                {
+                                    "minLength": 0,
+                                    "errorMsg": "Max length of text input is 8192",
+                                    "maxLength": 8192,
+                                    "type": "string"
+                                }
+                            ],
+                            "help": "Provide full path to CA file (pem, crt)",
+                            "type": "text"
+                        },
+                        {
+                            "required": false, 
+                            "field": "thehive_use_proxy", 
+                            "help": "Use proxy settings for default instance", 
+                            "label": "Use proxy settings", 
+                            "type": "checkbox"
+                        }, 
+                        {
+                            "required": false, 
+                            "field": "client_use_cert", 
+                            "help": "Use a client certificate to authenticate on default instance", 
+                            "label": "Use a client certificate", 
+                            "type": "checkbox"
+                        }, 
+                        {
+                            "required": false, 
+                            "label": "Client certificate file", 
+                            "field": "client_cert_full_path", 
+                            "validators": [
+                                {
+                                    "minLength": 0, 
+                                    "errorMsg": "Max length of text input is 8192", 
+                                    "maxLength": 8192, 
+                                    "type": "string"
+                                }
+                            ], 
+                            "help": "Provide full path to client certificate file ", 
+                            "type": "text"
+                        } 
                     ]
                 },
                 {
