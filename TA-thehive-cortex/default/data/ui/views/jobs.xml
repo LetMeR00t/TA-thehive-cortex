@@ -44,16 +44,16 @@
     </input>
     <input type="dropdown" token="dataType" depends="$show_inputs_run$">
       <label>Data type</label>
-      <fieldForLabel>dataTypeAllowed</fieldForLabel>
-      <fieldForValue>dataTypeAllowed</fieldForValue>
+      <fieldForLabel>dataTypeList</fieldForLabel>
+      <fieldForValue>dataTypeList</fieldForValue>
       <search>
-        <query>| inputlookup lookup_cortex_analyzers
-| makemv delim=";" dataTypeAllowed
-| mvexpand dataTypeAllowed
-| stats count by dataTypeAllowed
-| table dataTypeAllowed
-| where dataTypeAllowed!="file"
-| sort dataTypeAllowed</query>
+        <query>| inputlookup cortex_analyzers where instance_id=$instance_id$
+| makemv delim=";" dataTypeList
+| mvexpand dataTypeList
+| stats count by dataTypeList
+| table dataTypeList
+| where dataTypeList!="file"
+| sort dataTypeList</query>
       </search>
       <change>
         <unset token="analyzers"></unset>
@@ -78,13 +78,13 @@
       <label>Analyzers</label>
       <choice value="all">Any</choice>
       <delimiter> ;</delimiter>
-      <fieldForLabel>analyzer</fieldForLabel>
-      <fieldForValue>analyzer</fieldForValue>
+      <fieldForLabel>name</fieldForLabel>
+      <fieldForValue>name</fieldForValue>
       <search>
-        <query>| inputlookup lookup_cortex_analyzers
-| makemv delim=";" dataTypeAllowed
-| mvexpand dataTypeAllowed
-| where dataTypeAllowed=="$dataType$"</query>
+        <query>| inputlookup cortex_analyzers where instance_id=$instance_id$
+| makemv delim=";" dataTypeList
+| mvexpand dataTypeList
+| where dataTypeList=="$dataType$"</query>
       </search>
     </input>
   </fieldset>

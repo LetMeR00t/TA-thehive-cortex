@@ -4,6 +4,7 @@ import ta_thehive_cortex_declare
 from cortex4py.api import Api
 import cortex4py.exceptions
 import json
+from ta_logging import setup_logging
 import traceback
 import splunklib.client as client
 from common import Settings
@@ -32,6 +33,34 @@ colorCode = {
         "AMBER": 2,
         "RED": 3}
 
+def initialize_cortex_instance(keywords, settings, logger_name="script"):
+
+    logger = setup_logging(logger_name)
+
+    # Check the existence of the instance_id
+    if len(keywords) == 1:
+        instance_id = keywords[0]
+    else:
+        logger.error("[4-MISSING_INSTANCE_ID] No instance ID was given to the script")
+        exit(4)
+
+    # Initialiaze settings
+    spl = client.connect(app="TA-thehive-cortex",owner="nobody",token=settings["sessionKey"])
+    configuration = Settings(spl, settings, logger)
+
+    defaults = {
+        "MAX_JOBS_DEFAULT": configuration.getCortexJobsMax(),
+        "SORT_JOBS_DEFAULT": configuration.getCortexJobsSort()
+    }
+
+    # Create the Cortex instance
+    (cortex_username, cortex_api_key) = configuration.getInstanceUsernameApiKey(instance_id)
+    cortex_url = configuration.getInstanceURL(instance_id)
+    cortex = Cortex(url=cortex_url, apiKey=cortex_api_key, sid=settings["sid"], logger=logger)
+
+    return (cortex, configuration, defaults, logger) 
+
+
 class Cortex(Api):
 
     """ This class is used to represent a Cortex instance"""
@@ -40,12 +69,18 @@ class Cortex(Api):
         self.logger = logger
         try :
 
+            if apiKey is None:
+                self.logger.error("[11-CORTEX_AUTHENTICATION] API Key is null")
+                exit(11)
+
             if sys.version_info[0] < 3:
                 super(Cortex,self).__init__(str(url),str(apiKey))
             else:
                 super().__init__(str(url),str(apiKey))
+
             # Try to connect to the API by recovering all enabled analyzers
             self.analyzers.find_all({}, range='all')
+
             self.logger.debug("Cortex API connection to (URL=\""+url+"\",API key=\""+apiKey+"\") is successful")
         except cortex4py.exceptions.NotFoundError as e:
             self.logger.error("[10-RESOURCE NOT FOUND] Cortex service is unavailable, is configuration correct ?")

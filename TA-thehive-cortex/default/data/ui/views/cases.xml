@@ -154,6 +154,22 @@
           <earliest>0</earliest>
           <latest></latest>
           <sampleRatio>1</sampleRatio>
+          <done>
+            <unset token="create_title"></unset>
+            <unset token="form.create_title"></unset>
+            <unset token="create_severity"></unset>
+            <unset token="form.create_severity"></unset>
+            <unset token="create_tags"></unset>
+            <unset token="form.create_tags"></unset>
+            <unset token="create_tasks"></unset>
+            <unset token="form.create_tasks"></unset>
+            <unset token="create_tlp"></unset>
+            <unset token="form.create_tlp"></unset>
+            <unset token="create_papa"></unset>
+            <unset token="form.create_pap"></unset>
+            <unset token="create_description"></unset>
+            <unset token="form.create_description"></unset>
+          </done>
         </search>
         <option name="count">20</option>
         <option name="dataOverlayMode">none</option>
@@ -171,13 +187,13 @@
         </format>
         <drilldown>
           <condition field="Tasks">
-            <link target="_blank">$thehive_protocol$://$thehive_host$:$thehive_port$/index.html#!/case/$row.ID - Go to TheHive$/tasks</link>
+            <link target="_blank">$global_thehive_protocol$://$global_thehive_host$:$global_thehive_port$/index.html#!/case/$row.ID - Go to TheHive$/tasks</link>
           </condition>
           <condition field="Observables">
-            <link target="_blank">$thehive_protocol$://$thehive_host$:$thehive_port$/index.html#!/case/$row.ID - Go to TheHive$/observables</link>
+            <link target="_blank">$global_thehive_protocol$://$global_thehive_host$:$global_thehive_port$/index.html#!/case/$row.ID - Go to TheHive$/observables</link>
           </condition>
           <condition field="ID - Go to TheHive">
-            <link target="_blank">$thehive_protocol$://$thehive_host$:$thehive_port$/index.html#!/case/$row.ID - Go to TheHive$/details</link>
+            <link target="_blank">$global_thehive_protocol$://$global_thehive_host$:$global_thehive_port$/index.html#!/case/$row.ID - Go to TheHive$/details</link>
           </condition>
           <condition></condition>
         </drilldown>

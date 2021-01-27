@@ -4,7 +4,7 @@ import ta_thehive_cortex_declare
 from common import Settings
 from cortex import Cortex, CortexJob
 import splunklib.client as client
-from ta_logging import setup_logging
+from cortex import initialize_cortex_instance
 from copy import deepcopy
 import splunk.Intersplunk
 
@@ -23,24 +23,8 @@ if __name__ == '__main__':
     # get the previous search results
     results,dummyresults,settings = splunk.Intersplunk.getOrganizedResults()
 
-    # Check the existence of the instance_id
-    if len(keywords) == 1:
-        instance_id = keywords[0]
-    else:
-        logger.error("[4-MISSING_INSTANCE_ID] No instance ID was given to the script")
-        exit(4)
-
-    # Initialiaze settings
-    spl = client.connect(app="TA-thehive-cortex",owner="nobody",token=settings["sessionKey"])
-    logger = setup_logging("cortex_jobs")
-    configuration = Settings(spl, settings, logger)
-
-    MAX_JOBS_DEFAULT = configuration.getCortexJobsMax()
-    SORT_JOBS_DEFAULT = configuration.getCortexJobsSort()
-
-    # Create the Cortex instance
-    (cortex_username, cortex_api_key) = configuration.getInstanceUsernameApiKey(instance_id)
-    cortex = Cortex(configuration.getInstanceURL(instance_id), cortex_api_key, settings["sid"], logger)
+    # Initialize this script and return a cortex instance object, a configuration object and defaults values
+    (cortex, configuration, defaults, logger) = initialize_cortex_instance(keywords, settings ,logger_name="cortex_search_jobs")
 
 
     outputResults = []
@@ -48,11 +32,11 @@ if __name__ == '__main__':
     for result in results:
         ## FILTERS ##
         # Check the results to extract interesting fields
-        filterData = configuration.check_and_validate(result, "data", default=FILTER_DATA_DEFAULT, is_mandatory=False)
-        filterDatatypes = configuration.check_and_validate(result, "datatypes", default=FILTER_DATATYPES_DEFAULT, is_mandatory=False)
-        filterAnalyzers = configuration.check_and_validate(result, "analyzers", default=FILTER_ANALYZERS_DEFAULT, is_mandatory=False)
-        maxJobs = configuration.check_and_validate(result, "max_jobs", default=MAX_JOBS_DEFAULT, is_mandatory=False)
-        sortJobs = configuration.check_and_validate(result, "sort_jobs", default=SORT_JOBS_DEFAULT, is_mandatory=False)
+        filterData = configuration.checkAndValidate(result, "data", default=FILTER_DATA_DEFAULT, is_mandatory=False)
+        filterDatatypes = configuration.checkAndValidate(result, "datatypes", default=FILTER_DATATYPES_DEFAULT, is_mandatory=False)
+        filterAnalyzers = configuration.checkAndValidate(result, "analyzers", default=FILTER_ANALYZERS_DEFAULT, is_mandatory=False)
+        maxJobs = configuration.checkAndValidate(result, "max_jobs", default=defaults["MAX_JOBS_DEFAULT"], is_mandatory=False)
+        sortJobs = configuration.checkAndValidate(result, "sort_jobs", default=defaults["SORT_JOBS_DEFAULT"], is_mandatory=False)
 
         # create the query from filters
         query = {}

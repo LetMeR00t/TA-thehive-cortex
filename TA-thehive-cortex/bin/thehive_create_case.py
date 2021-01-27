@@ -2,16 +2,17 @@
 import sys, os
 import ta_thehive_cortex_declare
 import splunk.Intersplunk
-from common import Settings, initialize_thehive
-from thehive4py.models import Case, CaseTask
+from common import Settings
+from thehive import initialize_thehive_instance
+from thehive4py.models import Case, CaseTask, Severity, Tlp, Pap
 import splunklib.client as client
 from copy import deepcopy
 import time
 
-CREATE_SEVERITY_DEFAULT = 2 # MEDIUM
-CREATE_DATE_DEFAULT = time.time()
-CREATE_TLP_DEFAULT = 2 # AMBER
-CREATE_PAP_DEFAULT = 2 # AMBER
+SEVERITY_DEFAULT = Severity.MEDIUM
+DATE_DEFAULT = time.time()
+TLP_DEFAULT = Tlp.AMBER
+PAP_DEFAULT = Pap.AMBER
 
 if __name__ == '__main__':
     
@@ -23,18 +24,18 @@ if __name__ == '__main__':
     results,dummyresults,settings = splunk.Intersplunk.getOrganizedResults()
 
     # Initialize this script and return a thehive instance object, a configuration object and defaults values
-    (thehive, configuration, defaults, logger) = initialize_thehive(keywords, settings ,logger_name="thehive_cases")
+    (thehive, configuration, defaults, logger) = initialize_thehive_instance(keywords, settings ,logger_name="thehive_create_cases")
 
     outputResults = []
     for result in results:
         createTitle = configuration.checkAndValidate(result, "title", is_mandatory=True)
-        createSeverity = int(configuration.checkAndValidate(result, "severity", default=CREATE_SEVERITY_DEFAULT, is_mandatory=False))
+        createSeverity = int(configuration.checkAndValidate(result, "severity", default=SEVERITY_DEFAULT, is_mandatory=False))
         createTags = configuration.checkAndValidate(result, "tags", default=[], is_mandatory=False).split("; ")
-        createPAP = int(configuration.checkAndValidate(result, "pap", default=CREATE_PAP_DEFAULT, is_mandatory=True))
-        createDate = float(configuration.checkAndValidate(result, "date", default=CREATE_DATE_DEFAULT, is_mandatory=False))*1000
-        createTLP = int(configuration.checkAndValidate(result, "tlp", default=CREATE_TLP_DEFAULT, is_mandatory=True))
+        createPAP = int(configuration.checkAndValidate(result, "pap", default=PAP_DEFAULT, is_mandatory=True))
+        createDate = float(configuration.checkAndValidate(result, "date", default=DATE_DEFAULT, is_mandatory=False))*1000
+        createTLP = int(configuration.checkAndValidate(result, "tlp", default=TLP_DEFAULT, is_mandatory=True))
         createDescription = configuration.checkAndValidate(result, "description", default="", is_mandatory=True)
-        createTasks = [CaseTask(title=t) for t in configuration.checkAndValidate(result, "tasks", default=[], is_mandatory=False).split("; ")]
+        createTasks = [CaseTask(title=t) for t in configuration.checkAndValidate(result, "tasks", default=[], is_mandatory=False).split(" ;")]
 
         # create the query from parameters
         new_case = Case(title=createTitle, severity=createSeverity, tags=createTags, pap=createPAP, startDate=createDate, tlp=createTLP, description=createDescription, tasks=createTasks)

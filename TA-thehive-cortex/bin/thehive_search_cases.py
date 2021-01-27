@@ -2,7 +2,8 @@
 import sys, os
 import ta_thehive_cortex_declare
 import splunk.Intersplunk
-from common import Settings, initialize_thehive
+from common import Settings
+from thehive import initialize_thehive_instance
 from thehive4py.query import And, Eq, Or, String
 from copy import deepcopy
 import json
@@ -25,7 +26,7 @@ if __name__ == '__main__':
     results,dummyresults,settings = splunk.Intersplunk.getOrganizedResults()
 
     # Initialize this script and return a thehive instance object, a configuration object and defaults values
-    (thehive, configuration, defaults, logger) = initialize_thehive(keywords, settings ,logger_name="thehive_cases")
+    (thehive, configuration, defaults, logger) = initialize_thehive_instance(keywords, settings ,logger_name="thehive_search_cases")
 
     outputResults = []
     # Prepare and get all cases queries 

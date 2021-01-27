@@ -10,14 +10,15 @@ import json
 import requests
 
 from thehive4py.auth import BasicAuth, BearerAuth
-from thehive4py.models import CaseHelper
+from thehive4py.models import CaseHelper, Version
 from thehive4py.query import Parent, Id, And, Eq
-from thehive4py.exceptions import TheHiveException, CaseException, CaseTaskException, CaseTemplateException, AlertException, CaseObservableException, CustomFieldException
+from thehive4py.exceptions import *
 
 
 class TheHiveApi:
 
-    def __init__(self, url, principal, password=None, proxies={}, cert=True, organisation=None):
+    def __init__(self, url, principal, password=None, proxies={}, cert=True, organisation=None,
+                 version=Version.THEHIVE_3):
         """
         Python API client for TheHive.
 
@@ -34,6 +35,7 @@ class TheHiveApi:
                 ```
             cert (bool): Wether or not to enable SSL certificate validation
             organisation (str): The name of the organisation against which api calls will be run. Defaults to None
+            version (int): The version of TheHive instance. Defaults to 3
 
 
         ??? note "Examples"
@@ -54,9 +56,11 @@ class TheHiveApi:
                 }
                 api = TheHiveApi('http://my_thehive:9000',
                     'my_api_key',
+                    None,
                     proxies,
                     True,
-                    'my-org'
+                    'my-org',
+                    version=Version.THEHIVE_3.value
                 )
                 ```
         """
@@ -72,9 +76,13 @@ class TheHiveApi:
             self.auth = BearerAuth(self.principal, self.organisation)
 
         self.cert = cert
+        self.version = version
 
         # Create a CaseHelper instance
         self.case = CaseHelper(self)
+
+    def __isVersion(self, version):
+        return self.version is version
 
     def __find_rows(self, find_url, **attributes):
         """
@@ -258,6 +266,26 @@ class TheHiveApi:
         except requests.exceptions.RequestException as e:
             raise CaseTaskException("Case task update error: {}".format(e))
 
+    def delete_case_task(self, task_id):
+        """
+        Deletes a TheHive case task.
+
+        Arguments:
+            task_id (str): Id of the task to delete
+
+        Returns:
+            response (requests.Response): Response object including the updated task
+
+        Raises:
+            CaseException: An error occured during case deletion
+        """
+        req = self.url + "/api/case/task/{}".format(task_id)
+        try:
+            return requests.patch(req, headers={'Content-Type': 'application/json'}, json={'status': 'Cancel'},
+                                   proxies=self.proxies, auth=self.auth, verify=self.cert)
+        except requests.exceptions.RequestException as e:
+            raise CaseTaskException("Case task deletion error: {}".format(e))
+
     def create_task_log(self, task_id, case_task_log):
 
         """
@@ -278,7 +306,8 @@ class TheHiveApi:
         data = {'_json': json.dumps({"message": case_task_log.message})}
 
         if case_task_log.file:
-            f = {'attachment': (os.path.basename(case_task_log.file), open(case_task_log.file, 'rb'), None)}
+            f = case_task_log.attachment
+
             try:
                 return requests.post(req, data=data, files=f, proxies=self.proxies, auth=self.auth, verify=self.cert)
             except requests.exceptions.RequestException as e:
@@ -309,25 +338,60 @@ class TheHiveApi:
 
         if case_observable.dataType == 'file':
             try:
-                mesg = json.dumps({
+
+                data = {
                     "dataType": case_observable.dataType,
                     "message": case_observable.message,
                     "tlp": case_observable.tlp,
                     "tags": case_observable.tags,
                     "ioc": case_observable.ioc,
-                    "sighted": case_observable.sighted
-                })
-                data = {"_json": mesg}
+                    "sighted": case_observable.sighted,
+                    "ignoreSimilarity": case_observable.ignoreSimilarity
+                }
+
+                # Exclude ignoreSimilarity field for TheHive 3
+                if self.__isVersion(Version.THEHIVE_3):
+                    data.pop('ignoreSimilarity', None)
+
+                data = {"_json": json.dumps(data)}
                 return requests.post(req, data=data, files=case_observable.data[0], proxies=self.proxies, auth=self.auth, verify=self.cert)
             except requests.exceptions.RequestException as e:
                 raise CaseObservableException("Case observable create error: {}".format(e))
         else:
             try:
-                return requests.post(req, headers={'Content-Type': 'application/json'}, data=case_observable.jsonify(excludes=['id']), proxies=self.proxies, auth=self.auth, verify=self.cert)
+                to_exclude = ['id']
+
+                # Exclude ignoreSimilarity field for TheHive 3
+                if self.__isVersion(Version.THEHIVE_3):
+                    to_exclude.append('ignoreSimilarity')
+
+                data = case_observable.jsonify(excludes=to_exclude)
+
+                return requests.post(req, headers={'Content-Type': 'application/json'}, data=data, proxies=self.proxies, auth=self.auth, verify=self.cert)
             except requests.exceptions.RequestException as e:
                 raise CaseObservableException("Case observable create error: {}".format(e))
 
-    def update_case_observable(self, observable_id, case_observable):
+    def delete_case_observable(self, observable_id):
+        """
+        Deletes a TheHive case observable.
+
+        Arguments:
+            observable_id (str): Id of the observable to delete
+
+        Returns:
+            response (requests.Response): Response object including true or false based on the action's success
+
+        Raises:
+            CaseObservableException: An error occured during case observable deletion
+        """
+        req = self.url + "/api/case/artifact/{}".format(observable_id)
+
+        try:
+            return requests.delete(req, proxies=self.proxies, auth=self.auth, verify=self.cert)
+        except requests.exceptions.RequestException as e:
+            raise CaseObservableException("Case observable deletion error: {}".format(e))
+
+    def update_case_observable(self, observable_id, case_observable, fields=[]):
 
         """
         Update an existing case observable
@@ -335,25 +399,30 @@ class TheHiveApi:
         Arguments:
             observable_id: Observable identifier
             case_observable (CaseObservable): Instance of [CaseObservable][thehive4py.models.CaseObservable]
+            fields (Array): Optional parameter, an array of fields names, the ones we want to update.
+
+                Updatable fields are: [`tlp`, `ioc`, `sighted`, `tags`, `message`, `ignoreSimilarity`]
 
         Returns:
             response (requests.Response): Response object including a JSON description of the updated case observable
 
         Raises:
-            CaseObservableException: An error occured during case observable creation
+            CaseObservableException: An error occured during case observable update
         """
 
         req = self.url + "/api/case/artifact/{}".format(observable_id)
 
+        update_keys = ['message', 'tlp', 'tags', 'ioc', 'sighted', 'ignoreSimilarity']
+
+        data = {k: v for k, v in case_observable.__dict__.items() if (
+                len(fields) > 0 and k in fields) or (len(fields) == 0 and k in update_keys)}
+
+        # Exclude ignoreSimilarity field for TheHive 3
+        if self.__isVersion(Version.THEHIVE_3):
+            data.pop('ignoreSimilarity', None)
+
         try:
-            data = json.dumps({
-                "message": case_observable.message,
-                "tlp": case_observable.tlp,
-                "tags": case_observable.tags,
-                "ioc": case_observable.ioc,
-                "sighted": case_observable.sighted
-            })
-            return requests.patch(req, headers={'Content-Type': 'application/json'}, data=data, proxies=self.proxies, auth=self.auth, verify=self.cert)
+            return requests.patch(req, headers={'Content-Type': 'application/json'}, json=data, proxies=self.proxies, auth=self.auth, verify=self.cert)
         except requests.exceptions.RequestException as e:
             raise CaseObservableException("Case observable update error: {}".format(e))
 
@@ -426,15 +495,41 @@ class TheHiveApi:
             query (dict): A query object, defined in JSON format or using utiliy methods from thehive4py.query module
             sort (Array): List of fields to sort the result with. Prefix the field name with `-` for descending order
                 and `+` for ascending order
-            range (str): A range describing the number of rows to be returned
 
         Returns:
-            response (requests.Response): Response object including a JSON description of the case.
+            response (dict): A dict object describing the first case resulting from the query and sort options.
 
         Raises:
             CaseException: An error occured during case search
         """
-        return self.find_cases(**attributes).json()[0]
+        attributes['range'] = '0-1'
+
+        try:
+            return self.find_cases(**attributes).json()[0]
+        except requests.exceptions.RequestException as e:
+            raise CaseObservableException("Case search error: {}".format(e))
+
+    def get_case_observable(self, observable_id):
+
+        """
+        Get a case observable by its id
+
+        Arguments:
+            observable_id (str): Case observable identifier
+
+        Returns:
+            response (requests.Response): Response object including a JSON representation of the case observable
+
+        Raises:
+            CaseObservableException: An error occured during case observable fetch
+        """
+
+        req = self.url + "/api/case/artifact/{}".format(observable_id)
+
+        try:
+            return requests.get(req, proxies=self.proxies, auth=self.auth, verify=self.cert)
+        except requests.exceptions.RequestException as e:
+            raise CaseObservableException("Case observable search error: {}".format(e))
 
     def get_case_observables(self, case_id, **attributes):
 
@@ -480,6 +575,25 @@ class TheHiveApi:
             return requests.post(req, params=params, json=data, proxies=self.proxies, auth=self.auth, verify=self.cert)
         except requests.exceptions.RequestException as e:
             raise CaseObservableException("Case observables search error: {}".format(e))
+
+    def find_observables(self, **attributes):
+        """
+        Find observables using sort, pagination and a query
+
+        Arguments:
+            query (dict): A query object, defined in JSON format or using utiliy methods from thehive4py.query module
+            sort (Array): List of fields to sort the result with. Prefix the field name with `-` for descending order
+                and `+` for ascending order
+            range (str): A range describing the number of rows to be returned
+
+        Returns:
+            response (requests.Response): Response object including a JSON array of observables.
+
+        Raises:
+            ObservableException: An error occured during observable search
+        """
+
+        return self.__find_rows("/api/case/artifact/_search", **attributes)
 
     def get_case_tasks(self, case_id, **attributes):
         """
@@ -579,8 +693,14 @@ class TheHiveApi:
         """
 
         req = self.url + "/api/case/template/_search"
+
+        if self.__isVersion(Version.THEHIVE_3):
+            query = And(Eq("name", name), Eq("status", "Ok"))
+        else:
+            query = Eq("name", name)
+
         data = {
-            "query": And(Eq("name", name), Eq("status", "Ok"))
+            "query": query
         }
 
         try:
@@ -653,7 +773,7 @@ class TheHiveApi:
                 "description": custom_field.description,
                 "type": custom_field.type,
                 "options": custom_field.options,
-                "mandatory": custom_field.madatory
+                "mandatory": custom_field.mandatory
                 }
             }
         req = self.url + "/api/list/custom_fields"
@@ -696,31 +816,66 @@ class TheHiveApi:
             CaseTaskException: An error occured during case task log fetch
         """
 
-        req = self.url + "/api/case/task/log/{}".format(log_id)
-        try:
-            return requests.get(req, proxies=self.proxies, auth=self.auth, verify=self.cert)
-        except requests.exceptions.RequestException as e:
-            raise CaseTaskException("Case task logs search error: {}".format(e))
+        if self.__isVersion(Version.THEHIVE_3):
+            req = self.url + "/api/case/task/log/{}".format(log_id)
+            try:
+                return requests.get(req, proxies=self.proxies, auth=self.auth, verify=self.cert)
+            except requests.exceptions.RequestException as e:
+                raise CaseTaskLogException("Case task log fetch error: {}".format(e))
+        else:
+            req = self.url + "/api/v1/query"
 
-    def get_task_logs(self, task_id):
+            data = {
+                "query": [
+                    {"_name": "getLog", "idOrName": log_id}
+                ]
+            }
+            try:
+                return requests.post(req, json=data, proxies=self.proxies, auth=self.auth, verify=self.cert)
+            except requests.exceptions.RequestException as e:
+                raise CaseTaskLogException("Case task log fetch error: {}".format(e))
+            #'{"query": [{"_name": "getLog", "idOrName": "~40976560"}]}'
+
+    def get_task_logs(self, task_id, **attributes):
         """
         Get logs of a case task by its id
 
         Arguments:
             task_id (str): Case task identifier
+            query (dict): A query object, defined in JSON format or using utiliy methods from thehive4py.query module
+            sort (Array): List of fields to sort the result with. Prefix the field name with `-` for descending order
+                and `+` for ascending order
+            range (str): A range describing the number of rows to be returned
 
         Returns:
             response (requests.Response): Response object including a JSON array representing a list of case task logs
 
         Raises:
-            CaseTaskException: An error occured during case task log fetch
+            CaseTaskException: An error occured during case task log search
         """
 
-        req = self.url + "/api/case/task/{}/log".format(task_id)
-        try:
-            return requests.get(req, proxies=self.proxies, auth=self.auth, verify=self.cert)
-        except requests.exceptions.RequestException as e:
-            raise CaseTaskException("Case task logs search error: {}".format(e))
+        req = self.url + "/api/case/task/log/_search"
+
+        # Add range and sort parameters
+        params = {
+            "range": attributes.get("range", "all"),
+            "sort": attributes.get("sort", [])
+        }
+
+        # Add body
+        parent_criteria = Parent('case_task', Id(task_id))
+
+        # Append the custom query if specified
+        if "query" in attributes:
+            criteria = And(parent_criteria, attributes["query"])
+        else:
+            criteria = parent_criteria
+
+        data = {
+            "query": criteria
+        }
+
+        return self.find_task_logs(query=criteria, **params)
 
     def create_alert(self, alert):
 
@@ -738,7 +893,16 @@ class TheHiveApi:
         """
 
         req = self.url + "/api/alert"
-        data = alert.jsonify(excludes=['id'])
+
+        to_exclude = ['id']
+
+        # Exclude PAP field for TheHive 3
+        if self.__isVersion(Version.THEHIVE_3):
+            to_exclude.append('pap')
+            to_exclude.append('externalLink')
+
+        data = alert.jsonify(excludes=to_exclude)
+
         try:
             return requests.post(req, headers={'Content-Type': 'application/json'}, data=data, proxies=self.proxies, auth=self.auth, verify=self.cert)
         except requests.exceptions.RequestException as e:
@@ -784,6 +948,20 @@ class TheHiveApi:
         except requests.exceptions.RequestException as e:
             raise AlertException("Mark alert as unread error: {}".format(e))
 
+    def merge_alert_into_case(self, alert_id, case_id):
+        """
+        Merge alert into existing case.
+        :param alert_id: The ID of the alert to merge.
+        :param case_id: The ID of the case where to merge alert
+        :return:
+        """
+        req = self.url + "/api/alert/{}/merge/{}".format(alert_id, case_id)
+
+        try:
+            return requests.post(req, headers={'Content-Type': 'application/json'}, json={}, proxies=self.proxies, auth=self.auth, verify=self.cert)
+        except requests.exceptions.RequestException as e:
+            raise AlertException("Merge alert to case error: {}".format(e))
+
     def update_alert(self, alert_id, alert, fields=[]):
         """
         Update an alert completely or using specified fields
@@ -804,27 +982,33 @@ class TheHiveApi:
         req = self.url + "/api/alert/{}".format(alert_id)
 
         # update only the alert attributes that are not read-only
-        update_keys = ['tlp', 'severity', 'tags', 'caseTemplate', 'title', 'description', 'customFields']
+        update_keys = ['tlp', 'pap', 'severity', 'tags', 'caseTemplate', 'title', 'description', 'customFields',
+                       'artifacts', 'follow']
 
-        if len(fields) > 0:
-            data = {k: v for k, v in alert.__dict__.items() if k in fields}
-        else:
-            data = {k: v for k, v in alert.__dict__.items() if k in update_keys}
+        data = {k: v for k, v in alert.__dict__.items() if (
+                len(fields) > 0 and k in fields) or (len(fields) == 0 and k in update_keys)}
 
-        if hasattr(data, 'artifacts'):
+        if 'artifacts' in data:
             data['artifacts'] = [a.__dict__ for a in alert.artifacts]
+            # data['artifacts'] = [{k: v for k, v in a.__dict__.items()} for a in alert.artifacts]
+
+        # Exclude PAP field for TheHive 3
+        if self.__isVersion(Version.THEHIVE_3):
+            data.pop('pap', None)
+            data.pop('externalLink', None)
 
         try:
             return requests.patch(req, headers={'Content-Type': 'application/json'}, json=data, proxies=self.proxies, auth=self.auth, verify=self.cert)
         except requests.exceptions.RequestException as e:
             raise AlertException("Alert update error: {}".format(e))
 
-    def get_alert(self, alert_id):
+    def get_alert(self, alert_id, similar_cases=False):
         """
         Get an alert by its id
 
         Arguments:
             alert_id (str): Id of the alert
+            similar_cases (bool): True if similar cases should be retrieved (Default False)
 
         Returns:
             response (requests.Response): Response object including a JSON representation of the alert
@@ -832,10 +1016,18 @@ class TheHiveApi:
         Raises:
             AlertException: An error occured during alert update
         """
+
         req = self.url + "/api/alert/{}".format(alert_id)
 
+        params = {}
+
+        if similar_cases:
+            params = {
+                "similarity": int(similar_cases)
+            }
+
         try:
-            return requests.get(req, proxies=self.proxies, auth=self.auth, verify=self.cert)
+            return requests.get(req, proxies=self.proxies, params=params, auth=self.auth, verify=self.cert)
         except requests.exceptions.RequestException as e:
             raise AlertException("Alert fetch error: {}".format(e))
 
@@ -858,16 +1050,43 @@ class TheHiveApi:
 
         return self.__find_rows("/api/alert/_search", **attributes)
 
+    def delete_alert(self, alert_id):
+        """
+        Deletes a TheHive alert.
+
+        Arguments:
+            alert_id (str): Id of the alert to delete
+
+        Returns:
+            response (requests.Response): Response object including true or false based on the action's success
+
+        Raises:
+            AlertException: An error occured during alert deletion
+
+        !!! Warning
+            TheHive 3: Deleting alert requires `admin` role
+            TheHive 4: Deleting alert requires a role including `manageAlert` permissing
+        """
+        
+        req = self.url + "/api/alert/{}".format(alert_id)
+        params = {
+            "force": 1
+        }
+        try:
+            return requests.delete(req, params=params, proxies=self.proxies, auth=self.auth, verify=self.cert)
+        except requests.exceptions.RequestException as e:
+            raise AlertException("Alert deletion error: {}".format(e))
+
     def update_case_observables(self, observable, fields=[]):
         """
-        Update a case observable
+        [DEPRECATED] Update a case observable
 
         Arguments:
             observable (CaseObservable): Instance of [CaseObservable][thehive4py.models.CaseObservable] to update. 
                 The observable's `id` determines which case to update.
             fields (Array): Optional parameter, an array of fields names, the ones we want to update.
                 
-                Updatable fields are: [`tlp`, `ioc`, `flag`, `sighted`, `tags`, `message`]
+                Updatable fields are: [`tlp`, `ioc`, `sighted`, `tags`, `message`, `ignoreSimilarity`]
 
         Returns:
             response (requests.Response): Response object including a JSON description of a case observable
@@ -875,19 +1094,7 @@ class TheHiveApi:
         Raises:
             CaseObservableException: An error occured during observable update
         """
-        req = self.url + "/api/case/artifact/{}".format(observable.id)
-
-        # Choose which attributes to send
-        update_keys = ['tlp', 'ioc', 'flag', 'sighted', 'tags', 'message']
-
-        data = {k: v for k, v in observable.__dict__.items() if (
-            len(fields) > 0 and k in fields) or (len(fields) == 0 and k in update_keys)}
-
-        try:
-            return requests.patch(req, headers={'Content-Type': 'application/json'},
-                json=data, proxies=self.proxies, auth=self.auth, verify=self.cert)
-        except requests.exceptions.RequestException as e:
-            raise CaseTaskException("Case observable update error: {}".format(e))
+        return self.update_case_observable(observable.id, observable, fields=fields)
 
     def promote_alert_to_case(self, alert_id, case_template=None):
         """
@@ -962,5 +1169,239 @@ class TheHiveApi:
 
         return self.__find_rows("/api/case/task/_search", **attributes)
 
-# - addObservable(file)
-# - addObservable(data)
+    def find_task_logs(self, **attributes):
+        """
+        Find task logs using sort, pagination and a query
+
+        Arguments:
+            query (dict): A query object, defined in JSON format or using utiliy methods from thehive4py.query module
+            sort (Array): List of fields to sort the result with. Prefix the field name with `-` for descending order
+                and `+` for ascending order
+            range (str): A range describing the number of rows to be returned
+
+        Returns:
+            response (requests.Response): Response object including a JSON array representing a list of case task logs
+
+        Raises:
+            CaseTaskException: An error occured during case task log search
+        """
+
+        return self.__find_rows("/api/case/task/log/_search", **attributes)
+
+    def export_to_misp(self, misp_id, case_id):
+        """
+        Export selected IOCs of a case as an event to a MISP instance 
+        This function triggers the same action triggered when the "Share" button on the TheHive GUI is clicked
+
+        Arguments:
+            misp_id: identifier of the MISP server
+            case_id (str): Id of the case
+            
+        Returns:
+            response (requests.Response): Response object including a JSON representation of the exported event
+
+        Raises:
+            TheHiveException: An error occured during the export operation
+        """
+
+        req = self.url + "/api/connector/misp/export/{0}/{1}".format(case_id, misp_id)
+        try:
+            return requests.post(req, headers={'Content-Type': 'application/json'}, proxies=self.proxies,
+                                 json={}, auth=self.auth, verify=self.cert)
+        except requests.exceptions.RequestException as e:
+            raise TheHiveException("MISP export error: {}".format(e))
+
+    def download_attachment(self, attachment_id, filename="attachment", archive=False):
+        """
+        Get the content of an attachement object by ID
+
+        Arguments:
+            attachment_id: identifier of the attachment object
+            filename (str): name of the downloaded file
+            archive (bool): set to `True` to zip and password protect the downloaded file
+
+        Returns:
+            response (requests.Response): Response object including a the attachment content as bytes
+
+        Raises:
+            TheHiveException: An error occured during the attachment download
+        """
+        if archive is True:
+            req = self.url + "/api/datastorezip/{}?name{}".format(attachment_id, filename)
+        else:
+            req = self.url + "/api/datastore/{}?name={}".format(attachment_id, filename)
+
+        try:
+            return requests.get(req, proxies=self.proxies, auth=self.auth, verify=self.cert)
+        except requests.exceptions.RequestException as e:
+            raise TheHiveException("Error on retrieving attachment {}: {}".format(attachment_id, e))
+
+    def download_task_log_attachment(self, task_log_id, archive=False):
+        """
+        Get the content of the attachement object of a task log
+
+        Arguments:
+            task_log_id: identifier of the task log object
+            archive (bool): set to `True` to zip and password protect the downloaded file
+
+        Returns:
+            response (requests.Response): Response object including a the attachment content as bytes
+
+        Raises:
+            CaseTaskLogException: If the task log doesn't have an attachment
+            TheHiveException: An error occured during the attachment download
+        """
+        try:
+            # Get the task log by id
+            response = self.get_task_log(task_log_id)
+
+            # Check if it has an attachment
+            if self.__isVersion(Version.THEHIVE_3):
+                log = response.json()
+            else:
+                log = response.json()[0]
+
+            if 'attachment' in log:
+                attachment = log['attachment']
+                return self.download_attachment(attachment['id'], filename=attachment['name'], archive=archive)
+            else:
+                raise CaseTaskLogException("Task log {} doesn't have an attachment".format(task_log_id))
+
+        except requests.exceptions.RequestException as e:
+            raise CaseTaskLogException("Error on retrieving attachment of task log {}: {}".format(task_log_id, e))
+
+    def download_observable_attachment(self, observable_id, archive=True):
+        """
+        Get the content of the attachement object of a file observable
+
+        Arguments:
+            observable_id: identifier of the case observable object
+            archive (bool): set to `False` to disable zip and password protection of the downloaded file
+
+        Returns:
+            response (requests.Response): Response object including a the attachment content as bytes
+
+        Raises:
+            CaseObservableException: If the observable is not a file
+            TheHiveException: An error occured during the attachment download
+        """
+        try:
+            # Get the observable by id
+            response = self.get_case_observable(observable_id)
+
+            # Check if it has an attachment
+            observable = response.json()
+
+            if 'attachment' in observable:
+                attachment = observable['attachment']
+                return self.download_attachment(attachment['id'], filename=attachment['name'], archive=True)
+            else:
+                raise CaseObservableException("Observable {} doesn't have an attachment".format(observable_id))
+
+        except requests.exceptions.RequestException as e:
+            raise CaseObservableException("Error on retrieving attachment of case observable {}: {}".format(observable_id, e))
+
+    def create_alert_artifact(self, alert_id, alert_artifact):
+
+        """
+        Create an alert artifact
+
+        Arguments:
+            alert_id (str): Alert identifier
+            alert_artifact (AlertArtifact): Instance of [AlertArtifact][thehive4py.models.AlertArtifact]
+
+        Returns:
+            response (requests.Response): Response object including a JSON description of an alert artifact
+
+        Raises:
+            AlertArtifactException: An error occured during alert artifact creation
+
+        !!! Warning
+            This function is available in TheHive 4 ONLY
+        """
+
+        if self.__isVersion(Version.THEHIVE_3):
+            raise AlertArtifactException("This function is available in TheHive 4 ONLY")
+
+        req = self.url + "/api/alert/{}/artifact".format(alert_id)
+
+        if alert_artifact.dataType == 'file':
+            try:
+                fields = ["dataType", "message", "tlp", "tags", "ioc", "sighted", "ignoreSimilarity"]
+                data = {k: v for k, v in alert_artifact.__dict__.items() if k in fields}
+
+                data = {"_json": json.dumps(data)}
+                return requests.post(req, data=data, files=alert_artifact.data, proxies=self.proxies, auth=self.auth, verify=self.cert)
+            except requests.exceptions.RequestException as e:
+                raise AlertArtifactException("Alert artifact create error: {}".format(e))
+        else:
+            try:
+                data = alert_artifact.jsonify(excludes=['id'])
+
+                return requests.post(req, headers={'Content-Type': 'application/json'}, data=data, proxies=self.proxies, auth=self.auth, verify=self.cert)
+            except requests.exceptions.RequestException as e:
+                raise AlertArtifactException("Alert artifact create error: {}".format(e))
+
+    def delete_alert_artifact(self, artifact_id):
+        """
+        Deletes a TheHive alert artifact.
+
+        Arguments:
+            artifact_id (str): Id of the artifact to delete
+
+        Returns:
+            response (requests.Response): Response object including true or false based on the action's success
+
+        Raises:
+            AlertArtifactException: An error occured during alert artifact deletion
+
+        !!! Warning
+            This function is available in TheHive 4 ONLY
+        """
+
+        if self.__isVersion(Version.THEHIVE_3):
+            raise AlertArtifactException("This function is available in TheHive 4 ONLY")
+
+        req = self.url + "/api/alert/artifact/{}".format(artifact_id)
+
+        try:
+            return requests.delete(req, proxies=self.proxies, auth=self.auth, verify=self.cert)
+        except requests.exceptions.RequestException as e:
+            raise AlertArtifactException("Alert artifact deletion error: {}".format(e))
+
+    def update_alert_artifact(self, artifact_id, alert_artifact, fields=[]):
+
+        """
+        Update an existing alert artifact
+
+        Arguments:
+            artifact_id: Artifact identifier
+            alert_artifact (AlertArtifact): Instance of [AlertArtifact][thehive4py.models.AlertArtifact]
+            fields (Array): Optional parameter, an array of fields names, the ones we want to update.
+
+                Updatable fields are: [`tlp`, `ioc`, `sighted`, `tags`, `message`, `ignoreSimilarity`]
+
+        Returns:
+            response (requests.Response): Response object including a JSON description of the updated alert artifact
+
+        Raises:
+            AlertArtifactException: An error occured during alert artifact update
+
+        !!! Warning
+            This function is available in TheHive 4 ONLY
+        """
+
+        if self.__isVersion(Version.THEHIVE_3):
+            raise AlertArtifactException("This function is available in TheHive 4 ONLY")
+
+        req = self.url + "/api/alert/artifact/{}".format(artifact_id)
+
+        update_keys = ['message', 'tlp', 'tags', 'ioc', 'sighted', 'ignoreSimilarity']
+
+        data = {k: v for k, v in alert_artifact.__dict__.items() if (
+                len(fields) > 0 and k in fields) or (len(fields) == 0 and k in update_keys)}
+
+        try:
+            return requests.patch(req, headers={'Content-Type': 'application/json'}, json=data, proxies=self.proxies, auth=self.auth, verify=self.cert)
+        except requests.exceptions.RequestException as e:
+            raise CaseObservableException("Case observable update error: {}".format(e))
