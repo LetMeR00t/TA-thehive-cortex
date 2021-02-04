@@ -8,7 +8,10 @@
 # Copyright: LGPLv3 (https://www.gnu.org/licenses/lgpl-3.0.txt)
 # Feel free to use the code, but please share the changes you've made
 
+import csv
+import gzip
 import json
+import os
 import re
 import requests
 import time
@@ -33,6 +36,155 @@ OBSERVABLE_TLP = {
     "2": "TLP:AMBER",
     "3": "TLP:RED"
 }
+
+# All available data types
+dataTypeList = [
+    "domain",
+    "file",
+    "filename",
+    "fqdn",
+    "hash",
+    "ip",
+    "mail",
+    "mail_subject",
+    "other",
+    "regexp",
+    "registry",
+    "uri_path",
+    "url",
+    "user-agent"]
+
+
+def create_datatype_lookup(helper, app_name):
+    # if it does not exist, create thehive_datatypes.csv
+    _SPLUNK_PATH = os.environ['SPLUNK_HOME']
+    directory = os.path.join(
+        _SPLUNK_PATH, 'etc', 'apps', app_name, 'lookups')
+    th_dt_filename = os.path.join(directory, 'thehive_datatypes.csv')
+    if not os.path.exists(th_dt_filename):
+        # file th_dt_filename.csv doesn't exist. Create the file
+        observables = list()
+        observables.append(['field_name', 'field_type', 'datatype', 'regex', 'description'])
+        for dt in dataTypeList:
+            observables.append([dt, 'artifact', dt, '', ''])
+        try:
+            if not os.path.exists(directory):
+                os.makedirs(directory)
+            with open(th_dt_filename, 'w') as file_object:
+                csv_writer = csv.writer(file_object, delimiter=',')
+                for observable in observables:
+                    csv_writer.writerow(observable)
+        except IOError:
+            helper.log_error(
+                "[HC102] FATAL {} could not be opened in write mode".format(th_dt_filename)
+            )
+
+
+def create_instance_lookup(helper, app_name):
+    # if the lookup available on github has not been created
+    # generate it on first alert and return a message to configure it
+    _SPLUNK_PATH = os.environ['SPLUNK_HOME']
+    directory = os.path.join(
+        _SPLUNK_PATH, 'etc', 'apps', app_name, 'lookups')
+    th_list_filename = os.path.join(directory, 'thehive_instance_list.csv')
+    if not os.path.exists(th_list_filename):
+        # file thehive_instance_list.csv doesn't exist. Create the file
+        th_list = [['thehive_instance', 'thehive_url', 'thehive_api_key_name',
+                    'thehive_verifycert', 'thehive_ca_full_path',
+                    'thehive_use_proxy', 'client_use_cert',
+                    'client_cert_full_path'],
+                   ['th_test', 'https://testhive.example.com/',
+                    'thehive_api_key1', 'True', '',
+                    'False', 'False', 'client_cert_full_path'],
+                   ['th_staging', 'https://staginghive.example.com/',
+                    'thehive_api_key2', 'True', '',
+                    'False', 'False', 'client_cert_full_path'],
+                   ['th_prod', 'https://prodhive.example.com/',
+                    'thehive_api_key3', 'True', '',
+                    'False', 'False', 'client_cert_full_path']
+                   ]
+        try:
+            if not os.path.exists(directory):
+                os.makedirs(directory)
+            with open(th_list_filename, 'w') as file_object:
+                csv_writer = csv.writer(file_object, delimiter=',')
+                for instance in th_list:
+                    csv_writer.writerow(instance)
+        except IOError:
+            helper.log_error(
+                "[HC202] FATAL {} could not be opened in write mode"
+                .format(th_list_filename)
+            )
+
+
+def get_datatype_dict(helper, app_name):
+    dataType_dict = dict()
+    _SPLUNK_PATH = os.environ['SPLUNK_HOME']
+    directory = os.path.join(
+        _SPLUNK_PATH, 'etc', 'apps', app_name, 'lookups'
+    )
+    th_dt_filename = os.path.join(directory, 'thehive_datatypes.csv')
+    if os.path.exists(th_dt_filename):
+        try:
+            # open the file with gzip lib, start making alerts
+            # can with statements fail gracefully??
+            fh = open(th_dt_filename, "rt")
+        except ValueError:
+            # Workaround for Python 2.7 under Windows
+            fh = gzip.open(th_dt_filename, "r")
+        if fh is not None:
+            try:
+                csv_reader = csv.DictReader(fh)
+                for row in csv_reader:
+                    if 'field_name' in row and 'field_type' in row:
+                        if row['field_type'] == 'artifact':
+                            dataType_dict[row['field_name']] = row['datatype']
+                helper.log_info("[HC304] dataType_dict built from thehive_datatypes.csv")
+            except IOError:  # file thehive_datatypes.csv not readable
+                helper.log_error('[HC305] file {} empty, malformed or not readable'.format(
+                    th_dt_filename
+                ))
+    else:
+        create_datatype_lookup(helper, app_name)
+    if not dataType_dict:
+        dataType_dict = dict()
+        for dt in dataTypeList:
+            dataType_dict[dt] = dt
+        helper.log_info("[HC306] dataType_dict built from inline table")
+    return dataType_dict
+
+
+def get_customField_dict(helper, app_name):
+    customField_dict = dict()
+    _SPLUNK_PATH = os.environ['SPLUNK_HOME']
+    directory = os.path.join(
+        _SPLUNK_PATH, 'etc', 'apps', app_name, 'lookups'
+    )
+    th_dt_filename = os.path.join(directory, 'thehive_datatypes.csv')
+    if os.path.exists(th_dt_filename):
+        try:
+            # open the file with gzip lib, start making alerts
+            # can with statements fail gracefully??
+            fh = open(th_dt_filename, "rt")
+        except ValueError:
+            # Workaround for Python 2.7 under Windows
+            fh = gzip.open(th_dt_filename, "r")
+        if fh is not None:
+            try:
+                csv_reader = csv.DictReader(fh)
+                for row in csv_reader:
+                    if 'field_name' in row and 'field_type' in row:
+                        if row['field_type'] == 'customField':
+                            customField_dict[row['field_name']] = row['datatype']
+                helper.log_info("[HC604] customField_dict built from thehive_datatypes.csv")
+            except IOError:  # file thehive_datatypes.csv not readable
+                helper.log_error('[HC605] file {} absent or not readable'.format(
+                    th_dt_filename
+                ))
+    else:
+        create_datatype_lookup(helper, app_name)
+    return customField_dict
+
 
 def process_event(helper, *args, **kwargs):
     """
@@ -119,23 +271,23 @@ def process_event(helper, *args, **kwargs):
     helper.log_info("server_uri={}".format(helper.settings["server_uri"]))
     [sample_code_macro:end]
     """
-    
+
     # Set the current LOG level
     helper.log_info("LOG level to: "+helper.log_level)
     helper.set_log_level(helper.log_level)
-    
-    helper.log_info("[AL101] Alert action thehive_ce_alert started at {}".format(time.time()))
+
+    helper.log_info("[AL101] Alert action thehive_create_a_new_alert started at {}".format(time.time()))
 
     # Get the instance connection and initialize settings
     spl = client.connect(app="TA-thehive-cortex",owner="nobody",token=helper.settings["session_key"])
     configuration = Settings(spl, search_settings=None, logger=helper._logger)
 
     instance_id = helper.get_param("thehive_instance_id")
-    
+
     # Create the TheHive instance
     (thehive_username, thehive_api_key) = configuration.getInstanceUsernameApiKey(instance_id)
     thehive = TheHive(configuration.getInstanceURL(instance_id), thehive_api_key, helper.settings["sid"], logger=helper._logger)
-    
+
     # Get alert arguments
     alert_args = {}
     # Get string values from alert form
@@ -159,38 +311,23 @@ def process_event(helper, *args, **kwargs):
     alert_args['severity'] = helper.get_param("severity")
     alert_args['tlp'] = helper.get_param("tlp")
     alert_args['pap'] = helper.get_param("pap")
-    
+
     # Create the alert
     helper.log_debug("[AL103] Alert preparation is finished. Creating the alert...")
     create_alert(helper, thehive, alert_args)
     helper.log_debug("[AL104] Alert creation is done.")
     return 0
 
+
 def create_alert(helper, api, alert_args):
     """ This function is used to create the alert using the API, settings and search results """
-    return 0
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-def create_alert_old(helper, config, app_name):
     # iterate through each row, cleaning multivalue fields
     # and then adding the attributes under same alert key
     # this builds the dict alerts
-    data_type = get_datatype_dict(helper, config, app_name)
-    custom_field_type = get_customField_dict(helper, config, app_name)
+    app_name = "TA-thehive-cortex"
+    data_type = get_datatype_dict(helper, app_name)
+    custom_field_type = get_customField_dict(helper, app_name)
     alert_refererence = 'SPK' + str(int(time.time()))
     helper.log_debug("[HA301] alert_refererence: {}".format(alert_refererence))
     alerts = dict()
@@ -200,9 +337,11 @@ def create_alert_old(helper, config, app_name):
         # we filter those out here
         row = {key: value for key, value in row.items() if not key.startswith("__mv_")}
         # find the field name used for a unique identifier
+        if 'rid' in row:
+            row.pop("rid")
         sourceRef = alert_refererence
-        if config['unique'] in row:
-            newSource = str(row[config['unique']])
+        if alert_args['unique_id_field'] in row:
+            newSource = str(row[alert_args['unique_id_field']])
             if newSource not in [None, '']:
                 # grabs that field's value and assigns it to our sourceRef
                 sourceRef = newSource
@@ -250,23 +389,23 @@ def create_alert_old(helper, config, app_name):
             customFields = dict()
         # check if title contains a field name instead of a string.
         # if yes, strip it from the row and assign value to title
-        alert['title'] = config['title']
-        if config['title'] in row:
-            newTitle = str(row.pop(config['title']))
+        alert['title'] = alert_args['title']
+        if alert_args['title'] in row:
+            newTitle = str(row.pop(alert_args['title']))
             if newTitle not in [None, '']:
                 alert['title'] = newTitle
         # check if description contains a field name instead of a string.
         # if yes, strip it from the row and assign value to description
-        alert['description'] = config['description']
-        if config['description'] in row:
-            newDescription = str(row.pop(config['description']))
+        alert['description'] = alert_args['description']
+        if alert_args['description'] in row:
+            newDescription = str(row.pop(alert_args['description']))
             if newDescription not in [None, '']:
                 alert['description'] = newDescription
         # find the field name used for a valid timestamp
         # and strip it from the row
-        alert['timestamp'] = config['timestamp']
-        if config['timestamp'] in row:
-            newTimestamp = row.pop(config['timestamp'])
+        alert['timestamp'] = alert_args['timestamp']
+        if alert_args['timestamp'] in row:
+            newTimestamp = row.pop(alert_args['timestamp'])
             helper.log_debug(
                 "[HA305] new Timestamp from row: {} ".format(newTimestamp)
             )
@@ -284,7 +423,6 @@ def create_alert_old(helper, config, app_name):
             cTags = artifactTags[:]
             if value != "":
                 helper.log_debug('[HA320] field to process: {}'.format(key))
-                custom_msg = ''
                 artifact_key = ''
                 cTLP = ''
                 if ':' in key:
@@ -292,13 +430,13 @@ def create_alert_old(helper, config, app_name):
                     dType = key.split(':', 1)
                     key = str(dType[0])
                     # extract TLP at observable level
-                    # it is on letter W G A or R fappended to field name
+                    # it is on letter W G A or R appended to field name
                     observable_tlp_check = re.match("^(W|G|A|R)$", str(dType[1]))
                     if observable_tlp_check is not None:
                         cTLP = OBSERVABLE_TLP[dType[1]]
                         cTags.append(OBSERVABLE_TLP[str(cTLP)])
                     else:
-                        custom_msg = str(dType[1])
+                        cTags.append(str(dType[1].replace(" ", "_")))
                 if key in data_type:
                     helper.log_debug('[HA322] key is an artifact: {} '.format(key))
                     artifact_key = data_type[key]
@@ -358,7 +496,7 @@ def create_alert_old(helper, config, app_name):
                             custom_field[custom_type] = int(value) * 1000
                     if custom_field_check is True:
                         customFields[key] = custom_field
-                elif config['scope'] is False:
+                elif alert_args['scope'] is False:
                     helper.log_debug(
                         '[HA323] key is added as another artifact (scope is False): {} '.format(key)
                     )
@@ -366,8 +504,6 @@ def create_alert_old(helper, config, app_name):
 
                 if artifact_key not in [None, '']:
                     cMsg = 'field: ' + str(key)
-                    if custom_msg not in [None, '']:
-                        cMsg = custom_msg + ' - ' + cMsg
                     if artifactMessage not in [None, '']:
                         cMsg = artifactMessage + ' - ' + cMsg
                     if '\n' in value:  # was a multivalue field
@@ -410,22 +546,22 @@ def create_alert_old(helper, config, app_name):
                 title=alerts[srcRef]['title'],
                 date=int(alerts[srcRef]['timestamp']),
                 description=alerts[srcRef]['description'],
-                tags=config['tags'],
-                severity=config['severity'],
-                tlp=config['tlp'],
-                type=config['type'],
+                tags=alert_args['tags'],
+                severity=alert_args['severity'],
+                tlp=alert_args['tlp'],
+                type=alert_args['type'],
                 artifacts=alerts[srcRef]['artifacts'],
                 customFields=alerts[srcRef]['customFields'],
-                source=config['source'],
-                caseTemplate=config['caseTemplate'],
+                source=alert_args['source'],
+                caseTemplate=alert_args['caseTemplate'],
                 sourceRef=srcRef
             )
         )
         # set proper headers
-        url = config['thehive_url'] + '/api/alert'
-        auth = config['thehive_key']
+        url = alert_args['thehive_url'] + '/api/alert'
+        auth = alert_args['thehive_key']
         # client cert file
-        client_cert = config['client_cert_full_path']
+        client_cert = alert_args['client_cert_full_path']
 
         headers = {'Content-type': 'application/json'}
         headers['Authorization'] = 'Bearer ' + auth
@@ -435,7 +571,7 @@ def create_alert_old(helper, config, app_name):
         # post alert
         response = requests.post(url, headers=headers, data=payload,
                                  verify=False, cert=client_cert,
-                                 proxies=config['proxies'])
+                                 proxies=alert_args['proxies'])
 
         if response.status_code in (200, 201, 204):
             # log response status
