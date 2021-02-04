@@ -27,7 +27,7 @@ colorCode = {
         "RED": 3}
 
 def initialize_thehive_instance(keywords, settings, logger_name="script"):
-
+    """ This function is used to initialize a TheHive instance """
     logger = setup_logging(logger_name)
 
     # Check the existence of the instance_id
@@ -37,8 +37,13 @@ def initialize_thehive_instance(keywords, settings, logger_name="script"):
         logger.error("[4-MISSING_INSTANCE_ID] No instance ID was given to the script")
         exit(4)
 
-    # Initialiaze settings
-    spl = client.connect(app="TA-thehive-cortex",owner="nobody",token=settings["sessionKey"])
+    return create_thehive_instance(instance_id, settings, logger)
+
+def create_thehive_instance(instance_id, settings, logger):
+    """ This function is used to create an instance of TheHive """
+    # Initialize settings
+    token = settings["sessionKey"] if "sessionKey" in settings else settings["session_key"]
+    spl = client.connect(app="TA-thehive-cortex",owner="nobody",token=token)
     configuration = Settings(spl, settings, logger)
 
     defaults = {
@@ -55,6 +60,7 @@ def initialize_thehive_instance(keywords, settings, logger_name="script"):
     thehive_organisation = configuration.getInstanceSetting(instance_id,"organisation")
     thehive_version = configuration.getInstanceSetting(instance_id,"type") 
     thehive = None
+
     if (thehive_authentication_type == "password"):
         thehive = TheHive(url=thehive_url, username=thehive_username, password=thehive_secret, proxies=thehive_proxies, cert=thehive_cert, organisation=thehive_organisation, version=thehive_version, sid=settings["sid"], logger=logger)
     elif (thehive_authentication_type == "api_key"):
@@ -74,6 +80,7 @@ class TheHive(TheHiveApi):
     """
 
     def __init__(self, url = None, username = None, password = None, apiKey = None, proxies={}, cert=True, organisation=None, version=None, sid = "", logger = None):
+
         self.logger = logger
         if version=="TheHive4":
             if sys.version_info[0] < 3:
@@ -86,7 +93,11 @@ class TheHive(TheHiveApi):
             else:
                 version = Version.THEHIVE_3.value
         else:
-            self.logger.warning("No valid version of TheHive was found for the given type: \""+version+"\"")
+            self.logger.warning("No valid version of TheHive was found for the given type: \""+str(version)+"\". Default will be used (TheHive 3)")
+            if sys.version_info[0] < 3:
+                version = Version.THEHIVE_3
+            else:
+                version = Version.THEHIVE_3.value
 
         try :
             if sys.version_info[0] < 3:

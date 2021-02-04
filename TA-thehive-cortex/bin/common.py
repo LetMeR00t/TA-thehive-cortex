@@ -16,7 +16,7 @@ class Settings(object):
         query = {"output_mode":"json"}
 
         # Get instances
-        if search_settings is not None:
+        if search_settings is not None and "namespace" in search_settings:
             namespace = search_settings["namespace"]
             # Get logging
             logging_settings = json.loads(client.get("TA_thehive_cortex_settings/logging", owner="nobody", app=namespace,**query).body.read())["entry"][0]["content"]

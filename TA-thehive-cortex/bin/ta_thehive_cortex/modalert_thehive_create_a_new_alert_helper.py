@@ -17,7 +17,8 @@ import requests
 import time
 import splunklib.client as client
 from common import Settings
-from thehive import TheHive
+from thehive import TheHive, create_thehive_instance
+from thehive4py.models import Alert
 
 __author__ = "Alexandre Demeyer, Remi Seguy"
 __license__ = "LGPLv3"
@@ -279,14 +280,12 @@ def process_event(helper, *args, **kwargs):
     helper.log_info("[AL101] Alert action thehive_create_a_new_alert started at {}".format(time.time()))
 
     # Get the instance connection and initialize settings
-    spl = client.connect(app="TA-thehive-cortex",owner="nobody",token=helper.settings["session_key"])
-    configuration = Settings(spl, search_settings=None, logger=helper._logger)
-
     instance_id = helper.get_param("thehive_instance_id")
+    helper.log_debug("TheHive instance found: "+str(instance_id))
 
-    # Create the TheHive instance
-    (thehive_username, thehive_api_key) = configuration.getInstanceUsernameApiKey(instance_id)
-    thehive = TheHive(configuration.getInstanceURL(instance_id), thehive_api_key, helper.settings["sid"], logger=helper._logger)
+    (thehive, configuration, defaults, logger) = create_thehive_instance(instance_id=instance_id, settings=helper.settings, logger=helper._logger)
+
+    helper.log_debug("TheHive connection is ready. Processing alert parameters...")
 
     # Get alert arguments
     alert_args = {}
@@ -302,15 +301,16 @@ def process_event(helper, *args, **kwargs):
         epoch10 = re.match("^[0-9]{10}$", alert_args['timestamp'])
         if epoch10 is not None:
             alert_args['timestamp'] = alert_args['timestamp'] * 1000
+
     alert_args["title"] = helper.get_param("title") if helper.get_param("title") else "Notable event" 
     alert_args["description"] = helper.get_param("description") if helper.get_param("description") else "No description provided"         
     alert_args["tags"] = list(dict.fromkeys(helper.get_param("tags").split(","))) if helper.get_param("tags") else []
     helper.log_debug("[X304] scope: {} ".format(helper.get_param("scope")))
     alert_args["scope"] = True if helper.get_param("scope") else False   
     # Get numeric values from alert form
-    alert_args['severity'] = helper.get_param("severity")
-    alert_args['tlp'] = helper.get_param("tlp")
-    alert_args['pap'] = helper.get_param("pap")
+    alert_args['severity'] = int(helper.get_param("severity")) if helper.get_param("severity") is not None else 2
+    alert_args['tlp'] = int(helper.get_param("tlp")) if helper.get_param("tlp") is not None else 2
+    alert_args['pap'] = int(helper.get_param("pap")) if helper.get_param("pap") is not None else 2
 
     # Create the alert
     helper.log_debug("[AL103] Alert preparation is finished. Creating the alert...")
@@ -318,8 +318,16 @@ def process_event(helper, *args, **kwargs):
     helper.log_debug("[AL104] Alert creation is done.")
     return 0
 
+def extract_field(row, field):
+    """ This function is used to extract information from a potential field in a row and sanitize it if needed. If the field is not found, use the field name directly as value """
+    result = field
+    if field in row:
+        newValue = str(row.pop(field))
+        if newValue not in [None, '']:
+            result = newValue
+    return result
 
-def create_alert(helper, api, alert_args):
+def create_alert(helper, thehive_api, alert_args):
     """ This function is used to create the alert using the API, settings and search results """
 
     # iterate through each row, cleaning multivalue fields
@@ -328,54 +336,44 @@ def create_alert(helper, api, alert_args):
     app_name = "TA-thehive-cortex"
     data_type = get_datatype_dict(helper, app_name)
     custom_field_type = get_customField_dict(helper, app_name)
-    alert_refererence = 'SPK' + str(int(time.time()))
-    helper.log_debug("[HA301] alert_refererence: {}".format(alert_refererence))
+    alert_reference = 'SPK' + str(int(time.time()))
+    helper.log_debug("[HA301] alert_reference: {}".format(alert_reference))
     alerts = dict()
     events = helper.get_events()
     for row in events:
+        # Initialize values
+        artifacts = []
+        artifactTags = []
+        artifactMessage = ''
+        customFields = dict()
+        sourceRef = alert_reference
+        alert = dict() 
+
         # Splunk makes a bunch of dumb empty multivalue fields
         # we filter those out here
-        row = {key: value for key, value in row.items() if not key.startswith("__mv_")}
+        row = {key: value for key, value in row.items() if not key.startswith("__mv_") and key not in ["rid"]}
+
         # find the field name used for a unique identifier
-        if 'rid' in row:
-            row.pop("rid")
-        sourceRef = alert_refererence
         if alert_args['unique_id_field'] in row:
             newSource = str(row[alert_args['unique_id_field']])
             if newSource not in [None, '']:
                 # grabs that field's value and assigns it to our sourceRef
                 sourceRef = newSource
+
         helper.log_debug("[HA304] sourceRef: {} ".format(sourceRef))
-        # check if the field th_alert_id exists and strip it from the row.
-        # if exists and valid it will be used to update alert
-        # if 'th_alert_id' in row:
-        #     # grabs that field's value and assigns it to
-        #     artifactAlertId = str(row.pop("th_alert_id"))
-        #     valid_alert_id = re.match("^[0-9a-f]{32}$", artifactAlertId)
-        #     if valid_alert_id is None:
-        #         artifactAlertId = None
-        # else:
-        #     artifactAlertId = None
-        # check if the field th_inline_tags exists and strip it from the row.
-        # The comma-separated values will be used as tags attached to artifacts
-        artifactTags = []
+
         if 'th_inline_tags' in row:
             # grabs that field's value and assigns it to
-            inline_tags = str(row.pop("th_inline_tags"))
-            if "," in inline_tags:
-                artifactTags = inline_tags.split(',')
-            else:
-                artifactTags = [inline_tags]
+            artifactTags = str(row.pop("th_inline_tags")).split(",")
+
         # check if the field th_msg exists and strip it from the row.
         # The value will be used as message attached to artifacts
         if 'th_msg' in row:
             # grabs that field's value and assigns it to
             artifactMessage = str(row.pop("th_msg"))
-        else:
-            artifactMessage = ''
+            
         helper.log_debug("[HA332] artifact message: {} ".format(artifactMessage))
         helper.log_debug("[HA331] artifact tags: {} ".format(artifactTags))
-        # helper.log_debug("[HA333] inline alert id  {} ".format(artifactAlertId))
 
         # check if artifacts have been stored for this sourceRef.
         # If yes, retrieve them to add new ones from this row
@@ -383,26 +381,18 @@ def create_alert(helper, api, alert_args):
             alert = alerts[sourceRef]
             artifacts = list(alert["artifacts"])
             customFields = dict(alert['customFields'])
-        else:
-            alert = dict()
-            artifacts = []
-            customFields = dict()
+
         # check if title contains a field name instead of a string.
         # if yes, strip it from the row and assign value to title
-        alert['title'] = alert_args['title']
-        if alert_args['title'] in row:
-            newTitle = str(row.pop(alert_args['title']))
-            if newTitle not in [None, '']:
-                alert['title'] = newTitle
+        alert["title"] = extract_field(row, alert_args["title"])
+
         # check if description contains a field name instead of a string.
         # if yes, strip it from the row and assign value to description
-        alert['description'] = alert_args['description']
-        if alert_args['description'] in row:
-            newDescription = str(row.pop(alert_args['description']))
-            if newDescription not in [None, '']:
-                alert['description'] = newDescription
+        alert["description"] = extract_field(row, alert_args["description"])
+
         # find the field name used for a valid timestamp
         # and strip it from the row
+
         alert['timestamp'] = alert_args['timestamp']
         if alert_args['timestamp'] in row:
             newTimestamp = row.pop(alert_args['timestamp'])
@@ -415,9 +405,8 @@ def create_alert(helper, api, alert_args):
                 alert['timestamp'] = int(newTimestamp)
             elif epoch10 is not None:
                 alert['timestamp'] = int(newTimestamp) * 1000
-        helper.log_debug(
-            "[HA306] alert timestamp: {} ".format(alert['timestamp'])
-        )
+            helper.log_debug("[HA306] alert timestamp: {} ".format(alert['timestamp']))
+
         # now we take those KV pairs to add to dict
         for key, value in row.items():
             cTags = artifactTags[:]
@@ -503,6 +492,7 @@ def create_alert(helper, api, alert_args):
                     artifact_key = 'other'
 
                 if artifact_key not in [None, '']:
+                    helper.log_debug("Processing artifact key: "+str(artifact_key)+" ("+artifactMessage+")")
                     cMsg = 'field: ' + str(key)
                     if artifactMessage not in [None, '']:
                         cMsg = artifactMessage + ' - ' + cMsg
@@ -538,11 +528,16 @@ def create_alert(helper, api, alert_args):
             alert['artifacts'] = list(artifacts)
             alert['customFields'] = customFields
             alerts[sourceRef] = alert
+            helper.log_debug("Artifacts found for an alert: "+str(artifacts))
+        else:
+            helper.log_debug("No artifact found for an alert: "+str(alert))
 
     # actually send the request to create the alert; fail gracefully
     for srcRef in alerts.keys():
-        payload = json.dumps(
-            dict(
+
+        helper.log_debug("Processing alert: "+str(alerts[srcRef]))
+        # Create the Alert object
+        alert = Alert(
                 title=alerts[srcRef]['title'],
                 date=int(alerts[srcRef]['timestamp']),
                 description=alerts[srcRef]['description'],
@@ -556,33 +551,19 @@ def create_alert(helper, api, alert_args):
                 caseTemplate=alert_args['caseTemplate'],
                 sourceRef=srcRef
             )
-        )
-        # set proper headers
-        url = alert_args['thehive_url'] + '/api/alert'
-        auth = alert_args['thehive_key']
-        # client cert file
-        client_cert = alert_args['client_cert_full_path']
-
-        headers = {'Content-type': 'application/json'}
-        headers['Authorization'] = 'Bearer ' + auth
-        headers['Accept'] = 'application/json'
-
-        helper.log_debug('[HA315] DEBUG payload={}'.format(payload))
-        # post alert
-        response = requests.post(url, headers=headers, data=payload,
-                                 verify=False, cert=client_cert,
-                                 proxies=alert_args['proxies'])
+        # Get API and create the alert
+        response = thehive_api.create_alert(alert)
 
         if response.status_code in (200, 201, 204):
             # log response status
             helper.log_info(
                 "[HA316] INFO theHive alert is successful created. "
-                "url={}, HTTP status={}".format(url, response.status_code)
+                "url={}, HTTP status={}".format(thehive_api.url, response.status_code)
             )
         else:
             # somehow we got a bad response code from thehive
             helper.log_error(
                 "[HA317] ERROR theHive alert creation has failed. "
                 "url={}, data={}, HTTP Error={}, content={}"
-                .format(url, payload, response.status_code, response.text)
+                .format(thehive_api.url, alert.jsonify(), response.status_code, response.text)
             )
