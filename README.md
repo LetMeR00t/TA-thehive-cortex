@@ -1,3 +1,4 @@
+
 ![](images/logo.png)
 
 # Table of content
@@ -60,12 +61,12 @@ Before using the application, you need to set up your environment settings. Plea
 ### Accounts
 
 You have to set up your accounts/instances configuration.
-An account is used to authenticate to one instance. You have to add every account you need to use and store the API Key as the password (**username/password authentication is not supported**)
+An account is used to authenticate to one instance. You have to add every account you need to use and store the API Key as the password (**username/password authentication is only supported for TheHive, not Cortex, we recommand you to use an API key**)
 1. Go to the **TheHive/Cortex application > Settings > Configuration** (in the navigation bar)
 2. Under **Accounts**, you need to add any account you want to use with TheHive/Cortex
 * **Account name**: The name of the account, it will be reused to link an account to an instance.  
 * **Username**: The username of this account. For now, it's not used but we recommand you to keep the same name as you have on your instance (TheHive or Cortex)
-* **Password**: The password field must be filled with **a valid API key** to use for authentification/
+* **Password**: The password field must be filled with **a valid API key** to use for authentification
 
 ![](images/accounts.png)
 *This image is an example of one registered account named "Splunk_TheHive3"*
@@ -76,16 +77,20 @@ Once you've done that, you can configure all your instances. An instance is an e
 1. Go to the **TheHive/Cortex application > Settings > Instances** (in the navigation bar)
 2. On this dashboard, you need to add every instance you want to use. To do so, select the "**Add a new instance**" as action and fill these fields:
 - **Account name (Global accounts)**: This is the name of the account to use that you added under "Accounts". You can automatically fill this field by clicking on one row of the first search named "Global accounts detected" that list you all available accounts.
+- **Authentication type**: Authentication type for your instance. Password is working only with TheHive but we recommand you to use an API key everytime
 - **Type**: Type of your instance (TheHive (v3 or v4) or Cortex (v3))
+- **Organisation**: The name of the organisation against which api calls will be run. Defaults to "-" meaning None
 - **Protocol**: Protocol to use (HTTP or HTTPS). Default to HTTP.
+- **Certificate Verification**: Indicate if the certificate verification is required. If you use an HTTPS connection with a self-signed certificate of a custom certificate authority, you must add your trusted certificate to the "certifi" library. To do so, append your certificate under "\$APP_FOLDER\$/bin/ta_thehive_cortex/aob_py3/certifi/cacert.pem" (or aob_py2 if you use Python 2.7). Default to True
+- **Proxies**: A dictionary of proxies if needed. If you don't use any proxy, set this input as default ({}). If you use a proxy, it's expecting a dictionary of two keys ("http" and "https") with the proxy value as dictionary value. **Example**: {"http": "http://my_proxy:8080", "https": "http://my_proxy:8080"}
 - **Host**: Host of your instance (hostname or IP)
 - **Port**: Port used by your instance (Default:9000 for TheHive, 9001 for Cortex)
-- **Proxies**: A dictionary of proxies if needed. If you don't use any proxy, set this input as default ({}). If you use a proxy, it's expecting a dictionary of two keys ("http" and "https") with the proxy value as dictionary value. **Example**: {"http": "http://my_proxy:8080", "https": "http://my_proxy:8080"}
-- **Certificate Verification**: Indicate if the certificate verification is required. If you use an HTTPS connection with a self-signed certificate of a custom certificate authority, you must add your trusted certificate to the "certifi" library. To do so, append your certificate under "\$APP_FOLDER\$/bin/ta_thehive_cortex/aob_py3/certifi/cacert.pem" (or aob_py2 if you use Python 2.7). Default to True
-- **Organisation**: The name of the organisation against which api calls will be run. Defaults to "-" meaning None
+
 
 ![](images/instances_add.png)
 *This image shows the addition of a new instance (partially filled fields) by specifying an account name defined beforehand.*
+
+On the above example, you can see a list of defined instances.
 
 ### Logging
 

@@ -1,6 +1,7 @@
 
 # Commands
 This application allows you to use new commands related to TheHive/Cortex.
+Every command requires an "Instance ID" parameter which is used to specify which instance needs to be used by the script.
 
 ## thehivecases
 
@@ -9,7 +10,7 @@ This command is used to get cases from TheHive (\$..\$ are tokens examples but y
 
 	| makeresults
 	| eval keyword = "$filter_keyword$", status = "$filter_status$", severity = "$filter_severity$", tags = "$filter_tags$", title = "$filter_title$", assignee = "$filter_assignee$", date = "$filter_date_d1$ TO $filter_date_d2$", max_cases="$max_cases$", sort_cases="$sort_cases$"
-	| thehivecases
+	| thehivecases $$INSTANCE_ID$$
 
 
 
@@ -57,22 +58,22 @@ Every new field will start with "cortex_*". As an exemple, you can recover:
 ### Examples
 
 	| makeresults count=1
-	| thehivecases
+	| thehivecases $$INSTANCE_ID$$
 	# This will recover any case
 	
 	| makeresults count=1
 	| eval keyword = "github.com" 
-	| thehivecases
+	| thehivecases $$INSTANCE_ID$$
 	# This will recover any case concerning the keyword "github.com"
 	
 	| makeresults count=1
 	| eval status = "Open"
-	| thehivecases
+	| thehivecases $$INSTANCE_ID$$
 	# This will recover any "Open" case
 		 
 	| makeresults count=1
 	| eval status = "Open;Resolved"
-	| thehivecases
+	| thehivecases $$INSTANCE_ID$$
 	# This will recover any "Open" or "Resolved" case
 
 ## thehivecreate
@@ -80,7 +81,7 @@ This command is used to create a new case to TheHive (\$..\$ are tokens examples
 
 	| makeresults
 	| eval title="$create_title$", severity = "$create_severity$", tags="$create_tags$", pap = "$create_pap$", date = now(), tlp = "$create_tlp$", description="$create_description$", tasks = "$create_tasks$"
-	| thehivecreate
+	| thehivecreate $$INSTANCE_ID$$
 
 ### Parameters (input results)
 
@@ -129,12 +130,12 @@ Every new field will start with "thehive_*". As an exemple, you can recover:
 
 	| makeresults
 	| eval title="Test", description="Test 2"
-	| thehivecases
+	| thehivecases $$INSTANCE_ID$$
 	# This will create a new case with the title "Test" and the description set to "Test 2"
 
 	| makeresults
 	| eval title="Critical case", severity = "4", tags="important;emergency", pap = "4", date = now(), description="Very important case"
-	| thehivecases
+	| thehivecases $$INSTANCE_ID$$
 	# This will creater a new case with the title "Critical case", with a CRITICAL severity, with tags set to "important" and "emergency", with a PAP set to RED, with a description set to "Very important case"
 
 
@@ -145,7 +146,7 @@ This command is used to get jobs from Cortex (\$..\$ are tokens examples but you
 
 	| makeresults
 	| eval data = "$filter_data$", datatypes = "$filter_datatypes$", analyzers = "$filter_analyzers$", max_jobs="$max_jobs$", sort_jobs="$sort_jobs$"
-	| cortexjobs
+	| cortexjobs $$INSTANCE_ID$$
 
 ### Parameters (input results)
 One row will result in executing the script one time. So if you specify 5 rows, the script will be executed 5 times and all results will be appended.
@@ -187,27 +188,27 @@ Every new field will start with "cortex_*". As an exemple, you can recover:
 ### Examples
 
 	| makeresults count=1
-	| cortexjobs
+	| cortexjobs $$INSTANCE_ID$$
 	# This will recover any job
 	
 	| makeresults count=1
 	| eval data = "github.com" 
-	| cortexjobs
+	| cortexjobs $$INSTANCE_ID$$
 	# This will recover any job concerning the exact match "github.com" as data
 	
 	| makeresults count=1
 	| eval datatypes = "ip"
-	| cortexjobs
+	| cortexjobs $$INSTANCE_ID$$
 	# This will recover any job based on an "ip" data type
 		 
 	| makeresults count=1
 	| eval datatypes = "ip;domain"
-	| cortexjobs
+	| cortexjobs $$INSTANCE_ID$$
 	# This will recover any job based on an "ip" or "domain" data type
 		
 	| makeresults count=1
 	| eval analyzers = "Abuse_Finder_3_0 ;GoogleDNS_resolve_1_0_0" 
-	| cortexjobs
+	| cortexjobs $$INSTANCE_ID$$
 	# This will recover any job based on the "Abuse_Finder_3_0" or "GoogleDNS_resolve_1_0_0" analyzers
 
 ## cortexrun
@@ -215,7 +216,7 @@ This command is used to run new jobs to Cortex (\$..\$ are tokens examples but y
 
 	| makeresults
 	| eval data = "$data$", dataType = "$dataType$", tlp = "$tlp$", pap = "$pap$", analyzers = "$analyzers$"
-	| cortexjobs
+	| cortexjobs $$INSTANCE_ID$$
 
 ### Parameters (input results)
 
@@ -261,16 +262,16 @@ Every new field will start with "cortex_*". As an exemple, you can recover:
 
 	| makeresults
 	| eval data = "8.8.8.8", dataType = "ip"
-	| cortexrun
+	| cortexrun $$INSTANCE_ID$$
 	# This will start as many jobs as there is available analyzers for the data type "ip" with TLP and PAP level set to AMBER (default)
 
 	| makeresults
 	| eval data = "8.8.8.8;8.8.4.4", dataType = "ip", analyzers = "GoogleDNS_resolve_1_0_0;Abuse_Finder_3_0"
-	| cortexrun
+	| cortexrun $$INSTANCE_ID$$
 	# This will start four jobs (two data and two analyzers) with TLP and PAP level set to AMBER (default)
 	 
 	| makeresults
 	| eval data = "8.8.8.8;8.8.4.4", dataType = "ip", tlp = "GREEN", pap = "WHITE", analyzers = "GoogleDNS_resolve_1_0_0 ;Abuse_Finder_3_0"
-	| cortexrun
+	| cortexrun $$INSTANCE_ID$$
 	# This will start four jobs (two data and two analyzers) with TLP and PAP level set respectively to GREEN and WHITE
 
