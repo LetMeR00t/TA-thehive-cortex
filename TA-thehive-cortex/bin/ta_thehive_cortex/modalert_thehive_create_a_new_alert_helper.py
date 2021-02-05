@@ -294,19 +294,19 @@ def process_event(helper, *args, **kwargs):
     alert_args["type"] = helper.get_param("type") if helper.get_param("type") else "alert"
     alert_args["source"] = helper.get_param("source") if helper.get_param("source") else "splunk"
     alert_args["unique_id_field"] = helper.get_param("unique_id_field") if helper.get_param("unique_id_field") else "oneEvent" 
-    if not helper.get_param("timestamp"):
+    if not helper.get_param("timestamp_field"):
         alert_args['timestamp'] = int(time.time() * 1000)
     else:
-        alert_args['timestamp'] = helper.get_param("timestamp")
+        alert_args['timestamp'] = helper.get_param("timestamp_field")
         epoch10 = re.match("^[0-9]{10}$", alert_args['timestamp'])
         if epoch10 is not None:
             alert_args['timestamp'] = alert_args['timestamp'] * 1000
 
     alert_args["title"] = helper.get_param("title") if helper.get_param("title") else "Notable event" 
-    alert_args["description"] = helper.get_param("description") if helper.get_param("description") else "No description provided"         
+    alert_args["description"] = helper.get_param("description").replace("\\n","\n").replace("\\r","\r") if helper.get_param("description") else "No description provided"         
     alert_args["tags"] = list(dict.fromkeys(helper.get_param("tags").split(","))) if helper.get_param("tags") else []
     helper.log_debug("[X304] scope: {} ".format(helper.get_param("scope")))
-    alert_args["scope"] = True if helper.get_param("scope") else False   
+    alert_args["scope"] = True if int(helper.get_param("scope"))==0 else False   
     # Get numeric values from alert form
     alert_args['severity'] = int(helper.get_param("severity")) if helper.get_param("severity") is not None else 2
     alert_args['tlp'] = int(helper.get_param("tlp")) if helper.get_param("tlp") is not None else 2
@@ -350,6 +350,10 @@ def create_alert(helper, thehive_api, alert_args):
         alert = dict() 
 
         # Splunk makes a bunch of dumb empty multivalue fields
+        # replace value by multivalue if required
+        for key, value in row.items():
+            if not key.startswith("__mv_") and "__mv_"+key in row and row["__mv_"+key] not in [None, '']:
+                row[key] = [e[1:len(e)-1] for e in row["__mv_"+key].split(";")]
         # we filter those out here
         row = {key: value for key, value in row.items() if not key.startswith("__mv_") and key not in ["rid"]}
 
@@ -393,18 +397,17 @@ def create_alert(helper, thehive_api, alert_args):
         # find the field name used for a valid timestamp
         # and strip it from the row
 
-        alert['timestamp'] = alert_args['timestamp']
         if alert_args['timestamp'] in row:
-            newTimestamp = row.pop(alert_args['timestamp'])
+            newTimestamp = str(int(float(row.pop(alert_args['timestamp']))))
             helper.log_debug(
                 "[HA305] new Timestamp from row: {} ".format(newTimestamp)
             )
             epoch10 = re.match("^[0-9]{10}$", newTimestamp)
             epoch13 = re.match("^[0-9]{13}$", newTimestamp)
             if epoch13 is not None:
-                alert['timestamp'] = int(newTimestamp)
+                alert['timestamp'] = int(float(newTimestamp))
             elif epoch10 is not None:
-                alert['timestamp'] = int(newTimestamp) * 1000
+                alert['timestamp'] = int(float(newTimestamp)) * 1000
             helper.log_debug("[HA306] alert timestamp: {} ".format(alert['timestamp']))
 
         # now we take those KV pairs to add to dict
@@ -492,14 +495,13 @@ def create_alert(helper, thehive_api, alert_args):
                     artifact_key = 'other'
 
                 if artifact_key not in [None, '']:
-                    helper.log_debug("Processing artifact key: "+str(artifact_key)+" ("+artifactMessage+")")
+                    helper.log_debug("Processing artifact key: "+str(artifact_key)+" ("+str(value)+") ("+artifactMessage+")")
                     cMsg = 'field: ' + str(key)
                     if artifactMessage not in [None, '']:
                         cMsg = artifactMessage + ' - ' + cMsg
-                    if '\n' in value:  # was a multivalue field
+                    if isinstance(value,list) :  # was a multivalue field
                         helper.log_debug('[HA324] value is not a simple string: {} '.format(value))
-                        values = value.split('\n')
-                        for val in values:
+                        for val in value:
                             if val != "":
                                 artifact = dict(dataType=artifact_key,
                                                 data=str(val),
@@ -535,7 +537,6 @@ def create_alert(helper, thehive_api, alert_args):
     # actually send the request to create the alert; fail gracefully
     for srcRef in alerts.keys():
 
-        helper.log_debug("Processing alert: "+str(alerts[srcRef]))
         # Create the Alert object
         alert = Alert(
                 title=alerts[srcRef]['title'],
@@ -544,6 +545,7 @@ def create_alert(helper, thehive_api, alert_args):
                 tags=alert_args['tags'],
                 severity=alert_args['severity'],
                 tlp=alert_args['tlp'],
+                pap=alert_args['pap'],
                 type=alert_args['type'],
                 artifacts=alerts[srcRef]['artifacts'],
                 customFields=alerts[srcRef]['customFields'],
@@ -551,6 +553,8 @@ def create_alert(helper, thehive_api, alert_args):
                 caseTemplate=alert_args['caseTemplate'],
                 sourceRef=srcRef
             )
+
+        helper.log_debug("Processing alert: "+alert.jsonify())
         # Get API and create the alert
         response = thehive_api.create_alert(alert)
 
