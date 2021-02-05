@@ -100,8 +100,9 @@ By default, a logging file is created under `$SPLUNK_HOME/var/log/splunk/` with 
 You will be able to have these logs in your search.log.
 
 ## Refreshing the available analyzers
-Once you've configured your Cortex input, the list of analyzers will be loaded in Splunk.
-Each time the supervisor script is checking the connection, it will recover the list of analyzers to keep it up to date.
+Once you've configured your Cortex instance, the list of analyzers will be loaded in Splunk.
+Analyzers must be refreshed using the related dashboard by using the "REFRESH" mode.
+Once you've refreshed your analyzers, they will be available in the Cortex dashboard in order to create new jobs.
 
 ![](images/analyzers.png)
 
