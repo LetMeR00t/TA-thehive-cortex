@@ -1,11 +1,6 @@
 # encoding = utf-8
-import sys, os
 import ta_thehive_cortex_declare
-from common import Settings
-from cortex import Cortex, CortexJob
-import splunklib.client as client
 from cortex import initialize_cortex_instance
-from copy import deepcopy
 import splunk.Intersplunk
 
 if __name__ == '__main__':
@@ -20,6 +15,9 @@ if __name__ == '__main__':
     # Initialize this script and return a cortex instance object, a configuration object and defaults values
     (cortex, configuration, defaults, logger) = initialize_cortex_instance(keywords, settings ,logger_name="cortex_refresh_analyzers")
 
+    logger.debug("[CRA-1] Input keywords: "+str(keywords))
+    logger.debug("[CRA-2] Input results: "+str(results))
+
 
     outputResults = []
     # Get analyzers
@@ -27,7 +25,7 @@ if __name__ == '__main__':
 
     for analyzer in analyzers:
         result = { "cortex_analyzer_"+k:v for k,v in analyzer.__dict__.items()}
-
+        logger.debug("[CRA-5] Getting this analyzer: "+str(result))
         outputResults.append(result)
 
     splunk.Intersplunk.outputResults(outputResults)

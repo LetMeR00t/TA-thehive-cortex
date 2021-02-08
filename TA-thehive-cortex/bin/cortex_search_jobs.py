@@ -1,13 +1,11 @@
 # encoding = utf-8
-import sys, os
 import ta_thehive_cortex_declare
-from common import Settings
-from cortex import Cortex, CortexJob
 import splunklib.client as client
 from cortex import initialize_cortex_instance
 from copy import deepcopy
 import splunk.Intersplunk
 
+# Global parameters
 FILTER_DATA_DEFAULT = ""
 FILTER_DATATYPES_DEFAULT = "*"
 FILTER_ANALYZERS_DEFAULT = "*"
@@ -26,6 +24,8 @@ if __name__ == '__main__':
     # Initialize this script and return a cortex instance object, a configuration object and defaults values
     (cortex, configuration, defaults, logger) = initialize_cortex_instance(keywords, settings ,logger_name="cortex_search_jobs")
 
+    logger.debug("[CSJ-1] Input keywords: "+str(keywords))
+    logger.debug("[CSJ-2] Input results: "+str(results))
 
     outputResults = []
     # Prepare and get all jobs queries 
@@ -58,21 +58,23 @@ if __name__ == '__main__':
             else:
                 query = {"_and":[query,new_query]}
     
-        logger.info("Query is: "+str(query))
+        logger.info("[CSJ-10] Query is: "+str(query))
     
         ## JOBS ##
         jobs = cortex.jobs.find_all(query ,range='0-'+maxJobs, sort=sortJobs)
         for job in jobs:
              result_copy = deepcopy(result)
-             logger.debug("Job details: "+str(job))
+             logger.debug("[CSJ-15] Job details: "+str(job))
 
              report = cortex.jobs.get_report(job.id)
 
-             logger.debug("Report details: \""+job.id+"\": "+str(report))
+             logger.debug("[CSJ-16] Report details: \""+str(job.id)+"\": "+str(report))
     
              job_report = { "cortex_job_"+k:v for k,v in vars(report).items() if not k.startswith('_') }
 
              event = { "cortex_job_"+k:v for k,v in vars(job).items() if not k.startswith('_') }
+
+             logger.debug("[CSJ-20] Event before post processing: "+str(event))
              
              # Post processing for Splunk
              ## REPORT ##
@@ -89,6 +91,7 @@ if __name__ == '__main__':
              event["cortex_job_createdAt"] = event["cortex_job_createdAt"]/1000
              event["cortex_job_updatedAt"] = event["cortex_job_updatedAt"]/1000
 
+             logger.debug("[CSJ-25] Event after post processing: "+str(event))
 
              result_copy.update(event)
              outputResults.append(deepcopy(result_copy))

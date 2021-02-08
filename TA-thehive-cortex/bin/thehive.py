@@ -1,30 +1,13 @@
+# encoding = utf-8
 import sys
 import ta_thehive_cortex_declare
 from thehive4py.api import TheHiveApi
 from thehive4py.models import Version
 import thehive4py.exceptions
 from common import Settings
-import json
-import traceback
 import splunklib.client as client
 from ta_logging import setup_logging
 import certifi
-
-
-# Mapping for Severity codes
-severityCode = {
-        "LOW": 1,
-        "MEDIUM": 2,
-        "HIGH": 3,
-        "CRITICAL": 4}
-
-
-# Mapping for TLP/PAP codes
-colorCode = {
-        "WHITE": 0,
-        "GREEN": 1,
-        "AMBER": 2,
-        "RED": 3}
 
 def initialize_thehive_instance(keywords, settings, logger_name="script"):
     """ This function is used to initialize a TheHive instance """
@@ -34,8 +17,8 @@ def initialize_thehive_instance(keywords, settings, logger_name="script"):
     if len(keywords) == 1:
         instance_id = keywords[0]
     else:
-        logger.error("[4-MISSING_INSTANCE_ID] No instance ID was given to the script")
-        exit(4)
+        logger.error("[TH1-ERROR] MISSING_INSTANCE_ID - No instance ID was given to the script")
+        exit(1)
 
     return create_thehive_instance(instance_id, settings, logger)
 
@@ -44,7 +27,9 @@ def create_thehive_instance(instance_id, settings, logger):
     # Initialize settings
     token = settings["sessionKey"] if "sessionKey" in settings else settings["session_key"]
     spl = client.connect(app="TA-thehive-cortex",owner="nobody",token=token)
+    logger.debug("[TH5] Connection to Splunk done")
     configuration = Settings(spl, settings, logger)
+    logger.debug("[TH6] Settings recovered")
 
     defaults = {
         "MAX_CASES_DEFAULT": configuration.getTheHiveCasesMax(),
@@ -62,19 +47,20 @@ def create_thehive_instance(instance_id, settings, logger):
     thehive = None
 
     if (thehive_authentication_type == "password"):
+        logger.debug("[TH15] TheHive instance will be initialized with a password (not an API key)")
         thehive = TheHive(url=thehive_url, username=thehive_username, password=thehive_secret, proxies=thehive_proxies, cert=thehive_cert, organisation=thehive_organisation, version=thehive_version, sid=settings["sid"], logger=logger)
     elif (thehive_authentication_type == "api_key"):
+        logger.debug("[TH16] TheHive instance will be initialized with an API Key (not a password)")
         thehive = TheHive(url=thehive_url, apiKey=thehive_secret, proxies=thehive_proxies, cert=thehive_cert, organisation=thehive_organisation, version=thehive_version, sid=settings["sid"], logger=logger)
     else:
-        logger.error("[7-WRONG_AUTHENTICATION_TYPE] Authentication type is not one of the expected values (password or api_key), given value: "+thehive_authentication_type)
-        exit(7)
+        logger.error("[TH20-ERROR] WRONG_AUTHENTICATION_TYPE - Authentication type is not one of the expected values (password or api_key), given value: "+thehive_authentication_type)
+        exit(20)
 
     return (thehive, configuration, defaults, logger) 
 
 
 
 class TheHive(TheHiveApi):
-
     """ This class is used to represent a TheHive instance
         Most of parameters are reused from the python library of TheHive
     """
@@ -83,17 +69,19 @@ class TheHive(TheHiveApi):
 
         self.logger = logger
         if version=="TheHive4":
+            self.logger.debug("[TH25] TheHive version is 4.x")
             if sys.version_info[0] < 3:
                 version = Version.THEHIVE_4
             else:
                 version = Version.THEHIVE_4.value
         elif version=="TheHive3":
+            self.logger.debug("[TH26] TheHive version is 3.x")
             if sys.version_info[0] < 3:
                 version = Version.THEHIVE_3
             else:
                 version = Version.THEHIVE_3.value
         else:
-            self.logger.warning("No valid version of TheHive was found for the given type: \""+str(version)+"\". Default will be used (TheHive 3)")
+            self.logger.warning("[TH27] No valid version of TheHive was found for the given type: \""+str(version)+"\". Default will be used (TheHive 3)")
             if sys.version_info[0] < 3:
                 version = Version.THEHIVE_3
             else:
@@ -106,29 +94,32 @@ class TheHive(TheHiveApi):
                 elif password is not None:
                     TheHiveApi.__init__(self,url=str(url),principal=username,password=password,proxies=proxies,cert=cert,organisation=organisation,version=version)
                 else:
-                    self.logger.error("[11-THE_HIVE_AUTHENTICATION] Password AND API Key are null values")
-                    exit(11)
+                    self.logger.error("[TH30-ERROR] THE_HIVE_AUTHENTICATION - Password AND API Key are null values")
+                    exit(30)
             else:
                 if apiKey is not None:
                     super().__init__(url=str(url),principal=str(apiKey),password=None,proxies=proxies,cert=cert,organisation=organisation,version=version)
                 elif password is not None:
                     super().__init__(url=str(url),principal=username,password=password,proxies=proxies,cert=cert,organisation=organisation,version=version)
                 else:
-                    self.logger.error("[11-THE_HIVE_AUTHENTICATION] Password AND API Key are null values")
-                    exit(11)
+                    self.logger.error("[TH31-ERROR] THE_HIVE_AUTHENTICATION - Password AND API Key are null values")
+                    exit(31)
+
+            self.logger.debug("[TH35] TheHive instance is initialized")
 
             # Try to connect to the API by recovering some cases
             self.find_cases(query={}, range='all')
 
             if apiKey is not None:
-                self.logger.debug("TheHive API connection to (URL=\""+url+"\",API key=\""+apiKey+"\") is successful")
+                self.logger.debug("[TH40] TheHive API connection to (URL=\""+url+"\",API key=\""+apiKey+"\") is successful")
             elif password is not None:
-                self.logger.debug("TheHive API connection to (URL=\""+url+"\",Username=\""+username+"\",Password=\""+password+"\") is successful")
+                self.logger.debug("[TH41] TheHive API connection to (URL=\""+url+"\",Username=\""+username+"\",Password=\""+password+"\") is successful")
         except thehive4py.exceptions.TheHiveException as e:
             if "CERTIFICATE_VERIFY_FAILED" in str(e):
-                self.logger.info("[12a-THE_HIVE_CERTIFICATE_FAILED] It seems that the certificate verification failed. Please check that the certificate authority is added to \""+str(certifi.where())+"\". Complete error: "+str(e))
+                self.logger.warning("[TH45] THE_HIVE_CERTIFICATE_FAILED - It seems that the certificate verification failed. Please check that the certificate authority is added to \""+str(certifi.where())+"\". Complete error: "+str(e))
+                sys.exit(45)
             else:
-                self.logger.error("[12b-THE_HIVE_CONNECTION_ERROR] Error: "+str(e))
-            sys.exit(12)
+                self.logger.error("[TH46-GENERIC-ERROR] THE_HIVE_CONNECTION_ERROR - Error: "+str(e))
+                sys.exit(46)
 
         self.__sid = sid
