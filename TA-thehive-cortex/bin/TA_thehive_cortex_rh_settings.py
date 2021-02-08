@@ -65,6 +65,26 @@ fields_additional_parameters = [
             min_len=0, 
             max_len=8192, 
         )
+    ), 
+    field.RestField(
+        'thehive_max_alerts',
+        required=True,
+        encrypted=False,
+        default='100',
+        validator=validator.String(
+            min_len=0, 
+            max_len=8192, 
+        )
+    ), 
+    field.RestField(
+        'thehive_sort_alerts',
+        required=True,
+        encrypted=False,
+        default='-date',
+        validator=validator.String(
+            min_len=0, 
+            max_len=8192, 
+        )
     )
 ]
 model_additional_parameters = RestModel(fields_additional_parameters, name='additional_parameters')

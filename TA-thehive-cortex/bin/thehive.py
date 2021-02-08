@@ -33,7 +33,9 @@ def create_thehive_instance(instance_id, settings, logger):
 
     defaults = {
         "MAX_CASES_DEFAULT": configuration.getTheHiveCasesMax(),
-        "SORT_CASES_DEFAULT": configuration.getTheHiveCasesSort()
+        "SORT_CASES_DEFAULT": configuration.getTheHiveCasesSort(),
+        "MAX_ALERTS_DEFAULT": configuration.getTheHiveAlertsMax(),
+        "SORT_ALERTS_DEFAULT": configuration.getTheHiveAlertsSort()
     }
 
     # Create the TheHive instance

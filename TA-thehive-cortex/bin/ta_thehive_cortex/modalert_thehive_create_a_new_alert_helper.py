@@ -172,6 +172,10 @@ def process_event(helper, *args, **kwargs):
     helper.log_info("thehive_max_cases={}".format(thehive_max_cases))
     thehive_sort_cases = helper.get_global_setting("thehive_sort_cases")
     helper.log_info("thehive_sort_cases={}".format(thehive_sort_cases))
+    thehive_max_alerts = helper.get_global_setting("thehive_max_alerts")
+    helper.log_info("thehive_max_alerts={}".format(thehive_max_alerts))
+    thehive_sort_alerts = helper.get_global_setting("thehive_sort_alerts")
+    helper.log_info("thehive_sort_alerts={}".format(thehive_sort_alerts))
 
     # The following example gets the alert action parameters and prints them to the log
     thehive_instance_id = helper.get_param("thehive_instance_id")

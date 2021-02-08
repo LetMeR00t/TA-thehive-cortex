@@ -1,7 +1,12 @@
 <nav search_view="search" color="#f2d130">
   <view name="analyzers" />
-  <view name="cases" default='true'/>
-  <view name="jobs" />
+  <collection label="TheHive">
+    <view name="cases" default='true'/>
+    <view name="thehive_alerts" />
+  </collection>
+  <collection label="Cortex">
+  	<view name="jobs" />
+  </collection>
   <collection label="Settings">
     <view name="configuration"/>
     <view name="instances"/>

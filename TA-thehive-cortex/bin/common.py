@@ -97,31 +97,43 @@ class Settings(object):
         instance = None
         if instance_id in self.__instances and setting in self.__instances[instance_id]:
             instance = self.__instances[instance_id][setting]
-            self.logger.debug("[s40] this instance id ("+str(instance_id)+") returns: "+str(instance))
+            self.logger.debug("[S40] this instance id ("+str(instance_id)+") returns: "+str(setting)+"="+str(instance))
         else:
             self.logger.warning("[S41] Can't recover the setting \""+str(setting)+"\" for the instance \""+str(instance_id)+"\"")
         return instance
 
     def getTheHiveCasesMax(self):
-        """ This function returns the maximum number of jobs to return of the TheHive instance """
+        """ This function returns the maximum number of cases to return of a TheHive instance """
         param = self.__additional_parameters["thehive_max_cases"] if "thehive_max_cases" in self.__additional_parameters else 100
         self.logger.debug("[S45] Getting this parameter: "+str(param))
         return param
 
     def getTheHiveCasesSort(self):
-        """ This function returns the sort key to use for jobs of the TheHive instance """
+        """ This function returns the sort key to use for cases of a TheHive instance """
         param = self.__additional_parameters["thehive_sort_cases"] if "thehive_sort_cases" in self.__additional_parameters else "-startedAt"
         self.logger.debug("[S50] Getting this parameter: "+str(param))
         return param
 
+    def getTheHiveAlertsMax(self):
+        """ This function returns the maximum number of alerts to return of a TheHive instance """
+        param = self.__additional_parameters["thehive_max_alerts"] if "thehive_max_alerts" in self.__additional_parameters else 100
+        self.logger.debug("[S51] Getting this parameter: "+str(param))
+        return param
+
+    def getTheHiveAlertsSort(self):
+        """ This function returns the sort key to use for alerts of a TheHive instance """
+        param = self.__additional_parameters["thehive_sort_alerts"] if "thehive_sort_alerts" in self.__additional_parameters else "-date"
+        self.logger.debug("[S52] Getting this parameter: "+str(param))
+        return param
+
     def getCortexJobsMax(self):
-        """ This function returns the maximum number of jobs to return of the Cortex instance """
+        """ This function returns the maximum number of jobs to return of a Cortex instance """
         param = self.__additional_parameters["cortex_max_jobs"] if "cortex_max_jobs" in self.__additional_parameters else 100
         self.logger.debug("[S55] Getting this parameter: "+str(param))
         return param
 
     def getCortexJobsSort(self):
-        """ This function returns the sort key to use for jobs of the Cortex instance """
+        """ This function returns the sort key to use for jobs of a Cortex instance """
         param = self.__additional_parameters["cortex_sort_jobs"] if "cortex_sort_jobs" in self.__additional_parameters else "-createdAt"
         self.logger.debug("[S60] Getting this parameter: "+str(param))
         return param

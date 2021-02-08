@@ -192,6 +192,38 @@
                                     "errorMsg": "Max length of text input is 8192"
                                 }
                             ]
+                        },
+                        {
+                            "field": "thehive_max_alerts",
+                            "label": "TheHive: Max alerts",
+                            "type": "text",
+                            "help": "Maximum number of alerts returned",
+                            "required": true,
+                            "defaultValue": "100",
+                            "validators": [
+                                {
+                                    "type": "string",
+                                    "minLength": 0,
+                                    "maxLength": 8192,
+                                    "errorMsg": "Max length of text input is 8192"
+                                }
+                            ]
+                        },
+                        {
+                            "field": "thehive_sort_alerts",
+                            "label": "TheHive: Sort alerts",
+                            "type": "text",
+                            "help": "Sort TheHive alerts by",
+                            "required": true,
+                            "defaultValue": "-date",
+                            "validators": [
+                                {
+                                    "type": "string",
+                                    "minLength": 0,
+                                    "maxLength": 8192,
+                                    "errorMsg": "Max length of text input is 8192"
+                                }
+                            ]
                         }
                     ]
                 }

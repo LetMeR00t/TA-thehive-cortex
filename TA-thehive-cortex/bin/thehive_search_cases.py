@@ -134,8 +134,8 @@ if __name__ == '__main__':
 
              ## OBSERVABLES ##
              observables = thehive.get_case_observables(case["id"])
-             event["thehive_case_observables"] = len([o for o in observables.json() if "status" in o and o["status"] == "Ok"])
-             logger.debug("[THSC-45] TheHive - Observables: "+str(event["thehive_case_observables"])) 
+             event["thehive_case_observables"] = len([o for o in observables.json() if "status" in o and o["status"] == "ok"])
+             logger.debug("[thsc-45] thehive - observables: "+str(event["thehive_case_observables"])) 
 
              logger.debug("[THSC-46] Event after post processing: "+str(event))
          
