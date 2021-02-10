@@ -2,7 +2,7 @@
 import ta_thehive_cortex_declare
 import splunk.Intersplunk
 from thehive import initialize_thehive_instance
-from thehive4py.query import And, Eq, Or, String
+from thehive4py.query import And, Eq, Or, Like, Between
 from copy import deepcopy
 import json
 
@@ -51,29 +51,29 @@ if __name__ == '__main__':
         query = {}
         elements = []
         if filterType != FILTER_TYPE_DEFAULT:
-            element = String("("+" OR ".join(["type:\""+s+"\"" for s in filterType.replace(" ","").split(";") if s != "*"])+")")
+            element = Or(*[Like("type",s) for s in filterType.replace(" ","").split(";") if s != "*"])
             elements.append(element)
         if filterSeverity != FILTER_SEVERITY_DEFAULT:
-            element = String("("+" OR ".join(["severity:\""+s+"\"" for s in filterSeverity.replace(" ","").split(";") if s != "*"])+")")
+            element = Or(*[Eq("severity",int(s)) for s in filterSeverity.replace(" ","").split(";") if s != "*"])
             elements.append(element)
         if filterTags != FILTER_TAGS_DEFAULT:
-            element = String("("+" OR ".join(["tags:\""+s+"\"" for s in filterTags.replace(" ","").split(";") if s != "*"])+")")
+            element = Or(*[Eq("tags",s) for s in filterTags.replace(" ","").split(";") if s != "*"])
             elements.append(element)
         if filterTitle != FILTER_TITLE_DEFAULT:
-            element = String("title:"+filterTitle)
+            element = Like("title",filterTitle)
             elements.append(element)
         if filterRead != FILTER_READ_DEFAULT:
             read = False if int(filterRead)==0 else True
-            element = String("read:"+str(read))
+            element = Eq("read",read)
             elements.append(element)
         if filterSource != FILTER_SOURCE_DEFAULT:
-            element = String("("+" OR ".join(["source:\""+s+"\"" for s in filterSource.replace(" ","").split(";") if s != "*"])+")")
+            element = Or(*[Eq("source",s) for s in filterSource.replace(" ","").split(";") if s != "*"])
             elements.append(element)
         if filterDate != FILTER_DATE_DEFAULT:
             filterDate = filterDate.split(" TO ")
             d1 = filterDate[0] if filterDate[0] != "*" else "*"
             d2 = filterDate[1] if filterDate[1] != "*" else "*"
-            element = String("(date:[ "+d1+" TO "+d2+" ])")
+            element = Between("date",d1,d2)
             elements.append(element)
         query = And(*elements)
 

@@ -2,7 +2,7 @@
 import ta_thehive_cortex_declare
 import splunk.Intersplunk
 from thehive import initialize_thehive_instance
-from thehive4py.query import And, Eq, Or, String
+from thehive4py.query import And, Eq, Or, Like, Between, String
 from copy import deepcopy
 import json
 
@@ -54,25 +54,25 @@ if __name__ == '__main__':
             element = String(filterKeyword)
             elements.append(element)
         if filterStatus != FILTER_STATUS_DEFAULT:
-            element = String("("+" OR ".join(["status:\""+s+"\"" for s in filterStatus.replace(" ","").split(";") if s != "*"])+")")
+            element = Or(*[Eq("status",s) for s in filterStatus.replace(" ","").split(";") if s != "*"])
             elements.append(element)
         if filterSeverity != FILTER_SEVERITY_DEFAULT:
-            element = String("("+" OR ".join(["severity:\""+s+"\"" for s in filterSeverity.replace(" ","").split(";") if s != "*"])+")")
+            element = Or(*[Eq("severity",s) for s in filterSeverity.replace(" ","").split(";") if s != "*"])
             elements.append(element)
         if filterTags != FILTER_TAGS_DEFAULT:
-            element = String("("+" OR ".join(["tags:\""+s+"\"" for s in filterTags.replace(" ","").split(";") if s != "*"])+")")
+            element = Or(*[Eq("tags",s) for s in filterTags.replace(" ","").split(";") if s != "*"])
             elements.append(element)
         if filterTitle != FILTER_TITLE_DEFAULT:
-            element = String("title:"+filterTitle)
+            element = Like("title",filterTitle)
             elements.append(element)
         if filterAssignee != FILTER_ASSIGNEE_DEFAULT:
-            element = String("("+" OR ".join(["owner:\""+s+"\"" for s in filterAssignee.replace(" ","").split(";") if s != "*"])+")")
+            element = Or(*[Eq("owner",s) for s in filterAssignee.replace(" ","").split(";") if s != "*"])
             elements.append(element)
         if filterDate != FILTER_DATE_DEFAULT:
             filterDate = filterDate.split(" TO ")
             d1 = filterDate[0] if filterDate[0] != "*" else "*"
             d2 = filterDate[1] if filterDate[1] != "*" else "*"
-            element = String("(startDate:[ "+d1+" TO "+d2+" ])")
+            element = Between("startDate",d1,d2)
             elements.append(element)
         query = And(*elements)
 

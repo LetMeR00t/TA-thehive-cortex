@@ -264,7 +264,7 @@ def process_event(helper, *args, **kwargs):
         alert_args['timestamp'] = helper.get_param("timestamp_field")
         epoch10 = re.match("^[0-9]{10}$", alert_args['timestamp'])
         if epoch10 is not None:
-            alert_args['timestamp'] = alert_args['timestamp'] * 1000
+            alert_args['timestamp'] = int(alert_args['timestamp']) * 1000
 
     alert_args["title"] = helper.get_param("title") if helper.get_param("title") else "Notable event" 
     alert_args["description"] = helper.get_param("description").replace("\\n","\n").replace("\\r","\r") if helper.get_param("description") else "No description provided"         
@@ -376,6 +376,8 @@ def create_alert(helper, thehive_api, alert_args):
             elif epoch10 is not None:
                 alert['timestamp'] = int(float(newTimestamp)) * 1000
             helper.log_debug("[CAA-THCA-85] alert timestamp: {} ".format(alert['timestamp']))
+        else:
+            alert['timestamp'] = alert_args['timestamp']
 
         # now we take those KV pairs to add to dict
         for key, value in row.items():

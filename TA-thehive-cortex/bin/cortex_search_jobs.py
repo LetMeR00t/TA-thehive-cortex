@@ -2,6 +2,7 @@
 import ta_thehive_cortex_declare
 import splunklib.client as client
 from cortex import initialize_cortex_instance
+from cortex4py.query import And, Eq, In
 from copy import deepcopy
 import splunk.Intersplunk
 
@@ -40,28 +41,26 @@ if __name__ == '__main__':
 
         # create the query from filters
         query = {}
-        if filterData != "":
-            new_query = {"_field":"data","_value":filterData}
-            query = new_query
-        if filterDatatypes != "*":
-            new_query = {"_in":{"_field":"dataType","_values":filterDatatypes.replace(" ","").split(";")}}
-            if query == {}:
-                query = new_query
-            else:
-                query = {"_and":[query,new_query]}
-        if filterAnalyzers != "*":
-            new_query = {"_in":{"_field":"workerDefinitionId","_values":filterAnalyzers.replace(" ","").split(";")}}
-            if query == {}:
-                query = new_query
-            elif "_and" in query:
-                query["_and"].append(new_query)
-            else:
-                query = {"_and":[query,new_query]}
-    
+        elements = []
+        if filterData != FILTER_DATA_DEFAULT:
+            element = Eq("data",filterData)
+            elements.append(element)
+        if filterDatatypes != FILTER_DATATYPES_DEFAULT:
+            element = In("dataType",filterDatatypes.replace(" ","").split(";"))
+            elements.append(element)
+        if filterAnalyzers != FILTER_ANALYZERS_DEFAULT:
+            element = In("workerDefinitionId",filterAnalyzers.replace(" ","").split(";"))
+            elements.append(element)
+
+        if len(elements)>1:
+            query = And(*elements)
+        elif len(elements)==1:
+            query = elements[0]
         logger.info("[CSJ-10] Query is: "+str(query))
     
         ## JOBS ##
         jobs = cortex.jobs.find_all(query ,range='0-'+maxJobs, sort=sortJobs)
+
         for job in jobs:
              result_copy = deepcopy(result)
              logger.debug("[CSJ-15] Job details: "+str(job))

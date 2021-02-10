@@ -1,5 +1,9 @@
 <form script="thehive_alerts.js">
   <label>TheHive: Alerts</label>
+  <init>
+    <eval token="create_timestamp_field">now()</eval>
+    <eval token="form.create_timestamp_field">now()</eval>
+  </init>
   <fieldset submitButton="false" autoRun="false">
     <input type="dropdown" token="action">
       <label>Action</label>
@@ -94,6 +98,9 @@
   </row>
   <row>
     <panel depends="$show_dashboards_create$">
+      <input type="text" token="create_sid">
+        <label>Job SID (input data)</label>
+      </input>
       <input type="text" token="create_title" depends="$show_inputs_create$">
         <label>Title</label>
       </input>
@@ -114,16 +121,6 @@
         <default>none</default>
         <initialValue>none</initialValue>
       </input>
-      <input id="input_create_add_task" type="text" token="create_add_task" depends="$show_inputs_create$" searchWhenChanged="true">
-        <label>Enter a new task:</label>
-      </input>
-      <input id="input_create_tasks" type="multiselect" token="create_tasks" depends="$show_inputs_create$">
-        <label>Tasks (readonly)</label>
-        <choice value="none">None</choice>
-        <delimiter> ;</delimiter>
-        <default>none</default>
-        <initialValue>none</initialValue>
-      </input>
       <input type="dropdown" token="create_tlp" depends="$show_inputs_create$">
         <label>TLP</label>
         <choice value="0">WHITE - 0</choice>
@@ -138,35 +135,39 @@
         <choice value="2">AMBER - 2</choice>
         <choice value="3">RED - 3</choice>
       </input>
+      <input type="text" token="create_source">
+        <label>Source</label>
+        <default>splunk</default>
+      </input>
+      <input type="text" token="create_timestamp_field">
+        <label>Timestamp field (Default: now())</label>
+        <default></default>
+      </input>
+      <input type="text" token="create_unique_id_field">
+        <label>Unique ID field</label>
+        <default>id</default>
+      </input>
+      <input type="text" token="create_type">
+        <label>Type</label>
+        <default>alert</default>
+      </input>
+      <input type="text" token="create_case_template">
+        <label>Case Template</label>
+        <default>default</default>
+      </input>
+      <input type="dropdown" token="create_scope">
+        <label>Scope</label>
+        <choice value="0">Include only listed fields in thehive_datatypes.csv)</choice>
+        <choice value="1">Include all fields (default datatype is 'other')</choice>
+        <default>0</default>
+      </input>
       <input type="text" token="create_description" depends="$show_inputs_create$">
         <label>Description</label>
       </input>
       <table>
         <search>
-          <done>
-            <unset token="create_title"></unset>
-            <unset token="form.create_title"></unset>
-            <unset token="create_severity"></unset>
-            <unset token="form.create_severity"></unset>
-            <unset token="create_tags"></unset>
-            <unset token="form.create_tags"></unset>
-            <unset token="create_tasks"></unset>
-            <unset token="form.create_tasks"></unset>
-            <unset token="create_tlp"></unset>
-            <unset token="form.create_tlp"></unset>
-            <unset token="create_papa"></unset>
-            <unset token="form.create_pap"></unset>
-            <unset token="create_description"></unset>
-            <unset token="form.create_description"></unset>
-          </done>
-          <query>| makeresults
-| eval title="$create_title$", severity = "$create_severity$", tags="$create_tags$", pap = "$create_pap$", date = now(), tlp = "$create_tlp$", description="$create_description$", tasks = "$create_tasks$"
-| sendalert thehive_create_a_new_alert param.thehive_instance_id=12814a02 param.title="Test Alert" param.tags="bad,malicious" param.source="splunk123" param.timestamp_field="_time" param.unique_id_field="id" param.type="Alert_From_Splunk" param.description="Ceci est une phrase.\r\nCeci est une autre phrase" param.tlp=0 param.pap=3 param.severity=3 param.case_template="Template1" param.scope=0
-| eval thehive_case_tlp = case(thehive_case_tlp==0,"TLP:WHITE",thehive_case_tlp==1,"TLP:GREEN",thehive_case_tlp==2,"TLP:AMBER",thehive_case_tlp=3,"TLP:RED"), thehive_case_title = "#"+thehive_case_caseId+" - "+thehive_case_title, thehive_case_severity = case(thehive_case_severity==1,"Low",thehive_case_severity==2,"Medium",thehive_case_severity==3,"High",thehive_case_severity==4,"Critical",1=1,thehive_case_severity), status = if(thehive_case_status!="Open", thehive_case_status+" as "+thehive_case_resolutionStatus,thehive_case_status)+";"+if(thehive_case_status!="Open","Closed at "+strftime(thehive_case_endDate,"%+"),""), thehive_case_startDate = strftime(thehive_case_startDate,"%F %H:%M")
-| makemv delim=";" status
-| fillnull value="No task" thehive_case_tasks
-| table thehive_case_tlp, thehive_case_title, thehive_case_tags, thehive_case_severity, thehive_case_tasks, thehive_case_observables, thehive_case_owner, thehive_case_startDate, thehive_case_metrics, thehive_case_customFields, status, thehive_case_id
-| rename thehive_case_tlp as TLP, thehive_case_title as Title, thehive_case_tags as Tags, thehive_case_severity as Severity, thehive_case_tasks as Tasks, thehive_case_observables as Observables, thehive_case_owner as "Assignee", thehive_case_startDate as "Start Date", status as Status, thehive_case_metrics as "Metrics", thehive_case_customFields as "Custom Fields", thehive_case_id as "ID - Go to TheHive"</query>
+          <query>| loadjob $create_sid$
+| sendalert thehive_create_a_new_alert param.thehive_instance_id=$instance_id$ param.title="$create_title$" param.tags="$create_tags$" param.source="$create_source$" param.timestamp_field="$create_timestamp_field$" param.unique_id_field="$create_unique_id_field$" param.type="$create_type$" param.description="$create_description$" param.tlp=$create_tlp$ param.pap=$create_pap$ param.severity=$create_severity$ param.case_template="$create_case_template$" param.scope=$create_scope$</query>
           <earliest>0</earliest>
           <latest></latest>
           <sampleRatio>1</sampleRatio>

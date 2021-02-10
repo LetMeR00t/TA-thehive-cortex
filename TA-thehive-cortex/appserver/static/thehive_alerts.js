@@ -82,29 +82,6 @@ require([
 
     });
 
-    sub_tokens.on("change:create_add_task", function(model, value, options){
-
-	if (typeof value != typeof undefined && value != "") {
-            console.log("Add new task: "+value);
-
-	    // Get current tasks and add the new one
-	    tasks = mvc.Components.getInstance("input_create_tasks");
-	    new_tasks = tasks.val();
-	    new_tasks.push(value);
-
-	    // Set the new tags
-	    tasks.val(new_tasks);
-	    sub_tokens.set("create_tasks",new_tasks.join(" "));
-
-	    // Render all tags
-            tasks.render();
-
-	    // clean the input field containing the last task
-	    mvc.Components.getInstance("input_create_add_task").val("");
-	}
-
-    });
-
 
 });
 
