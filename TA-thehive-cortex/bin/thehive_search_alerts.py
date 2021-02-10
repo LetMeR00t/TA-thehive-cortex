@@ -73,7 +73,7 @@ if __name__ == '__main__':
             filterDate = filterDate.split(" TO ")
             d1 = filterDate[0] if filterDate[0] != "*" else "*"
             d2 = filterDate[1] if filterDate[1] != "*" else "*"
-            element = String("(startDate:[ "+d1+" TO "+d2+" ])")
+            element = String("(date:[ "+d1+" TO "+d2+" ])")
             elements.append(element)
         query = And(*elements)
 

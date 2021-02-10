@@ -45,7 +45,7 @@ class Settings(object):
                 row["proxies"] = row["proxies"] if isinstance(row["proxies"], dict) and ("http" in row["proxies"] or "https" in row["proxies"]) else {}
                 row["organisation"] = row["organisation"] if row["organisation"]!="-" else None
                
-                self.logger.debug("[S10] KVStore, adding "+str(row))
+                self.logger.debug("[S10] KVStore, adding key \""+str(row_id)+"\" "+str(row))
                 # Store the new instance
                 row_dict = json.loads(json.dumps(row))
                 self.__instances[row_id] = row_dict
@@ -63,7 +63,8 @@ class Settings(object):
             if account_details_name in instances_by_account_name.keys():
                 instances_of_account_name = instances_by_account_name[account_details_name]
                 for i in instances_of_account_name:
-                    self.__instances[i]["username"] = account_details["content"]["username"] 
+                    if "username" in account_details["content"]:
+                        self.__instances[i]["username"] = account_details["content"]["username"] 
         self.logger.debug("[S20] Getting these usernames from account: "+str(self.__instances))
 
         # Get storage passwords for account passwords
@@ -79,13 +80,23 @@ class Settings(object):
    
     def getInstanceURL(self, instance_id):
         """ This function returns the URL of the given instance """
-        instance = self.__instances[instance_id]
+        try:
+            instance = self.__instances[instance_id]
+        except KeyError as e:
+            self.logger.debug("[S26-ERROR] This instance ID ("+instance_id+") doesn't exist in your configuration")
+            sys.exit(26)
+
         self.logger.debug("[S30] This instance ID ("+str(instance_id)+") returns: "+str(instance))
         return instance["protocol"]+"://"+instance["host"]+":"+str(instance["port"])
 
     def getInstanceUsernameApiKey(self, instance_id):
         """ This function returns the Username/Secret (password or API key) of the given instance """
-        instance = self.__instances[instance_id]
+        try:
+            instance = self.__instances[instance_id]
+        except KeyError as e:
+            self.logger.debug("[S31-ERROR] This instance ID ("+instance_id+") doesn't exist in your configuration")
+            sys.exit(31)
+
         if "username" not in instance:
             instance["username"] = "-"
             instance["password"] = "-"
@@ -105,25 +116,25 @@ class Settings(object):
     def getTheHiveCasesMax(self):
         """ This function returns the maximum number of cases to return of a TheHive instance """
         param = self.__additional_parameters["thehive_max_cases"] if "thehive_max_cases" in self.__additional_parameters else 100
-        self.logger.debug("[S45] Getting this parameter: "+str(param))
+        self.logger.debug("[S45] Getting this parameter : thehive_max_cases="+str(param))
         return param
 
     def getTheHiveCasesSort(self):
         """ This function returns the sort key to use for cases of a TheHive instance """
         param = self.__additional_parameters["thehive_sort_cases"] if "thehive_sort_cases" in self.__additional_parameters else "-startedAt"
-        self.logger.debug("[S50] Getting this parameter: "+str(param))
+        self.logger.debug("[S50] Getting this parameter: thehive_sort_cases="+str(param))
         return param
 
     def getTheHiveAlertsMax(self):
         """ This function returns the maximum number of alerts to return of a TheHive instance """
         param = self.__additional_parameters["thehive_max_alerts"] if "thehive_max_alerts" in self.__additional_parameters else 100
-        self.logger.debug("[S51] Getting this parameter: "+str(param))
+        self.logger.debug("[S51] Getting this parameter: thehive_max_alerts="+str(param))
         return param
 
     def getTheHiveAlertsSort(self):
         """ This function returns the sort key to use for alerts of a TheHive instance """
         param = self.__additional_parameters["thehive_sort_alerts"] if "thehive_sort_alerts" in self.__additional_parameters else "-date"
-        self.logger.debug("[S52] Getting this parameter: "+str(param))
+        self.logger.debug("[S52] Getting this parameter: thehive_sort_alerts="+str(param))
         return param
 
     def getCortexJobsMax(self):

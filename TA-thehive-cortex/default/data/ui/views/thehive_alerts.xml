@@ -297,8 +297,8 @@
       <input type="time" token="filter_date" searchWhenChanged="true">
         <label>Date (days only)</label>
         <default>
-          <earliest>0</earliest>
-          <latest></latest>
+          <earliest>-2y</earliest>
+          <latest>now</latest>
         </default>
       </input>
       <input type="text" token="max_alerts" searchWhenChanged="true" depends="$show_inputs_advanced$">
