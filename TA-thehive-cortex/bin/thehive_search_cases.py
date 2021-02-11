@@ -5,6 +5,7 @@ from thehive import initialize_thehive_instance
 from thehive4py.query import And, Eq, Or, Like, Between, String
 from copy import deepcopy
 import json
+import time
 
 # Global variables
 FILTER_KEYWORD_DEFAULT = "*"
@@ -100,8 +101,15 @@ if __name__ == '__main__':
              ## CUSTOM FIELDS ##
              if "thehive_case_customFields" in event and event["thehive_case_customFields"] != {}:
                  customFields = []
+                 logger.debug("[THSC-31] Found custom fields: "+str(event["thehive_case_customFields"]))
                  for cf in event["thehive_case_customFields"]:
-                     customFields.append(cf+"::"+event["thehive_case_customFields"][cf]["string"])
+                     for cftype in ["string","number","integer","boolean","date","float"]:
+                         if cftype in event["thehive_case_customFields"][cf]:
+                             # Pre-processing
+                             if cftype=="date":
+                                 event["thehive_case_customFields"][cf][cftype] = time.strftime("%c %z",time.gmtime(int(event["thehive_case_customFields"][cf][cftype])/1000))
+                             customFields.append(cf+"::"+str(event["thehive_case_customFields"][cf][cftype]))
+                             break
                  event["thehive_case_customFields"] = customFields
                  logger.debug("[THSC-35] TheHive - Custom fields: "+str(customFields))
 
