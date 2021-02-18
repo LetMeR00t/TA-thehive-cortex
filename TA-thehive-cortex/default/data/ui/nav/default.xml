@@ -12,6 +12,7 @@
     <view name="instances"/>
     <collection label="Splunk App">
       <view name="search"/>
+      <view name="alerts"/>
       <view name="dashboards"/>
     </collection>
   </collection>

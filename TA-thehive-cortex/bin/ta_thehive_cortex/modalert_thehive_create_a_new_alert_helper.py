@@ -52,6 +52,7 @@ dataTypeList = [
     "user-agent"
 ]
 
+
 def create_datatype_lookup(helper, app_name):
     """ This function is used to create a datatype lookup if it doesn't exist """
 
@@ -59,7 +60,7 @@ def create_datatype_lookup(helper, app_name):
     _SPLUNK_PATH = os.environ['SPLUNK_HOME']
     directory = os.path.join(_SPLUNK_PATH, 'etc', 'apps', app_name, 'lookups')
     th_dt_filename = os.path.join(directory, 'thehive_datatypes.csv')
-    helper.log_debug("[CAA-THCA-1] Directory found: "+str(directory))
+    helper.log_debug("[CAA-THCA-1] Directory found: " + str(directory))
 
     if not os.path.exists(th_dt_filename):
         # file th_dt_filename.csv doesn't exist. Create the file
@@ -85,7 +86,7 @@ def get_datatype_dict(helper, app_name):
     _SPLUNK_PATH = os.environ['SPLUNK_HOME']
     directory = os.path.join(_SPLUNK_PATH, 'etc', 'apps', app_name, 'lookups')
     th_dt_filename = os.path.join(directory, 'thehive_datatypes.csv')
-    helper.log_debug("[CAA-THCA-10] Directory found: "+str(directory))
+    helper.log_debug("[CAA-THCA-10] Directory found: " + str(directory))
 
     if os.path.exists(th_dt_filename):
         try:
@@ -122,7 +123,7 @@ def get_customField_dict(helper, app_name):
     _SPLUNK_PATH = os.environ['SPLUNK_HOME']
     directory = os.path.join(_SPLUNK_PATH, 'etc', 'apps', app_name, 'lookups')
     th_dt_filename = os.path.join(directory, 'thehive_datatypes.csv')
-    helper.log_debug("[CAA-THCA-25] Directory found: "+str(directory))
+    helper.log_debug("[CAA-THCA-25] Directory found: " + str(directory))
 
     if os.path.exists(th_dt_filename):
         try:
@@ -238,14 +239,14 @@ def process_event(helper, *args, **kwargs):
     """
 
     # Set the current LOG level
-    helper.log_info("[CAA-THCA-35] LOG level to: "+helper.log_level)
+    helper.log_info("[CAA-THCA-35] LOG level to: " + helper.log_level)
     helper.set_log_level(helper.log_level)
 
     helper.log_info("[CAA-THCA-36] Alert action thehive_create_a_new_alert started at {}".format(time.time()))
 
     # Get the instance connection and initialize settings
     instance_id = helper.get_param("thehive_instance_id")
-    helper.log_debug("[CAA-THCA-40] TheHive instance found: "+str(instance_id))
+    helper.log_debug("[CAA-THCA-40] TheHive instance found: " + str(instance_id))
 
     (thehive, configuration, defaults, logger) = create_thehive_instance(instance_id=instance_id, settings=helper.settings, logger=helper._logger)
 
@@ -284,6 +285,7 @@ def process_event(helper, *args, **kwargs):
     helper.log_debug("[CAA-THCA-57] Alert creation is done.")
     return 0
 
+
 def extract_field(row, field):
     """ This function is used to extract information from a potential field in a row and sanitize it if needed. If the field is not found, use the field name directly as value """
 
@@ -293,6 +295,7 @@ def extract_field(row, field):
         if newValue not in [None, '']:
             result = newValue
     return result
+
 
 def create_alert(helper, thehive_api, alert_args):
     """ This function is used to create the alert using the API, settings and search results """
@@ -314,17 +317,17 @@ def create_alert(helper, thehive_api, alert_args):
         artifactMessage = ''
         customFields = dict()
         sourceRef = alert_reference
-        alert = dict() 
+        alert = dict()
 
         # Splunk makes a bunch of dumb empty multivalue fields
         # replace value by multivalue if required
-        helper.log_debug("[CAA-THCA-65] Row before pre-processing: "+str(row))
+        helper.log_debug("[CAA-THCA-65] Row before pre-processing: " + str(row))
         for key, value in row.items():
-            if not key.startswith("__mv_") and "__mv_"+key in row and row["__mv_"+key] not in [None, '']:
-                row[key] = [e[1:len(e)-1] for e in row["__mv_"+key].split(";")]
+            if not key.startswith("__mv_") and "__mv_" + key in row and row["__mv_" + key] not in [None, '']:
+                row[key] = [e[1:len(e)-1] for e in row["__mv_" + key].split(";")]
         # we filter those out here
         row = {key: value for key, value in row.items() if not key.startswith("__mv_") and key not in ["rid"]}
-        helper.log_debug("[CAA-THCA-66] Row after pre-processing: "+str(row))
+        helper.log_debug("[CAA-THCA-66] Row after pre-processing: " + str(row))
 
         # find the field name used for a unique identifier
         if alert_args['unique_id_field'] in row:
@@ -337,14 +340,13 @@ def create_alert(helper, thehive_api, alert_args):
 
         if 'th_inline_tags' in row:
             # grabs that field's value and assigns it to
-            artifactTags = str(row.pop("th_inline_tags")).split(",")
+            artifactTags = list(str(row.pop("th_inline_tags")).split(","))
 
         # check if the field th_msg exists and strip it from the row.
         # The value will be used as message attached to artifacts
         if 'th_msg' in row:
             # grabs that field's value and assigns it to
             artifactMessage = str(row.pop("th_msg"))
-            
         helper.log_debug("[CAA-THCA-75] artifact message: {} ".format(artifactMessage))
         helper.log_debug("[CAA-THCA-76] artifact tags: {} ".format(artifactTags))
 
@@ -397,7 +399,7 @@ def create_alert(helper, thehive_api, alert_args):
                         cTLP = OBSERVABLE_TLP[dType[1]]
                         cTags.append(OBSERVABLE_TLP[str(cTLP)])
                     else:
-                        cTags.append(str(dType[1].replace(" ", "_")))
+                        cTags.append(str(dType[1]).replace(" ", "_"))
                 if key in data_type:
                     helper.log_debug('[CAA-THCA-95] key is an artifact: {} '.format(key))
                     artifact_key = data_type[key]
@@ -462,17 +464,15 @@ def create_alert(helper, thehive_api, alert_args):
                     artifact_key = 'other'
 
                 if artifact_key not in [None, '']:
-                    helper.log_debug("[CAA-THCA-106] Processing artifact key: "+str(artifact_key)+" ("+str(value)+") ("+artifactMessage+")")
-                    cMsg = 'field: ' + str(key)
-                    if artifactMessage not in [None, '']:
-                        cMsg = artifactMessage + ' - ' + cMsg
+                    helper.log_debug("[CAA-THCA-106] Processing artifact key: " + str(artifact_key) + " (" + str(value) + ") (" + artifactMessage + ")")
+                    cTags.append('field:' + str(key))
                     if isinstance(value,list) :  # was a multivalue field
                         helper.log_debug('[CAA-THCA-107] value is not a simple string: {} '.format(value))
                         for val in value:
                             if val != "":
                                 artifact = dict(dataType=artifact_key,
                                                 data=str(val),
-                                                message=cMsg,
+                                                message=artifactMessage,
                                                 tags=cTags
                                                 )
                                 if cTLP != '':
@@ -483,7 +483,7 @@ def create_alert(helper, thehive_api, alert_args):
                     else:
                         artifact = dict(dataType=artifact_key,
                                         data=str(value),
-                                        message=cMsg,
+                                        message=artifactMessage,
                                         tags=cTags
                                         )
                         if cTLP != '':
@@ -495,38 +495,38 @@ def create_alert(helper, thehive_api, alert_args):
             alert['artifacts'] = list(artifacts)
             alert['customFields'] = customFields
             alerts[sourceRef] = alert
-            helper.log_debug("[CAA-THCA-115] Artifacts found for an alert: "+str(artifacts))
+            helper.log_debug("[CAA-THCA-115] Artifacts found for an alert: " + str(artifacts))
         else:
-            helper.log_debug("[CAA-THCA-116] No artifact found for an alert: "+str(alert))
+            helper.log_debug("[CAA-THCA-116] No artifact found for an alert: " + str(alert))
 
     # actually send the request to create the alert; fail gracefully
     for srcRef in alerts.keys():
 
         # Create the Alert object
         alert = Alert(
-                title=alerts[srcRef]['title'],
-                date=int(alerts[srcRef]['timestamp']),
-                description=alerts[srcRef]['description'],
-                tags=alert_args['tags'],
-                severity=alert_args['severity'],
-                tlp=alert_args['tlp'],
-                pap=alert_args['pap'],
-                type=alert_args['type'],
-                artifacts=alerts[srcRef]['artifacts'],
-                customFields=alerts[srcRef]['customFields'],
-                source=alert_args['source'],
-                caseTemplate=alert_args['caseTemplate'],
-                sourceRef=srcRef
-            )
+            title=alerts[srcRef]['title'],
+            date=int(alerts[srcRef]['timestamp']),
+            description=alerts[srcRef]['description'],
+            tags=alert_args['tags'],
+            severity=alert_args['severity'],
+            tlp=alert_args['tlp'],
+            pap=alert_args['pap'],
+            type=alert_args['type'],
+            artifacts=alerts[srcRef]['artifacts'],
+            customFields=alerts[srcRef]['customFields'],
+            source=alert_args['source'],
+            caseTemplate=alert_args['caseTemplate'],
+            sourceRef=srcRef
+        )
 
-        helper.log_debug("[CAA-THCA-120] Processing alert: "+alert.jsonify())
+        helper.log_debug("[CAA-THCA-120] Processing alert: " + alert.jsonify())
         # Get API and create the alert
         response = thehive_api.create_alert(alert)
 
         if response.status_code in (200, 201, 204):
             # log response status
             helper.log_info(
-                "[CCA-THCA-125] INFO theHive alert is successful created. "
+                "[CAA-THCA-125] INFO theHive alert is successfully created. "
                 "url={}, HTTP status={}".format(thehive_api.url, response.status_code)
             )
         else:
