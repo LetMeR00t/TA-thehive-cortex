@@ -3,17 +3,23 @@
   <init>
     <eval token="create_timestamp_field">now()</eval>
     <eval token="form.create_timestamp_field">now()</eval>
+    <set token="show_dashboards_list">1</set>
   </init>
   <fieldset submitButton="false" autoRun="false">
     <input type="dropdown" token="action">
       <label>Action</label>
       <choice value="create">CREATE</choice>
       <choice value="list">LIST</choice>
+      <choice value="viewlookup">VIEW DATATYPES</choice>
+      <choice value="viewlogs">VIEW LOGS</choice>
       <default>list</default>
       <initialValue>list</initialValue>
       <change>
         <condition value="list">
+          <set token="show_dashboards_list">1</set>
           <unset token="show_dashboards_create"></unset>
+          <unset token="show_dashboards_logs"></unset>
+          <unset token="show_dashboards_lookup"></unset>
           <unset token="show_inputs_create"></unset>
           <unset token="filter_type"></unset>
           <unset token="form.filter_type"></unset>
@@ -33,6 +39,18 @@
         <condition value="create">
           <set token="show_dashboards_create">1</set>
           <set token="show_inputs_create">1</set>
+        </condition>
+        <condition value="viewlookup">
+          <set token="show_dashboards_lookup">1</set>
+          <unset token="show_dashboards_create"></unset>
+          <unset token="show_dashboards_list"></unset>
+          <unset token="show_dashboards_logs"></unset>
+        </condition>
+        <condition value="viewlogs">
+          <set token="show_dashboards_logs">1</set>
+          <unset token="show_dashboards_create"></unset>
+          <unset token="show_dashboards_list"></unset>
+          <unset token="show_dashboards_lookup"></unset>
         </condition>
       </change>
     </input>
@@ -202,7 +220,7 @@
     </panel>
   </row>
   <row>
-    <panel>
+    <panel depends="$show_dashboards_list$">
       <viz type="status_indicator_app.status_indicator">
         <search>
           <query>| makeresults
@@ -228,7 +246,7 @@
     </panel>
   </row>
   <row>
-    <panel>
+    <panel depends="$show_dashboards_list$">
       <input type="multiselect" token="filter_type" searchWhenChanged="true">
         <label>Type</label>
         <delimiter>;</delimiter>
@@ -390,6 +408,114 @@
         <option name="dataOverlayMode">none</option>
         <option name="refresh.display">progressbar</option>
       </table>
+    </panel>
+  </row>
+  <row>
+    <panel depends="$show_dashboards_lookup$">
+      <title>Lookup thehive_datatypes.csv</title>
+      <table>
+        <search>
+          <query>| inputlookup thehive_datatypes.csv
+| table field_name, field_type, datatype, description, regex</query>
+          <earliest>-24h@h</earliest>
+          <latest>now</latest>
+          <sampleRatio>1</sampleRatio>
+        </search>
+        <option name="count">20</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">none</option>
+        <option name="percentagesRow">false</option>
+        <option name="rowNumbers">false</option>
+        <option name="totalsRow">false</option>
+        <option name="wrap">true</option>
+      </table>
+    </panel>
+  </row>
+  <row>
+    <panel depends="$show_dashboards_logs$">
+      <title>Created alerts</title>
+      <viz type="status_indicator_app.status_indicator">
+        <search>
+          <query>(index=_* OR index=cim_*) sourcetype="tathehivecortex:log" "CAA-THCA-125"
+| stats count
+| eval icon="check", color="#44CC44"
+| table count icon color</query>
+          <earliest>-60m@m</earliest>
+          <latest>now</latest>
+          <sampleRatio>1</sampleRatio>
+        </search>
+        <option name="drilldown">none</option>
+        <option name="status_indicator_app.status_indicator.colorBy">static_color</option>
+        <option name="status_indicator_app.status_indicator.fillTarget">text</option>
+        <option name="status_indicator_app.status_indicator.fixIcon">warning</option>
+        <option name="status_indicator_app.status_indicator.icon">field_value</option>
+        <option name="status_indicator_app.status_indicator.precision">0</option>
+        <option name="status_indicator_app.status_indicator.showOption">1</option>
+        <option name="status_indicator_app.status_indicator.staticColor">#53a051</option>
+        <option name="status_indicator_app.status_indicator.useColors">true</option>
+        <option name="status_indicator_app.status_indicator.useThousandSeparator">true</option>
+        <option name="trellis.enabled">0</option>
+        <option name="trellis.scales.shared">1</option>
+        <option name="trellis.size">medium</option>
+      </viz>
+    </panel>
+    <panel depends="$show_dashboards_logs$">
+      <title>Created alerts</title>
+      <viz type="status_indicator_app.status_indicator">
+        <search>
+          <query>(index=_* OR index=cim_*) sourcetype="tathehivecortex:log" "CAA-THCA-126"
+| stats count
+| eval icon="check", color="#44CC44"
+| table count icon color</query>
+          <earliest>-60m@m</earliest>
+          <latest>now</latest>
+          <sampleRatio>1</sampleRatio>
+        </search>
+        <option name="drilldown">none</option>
+        <option name="status_indicator_app.status_indicator.colorBy">static_color</option>
+        <option name="status_indicator_app.status_indicator.fillTarget">text</option>
+        <option name="status_indicator_app.status_indicator.fixIcon">warning</option>
+        <option name="status_indicator_app.status_indicator.icon">fix_icon</option>
+        <option name="status_indicator_app.status_indicator.precision">0</option>
+        <option name="status_indicator_app.status_indicator.showOption">1</option>
+        <option name="status_indicator_app.status_indicator.staticColor">#dc4e41</option>
+        <option name="status_indicator_app.status_indicator.useColors">true</option>
+        <option name="status_indicator_app.status_indicator.useThousandSeparator">true</option>
+        <option name="trellis.enabled">0</option>
+        <option name="trellis.scales.shared">1</option>
+        <option name="trellis.size">medium</option>
+      </viz>
+    </panel>
+  </row>
+  <row>
+    <panel depends="$show_dashboards_logs$">
+      <title>Logs on "TheHive create a new alert"</title>
+      <input type="time" token="LogTimePicker">
+        <label>Time range</label>
+        <default>
+          <earliest>-60m@m</earliest>
+          <latest>now</latest>
+        </default>
+      </input>
+      <event>
+        <search>
+          <query>(index=_* OR index=cim_*) sourcetype="tathehivecortex:log" "CAA-THCA*"</query>
+          <earliest>$LogTimePicker.earliest$</earliest>
+          <latest>$LogTimePicker.latest$</latest>
+          <sampleRatio>1</sampleRatio>
+        </search>
+        <option name="count">5</option>
+        <option name="list.drilldown">none</option>
+        <option name="list.wrap">1</option>
+        <option name="maxLines">5</option>
+        <option name="raw.drilldown">full</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="rowNumbers">0</option>
+        <option name="table.drilldown">all</option>
+        <option name="table.sortDirection">asc</option>
+        <option name="table.wrap">1</option>
+        <option name="type">list</option>
+      </event>
     </panel>
   </row>
 </form>
