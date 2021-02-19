@@ -416,7 +416,8 @@
       <table>
         <search>
           <query>| inputlookup thehive_datatypes.csv
-| table field_name, field_type, datatype, description, regex</query>
+| table field_name, field_type, datatype, description, regex
+| rename field_name as "Field name", field_type as "Type", datatype as "Datatype", description as "Description", regex as "Regex"</query>
           <earliest>-24h@h</earliest>
           <latest>now</latest>
           <sampleRatio>1</sampleRatio>
@@ -425,6 +426,7 @@
         <option name="dataOverlayMode">none</option>
         <option name="drilldown">none</option>
         <option name="percentagesRow">false</option>
+        <option name="refresh.display">progressbar</option>
         <option name="rowNumbers">false</option>
         <option name="totalsRow">false</option>
         <option name="wrap">true</option>
