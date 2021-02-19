@@ -1,8 +1,14 @@
-
-
 # Commands
 This application allows you to use new commands related to TheHive/Cortex.
 Every command requires an "Instance ID" parameter which is used to specify which instance needs to be used by the script.
+
+# Table of content
+* [ thehivecases ](#thehivecases)  
+* [ thehivecreate ](#thehivecreate)
+* [ thehivealerts ](#thehivealerts)
+* [ cortexjobs ](#cortexjobs)
+* [ cortexrun ](#cortexrun)
+
 
 ## thehivecases
 
