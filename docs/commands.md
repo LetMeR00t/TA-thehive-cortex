@@ -1,4 +1,5 @@
 
+
 # Commands
 This application allows you to use new commands related to TheHive/Cortex.
 Every command requires an "Instance ID" parameter which is used to specify which instance needs to be used by the script.
@@ -32,7 +33,7 @@ If not set, no filter will be applied.
 
 ### Return
 This command append new fields per row to previous results.
-Every new field will start with "cortex_*". As an exemple, you can recover:
+Every new field will start with "thehive_*". As an exemple, you can recover:
 
  - thehive_case_caseId
  - thehive_case_createdAt
@@ -138,6 +139,80 @@ Every new field will start with "thehive_*". As an exemple, you can recover:
 	| thehivecases $$INSTANCE_ID$$
 	# This will creater a new case with the title "Critical case", with a CRITICAL severity, with tags set to "important" and "emergency", with a PAP set to RED, with a description set to "Very important case"
 
+## thehivealerts
+
+This command is used to get alerts from TheHive (\$..\$ are tokens examples but you can use it directly in your searches).
+
+
+	| makeresults
+	| eval type = "$filter_type$", severity = "$filter_severity$", tags = "$filter_tags$", title = "$filter_title$", read = "$filter_read$", source = "$filter_source$", date = "$filter_date_d1$ TO $filter_date_d2$", max_alerts="$max_alerts$", sort_alerts="$sort_alerts$"
+	| thehivecases $$INSTANCE_ID$$
+
+
+### Parameters (input results)
+One row will result in executing the script one time. So if you specify 5 rows, the script will be executed 5 times and all results will be appended.
+If not set, no filter will be applied.
+
+* (Optional) **type**: Filter on a specific type (Default: *)
+* (Optional) **severity**: Filter on a specific severity (separated by ";") (Default: *)
+* (Optional) **tags**: Filter on a specific tags (separated by ";") (Default: *)
+* (Optional) **title**: Filter on a specific title (Default: *)
+* (Optional) **read**: Filter on a specific read status (Default: *)
+* (Optional) **source**: Filter on a specific source (Default: *)
+* (Optional) **date**: Filter on a specific date using the format "\$date1\$ TO \$date2\$" (Default: *)
+* (Optional) **max_alerts**: The maximum number of alerts to return (Default: 100 or your own default)
+* (Optional) **sort_alerts**: The way how your alerts are sorted (Default: "-date" or your own default)
+
+**Note**: These parameters are the **expected fields name**.
+
+### Return
+This command append new fields per row to previous results.
+Every new field will start with "thehive_*". As an exemple, you can recover:
+
+- thehive_alert_artifacts
+- thehive_alert_case
+- thehive_alert_caseTemplate
+- thehive_alert_createdAt
+- thehive_alert_createdBy
+- thehive_alert_customFields
+- thehive_alert_date
+- thehive_alert_description
+- thehive_alert_externalLink
+- thehive_alert_follow
+- thehive_alert_id
+- thehive_alert_pap
+- thehive_alert_severity
+- thehive_alert_similarCases
+- thehive_alert_source
+- thehive_alert_sourceRef
+- thehive_alert_status
+- thehive_alert_tags
+- thehive_alert_title
+- thehive_alert_tlp
+- thehive_alert_type
+- thehive_alert_updatedAt
+- thehive_alert_updatedBy
+
+### Examples
+
+	| makeresults count=1
+	| thehivealerts $$INSTANCE_ID$$
+	# This will recover any alert
+	
+	| makeresults count=1
+	| eval source = "splunk" 
+	| thehivealerts $$INSTANCE_ID$$
+	# This will recover any alert concerning with the source set to "splunk"
+	
+	| makeresults count=1
+	| eval read = "1"
+	| thehivealerts $$INSTANCE_ID$$
+	# This will recover any already read alert
+		 
+	| makeresults count=1
+	| eval tags = "t1;t2"
+	| thehivealerts $$INSTANCE_ID$$
+	# This will recover any alert with "t1" or "t2" tag
 
 ## cortexjobs
 
