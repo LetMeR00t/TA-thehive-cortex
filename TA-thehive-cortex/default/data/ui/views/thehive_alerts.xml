@@ -54,6 +54,13 @@
         </condition>
       </change>
     </input>
+    <input type="time" token="LogTimePicker" depends="$show_dashboards_logs$">
+      <label>Time range</label>
+      <default>
+        <earliest>-60m@m</earliest>
+        <latest>now</latest>
+      </default>
+    </input>
     <input type="dropdown" token="instance_id">
       <label>Instance</label>
       <fieldForLabel>instance_name</fieldForLabel>
@@ -327,7 +334,6 @@
         <label>Sort alerts</label>
       </input>
       <table>
-        <title>You can click on the ID to open TheHive with the selected alert</title>
         <search>
           <done>
             <set token="job_thehive_search_alerts">$job.sid$</set>
@@ -337,8 +343,8 @@
 | thehivealerts $instance_id$
 | eval thehive_alert_tlp = case(thehive_alert_tlp==0,"TLP:WHITE",thehive_alert_tlp==1,"TLP:GREEN",thehive_alert_tlp==2,"TLP:AMBER",thehive_alert_tlp=3,"TLP:RED"), thehive_alert_severity = case(thehive_alert_severity==1,"Low",thehive_alert_severity==2,"Medium",thehive_alert_severity==3,"High",thehive_alert_severity==4,"Critical",1=1,thehive_alert_severity), thehive_alert_date = strftime(thehive_alert_date,"%F %H:%M"), thehive_alert_status = case(thehive_alert_status=="New","Unread",thehive_alert_status=="Ignored","Read",1==1,thehive_alert_status)
 | fillnull value="No task" thehive_case_tasks
-| table thehive_alert_sourceRef, thehive_alert_type, thehive_alert_status, thehive_alert_tlp, thehive_alert_title, thehive_alert_source, thehive_alert_severity, thehive_alert_artifacts, thehive_alert_date, thehive_alert_customFields, thehive_alert_tags
-| rename thehive_alert_sourceRef as "Reference", thehive_alert_type as "Type", thehive_alert_status as "Read", thehive_alert_tlp as TLP, thehive_alert_title as Title, thehive_alert_tags as Tags, thehive_alert_source as "Source", thehive_alert_severity as Severity, thehive_alert_artifacts as "Artifacts", thehive_alert_date as "Date", thehive_alert_customFields as "Custom Fields"</query>
+| table thehive_alert_id thehive_alert_sourceRef, thehive_alert_type, thehive_alert_status, thehive_alert_tlp, thehive_alert_title, thehive_alert_source, thehive_alert_severity, thehive_alert_artifacts, thehive_alert_date, thehive_alert_customFields, thehive_alert_tags
+| rename thehive_alert_id as "Alert ID", thehive_alert_sourceRef as "Reference", thehive_alert_type as "Type", thehive_alert_status as "Read", thehive_alert_tlp as TLP, thehive_alert_title as Title, thehive_alert_tags as Tags, thehive_alert_source as "Source", thehive_alert_severity as Severity, thehive_alert_artifacts as "Artifacts", thehive_alert_date as "Date", thehive_alert_customFields as "Custom Fields"</query>
           <earliest>$filter_date.earliest$</earliest>
           <latest>$filter_date.latest$</latest>
           <sampleRatio>1</sampleRatio>
@@ -416,8 +422,7 @@
       <table>
         <search>
           <query>| inputlookup thehive_datatypes.csv
-| table field_name, field_type, datatype, description, regex
-| rename field_name as "Field name", field_type as "Type", datatype as "Datatype", description as "Description", regex as "Regex"</query>
+| table field_name, field_type, datatype, description, regex</query>
           <earliest>-24h@h</earliest>
           <latest>now</latest>
           <sampleRatio>1</sampleRatio>
@@ -426,7 +431,6 @@
         <option name="dataOverlayMode">none</option>
         <option name="drilldown">none</option>
         <option name="percentagesRow">false</option>
-        <option name="refresh.display">progressbar</option>
         <option name="rowNumbers">false</option>
         <option name="totalsRow">false</option>
         <option name="wrap">true</option>
@@ -447,6 +451,7 @@
           <sampleRatio>1</sampleRatio>
         </search>
         <option name="drilldown">none</option>
+        <option name="refresh.display">progressbar</option>
         <option name="status_indicator_app.status_indicator.colorBy">static_color</option>
         <option name="status_indicator_app.status_indicator.fillTarget">text</option>
         <option name="status_indicator_app.status_indicator.fixIcon">warning</option>
@@ -492,16 +497,9 @@
   <row>
     <panel depends="$show_dashboards_logs$">
       <title>Logs on "TheHive create a new alert"</title>
-      <input type="time" token="LogTimePicker">
-        <label>Time range</label>
-        <default>
-          <earliest>-60m@m</earliest>
-          <latest>now</latest>
-        </default>
-      </input>
       <event>
         <search>
-          <query>(index=_* OR index=cim_*) sourcetype="tathehivecortex:log" "CAA-THCA*"</query>
+          <query>(index=_* OR index=cim_*) sourcetype="tathehivecortex:log" CAA-THCA*</query>
           <earliest>$LogTimePicker.earliest$</earliest>
           <latest>$LogTimePicker.latest$</latest>
           <sampleRatio>1</sampleRatio>
