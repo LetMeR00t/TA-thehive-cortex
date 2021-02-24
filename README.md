@@ -82,7 +82,7 @@ Once you've done that, you can configure all your instances. An instance is an e
 - **Organisation**: The name of the organisation against which api calls will be run. Defaults to "-" meaning None
 - **Protocol**: Protocol to use (HTTP or HTTPS). Default to HTTP.
 - **Certificate Verification**: Indicate if the certificate verification is required. If you use an HTTPS connection with a self-signed certificate of a custom certificate authority, you must add your trusted certificate to the "certifi" library. To do so, append your certificate under "\$APP_FOLDER\$/bin/ta_thehive_cortex/aob_py3/certifi/cacert.pem" (or aob_py2 if you use Python 2.7). Default to True
-- **Proxies**: A dictionary of proxies if needed. If you don't use any proxy, set this input as default ({}). If you use a proxy, it's expecting a dictionary of two keys ("http" and "https") with the proxy value as dictionary value. **Example**: {"http": "http://my_proxy:8080", "https": "http://my_proxy:8080"}
+- **Proxies**: A dictionary of proxies if needed. If you don't use any proxy, set this input as default ({}). If you use a proxy, it's expecting a dictionary of two keys ("http" and "https") with the proxy value as dictionary value. **Example**: {\"http\": \"http://my_proxy:8080\", \"https\": \"https://my_proxy:8080\"}
 - **Host**: Host of your instance (hostname or IP)
 - **Port**: Port used by your instance (Default:9000 for TheHive, 9001 for Cortex)
 
