@@ -89,6 +89,102 @@
                     ]
                 },
                 {
+                    "options": {
+                        "saveValidator": "function(formData) { if(!formData.proxy_enabled || formData.proxy_enabled === '0') {return true; } if(!formData.proxy_hostname) { return 'Proxy Host can not be empty'; } if(!formData.proxy_port) { return 'Proxy Port can not be empty'; } return true; }"
+                    }, 
+                    "name": "proxy", 
+                    "entity": [
+                        {
+                            "field": "proxy_enabled", 
+                            "label": "Enable", 
+                            "type": "checkbox"
+                        }, 
+                        {
+                            "options": {
+                                "disableSearch": true, 
+                                "autoCompleteFields": [
+                                    {
+                                        "label": "http", 
+                                        "value": "http"
+                                    }, 
+                                    {
+                                        "label": "socks4", 
+                                        "value": "socks4"
+                                    }, 
+                                    {
+                                        "label": "socks5", 
+                                        "value": "socks5"
+                                    }
+                                ]
+                            }, 
+                            "field": "proxy_type", 
+                            "defaultValue": "http", 
+                            "label": "Proxy Type", 
+                            "type": "singleSelect"
+                        }, 
+                        {
+                            "validators": [
+                                {
+                                    "minLength": 0, 
+                                    "errorMsg": "Max host length is 4096", 
+                                    "maxLength": 4096, 
+                                    "type": "string"
+                                }
+                            ], 
+                            "field": "proxy_hostname", 
+                            "label": "Host", 
+                            "type": "text"
+                        }, 
+                        {
+                            "validators": [
+                                {
+                                    "range": [
+                                        1, 
+                                        65535
+                                    ], 
+                                    "type": "number"
+                                }
+                            ], 
+                            "field": "proxy_port", 
+                            "label": "Port", 
+                            "type": "text"
+                        }, 
+                        {
+                            "validators": [
+                                {
+                                    "minLength": 0, 
+                                    "errorMsg": "Max length of username is 50", 
+                                    "maxLength": 50, 
+                                    "type": "string"
+                                }
+                            ], 
+                            "field": "proxy_username", 
+                            "label": "Username", 
+                            "type": "text"
+                        }, 
+                        {
+                            "encrypted": true, 
+                            "validators": [
+                                {
+                                    "minLength": 0, 
+                                    "errorMsg": "Max length of password is 8192", 
+                                    "maxLength": 8192, 
+                                    "type": "string"
+                                }
+                            ], 
+                            "field": "proxy_password", 
+                            "label": "Password", 
+                            "type": "text"
+                        }, 
+                        {
+                            "field": "proxy_rdns", 
+                            "label": "Remote DNS resolution", 
+                            "type": "checkbox"
+                        }
+                    ], 
+                    "title": "Proxy"
+                }, 
+                {
                     "name": "logging",
                     "title": "Logging",
                     "entity": [
