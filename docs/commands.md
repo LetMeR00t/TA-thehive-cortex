@@ -152,7 +152,7 @@ This command is used to get alerts from TheHive (\$..\$ are tokens examples but 
 
 	| makeresults
 	| eval type = "$filter_type$", severity = "$filter_severity$", tags = "$filter_tags$", title = "$filter_title$", read = "$filter_read$", source = "$filter_source$", date = "$filter_date_d1$ TO $filter_date_d2$", max_alerts="$max_alerts$", sort_alerts="$sort_alerts$"
-	| thehivecases $$INSTANCE_ID$$
+	| thehivealerts $$INSTANCE_ID$$
 
 
 ### Parameters (input results)

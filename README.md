@@ -82,7 +82,7 @@ Once you've done that, you can configure all your instances. An instance is an e
 - **Organisation**: The name of the organisation against which api calls will be run. Defaults to "-" meaning None
 - **Protocol**: Protocol to use (HTTP or HTTPS). Default to HTTP.
 - **Certificate Verification**: Indicate if the certificate verification is required. If you use an HTTPS connection with a self-signed certificate of a custom certificate authority, you must add your trusted certificate to the "certifi" library. To do so, append your certificate under "\$APP_FOLDER\$/bin/ta_thehive_cortex/aob_py3/certifi/cacert.pem" (or aob_py2 if you use Python 2.7). Default to True
-- **Proxies**: A dictionary of proxies if needed. If you don't use any proxy, set this input as default ({}). If you use a proxy, it's expecting a dictionary of two keys ("http" and "https") with the proxy value as dictionary value. **Example**: {"http": "http://my_proxy:8080", "https": "http://my_proxy:8080"}
+- **Proxies**: A dictionary of proxies if needed. If you don't use any proxy, set this input as default ({}). If you use a proxy, it's expecting a dictionary of two keys ("http" and "https") with the proxy value as dictionary value. **Example**: {\"http\": \"http://my_proxy:8080\", \"https\": \"https://my_proxy:8080\"}
 - **Host**: Host of your instance (hostname or IP)
 - **Port**: Port used by your instance (Default:9000 for TheHive, 9001 for Cortex)
 
@@ -160,6 +160,77 @@ You have to specify some inputs:
 * **Description**: Description for this new case
 
 The search will create the new case and return information such as the job ID.
+
+## "TheHive: Alerts" dashboard
+The application integrates a preconfigured dashboard with searches allowing you to easily interface with TheHive and manage TheHive alerts.  
+This dasboard is also related to alert action "TheHive - Create a new alert"
+
+
+![](images/alerts_list.png)
+
+### TheHive Alert History
+You can retrieve the history of alerts in TheHive using the action "LIST".
+For each alert, you can see :
+* **Alert ID**: ID of the alert
+* **Reference**: the unique reference for this alert (default is "SPK<EPOCH timestamp>")
+* **Type**: type of alert (default is "alert")
+* **Read**: the status of the alert on TheHive (unread, read, imported)
+* **TLP**: TLP of the alert
+* **Title**: Title of the alert
+* **Source**: the set source of the alert (default is "splunk")
+* **Severity**: Severity of the alert
+* **Artifacts**: number of artifacts (observables) in the alert
+* **Date**: date & time of the alert
+* **Custom Fields**: custom fields of the alert
+* **Tags**: Tags of the alert
+
+You can set filters for the history:
+* **Type**: type of alerts
+* **Severity**: Severity of alerts
+* **Tags**: Tags of alerts
+* **Read**: read status of alerts
+* **Title**: Title of alerts
+* **Source**: source of alerts
+* **Date**: Creation date of alerts
+
+### Create a new alert
+The standard way is to use the alert action "TheHive - Create a new alert" in your saved Splunk alerts or correlation searches.
+You can manually create a new alert from Splunk using the "CREATE" action and a valid SID of a Splunk search.
+
+![](images/alerts_create.png)
+
+You have to specify some inputs:
+* **Job SID (input data)**: SID of a search (you can retrieve SIDs from Splunk > Activity > Jobs)
+* **Title**: Title for this new alert
+* **Severity**: Severity for this new alert
+* **Tags**: Tags for this new alert (they are added by specifiying values in the "Enter a new tag" input)
+* **TLP**: TLP for this new alert
+* **PAP**: PAP for this new alert
+* **Source**: source of this alert (you can provide a field name to set this value from results)
+* **Timestamp field**: field containing a valid EPOCH timestamp (10-digit for s;13-digit for ms) - if not present, default to now()
+* **Unique ID field**: the unique reference for this alert. If a field name is provided, it is used to group results rows in several alerts - default is SPK+now()
+* **Type**: type of alert (default is "alert")
+* **Case Template**: Case template to use by default when importing alert into a case
+* **Scope**: a swithc to include all fields from result set (as type "other") or only field names listed in lookup table "thehive_datatypes.csv"
+* **Description**: Description for this new alert
+
+The search will retrieve the results from SID and create the new alert. You can check the new alert in TheHive Alert History
+
+### View datatypes
+Alert action "TheHive - Create a new alert" uses a lookup table to identidy supported fields as TheHive datatypes or custom fields.
+If this lookup table is missing, first call of alert action will attempt to create it with default list of supported data types.
+You can extend this list with :  
+- standard CIM fields:  e.g. field src of field type "artifact" and data type "ip")
+- custom fields: e.g. SAW_link of field type "customField" (case sensitive) and data type "string". Supported custom fields are `string`, `boolean`, `number` (only TH3), `date`, `integer` (only TH4), `float` (only TH4)
+
+![](images/alerts_lookup_thehive_datatypes)
+
+### View logs
+This view shows a summary of successfully created alert and failed alert creation for given time frame.
+The panel underneath provides details depending on log level set for the app (recommended level is INFO).
+
+![](images/alerts_view_logs.png)
+
 
 ## "Cortex: Jobs" dashboard
 The application integrates a preconfigured dashboard with searches allowing you to easily interface with Cortex.
