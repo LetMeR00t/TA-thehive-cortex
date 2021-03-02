@@ -1,3 +1,12 @@
+[proxy]
+proxy_enabled = 
+proxy_type = 
+proxy_url = 
+proxy_port = 
+proxy_username = 
+proxy_password = 
+proxy_rdns = 
+
 [logging]
 loglevel = 
 
@@ -8,12 +17,3 @@ thehive_max_cases =
 thehive_sort_cases = 
 thehive_max_alerts = 
 thehive_sort_alerts = 
-
-[proxy]
-proxy_enabled = 
-proxy_type = 
-proxy_hostname = 
-proxy_port = 
-proxy_username = 
-proxy_password = 
-proxy_rdns = 
