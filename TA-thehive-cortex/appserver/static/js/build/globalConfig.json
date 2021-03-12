@@ -2,7 +2,7 @@
     "meta": {
         "name": "TA-thehive-cortex",
         "displayName": "TheHive-Cortex",
-        "version": "2.0.0",
+        "version": "2.1.0",
         "apiVersion": "3.0.0",
         "restRoot": "TA_thehive_cortex"
     },
@@ -87,102 +87,6 @@
                             ]
                         }
                     ]
-                },
-                {
-                    "name": "proxy",
-                    "title": "Proxy",
-                    "entity": [
-                        {
-                            "field": "proxy_enabled",
-                            "label": "Enable",
-                            "type": "checkbox"
-                        },
-                        {
-                            "field": "proxy_type",
-                            "label": "Proxy Type",
-                            "type": "singleSelect",
-                            "options": {
-                                "disableSearch": true,
-                                "autoCompleteFields": [
-                                    {
-                                        "label": "http",
-                                        "value": "http"
-                                    },
-                                    {
-                                        "label": "socks4",
-                                        "value": "socks4"
-                                    },
-                                    {
-                                        "label": "socks5",
-                                        "value": "socks5"
-                                    }
-                                ]
-                            },
-                            "defaultValue": "http"
-                        },
-                        {
-                            "field": "proxy_url",
-                            "label": "Host",
-                            "type": "text",
-                            "validators": [
-                                {
-                                    "type": "string",
-                                    "minLength": 0,
-                                    "maxLength": 4096,
-                                    "errorMsg": "Max host length is 4096"
-                                }
-                            ]
-                        },
-                        {
-                            "field": "proxy_port",
-                            "label": "Port",
-                            "type": "text",
-                            "validators": [
-                                {
-                                    "type": "number",
-                                    "range": [
-                                        1,
-                                        65535
-                                    ]
-                                }
-                            ]
-                        },
-                        {
-                            "field": "proxy_username",
-                            "label": "Username",
-                            "type": "text",
-                            "validators": [
-                                {
-                                    "type": "string",
-                                    "minLength": 0,
-                                    "maxLength": 50,
-                                    "errorMsg": "Max length of username is 50"
-                                }
-                            ]
-                        },
-                        {
-                            "field": "proxy_password",
-                            "label": "Password",
-                            "type": "text",
-                            "encrypted": true,
-                            "validators": [
-                                {
-                                    "type": "string",
-                                    "minLength": 0,
-                                    "maxLength": 8192,
-                                    "errorMsg": "Max length of password is 8192"
-                                }
-                            ]
-                        },
-                        {
-                            "field": "proxy_rdns",
-                            "label": "Remote DNS resolution",
-                            "type": "checkbox"
-                        }
-                    ],
-                    "options": {
-                        "saveValidator": "function(formData) { if(!formData.proxy_enabled || formData.proxy_enabled === '0') {return true; } if(!formData.proxy_url) { return 'Proxy Host can not be empty'; } if(!formData.proxy_port) { return 'Proxy Port can not be empty'; } return true; }"
-                    }
                 },
                 {
                     "name": "logging",

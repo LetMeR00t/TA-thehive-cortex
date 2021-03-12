@@ -37,8 +37,17 @@
         </condition>
       </change>
     </input>
-    <input id="global_accounts" type="text" token="add_account_name" depends="$show_action_add$">
+    <input id="global_accounts" type="dropdown" token="add_account_name" depends="$show_action_add$">
       <label>Account name (Global accounts)</label>
+      <fieldForLabel>accounts</fieldForLabel>
+      <fieldForValue>accounts</fieldForValue>
+      <search>
+        <query>| makeresults
+| eval accounts = "$global_accounts$"
+| makemv delim="," accounts
+| mvexpand accounts
+| table accounts</query>
+      </search>
     </input>
     <input type="dropdown" token="add_authentication_type" depends="$show_action_add$">
       <label>Authentication type</label>
@@ -67,8 +76,26 @@
       <default>1</default>
     </input>
     <input type="text" token="add_proxies" depends="$show_action_add$">
-      <label>Proxies (Default:None)</label>
-      <default>{}</default>
+      <label>Proxy URL (Default:None)</label>
+      <default>-</default>
+    </input>
+    <input type="dropdown" token="add_proxy_account" depends="$show_action_add$">
+      <label>Proxy account (Default: None)</label>
+      <default>-</default>
+      <fieldForLabel>accounts</fieldForLabel>
+      <fieldForValue>accounts</fieldForValue>
+      <search>
+        <query>| makeresults
+| eval accounts = "$global_accounts$"
+| makemv delim="," accounts
+| mvexpand accounts
+| table accounts</query>
+      </search>
+      <choice value="-">None</choice>
+    </input>
+    <input type="text" token="add_client_certificate" depends="$show_action_add$">
+      <label>Client Certificate (Default: None)</label>
+      <default>-</default>
     </input>
     <input type="text" token="add_host" depends="$show_action_add$">
       <label>Host</label>
@@ -92,51 +119,15 @@
     </input>
   </fieldset>
   <row>
-    <panel depends="$show_action_add$">
-      <title>⚠️ Global accounts detected ⚠️</title>
-      <table>
-        <title>This is the current list of global accounts detected by Splunk, click on a row to automatically fill the account name field</title>
-        <search>
-          <query>| makeresults
-| eval accounts = "$global_accounts$"
-| makemv delim="," accounts
-| mvexpand accounts
-| table accounts
-| rename accounts as Accounts</query>
-          <earliest>-24h@h</earliest>
-          <latest>now</latest>
-          <sampleRatio>1</sampleRatio>
-        </search>
-        <option name="count">20</option>
-        <option name="dataOverlayMode">none</option>
-        <option name="drilldown">cell</option>
-        <option name="percentagesRow">false</option>
-        <option name="rowNumbers">false</option>
-        <option name="totalsRow">false</option>
-        <option name="wrap">true</option>
-        <format type="color" field="Type">
-          <colorPalette type="sharedList"></colorPalette>
-          <scale type="sharedCategory"></scale>
-        </format>
-        <drilldown>
-          <condition field="Accounts">
-            <set token="add_account_name">$click.value2$</set>
-            <set token="form.add_account_name">$click.value2$</set>
-          </condition>
-        </drilldown>
-      </table>
-    </panel>
-  </row>
-  <row>
     <panel>
       <title>Instances</title>
       <table>
         <title>This is the current list of instances configured</title>
         <search>
           <query>| inputlookup thehive_cortex_instances
-| eval last_refresh = "$last_refresh$", action=case("$global_action$"=="remove","$action_remove_instance$",1==1,"-"), cert = if(protocol="https",case(cert="1","True",cert="0","False"),"-"), protocol = upper(protocol), authentication_type = case(authentication_type=="password","Password",authentication_type=="api_key","API Key",1==1,"")
-| table id account_name, authentication_type, type, protocol, host, port, proxies, cert, organisation, action
-| rename id as "ID", account_name as "Account name", type as "Type", protocol as "Protocol", host as "Host", port as "Port", action as "Available Action", authentication_type as "Authentication type", proxies as "Proxies", cert as "Certificate verification ('HTTPS' only)", organisation as "Organisation"</query>
+| eval last_refresh = "$last_refresh$", action=case("$global_action$"=="remove","$action_remove_instance$",1==1,"-"), verify = if(protocol="https",case(verify="1","True",verify="0","False"),"-"), protocol = upper(protocol), authentication_type = case(authentication_type=="password","Password",authentication_type=="api_key","API Key",1==1,"")
+| table id account_name, authentication_type, type, protocol, host, port, proxy_url, proxy_account, client_cert, verify, organisation, action
+| rename id as "ID", account_name as "Account name", type as "Type", protocol as "Protocol", host as "Host", port as "Port", action as "Available Action", authentication_type as "Authentication type", proxy_url as "Proxy URL",  proxy_account as "Proxy Account", client_cert as "Client Certificate", verify as "Certificate verification ('HTTPS' only)", organisation as "Organisation"</query>
           <earliest>-24h@h</earliest>
           <latest>now</latest>
           <sampleRatio>1</sampleRatio>
@@ -187,6 +178,10 @@
             <unset token="add_authentication_type"></unset>
             <unset token="add_proxies"></unset>
             <unset token="form.add_proxies"></unset>
+            <unset token="add_proxies_account"></unset>
+            <unset token="form.add_proxies_account"></unset>
+            <unset token="add_client_certificate"></unset>
+            <unset token="form.add_client_certificate"></unset>
             <unset token="add_cert"></unset>
             <unset token="form.add_cert"></unset>
             <unset token="add_organisation"></unset>
@@ -194,8 +189,8 @@
           </done>
           <query>| inputlookup thehive_cortex_instances
 | append [| makeresults
-         | eval account_name = "$add_account_name$", type="$add_type$", protocol="$add_protocol$", host="$add_host$", port="$add_port$", authentication_type="$add_authentication_type$", proxies="$add_proxies$", cert="$add_cert$", organisation="$add_organisation$", id=substr(sha1(_time+type+account_name+protocol+host+port),0,8)
-         | table id account_name, authentication_type, type, protocol, host, port, proxies, cert, organisation]
+         | eval account_name = "$add_account_name$", type="$add_type$", protocol="$add_protocol$", host="$add_host$", port="$add_port$", authentication_type="$add_authentication_type$", proxies="$add_proxy$", proxy_account="$add_proxies_account$", client_cert="$add_client_certificate$", verify="$add_verify$", organisation="$add_organisation$", id=substr(sha1(_time+type+account_name+protocol+host+port),0,8)
+         | table id account_name, authentication_type, type, protocol, host, port, proxies, proxies_account, client_cert, cert, organisation]
 | sort 0 type account_name
 | outputlookup thehive_cortex_instances</query>
           <earliest>-24h@h</earliest>

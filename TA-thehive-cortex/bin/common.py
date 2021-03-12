@@ -4,7 +4,7 @@ import sys
 import ta_thehive_cortex_declare
 import json
 from splunk.clilib import cli_common as cli
-
+import re
 
 class Settings(object):
 
@@ -15,23 +15,23 @@ class Settings(object):
         # Check the python version
         self.logger.debug("[S1] Python version detected: " + str(sys.version_info))
 
-        namespace = "TA-thehive-cortex"
+        self.client = client
+        self.namespace = "TA-thehive-cortex"
         # Prepare the query
-        query = {"output_mode": "json"}
+        self.query = {"output_mode": "json"}
 
         # Get instances
         if search_settings is not None and "namespace" in search_settings:
             namespace = search_settings["namespace"]
             # Get logging
             logging_settings = json.loads(
-                client.get("TA_thehive_cortex_settings/logging", owner="nobody", app=namespace, **query).body.read())["entry"][0]["content"]
+                self.client.get("TA_thehive_cortex_settings/logging", owner="nobody", app=self.namespace, **self.query).body.read())["entry"][0]["content"]
             if "loglevel" in logging_settings:
                 logger.setLevel(logging_settings["loglevel"])
             self.logger.debug("[S2] Logging mode set to " + str(logging_settings["loglevel"]))
 
-        # get proxy creds if any
         proxy_clear_password = None
-        for credential in client.storage_passwords:
+        for credential in self.client.storage_passwords:
             username = credential.content.get('username')
             if 'proxy' in username:
                 clear_credentials = credential.content.get('clear_password')
@@ -42,7 +42,7 @@ class Settings(object):
         self.__instances = {}
         instances_by_account_name = {}
         try:
-            content = client.kvstore["kv_thehive_cortex_instances"].data.query()
+            content = self.client.kvstore["kv_thehive_cortex_instances"].data.query()
             for row in content:
                 self.logger.debug("[S5] KVStore, getting " + str(row))
                 # Process the new instance
@@ -54,36 +54,43 @@ class Settings(object):
                     instances_by_account_name[row["account_name"]] = [row_id]
                 else:
                     instances_by_account_name[row["account_name"]].append(row_id)
-                # Check some fields
-                use_proxy = True if ("True" in row["proxies"] or "true" in row["proxies"]) else False
+                
+                # get self.client certificate if it's specified
+                if row["client_cert"] != "-" and ".." not in row["client_cert"]:
+                    client_certificate = os.path.join(os.environ['SPLUNK_HOME'], 'etc', 'apps', 'TA-thehive-cortex','local', row["client_cert"])
+                    if os.path.exists(client_certificate):
+                        row["client_cert"] = client_certificate
+                    else:
+                        self.logger.warning("[S8] Be aware that a client certificate was provided but the file doesn't exist: "+client_certificate)
+
                 # get proxy parameters if any
-                row["proxies"] = dict()
-                if use_proxy is True:
-                    proxy = None
-                    settings_file = os.path.join(
-                        os.environ['SPLUNK_HOME'], 'etc', 'apps',
-                        'TA-thehive-cortex',
-                        'local', 'ta_thehive_cortex_settings.conf'
-                    )
-                    if os.path.exists(settings_file):
-                        app_settings = cli.readConfFile(settings_file)
-                        for name, content in list(app_settings.items()):
-                            if 'proxy' in name:
-                                proxy = content
-                    if proxy:
-                        proxy_url = '://'
-                        if 'proxy_username' in proxy \
-                           and proxy_clear_password is not None:
-                            if proxy['proxy_username'] not in ['', None]:
-                                proxy_url = proxy_url + \
-                                    proxy['proxy_username'] + ':' \
-                                    + proxy_clear_password + '@'
-                        proxy_url = proxy_url + proxy['proxy_hostname'] + \
-                            ':' + proxy['proxy_port'] + '/'
-                        row["proxies"] = {
-                            "http": "http" + proxy_url,
-                            "https": "https" + proxy_url
-                        }
+                if row["proxy_url"] != "-":
+                    pattern = r"^(?P<proxy_protocol>https?:\/\/)?(?P<proxy_url>.*)$"
+                    match = re.search(pattern, row["proxy_url"])
+                    if match:
+                       if match.group("proxy_protocol") is not None:
+                           proxy_protocol = match.group("proxy_protocol")
+                       else:
+                           # Default to HTTP proxy
+                           proxy_protocol = "http://"
+                       row["proxy_url"] = match.group("proxy_url")
+                    if row["proxy_url"][-1] != "/":
+                        row["proxy_url"] += "/"
+
+                    if row["proxy_account"] != "-":
+                        proxy_url = proxy_protocol
+                        proxy_username = self.getAccountUsername(row["proxy_account"])
+                        proxy_password = self.getAccountPassword(row["proxy_account"])
+                        proxy_url += proxy_username+":"+proxy_password+"@"+row["proxy_url"]
+                    else:
+                        proxy_url = proxy_protocol+row["proxy_url"]
+
+                    row["proxies"] = {
+                        "http": proxy_url,
+                        "https": proxy_url
+                    }
+                else:
+                    row["proxies"] = None
 
                 row["organisation"] = row["organisation"] if row["organisation"] != "-" else None
 
@@ -96,28 +103,45 @@ class Settings(object):
             sys.exit(11)
 
         # Get additional parameters
-        self.__additional_parameters = json.loads(client.get("TA_thehive_cortex_settings/additional_parameters", owner="nobody", app=namespace, **query).body.read())["entry"][0]["content"]
+        self.__additional_parameters = json.loads(self.client.get("TA_thehive_cortex_settings/additional_parameters", owner="nobody", app=self.namespace, **self.query).body.read())["entry"][0]["content"]
         self.logger.debug("[S15] Getting these additional parameters: " + str(self.__additional_parameters))
 
         # Get username of account name
-        for account_details in json.loads(client.get("TA_thehive_cortex_account", owner="nobody", app=namespace,**query).body.read())["entry"]:
-            account_details_name = account_details["name"]
-            if account_details_name in instances_by_account_name.keys():
-                instances_of_account_name = instances_by_account_name[account_details_name]
-                for i in instances_of_account_name:
-                    if "username" in account_details["content"]:
-                        self.__instances[i]["username"] = account_details["content"]["username"] 
+        for account in instances_by_account_name.keys():
+            instances_of_account_name = instances_by_account_name[account]
+            username = self.getAccountUsername(account)
+            for i in instances_of_account_name:
+                    self.__instances[i]["username"] = username 
         self.logger.debug("[S20] Getting these usernames from account: "+str(self.__instances))
 
         # Get storage passwords for account passwords
-        for s in client.storage_passwords:
-            for account in instances_by_account_name.keys():
-                # Get account details by instance
-                if account in s['username'] and "password" in s['clear_password']:
-                    instances_of_account_name = instances_by_account_name[account]
-                    for i in instances_of_account_name:
-                        self.__instances[i]["password"] = str(json.loads(s["clear_password"])["password"])
+        for account in instances_by_account_name.keys():
+            # Get account details by instance
+                instances_of_account_name = instances_by_account_name[account]
+                password = self.getAccountPassword(account)
+                for i in instances_of_account_name:
+                    self.__instances[i]["password"] = password
         self.logger.debug("[S25] Getting these passwords from storage passwords: " + str(self.__instances))
+
+
+    def getAccountUsername(self, account):
+        """ Get the username of an account """
+        username = None
+        for account_details in json.loads(self.client.get("TA_thehive_cortex_account", owner="nobody", app=self.namespace,**self.query).body.read())["entry"]:
+            account_details_name = account_details["name"]
+            if account_details_name == account:
+                if "username" in account_details["content"]:
+                    username = account_details["content"]["username"] 
+        return username
+
+    def getAccountPassword(self, account):
+        """ Get storage passwords for the account password """
+        password = None
+        for s in self.client.storage_passwords:
+            if account in s['username'] and "password" in s['clear_password']:
+                password = str(json.loads(s["clear_password"])["password"])
+        return password
+
 
     def getInstanceURL(self, instance_id):
         """ This function returns the URL of the given instance """

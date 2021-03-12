@@ -17,7 +17,7 @@ from thehive4py.exceptions import *
 
 class TheHiveApi:
 
-    def __init__(self, url: str, principal: str, password=None, proxies={}, cert=True, organisation=None,
+    def __init__(self, url: str, principal: str, password=None, proxies={}, verify=True, cert=None, organisation=None,
                  version=Version.THEHIVE_3.value):
         """
         Python API client for TheHive.
@@ -33,7 +33,8 @@ class TheHiveApi:
                     "https: "http://my_proxy:8080"
                 }
                 ```
-            cert (bool): Wether or not to enable SSL certificate validation
+            verify (bool): Wether or not to enable SSL certificate validation
+            cert (string): Path of a client certificate to use if required by the remote proxy/server
             organisation (str): The name of the organisation against which api calls will be run. Defaults to None
             version (int): The version of TheHive instance. Defaults to 3
 
@@ -59,6 +60,7 @@ class TheHiveApi:
                     None,
                     proxies,
                     True,
+                    None,
                     'my-org',
                     version=Version.THEHIVE_3.value
                 )
@@ -75,6 +77,7 @@ class TheHiveApi:
         else:
             self.auth = BearerAuth(self.principal, self.organisation)
 
+        self.verify = verify
         self.cert = cert
         self.version = version
 
@@ -115,13 +118,13 @@ class TheHiveApi:
         }
 
         try:
-            return requests.post(req, params=params, json=data, proxies=self.proxies, auth=self.auth, verify=self.cert)
+            return requests.post(req, params=params, json=data, proxies=self.proxies, auth=self.auth, verify=self.verify, cert=self.cert)
         except requests.exceptions.RequestException as e:
             raise TheHiveException("Error: {}".format(e))
 
     def do_patch(self, api_url, **attributes):
         return requests.patch(self.url + api_url, headers={'Content-Type': 'application/json'}, json=attributes,
-                              proxies=self.proxies, auth=self.auth, verify=self.cert)
+                              proxies=self.proxies, auth=self.auth, verify=self.verify, cert=self.cert)
 
     def health(self):
         """
@@ -135,7 +138,7 @@ class TheHiveApi:
         """
         req = self.url + "/api/health"
         try:
-            return requests.get(req, proxies=self.proxies, auth=self.auth, verify=self.cert)
+            return requests.get(req, proxies=self.proxies, auth=self.auth, verify=self.verify, cert=self.cert)
         except requests.exceptions.RequestException as e:
             raise TheHiveException("Error on retrieving health status: {}".format(e))
 
@@ -152,7 +155,7 @@ class TheHiveApi:
 
         req = self.url + "/api/user/current"
         try:
-            return requests.get(req, proxies=self.proxies, auth=self.auth, verify=self.cert)
+            return requests.get(req, proxies=self.proxies, auth=self.auth, verify=self.verify, cert=self.cert)
         except requests.exceptions.RequestException as e:
             raise TheHiveException("Error on retrieving current user: {}".format(e))
 
@@ -174,7 +177,7 @@ class TheHiveApi:
         req = self.url + "/api/case"
         data = case.jsonify(excludes=['id'])
         try:
-            return requests.post(req, headers={'Content-Type': 'application/json'}, data=data, proxies=self.proxies, auth=self.auth, verify=self.cert)
+            return requests.post(req, headers={'Content-Type': 'application/json'}, data=data, proxies=self.proxies, auth=self.auth, verify=self.verify, cert=self.cert)
         except requests.exceptions.RequestException as e:
             raise CaseException("Case create error: {}".format(e))
 
@@ -204,7 +207,7 @@ class TheHiveApi:
         ]
         data = {k: v for k, v in case.__dict__.items() if (len(fields) > 0 and k in fields) or (len(fields) == 0 and k in update_keys)}
         try:
-            return requests.patch(req, headers={'Content-Type': 'application/json'}, json=data, proxies=self.proxies, auth=self.auth, verify=self.cert)
+            return requests.patch(req, headers={'Content-Type': 'application/json'}, json=data, proxies=self.proxies, auth=self.auth, verify=self.verify, cert=self.cert)
         except requests.exceptions.RequestException as e:
             raise CaseException("Case update error: {}".format(e))
 
@@ -229,7 +232,7 @@ class TheHiveApi:
         data = case_task.jsonify(excludes=['id'])
 
         try:
-            return requests.post(req, headers={'Content-Type': 'application/json'}, data=data, proxies=self.proxies, auth=self.auth, verify=self.cert)
+            return requests.post(req, headers={'Content-Type': 'application/json'}, data=data, proxies=self.proxies, auth=self.auth, verify=self.verify, cert=self.cert)
         except requests.exceptions.RequestException as e:
             raise CaseTaskException("Case task create error: {}".format(e))
 
@@ -262,7 +265,7 @@ class TheHiveApi:
 
         try:
             return requests.patch(req, headers={'Content-Type': 'application/json'}, json=data,
-                                  proxies=self.proxies, auth=self.auth, verify=self.cert)
+                                  proxies=self.proxies, auth=self.auth, verify=self.verify, cert=self.cert)
         except requests.exceptions.RequestException as e:
             raise CaseTaskException("Case task update error: {}".format(e))
 
@@ -282,7 +285,7 @@ class TheHiveApi:
         req = self.url + "/api/case/task/{}".format(task_id)
         try:
             return requests.patch(req, headers={'Content-Type': 'application/json'}, json={'status': 'Cancel'},
-                                   proxies=self.proxies, auth=self.auth, verify=self.cert)
+                                   proxies=self.proxies, auth=self.auth, verify=self.verify, cert=self.cert)
         except requests.exceptions.RequestException as e:
             raise CaseTaskException("Case task deletion error: {}".format(e))
 
@@ -309,12 +312,12 @@ class TheHiveApi:
             f = case_task_log.attachment
 
             try:
-                return requests.post(req, data=data, files=f, proxies=self.proxies, auth=self.auth, verify=self.cert)
+                return requests.post(req, data=data, files=f, proxies=self.proxies, auth=self.auth, verify=self.verify, cert=self.cert)
             except requests.exceptions.RequestException as e:
                 raise CaseTaskException("Case task log create error: {}".format(e))
         else:
             try:
-                return requests.post(req, headers={'Content-Type': 'application/json'}, data=json.dumps({'message':case_task_log.message}), proxies=self.proxies, auth=self.auth, verify=self.cert)
+                return requests.post(req, headers={'Content-Type': 'application/json'}, data=json.dumps({'message':case_task_log.message}), proxies=self.proxies, auth=self.auth, verify=self.verify, cert=self.cert)
             except requests.exceptions.RequestException as e:
                 raise CaseTaskException("Case task log create error: {}".format(e))
 
@@ -354,7 +357,7 @@ class TheHiveApi:
                     data.pop('ignoreSimilarity', None)
 
                 data = {"_json": json.dumps(data)}
-                return requests.post(req, data=data, files=case_observable.data[0], proxies=self.proxies, auth=self.auth, verify=self.cert)
+                return requests.post(req, data=data, files=case_observable.data[0], proxies=self.proxies, auth=self.auth, verify=self.verify, cert=self.cert)
             except requests.exceptions.RequestException as e:
                 raise CaseObservableException("Case observable create error: {}".format(e))
         else:
@@ -367,7 +370,7 @@ class TheHiveApi:
 
                 data = case_observable.jsonify(excludes=to_exclude)
 
-                return requests.post(req, headers={'Content-Type': 'application/json'}, data=data, proxies=self.proxies, auth=self.auth, verify=self.cert)
+                return requests.post(req, headers={'Content-Type': 'application/json'}, data=data, proxies=self.proxies, auth=self.auth, verify=self.verify, cert=self.cert)
             except requests.exceptions.RequestException as e:
                 raise CaseObservableException("Case observable create error: {}".format(e))
 
@@ -387,7 +390,7 @@ class TheHiveApi:
         req = self.url + "/api/case/artifact/{}".format(observable_id)
 
         try:
-            return requests.delete(req, proxies=self.proxies, auth=self.auth, verify=self.cert)
+            return requests.delete(req, proxies=self.proxies, auth=self.auth, verify=self.verify, cert=self.cert)
         except requests.exceptions.RequestException as e:
             raise CaseObservableException("Case observable deletion error: {}".format(e))
 
@@ -422,7 +425,7 @@ class TheHiveApi:
             data.pop('ignoreSimilarity', None)
 
         try:
-            return requests.patch(req, headers={'Content-Type': 'application/json'}, json=data, proxies=self.proxies, auth=self.auth, verify=self.cert)
+            return requests.patch(req, headers={'Content-Type': 'application/json'}, json=data, proxies=self.proxies, auth=self.auth, verify=self.verify, cert=self.cert)
         except requests.exceptions.RequestException as e:
             raise CaseObservableException("Case observable update error: {}".format(e))
 
@@ -443,7 +446,7 @@ class TheHiveApi:
         req = self.url + "/api/case/{}".format(case_id)
 
         try:
-            return requests.get(req, proxies=self.proxies, auth=self.auth, verify=self.cert)
+            return requests.get(req, proxies=self.proxies, auth=self.auth, verify=self.verify, cert=self.cert)
         except requests.exceptions.RequestException as e:
             raise CaseException("Case fetch error: {}".format(e))
 
@@ -483,7 +486,7 @@ class TheHiveApi:
         if force:
             req += '/force'
         try:
-            return requests.delete(req, proxies=self.proxies, auth=self.auth, verify=self.cert)
+            return requests.delete(req, proxies=self.proxies, auth=self.auth, verify=self.verify, cert=self.cert)
         except requests.exceptions.RequestException as e:
             raise CaseException("Case deletion error: {}".format(e))
 
@@ -527,7 +530,7 @@ class TheHiveApi:
         req = self.url + "/api/case/artifact/{}".format(observable_id)
 
         try:
-            return requests.get(req, proxies=self.proxies, auth=self.auth, verify=self.cert)
+            return requests.get(req, proxies=self.proxies, auth=self.auth, verify=self.verify, cert=self.cert)
         except requests.exceptions.RequestException as e:
             raise CaseObservableException("Case observable search error: {}".format(e))
 
@@ -572,7 +575,7 @@ class TheHiveApi:
         }
 
         try:
-            return requests.post(req, params=params, json=data, proxies=self.proxies, auth=self.auth, verify=self.cert)
+            return requests.post(req, params=params, json=data, proxies=self.proxies, auth=self.auth, verify=self.verify, cert=self.cert)
         except requests.exceptions.RequestException as e:
             raise CaseObservableException("Case observables search error: {}".format(e))
 
@@ -635,7 +638,7 @@ class TheHiveApi:
         }
 
         try:
-            return requests.post(req, params=params, json=data, proxies=self.proxies, auth=self.auth, verify=self.cert)
+            return requests.post(req, params=params, json=data, proxies=self.proxies, auth=self.auth, verify=self.verify, cert=self.cert)
         except requests.exceptions.RequestException as e:
             raise CaseTaskException("Case tasks search error: {}".format(e))
 
@@ -655,7 +658,7 @@ class TheHiveApi:
         req = self.url + "/api/case/{}/links".format(case_id)
 
         try:
-            return requests.get(req, proxies=self.proxies, auth=self.auth, verify=self.cert)
+            return requests.get(req, proxies=self.proxies, auth=self.auth, verify=self.verify, cert=self.cert)
         except requests.exceptions.RequestException as e:
             raise CaseException("Linked cases fetch error: {}".format(e))
 
@@ -704,7 +707,7 @@ class TheHiveApi:
         }
 
         try:
-            response = requests.post(req, json=data, proxies=self.proxies, auth=self.auth, verify=self.cert)
+            response = requests.post(req, json=data, proxies=self.proxies, auth=self.auth, verify=self.verify, cert=self.cert)
             json_response = response.json()
 
             if response.status_code == 200 and len(json_response) > 0:
@@ -732,7 +735,7 @@ class TheHiveApi:
         data = case_template.jsonify(excludes=['id'])
 
         try:
-            return requests.post(req, headers={'Content-Type': 'application/json'}, data=data, proxies=self.proxies, auth=self.auth, verify=self.cert)
+            return requests.post(req, headers={'Content-Type': 'application/json'}, data=data, proxies=self.proxies, auth=self.auth, verify=self.verify, cert=self.cert)
         except requests.exceptions.RequestException as e:
             raise CaseTemplateException("Case template create error: {}".format(e))
 
@@ -742,7 +745,7 @@ class TheHiveApi:
             'value': custom_field.reference
         }
         req = self.url + "/api/list/custom_fields/_exists"
-        response = requests.post(req, json=data, proxies=self.proxies, auth=self.auth, verify=self.cert)
+        response = requests.post(req, json=data, proxies=self.proxies, auth=self.auth, verify=self.verify, cert=self.cert)
         return response.json().get('found', 'False')
 
     def create_custom_field(self, custom_field):
@@ -778,7 +781,7 @@ class TheHiveApi:
             }
         req = self.url + "/api/list/custom_fields"
         try:
-            return requests.post(req, json=data, proxies=self.proxies, auth=self.auth, verify=self.cert)
+            return requests.post(req, json=data, proxies=self.proxies, auth=self.auth, verify=self.verify, cert=self.cert)
         except requests.exceptions.RequestException as e:
             raise CustomFieldException("Custom field create error: {}".format(e))
 
@@ -798,7 +801,7 @@ class TheHiveApi:
 
         req = self.url + "/api/case/task/{}".format(task_id)
         try:
-            return requests.get(req, proxies=self.proxies, auth=self.auth, verify=self.cert)
+            return requests.get(req, proxies=self.proxies, auth=self.auth, verify=self.verify, cert=self.cert)
         except requests.exceptions.RequestException as e:
             raise CaseTaskException("Case task logs search error: {}".format(e))
 
@@ -819,7 +822,7 @@ class TheHiveApi:
         if self.__isVersion(Version.THEHIVE_3.value):
             req = self.url + "/api/case/task/log/{}".format(log_id)
             try:
-                return requests.get(req, proxies=self.proxies, auth=self.auth, verify=self.cert)
+                return requests.get(req, proxies=self.proxies, auth=self.auth, verify=self.verify, cert=self.cert)
             except requests.exceptions.RequestException as e:
                 raise CaseTaskLogException("Case task log fetch error: {}".format(e))
         else:
@@ -831,7 +834,7 @@ class TheHiveApi:
                 ]
             }
             try:
-                return requests.post(req, json=data, proxies=self.proxies, auth=self.auth, verify=self.cert)
+                return requests.post(req, json=data, proxies=self.proxies, auth=self.auth, verify=self.verify, cert=self.cert)
             except requests.exceptions.RequestException as e:
                 raise CaseTaskLogException("Case task log fetch error: {}".format(e))
             #'{"query": [{"_name": "getLog", "idOrName": "~40976560"}]}'
@@ -904,7 +907,7 @@ class TheHiveApi:
         data = alert.jsonify(excludes=to_exclude)
 
         try:
-            return requests.post(req, headers={'Content-Type': 'application/json'}, data=data, proxies=self.proxies, auth=self.auth, verify=self.cert)
+            return requests.post(req, headers={'Content-Type': 'application/json'}, data=data, proxies=self.proxies, auth=self.auth, verify=self.verify, cert=self.cert)
         except requests.exceptions.RequestException as e:
             raise AlertException("Alert create error: {}".format(e))
 
@@ -924,7 +927,7 @@ class TheHiveApi:
         req = self.url + "/api/alert/{}/markAsRead".format(alert_id)
 
         try:
-            return requests.post(req, headers={'Content-Type': 'application/json'}, proxies=self.proxies, auth=self.auth, verify=self.cert)
+            return requests.post(req, headers={'Content-Type': 'application/json'}, proxies=self.proxies, auth=self.auth, verify=self.verify, cert=self.cert)
         except requests.exceptions.RequestException as e:
             raise AlertException("Mark alert as read error: {}".format(e))
 
@@ -944,7 +947,7 @@ class TheHiveApi:
         req = self.url + "/api/alert/{}/markAsUnread".format(alert_id)
 
         try:
-            return requests.post(req, headers={'Content-Type': 'application/json'}, proxies=self.proxies, auth=self.auth, verify=self.cert)
+            return requests.post(req, headers={'Content-Type': 'application/json'}, proxies=self.proxies, auth=self.auth, verify=self.verify, cert=self.cert)
         except requests.exceptions.RequestException as e:
             raise AlertException("Mark alert as unread error: {}".format(e))
 
@@ -958,7 +961,7 @@ class TheHiveApi:
         req = self.url + "/api/alert/{}/merge/{}".format(alert_id, case_id)
 
         try:
-            return requests.post(req, headers={'Content-Type': 'application/json'}, json={}, proxies=self.proxies, auth=self.auth, verify=self.cert)
+            return requests.post(req, headers={'Content-Type': 'application/json'}, json={}, proxies=self.proxies, auth=self.auth, verify=self.verify, cert=self.cert)
         except requests.exceptions.RequestException as e:
             raise AlertException("Merge alert to case error: {}".format(e))
 
@@ -998,7 +1001,7 @@ class TheHiveApi:
             data.pop('externalLink', None)
 
         try:
-            return requests.patch(req, headers={'Content-Type': 'application/json'}, json=data, proxies=self.proxies, auth=self.auth, verify=self.cert)
+            return requests.patch(req, headers={'Content-Type': 'application/json'}, json=data, proxies=self.proxies, auth=self.auth, verify=self.verify, cert=self.cert)
         except requests.exceptions.RequestException as e:
             raise AlertException("Alert update error: {}".format(e))
 
@@ -1027,7 +1030,7 @@ class TheHiveApi:
             }
 
         try:
-            return requests.get(req, proxies=self.proxies, params=params, auth=self.auth, verify=self.cert)
+            return requests.get(req, proxies=self.proxies, params=params, auth=self.auth, verify=self.verify, cert=self.cert)
         except requests.exceptions.RequestException as e:
             raise AlertException("Alert fetch error: {}".format(e))
 
@@ -1073,7 +1076,7 @@ class TheHiveApi:
             "force": 1
         }
         try:
-            return requests.delete(req, params=params, proxies=self.proxies, auth=self.auth, verify=self.cert)
+            return requests.delete(req, params=params, proxies=self.proxies, auth=self.auth, verify=self.verify, cert=self.cert)
         except requests.exceptions.RequestException as e:
             raise AlertException("Alert deletion error: {}".format(e))
 
@@ -1116,7 +1119,7 @@ class TheHiveApi:
         try:
             return requests.post(req, headers={'Content-Type': 'application/json'},
                                  proxies=self.proxies, auth=self.auth,
-                                 verify=self.cert, data=json.dumps({"caseTemplate": case_template}))
+                                 verify=self.verify, cert=self.cert, data=json.dumps({"caseTemplate": case_template}))
 
         except requests.exceptions.RequestException as the_exception:
             raise AlertException("Couldn't promote alert to case: {}".format(the_exception))
@@ -1146,7 +1149,7 @@ class TheHiveApi:
                 "artifactId": artifact_id,
                 "analyzerId": analyzer_id
                 })
-            return requests.post(req, headers={'Content-Type': 'application/json'}, data=data, proxies=self.proxies, auth=self.auth, verify=self.cert)
+            return requests.post(req, headers={'Content-Type': 'application/json'}, data=data, proxies=self.proxies, auth=self.auth, verify=self.verify, cert=self.cert)
         except requests.exceptions.RequestException as e:
             raise TheHiveException("Analyzer run error: {}".format(e))
 
@@ -1207,7 +1210,7 @@ class TheHiveApi:
         req = self.url + "/api/connector/misp/export/{0}/{1}".format(case_id, misp_id)
         try:
             return requests.post(req, headers={'Content-Type': 'application/json'}, proxies=self.proxies,
-                                 json={}, auth=self.auth, verify=self.cert)
+                                 json={}, auth=self.auth, verify=self.verify, cert=self.cert)
         except requests.exceptions.RequestException as e:
             raise TheHiveException("MISP export error: {}".format(e))
 
@@ -1232,7 +1235,7 @@ class TheHiveApi:
             req = self.url + "/api/datastore/{}?name={}".format(attachment_id, filename)
 
         try:
-            return requests.get(req, proxies=self.proxies, auth=self.auth, verify=self.cert)
+            return requests.get(req, proxies=self.proxies, auth=self.auth, verify=self.verify, cert=self.cert)
         except requests.exceptions.RequestException as e:
             raise TheHiveException("Error on retrieving attachment {}: {}".format(attachment_id, e))
 
@@ -1331,14 +1334,14 @@ class TheHiveApi:
                 data = {k: v for k, v in alert_artifact.__dict__.items() if k in fields}
 
                 data = {"_json": json.dumps(data)}
-                return requests.post(req, data=data, files=alert_artifact.data, proxies=self.proxies, auth=self.auth, verify=self.cert)
+                return requests.post(req, data=data, files=alert_artifact.data, proxies=self.proxies, auth=self.auth, verify=self.verify, cert=self.cert)
             except requests.exceptions.RequestException as e:
                 raise AlertArtifactException("Alert artifact create error: {}".format(e))
         else:
             try:
                 data = alert_artifact.jsonify(excludes=['id'])
 
-                return requests.post(req, headers={'Content-Type': 'application/json'}, data=data, proxies=self.proxies, auth=self.auth, verify=self.cert)
+                return requests.post(req, headers={'Content-Type': 'application/json'}, data=data, proxies=self.proxies, auth=self.auth, verify=self.verify, cert=self.cert)
             except requests.exceptions.RequestException as e:
                 raise AlertArtifactException("Alert artifact create error: {}".format(e))
 
@@ -1365,7 +1368,7 @@ class TheHiveApi:
         req = self.url + "/api/alert/artifact/{}".format(artifact_id)
 
         try:
-            return requests.delete(req, proxies=self.proxies, auth=self.auth, verify=self.cert)
+            return requests.delete(req, proxies=self.proxies, auth=self.auth, verify=self.verify, cert=self.cert)
         except requests.exceptions.RequestException as e:
             raise AlertArtifactException("Alert artifact deletion error: {}".format(e))
 
@@ -1402,6 +1405,6 @@ class TheHiveApi:
                 len(fields) > 0 and k in fields) or (len(fields) == 0 and k in update_keys)}
 
         try:
-            return requests.patch(req, headers={'Content-Type': 'application/json'}, json=data, proxies=self.proxies, auth=self.auth, verify=self.cert)
+            return requests.patch(req, headers={'Content-Type': 'application/json'}, json=data, proxies=self.proxies, auth=self.auth, verify=self.verify, cert=self.cert)
         except requests.exceptions.RequestException as e:
             raise CaseObservableException("Case observable update error: {}".format(e))

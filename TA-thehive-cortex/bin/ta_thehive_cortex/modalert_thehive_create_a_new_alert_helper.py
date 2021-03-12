@@ -158,26 +158,6 @@ def process_event(helper, *args, **kwargs):
 
     [sample_code_macro:start]
 
-    # The following example sends rest requests to some endpoint
-    # response is a response object in python requests library
-    response = helper.send_http_request("http://www.splunk.com", "GET", parameters=None,
-                                        payload=None, headers=None, cookies=None, verify=True, cert=None, timeout=None, use_proxy=True)
-    # get the response headers
-    r_headers = response.headers
-    # get the response body as text
-    r_text = response.text
-    # get response body as json. If the body text is not a json string, raise a ValueError
-    r_json = response.json()
-    # get response cookies
-    r_cookies = response.cookies
-    # get redirect history
-    historical_responses = response.history
-    # get response status code
-    r_status = response.status_code
-    # check the response status, if the status is not sucessful, raise requests.HTTPError
-    response.raise_for_status()
-
-
     # The following example gets and sets the log level
     helper.set_log_level(helper.log_level)
 
