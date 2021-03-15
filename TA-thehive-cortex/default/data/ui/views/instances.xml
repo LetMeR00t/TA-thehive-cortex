@@ -61,7 +61,7 @@
       <choice value="Cortex3">Cortex3</choice>
     </input>
     <input type="text" token="add_organisation" depends="$show_action_add$">
-      <label>Organisation (Default:None)</label>
+      <label>Organisation (Default:-)</label>
       <default>-</default>
     </input>
     <input type="dropdown" token="add_protocol" depends="$show_action_add$">
@@ -69,14 +69,14 @@
       <choice value="http">HTTP</choice>
       <choice value="https">HTTPS</choice>
     </input>
-    <input type="radio" token="add_cert" depends="$show_action_add$">
+    <input type="radio" token="add_verify" depends="$show_action_add$">
       <label>Certificate verification ('HTTPS' only) (Default:True)</label>
       <choice value="1">True</choice>
       <choice value="0">False</choice>
       <default>1</default>
     </input>
-    <input type="text" token="add_proxies" depends="$show_action_add$">
-      <label>Proxy URL (Default:None)</label>
+    <input type="text" token="add_proxy" depends="$show_action_add$">
+      <label>Proxy URL (Default:-)</label>
       <default>-</default>
     </input>
     <input type="dropdown" token="add_proxy_account" depends="$show_action_add$">
@@ -189,8 +189,8 @@
           </done>
           <query>| inputlookup thehive_cortex_instances
 | append [| makeresults
-         | eval account_name = "$add_account_name$", type="$add_type$", protocol="$add_protocol$", host="$add_host$", port="$add_port$", authentication_type="$add_authentication_type$", proxies="$add_proxy$", proxy_account="$add_proxies_account$", client_cert="$add_client_certificate$", verify="$add_verify$", organisation="$add_organisation$", id=substr(sha1(_time+type+account_name+protocol+host+port),0,8)
-         | table id account_name, authentication_type, type, protocol, host, port, proxies, proxies_account, client_cert, cert, organisation]
+         | eval account_name = "$add_account_name$", type="$add_type$", protocol="$add_protocol$", host="$add_host$", port="$add_port$", authentication_type="$add_authentication_type$", proxy="$add_proxy$", proxy_account="$add_proxy_account$", client_cert="$add_client_certificate$", verify="$add_verify$", organisation="$add_organisation$", id=substr(sha1(_time+type+account_name+protocol+host+port),0,8)
+         | table id account_name, authentication_type, type, protocol, host, port, proxy, proxy_account, client_cert, verify, organisation]
 | sort 0 type account_name
 | outputlookup thehive_cortex_instances</query>
           <earliest>-24h@h</earliest>
