@@ -106,7 +106,7 @@ if __name__ == '__main__':
                      for cftype in ["string","number","integer","boolean","date","float"]:
                          if cftype in event["thehive_case_customFields"][cf]:
                              # Pre-processing
-                             if cftype=="date":
+                             if cftype=="date" and event["thehive_case_customFields"][cf][cftype] is not None:
                                  event["thehive_case_customFields"][cf][cftype] = time.strftime("%c %z",time.gmtime(int(event["thehive_case_customFields"][cf][cftype])/1000))
                              customFields.append(cf+"::"+str(event["thehive_case_customFields"][cf][cftype]))
                              break
