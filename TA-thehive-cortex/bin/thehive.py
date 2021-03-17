@@ -125,11 +125,14 @@ class TheHive(TheHiveApi):
             elif "HANDSHAKE_FAILURE" in str(e):
                 self.logger.warning("[TH46] THE_HIVE_HANDHSHAKE_FAILURE - It seems that the SSL handshake failed. A possible solution is to check if the remote server/proxy is not expecting a client certificate. Complete error: "+str(e))
                 sys.exit(46)
-            elif "ProxyError" in str(e):
-                self.logger.warning("[TH47] THE_HIVE_PROXY_ERROR - It seems that the connection to the proxy has failed. Proxy information are: "+str(proxies)+". Complete error: "+str(e))
+            elif "Proxy Authentication Required" in str(e):
+                self.logger.warning("[TH47] THE_HIVE_PROXY_AUTHENTICATION_ERROR - It seems that the connection to the proxy has failed as it's required an authentication (none was provided or the username/password is not working). Proxy information are: "+str(proxies)+". Complete error: "+str(e))
                 sys.exit(47)
-            else:
-                self.logger.error("[TH48-GENERIC-ERROR] THE_HIVE_CONNECTION_ERROR - Error: "+str(e))
+            elif "ProxyError" in str(e):
+                self.logger.warning("[TH48] THE_HIVE_PROXY_ERROR - It seems that the connection to the proxy has failed. Proxy information are: "+str(proxies)+". Complete error: "+str(e))
                 sys.exit(48)
+            else:
+                self.logger.error("[TH60-GENERIC-ERROR] THE_HIVE_CONNECTION_ERROR - Error: "+str(e))
+                sys.exit(60)
 
         self.__sid = sid
