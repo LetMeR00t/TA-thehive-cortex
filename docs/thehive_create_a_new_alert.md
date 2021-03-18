@@ -4,7 +4,7 @@ This TA provides an adaptative response/alert action. It takes the result of a s
 The overall process is as follows:
 - search for events & collect observables and custom fields.
 - rename splunk fields to match the field names listed in the lookup table thehive_datatypes.csv. If you haven't created it before the first alert, 
-it will be initialised with the default datatypes (see [example file](TA-thehive-cortex/README/thehive_datatypes.csv.sample))
+it will be initialised with the default datatypes (see [example file](../TA-thehive-cortex/README/thehive_datatypes.csv.sample))
 - save your search as an alert.
 - set the alert action "thehive_create_a_new_alert": it will create an alert into TheHive.
 - you can pass additional info, TLP per observables, custom fields, modify title, description, etc. directly from the results of your search.
