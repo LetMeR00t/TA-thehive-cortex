@@ -8,3 +8,4 @@ thehive_max_cases =
 thehive_sort_cases = 
 thehive_max_alerts = 
 thehive_sort_alerts = 
+splunk_es_alerts_index = 

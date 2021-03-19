@@ -224,6 +224,22 @@
                                     "errorMsg": "Max length of text input is 8192"
                                 }
                             ]
+                        },
+                        {
+                            "field": "splunk_es_alerts_index",
+                            "label": "Splunk ES: Alerts index",
+                            "type": "text",
+                            "help": "(Only for Adaptive Response in Splunk ES) Specify the index where you want to store alerts",
+                            "required": false,
+                            "defaultValue": "",
+                            "validators": [
+                                {
+                                    "type": "string",
+                                    "minLength": 0,
+                                    "maxLength": 8192,
+                                    "errorMsg": "Max length of text input is 8192"
+                                }
+                            ]
                         }
                     ]
                 }

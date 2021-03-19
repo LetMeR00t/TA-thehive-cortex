@@ -14,4 +14,5 @@ param.scope = <list> Scope. It's a required parameter. It's default value is 0.
 param.severity = <list> Severity. It's a required parameter. It's default value is 3.
 param.tlp_ = <list> TLP:. It's a required parameter. It's default value is 3.
 param.pap_ = <list> PAP:. It's a required parameter. It's default value is 3.
+param._cam = <json> Active response parameters.
 

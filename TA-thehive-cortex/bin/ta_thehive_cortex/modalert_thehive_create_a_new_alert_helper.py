@@ -177,6 +177,8 @@ def process_event(helper, *args, **kwargs):
     helper.log_info("thehive_max_alerts={}".format(thehive_max_alerts))
     thehive_sort_alerts = helper.get_global_setting("thehive_sort_alerts")
     helper.log_info("thehive_sort_alerts={}".format(thehive_sort_alerts))
+    splunk_es_alerts_index = helper.get_global_setting("splunk_es_alerts_index")
+    helper.log_info("splunk_es_alerts_index={}".format(splunk_es_alerts_index))
 
     # The following example gets the alert action parameters and prints them to the log
     thehive_instance_id = helper.get_param("thehive_instance_id")
