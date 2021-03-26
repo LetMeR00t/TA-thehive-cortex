@@ -296,6 +296,7 @@ def extract_field(row, field):
         newValue = str(row.pop(field))
         if newValue not in [None, '']:
             result = newValue
+    result = field.format(**row)
     return result
 
 
