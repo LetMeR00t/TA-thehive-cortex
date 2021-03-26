@@ -76,15 +76,17 @@ An account is used to authenticate to one instance. You have to add every accoun
 Once you've done that, you can configure all your instances. An instance is an endpoint representing a TheHive or Cortex instance.
 1. Go to the **TheHive/Cortex application > Settings > Instances** (in the navigation bar)
 2. On this dashboard, you need to add every instance you want to use. To do so, select the "**Add a new instance**" as action and fill these fields:
-- **Account name (Global accounts)**: This is the name of the account to use that you added under "Accounts". You can automatically fill this field by clicking on one row of the first search named "Global accounts detected" that list you all available accounts.
+- **Account name (Global accounts)**: This is the name of the account to use that you added under "Accounts". It will list you all available accounts you have previously set up.
 - **Authentication type**: Authentication type for your instance. Password is working only with TheHive but we recommand you to use an API key everytime
-- **Type**: Type of your instance (TheHive (v3 or v4) or Cortex (v3))
-- **Organisation**: The name of the organisation against which api calls will be run. Defaults to "-" meaning None
+- **Type**: Type of your instance (TheHive (v3 or v4) or Cortex (v3)).
+- **Organisation**: The name of the organisation against which api calls will be run. Default to "-" meaning None.
 - **Protocol**: Protocol to use (HTTP or HTTPS). Default to HTTP.
-- **Certificate Verification**: Indicate if the certificate verification is required. If you use an HTTPS connection with a self-signed certificate of a custom certificate authority, you must add your trusted certificate to the "certifi" library. To do so, append your certificate under "\$APP_FOLDER\$/bin/ta_thehive_cortex/aob_py3/certifi/cacert.pem" (or aob_py2 if you use Python 2.7). Default to True
-- **Proxies**: A dictionary of proxies if needed. If you don't use any proxy, set this input as default ({}). If you use a proxy, it's expecting a dictionary of two keys ("http" and "https") with the proxy value as dictionary value. **Example**: {\"http\": \"http://my_proxy:8080\", \"https\": \"https://my_proxy:8080\"}
-- **Host**: Host of your instance (hostname or IP)
-- **Port**: Port used by your instance (Default:9000 for TheHive, 9001 for Cortex)
+- **Certificate Verification**: Indicate if the certificate verification is required. If you use an HTTPS connection with a self-signed certificate of a custom certificate authority, you must add your trusted certificate to the "certifi" library. To do so, append your certificate under "\$APP_FOLDER\$/bin/ta_thehive_cortex/aob_py3/certifi/cacert.pem" (or aob_py2 if you use Python 2.7). Default to True.
+- **Proxy URL**: A string that indicates what is the proxy URL to use for this instance if there is any. You can specify http/https if you want but the same value will be used for both protocols. Default to "-" meaning None 
+- **Proxy account**: This is the name of the account to use for the proxy authentication (only basic) that you added under "Accounts". It will list you all available accounts you have previously set up. Default to "None".
+- **Client Certificate**: Filename of you client certificate if you need one. This certificate must be placed under "\$APP_FOLDER\$/local" and you just have to set the name of the file here. This certificate will be used during the proxy authentication. Default to "-" meaning None.
+- **Host**: Host of your instance (hostname or IP).
+- **Port**: Port used by your instance (Default:9000 for TheHive, 9001 for Cortex).
 
 
 ![](images/instances_add.png)

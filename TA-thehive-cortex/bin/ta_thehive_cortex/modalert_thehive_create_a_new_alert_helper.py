@@ -282,33 +282,20 @@ def process_event(helper, *args, **kwargs):
     helper.log_debug("[CAA-THCA-55] Arguments recovered: "+str(alert_args))
 
     # Create the alert
-    helper.log_debug("[CAA-THCA-56] Alert preparation is finished. Creating the alert...")
+    helper.log_log("[CAA-THCA-56] Alert preparation is finished. Creating the alert...")
     create_alert(helper, thehive, alert_args)
-    helper.log_debug("[CAA-THCA-57] Alert creation is done.")
+    helper.log_log("[CAA-THCA-57] Alert creation is done.")
     return 0
 
 
-def extract_field(helper, row, field):
+def extract_field(row, field):
     """ This function is used to extract information from a potential field in a row and sanitize it if needed. If the field is not found, use the field name directly as value """
 
     result = field
-    # Check if the given "field" is actually a field from the search results
     if field in row:
-        # A field is found and it contains the title
-        newValue = str(row[field])
+        newValue = str(row.pop(field))
         if newValue not in [None, '']:
             result = newValue
-    # Look for any token in the field and replace them if it's possible
-    pattern = r"\$(\w+)\$"
-    matches = re.findall(pattern, result)
-    if len(matches)>0:
-        for m in matches:
-            # If token exists as a row, replace its value
-            if m in row:
-                helper.logger.info("[CAA-THCA-58] Replacing token \"m\" in field \""+field+"\" ("+row[m]+")")
-                result = result.replace("$"+m+"$",row[m])
-            else:
-                helper.logger.warning("[CAA-THCA-59] Warning, a token \""+m+"\" was found in the field \""+field+"\" but no field exists in the search results to replace this token")
     return result
 
 
@@ -374,11 +361,11 @@ def create_alert(helper, thehive_api, alert_args):
 
         # check if title contains a field name instead of a string.
         # if yes, strip it from the row and assign value to title
-        alert["title"] = extract_field(helper, row, alert_args["title"])
+        alert["title"] = extract_field(row, alert_args["title"])
 
         # check if description contains a field name instead of a string.
         # if yes, strip it from the row and assign value to description
-        alert["description"] = extract_field(helper, row, alert_args["description"])
+        alert["description"] = extract_field(row, alert_args["description"])
 
         # find the field name used for a valid timestamp
         # and strip it from the row

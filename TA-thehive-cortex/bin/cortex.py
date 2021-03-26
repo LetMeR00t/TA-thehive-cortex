@@ -36,7 +36,6 @@ colorCode = {
 
 def initialize_cortex_instance(keywords, settings, logger_name="script"):
     """ This function is used to initialize a Cortex instance """
-
     logger = setup_logging(logger_name)
 
     # Check the existence of the instance_id
@@ -46,8 +45,13 @@ def initialize_cortex_instance(keywords, settings, logger_name="script"):
         logger.error("[C1-ERROR] No instance ID was given to the script")
         exit(4)
 
-    # Initialiaze settings
-    spl = client.connect(app="TA-thehive-cortex",owner="nobody",token=settings["sessionKey"])
+    return create_cortex_instance(instance_id, settings, logger)
+
+def create_cortex_instance(instance_id, settings, logger):
+    """ This function is used to create an instance of TheHive """
+    # Initialize settings
+    token = settings["sessionKey"] if "sessionKey" in settings else settings["session_key"]
+    spl = client.connect(app="TA-thehive-cortex",owner="nobody",token=token)
     logger.debug("[C5] Connection to Splunk done")
     configuration = Settings(spl, settings, logger)
     logger.debug("[C6] Settings recovered")
@@ -58,10 +62,25 @@ def initialize_cortex_instance(keywords, settings, logger_name="script"):
     }
 
     # Create the Cortex instance
-    (cortex_username, cortex_api_key) = configuration.getInstanceUsernameApiKey(instance_id)
+    (cortex_username, cortex_secret) = configuration.getInstanceUsernameApiKey(instance_id)
     cortex_url = configuration.getInstanceURL(instance_id)
-    cortex = Cortex(url=cortex_url, apiKey=cortex_api_key, sid=settings["sid"], logger=logger)
-    logger.debug("[C10] Cortex instance created")
+    cortex_authentication_type = configuration.getInstanceSetting(instance_id,"authentication_type")
+    cortex_proxies = configuration.getInstanceSetting(instance_id,"proxies")
+    cortex_cert = configuration.getInstanceSetting(instance_id,"client_cert")
+    cortex_cert = None if cortex_cert == "-" else cortex_cert
+    cortex_verify = configuration.getInstanceSetting(instance_id,"verify")
+    cortex_organisation = configuration.getInstanceSetting(instance_id,"organisation")
+    cortex_version = configuration.getInstanceSetting(instance_id,"type") 
+    cortex = None
+
+    if (cortex_authentication_type == "password"):
+        logger.error("[C7-ERROR] Cortex instance will be initialized with a password (not an API key) - This is not supported for Cortex")
+    elif (cortex_authentication_type == "api_key"):
+        logger.debug("[C8] Cortex instance will be initialized with an API Key (not a password)")
+        cortex = Cortex(url=cortex_url, apiKey=cortex_secret, sid=settings["sid"], logger=logger)
+    else:
+        logger.error("[C9-ERROR] WRONG_AUTHENTICATION_TYPE - Authentication type is not one of the expected values (password or api_key), given value: "+cortex_authentication_type)
+        exit(20)
 
     return (cortex, configuration, defaults, logger) 
 
@@ -115,7 +134,7 @@ class Cortex(Api):
             sys.exit(35)
 
         analyzersObj = []
-        # If all analyzers are chosen, we recover them usin the datatype
+        # If all analyzers are chosen, we recover them using the datatype
         if analyzers == "all":
             analyzersObj = self.analyzers.get_by_type(dataType)
         else:

@@ -16,3 +16,13 @@ param.tlp_ = <list> TLP:. It's a required parameter. It's default value is 3.
 param.pap_ = <list> PAP:. It's a required parameter. It's default value is 3.
 param._cam = <json> Active response parameters.
 
+[cortex_run_a_new_job]
+python.version = python3
+param._cam = <json> Active response parameters.
+param.cortex_instance_id = <string> Cortex Instance ID. It's a required parameter.
+param.data_field_name = <string> Data field name. It's a required parameter. It's default value is data.
+param.datatype_field_name = <string> Datatype field name. It's a required parameter. It's default value is datatype.
+param.analyzers = <string> Analyzers. It's a required parameter.
+param.tlp = <list> TLP:. It's a required parameter. It's default value is 3.
+param.pap = <list> PAP:. It's a required parameter. It's default value is 3.
+

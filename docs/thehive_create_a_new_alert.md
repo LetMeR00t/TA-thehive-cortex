@@ -23,8 +23,11 @@ For example
 
 ### Create the alert action "TheHive - Create a new alert"
 Fill in form fields. If value is not provided, default will be provided if needed.
-Provide field names as they are in the results of the search: for example, use mytitle to define alert title from results of the search. The search must return a field 'mytitle' of type string.
-Don't use $row.mytitle$ or $mytitle$. Simply field name.
+Provide field names as they are in the results of the search: for example, you can usea field of your search results named "mytitle" to define alert title from results of the search. The search must return a field 'mytitle' of type string. You can mix static string and usage of field values of your search results.
+For example, these strings are accepted :
+- This is my static title
+- This is a dynamic title with $myfield$
+- $myfield$
 
 * Alert overall description
     - TheHive instance: one of the instances defined in the kv_store
@@ -33,7 +36,7 @@ Don't use $row.mytitle$ or $mytitle$. Simply field name.
     - Source: The alert source. Defaults to "splunk".
     - Unique ID field: A field name that contains a unique identifier specific to the source event. You may use the field value to group artifacts from several rows under the same alert. The value for the field "unique" have to be the same on those rows.
     - Timestamp: A field name that contains a valid timestamp (epoch10 or epoch13 formats are supported). if not provided, default to now() 
-    - Title: The title to use for created alerts. You can specify a field name to take the title from the row (see below)
+    - Title: The title to use for created alerts. You can specify a field name to take the title from the row specified like a token usage in a dashboard (see below)
     - Description: The description to send with the alert. You can specify a field name to take the description from the row (see below)
     - Tags: Use single comma-separated string without quotes for multiple tags (ex. "badIP,spam").
     - Scope: you can choose to (option 1) include **only listed** fields in thehive_datatypes.csv or (option 2) include **all fields** (default datatype is 'other')
@@ -54,10 +57,9 @@ In the alert form, you can specify a field name instead of a static string for f
 - Unique ID field: if you provide a field name, the result rows will be grouped under each unique value of this field. For example, if 5 rows have the value "alert1" in field **my_unique** and 3 rows have "alert2", then by mentioning in the form for parameter "unique" the field name "my_unique", the script will create 2 alerts in TH, one with observables from the first 5 rows (deduplicated) and a second with observables from the 3 other rows.
 - timestamp: you can provide a field containing a valid timestamp value (epoch10 or epoch13) for example _time
 - description: the description of the alert can be taken from the value of a field. Provide field name as it is in results
-- title: title of the alert can be taken from the value of a field. Provide field name as it is in results
+- title: title of the alert can be taken from the value of a field. Provide field name as it is in results. It can be a mix so you can use a static string with a field result. If you have a field named "title" then you can specify : "My title is $title$"
 
-*IMPORTANT* fields used to set timestamp, description or title are removed from results set and not pushed to TheHive as artifact or custom fields.
-If you need to use a field as title and artifact, please create an alias in your search and use one field for the title and another for the aleert artifact. 
+*IMPORTANT* fields used to set timestamp, description or title are not removed from results set and pushed to TheHive as artifact or custom fields.
 
 ### Custom TLP per observable
 If you want to set az different TLP level than the one set for the alert, append to the field name

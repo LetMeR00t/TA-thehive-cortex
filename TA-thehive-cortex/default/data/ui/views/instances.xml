@@ -94,7 +94,7 @@
       <choice value="-">None</choice>
     </input>
     <input type="text" token="add_client_certificate" depends="$show_action_add$">
-      <label>Client Certificate (Default: None)</label>
+      <label>Client Certificate (Default: -)</label>
       <default>-</default>
     </input>
     <input type="text" token="add_host" depends="$show_action_add$">
