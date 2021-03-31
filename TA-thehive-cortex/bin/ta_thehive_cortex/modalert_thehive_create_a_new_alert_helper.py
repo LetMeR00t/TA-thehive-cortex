@@ -293,21 +293,10 @@ def extract_field(helper, row, field):
     result = field
     # Check if the given "field" is actually a field from the search results
     if field in row:
-        # A field is found and it contains the title
-        newValue = str(row[field])
+        # A field is found 
+        newValue = str(row.pop(field))
         if newValue not in [None, '']:
             result = newValue
-    # Look for any token in the field and replace them if it's possible
-    pattern = r"\$(\w+)\$"
-    matches = re.findall(pattern, result)
-    if len(matches)>0:
-        for m in matches:
-            # If token exists as a row, replace its value
-            if m in row:
-                helper.logger.info("[CAA-THCA-58] Replacing token \"m\" in field \""+field+"\" ("+row[m]+")")
-                result = result.replace("$"+m+"$",row[m])
-            else:
-                helper.logger.warning("[CAA-THCA-59] Warning, a token \""+m+"\" was found in the field \""+field+"\" but no field exists in the search results to replace this token")
     return result
 
 
