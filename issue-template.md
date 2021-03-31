@@ -1,5 +1,5 @@
 ### Request Type
-Feature Request
+Bug
 
 ### Work Environment
 
@@ -10,10 +10,17 @@ Feature Request
 
 
 
-### Feature Description
-Describe your feature here
+### Problem Description
+Describe your problem here
 
+### Steps to Reproduce
+1. 
+2. 
+3. 
 
 ### Possible Solutions
 -
 
+
+### Logs (issued from the search.log with logging mode set to DEBUG under Settings/Configuration)
+-
