@@ -22,14 +22,18 @@ For example
 
 
 ### Create the alert action "TheHive - Create a new alert"
-Fill in form fields. If value is not provided, default will be provided if needed.
-Provide field names as they are in the results of the search: for example, you can usea field of your search results named "mytitle" to define alert title from results of the search. The search must return a field 'mytitle' of type string. You can mix static string and usage of field values of your search results. You can also specify a title/description by using fields results with $result.YOUR_FIELD$.
-For example, these strings are accepted :
-- This is my static title
-- This is a dynamic title with $result.myfield$
-- $myfield$
+#### How to fill in form fields
+Fill in form fields. If value is not provided, default will be provided if needed.  
+Provide field names as they are in the results of the search: for example, you can usea field of your search results named "mytitle" to define alert title from results of the search. The search must return a field 'mytitle' of type string. You can mix static string and usage of field values of your search results. You can also specify a title/description by using fields results with $result.YOUR_FIELD$.  
+For example, these strings are accepted:
+1. This is my static title
+2. This is a dynamic title with $result.myfield$
+3. myfield  
+- In first example, alert title will be "This is my static title".  
+- In second example, alert title will be "This is a dynamic title with value_from_result" where abc was the value of the field myfield in **first row** of result set. The substitution is done by sendalert at the time of launching the action
+- In third case, alert title will be the value of field myfield from result set. The difference with second example is that the substitution is handle by app script and can be different if several alerts are created in Thehive from the same result set (using form field "unique ID field" - see below)
 
-* Alert overall description
+#### Alert overall description
     - TheHive instance: one of the instances defined in the kv_store
     - Case Template: A case template to use for imported alerts.
     - Type: The alert type. Defaults to "alert".
@@ -59,10 +63,10 @@ In the alert form, you can specify a field name instead of a static string for f
 - description: the description of the alert can be taken from the value of a field. Provide field name as it is in results
 - title: title of the alert can be taken from the value of a field. Provide field name as it is in results. It can be a mix so you can use a static string with a field result. If you have a field named "title" then you can specify : "My title is $result.title$"
 
-*IMPORTANT* fields used to set timestamp, description or title are not removed from results set and pushed to TheHive as artifact or custom fields.
+**IMPORTANT** fields used to set timestamp, description or title are not removed from results set and pushed to TheHive as artifact or custom fields.
 
 ### Custom TLP per observable
-If you want to set az different TLP level than the one set for the alert, append to the field name
+If you want to set a different TLP level than the one set for the alert, append to the field name
     - :R for TLP:RED
     - :A for TLP:AMBER
     - :G for TLP:GREEN
