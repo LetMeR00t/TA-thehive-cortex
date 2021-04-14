@@ -10,6 +10,7 @@
 
 import csv
 import gzip
+import hashlib
 import os
 import re
 import time
@@ -184,6 +185,12 @@ def process_event(helper, *args, **kwargs):
     thehive_instance_id = helper.get_param("thehive_instance_id")
     helper.log_info("thehive_instance_id={}".format(thehive_instance_id))
 
+    alert_mode = helper.get_param("alert_mode")
+    helper.log_info("alert_mode={}".format(alert_mode))
+
+    unique_id_field = helper.get_param("unique_id_field")
+    helper.log_info("unique_id_field={}".format(unique_id_field))
+
     case_template = helper.get_param("case_template")
     helper.log_info("case_template={}".format(case_template))
 
@@ -192,9 +199,6 @@ def process_event(helper, *args, **kwargs):
 
     source = helper.get_param("source")
     helper.log_info("source={}".format(source))
-
-    unique_id_field = helper.get_param("unique_id_field")
-    helper.log_info("unique_id_field={}".format(unique_id_field))
 
     timestamp_field = helper.get_param("timestamp_field")
     helper.log_info("timestamp_field={}".format(timestamp_field))
@@ -240,6 +244,7 @@ def process_event(helper, *args, **kwargs):
     [sample_code_macro:end]
     """
 
+
     # Set the current LOG level
     helper.log_info("[CAA-THCA-35] LOG level to: " + helper.log_level)
     helper.set_log_level(helper.log_level)
@@ -257,10 +262,11 @@ def process_event(helper, *args, **kwargs):
     # Get alert arguments
     alert_args = {}
     # Get string values from alert form
+    alert_args["alert_mode"] = helper.get_param("alert_mode") if helper.get_param("alert_mode") else "es_mode" 
+    alert_args["unique_id_field"] = helper.get_param("unique_id_field") if helper.get_param("unique_id_field") else "oneEvent" 
     alert_args["caseTemplate"] = helper.get_param("case_template") if helper.get_param("case_template") else "default"
     alert_args["type"] = helper.get_param("type") if helper.get_param("type") else "alert"
     alert_args["source"] = helper.get_param("source") if helper.get_param("source") else "splunk"
-    alert_args["unique_id_field"] = helper.get_param("unique_id_field") if helper.get_param("unique_id_field") else "oneEvent" 
     if not helper.get_param("timestamp_field"):
         alert_args['timestamp'] = int(time.time() * 1000)
     else:
@@ -269,17 +275,17 @@ def process_event(helper, *args, **kwargs):
         if epoch10 is not None:
             alert_args['timestamp'] = int(alert_args['timestamp']) * 1000
 
-    alert_args["title"] = helper.get_param("title") if helper.get_param("title") else "Notable event" 
-    alert_args["description"] = helper.get_param("description").replace("\\n","\n").replace("\\r","\r") if helper.get_param("description") else "No description provided"         
+    alert_args["title"] = helper.get_param("title") if helper.get_param("title") else "Notable event"
+    alert_args["description"] = helper.get_param("description").replace("\\n","\n").replace("\\r","\r") if helper.get_param("description") else "No description provided"
     alert_args["tags"] = list(dict.fromkeys(helper.get_param("tags").split(","))) if helper.get_param("tags") else []
     helper.log_debug("[CAA-THCA-50] scope: {} ".format(helper.get_param("scope")))
-    alert_args["scope"] = True if int(helper.get_param("scope"))==0 else False   
+    alert_args["scope"] = True if int(helper.get_param("scope")) == 0 else False
     # Get numeric values from alert form
-    alert_args['severity'] = int(helper.get_param("severity")) if helper.get_param("severity") is not None else 2
-    alert_args['tlp'] = int(helper.get_param("tlp")) if helper.get_param("tlp") is not None else 2
-    alert_args['pap'] = int(helper.get_param("pap")) if helper.get_param("pap") is not None else 2
-
-    helper.log_debug("[CAA-THCA-55] Arguments recovered: "+str(alert_args))
+    alert_args["severity"] = int(helper.get_param("severity")) if helper.get_param("severity") is not None else 2
+    alert_args["tlp"] = int(helper.get_param("tlp")) if helper.get_param("tlp") is not None else 2
+    alert_args["pap"] = int(helper.get_param("pap")) if helper.get_param("pap") is not None else 2
+    alert_args["splunk_es_alerts_index"] = helper.get_global_setting("splunk_es_alerts_index") if helper.get_global_setting("splunk_es_alerts_index") is not None else "summary"
+    helper.log_debug("[CAA-THCA-55] Arguments recovered: " + str(alert_args))
 
     # Create the alert
     helper.log_info("[CAA-THCA-56] Alert preparation is finished. Creating the alert...")
@@ -287,14 +293,15 @@ def process_event(helper, *args, **kwargs):
     helper.log_info("[CAA-THCA-57] Alert creation is done.")
     return 0
 
+
 def extract_field(helper, row, field):
     """ This function is used to extract information from a potential field in a row and sanitize it if needed. If the field is not found, use the field name directly as value """
 
     result = field
     # Check if the given "field" is actually a field from the search results
     if field in row:
-        # A field is found 
-        newValue = str(row.pop(field))
+        # A field is found
+        newValue = str(row[field])
         if newValue not in [None, '']:
             result = newValue
     return result
@@ -309,8 +316,7 @@ def create_alert(helper, thehive_api, alert_args):
     app_name = "TA-thehive-cortex"
     data_type = get_datatype_dict(helper, app_name)
     custom_field_type = get_customField_dict(helper, app_name)
-    alert_reference = 'SPK' + str(int(time.time()))
-    helper.log_debug("[CAA-THCA-60] alert_reference: {}".format(alert_reference))
+    alert_reference_time = str(int(time.time()))
     alerts = dict()
     events = helper.get_events()
     for row in events:
@@ -319,25 +325,36 @@ def create_alert(helper, thehive_api, alert_args):
         artifactTags = []
         artifactMessage = ''
         customFields = dict()
-        sourceRef = alert_reference
         alert = dict()
+
+        # define thehive alert unique ID (if duplicated, alert creations fails)
+
+        if alert_args["alert_mode"] == "es_mode":
+            if "_time" in row:
+                message = row["_time"]
+            else:
+                message = alert_reference_time
+            message = message + str(row)
+            sourceRef = alert_args["splunk_es_alerts_index"] + "@@" + hashlib.md5(message.encode('utf-8')).hexdigest()
+        elif alert_args['unique_id_field'] in row:
+            newSource = str(row[alert_args['unique_id_field']])
+            if newSource not in [None, '']:
+                # grabs that field's value and assigns it to our sourceRef
+                sourceRef = newSource
+            else:
+                sourceRef = "SPK" + alert_reference_time
+        else:
+            sourceRef = "SPK" + alert_reference_time
 
         # Splunk makes a bunch of dumb empty multivalue fields
         # replace value by multivalue if required
         helper.log_debug("[CAA-THCA-65] Row before pre-processing: " + str(row))
         for key, value in row.items():
             if not key.startswith("__mv_") and "__mv_" + key in row and row["__mv_" + key] not in [None, '']:
-                row[key] = [e[1:len(e)-1] for e in row["__mv_" + key].split(";")]
+                row[key] = [e[1:len(e) - 1] for e in row["__mv_" + key].split(";")]
         # we filter those out here
         row = {key: value for key, value in row.items() if not key.startswith("__mv_") and key not in ["rid"]}
         helper.log_debug("[CAA-THCA-66] Row after pre-processing: " + str(row))
-
-        # find the field name used for a unique identifier
-        if alert_args['unique_id_field'] in row:
-            newSource = str(row[alert_args['unique_id_field']])
-            if newSource not in [None, '']:
-                # grabs that field's value and assigns it to our sourceRef
-                sourceRef = newSource
 
         helper.log_debug("[CAA-THCA-70] sourceRef: {} ".format(sourceRef))
 
@@ -532,6 +549,8 @@ def create_alert(helper, thehive_api, alert_args):
                 "[CAA-THCA-125] INFO theHive alert is successfully created. "
                 "url={}, HTTP status={}".format(thehive_api.url, response.status_code)
             )
+            alert_creation_response = response.text
+
         else:
             # somehow we got a bad response code from thehive
             helper.log_error(
