@@ -9,6 +9,32 @@
     </div>
 </div>
 <div class="control-group">
+	<label class="control-label">Alert mode</label>
+		<div class="controls">
+				<label class="radio" for="thehive_create_a_new_alert_alert_mode_es_mode">
+					<input type="radio" name="action.thehive_create_a_new_alert.param.alert_mode" id="thehive_create_a_new_alert_alert_mode_es_mode" value="es_mode"/>
+					ES notable mode
+				</label>
+				<label class="radio" for="thehive_create_a_new_alert_alert_mode_regular_mode">
+					<input type="radio" name="action.thehive_create_a_new_alert.param.alert_mode" id="thehive_create_a_new_alert_alert_mode_regular_mode" value="regular_mode"/>
+					Alert action mode
+				</label>
+                <span class="help-block"> 
+                    ES notable mode: 1 alert in thehive per row
+Alert action mode: 1 or several grouped alerts (with optional field "Unique ID")
+                </span>
+		</div>
+</div>
+<div class="control-group">
+	<label class="control-label" for="thehive_create_a_new_alert_unique_id_field">Unique ID field  </label>
+    <div class="controls">
+	<input type="text" name="action.thehive_create_a_new_alert.param.unique_id_field" id="thehive_create_a_new_alert_unique_id_field"/>
+                <span class="help-block"> 
+                    A field name that contains a unique identifier specific to the source event.
+                </span>
+    </div>
+</div>
+<div class="control-group">
 	<label class="control-label" for="thehive_create_a_new_alert_case_template">Case Template  </label>
     <div class="controls">
 	<input type="text" name="action.thehive_create_a_new_alert.param.case_template" id="thehive_create_a_new_alert_case_template"/>
@@ -32,15 +58,6 @@
 	<input type="text" name="action.thehive_create_a_new_alert.param.source" id="thehive_create_a_new_alert_source"/>
                 <span class="help-block"> 
                     The alert source. Defaults to "splunk".
-                </span>
-    </div>
-</div>
-<div class="control-group">
-	<label class="control-label" for="thehive_create_a_new_alert_unique_id_field">Unique ID field  </label>
-    <div class="controls">
-	<input type="text" name="action.thehive_create_a_new_alert.param.unique_id_field" id="thehive_create_a_new_alert_unique_id_field"/>
-                <span class="help-block"> 
-                    A field name that contains a unique identifier specific to the source event.
                 </span>
     </div>
 </div>

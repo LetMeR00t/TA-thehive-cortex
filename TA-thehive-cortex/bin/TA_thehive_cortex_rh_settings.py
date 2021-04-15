@@ -90,7 +90,7 @@ fields_additional_parameters = [
         'splunk_es_alerts_index',
         required=False,
         encrypted=False,
-        default='',
+        default='summary',
         validator=validator.String(
             min_len=0, 
             max_len=8192, 
