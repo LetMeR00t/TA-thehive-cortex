@@ -10,6 +10,7 @@
       <change>
         <condition value="list">
           <unset token="show_dashboards_create"></unset>
+          <unset token="show_inputs_create"></unset>
           <unset token="filter_keyword"></unset>
           <unset token="form.filter_keyword"></unset>
           <unset token="filter_status"></unset>
@@ -27,8 +28,20 @@
         </condition>
         <condition value="create">
           <set token="show_dashboards_create">1</set>
+          <set token="show_inputs_create">1</set>
         </condition>
       </change>
+    </input>
+    <input type="dropdown" token="instance_id">
+      <label>Instance</label>
+      <fieldForLabel>instance_name</fieldForLabel>
+      <fieldForValue>id</fieldForValue>
+      <search>
+        <query>| inputlookup thehive_cortex_instances where type=TheHive*
+| eval instance_name = account_name+": "+host+":"+port</query>
+        <earliest>-24h@h</earliest>
+        <latest>now</latest>
+      </search>
     </input>
     <input type="radio" token="view_mode">
       <label>View mode</label>
@@ -62,7 +75,7 @@
           <sampleRatio>1</sampleRatio>
         </search>
         <option name="drilldown">none</option>
-        <option name="height">99</option>
+        <option name="height">48</option>
         <option name="refresh.display">progressbar</option>
         <option name="status_indicator_app.status_indicator.colorBy">field_value</option>
         <option name="status_indicator_app.status_indicator.fillTarget">background</option>
@@ -81,34 +94,110 @@
   </row>
   <row>
     <panel depends="$show_dashboards_create$">
-      <html>
-      <div class="fieldset dashboard-form-fieldset editable" data-view="views/dashboard/form/Fieldset">
-        <div class="input input-text" data-view="views/dashboard/form/Input">
-          <label>Keyword</label>
-          <div class="splunk-view splunk-textinput" data-view="splunkjs/mvc/textinputview">
-            <div data-size="medium" data-test="text" data-test-value="*" data-component="splunk-core:/splunkjs/mvc/components/TextInput">
-              <input aria-multiline="false" data-test="textbox" type="text" />
-            </div>
-          </div>
-        </div>
-        <div class="input input-text" data-view="views/dashboard/form/Input">
-          <label>Status</label>
-          <div class="splunk-view splunk-textinput" data-view="splunkjs/mvc/textinputview">
-            <div data-size="medium" data-test="text" data-test-value="*" data-component="splunk-core:/splunkjs/mvc/components/TextInput">
-              <input aria-multiline="false" data-test="textbox" type="text" />
-            </div>
-          </div>
-        </div>
-        <div class="input input-text" data-view="views/dashboard/form/Input">
-          <label>Description</label>
-          <div class="splunk-view splunk-textinput" data-view="splunkjs/mvc/textinputview">
-            <div data-size="medium" data-test="text" data-test-value="*" data-component="splunk-core:/splunkjs/mvc/components/TextInput">
-              <textarea aria-multiline="false" data-test="textbox" type="text" />
-            </div>
-          </div>
-        </div>
-      </div>
-    </html>
+      <input type="text" token="create_title" depends="$show_inputs_create$">
+        <label>Title</label>
+      </input>
+      <input type="dropdown" token="create_severity" depends="$show_inputs_create$">
+        <label>Severity</label>
+        <choice value="4">CRITICAL (!!) - 4</choice>
+        <choice value="3">HIGH - 3</choice>
+        <choice value="2">MEDIUM - 2</choice>
+        <choice value="1">LOW - 1</choice>
+      </input>
+      <input id="input_create_add_tag" type="text" token="create_add_tag" depends="$show_inputs_create$" searchWhenChanged="true">
+        <label>Enter a new tag:</label>
+      </input>
+      <input id="input_create_tags" type="multiselect" token="create_tags" depends="$show_inputs_create$">
+        <label>Tags (readonly)</label>
+        <choice value="none">None</choice>
+        <delimiter>; </delimiter>
+        <default>none</default>
+        <initialValue>none</initialValue>
+      </input>
+      <input id="input_create_add_task" type="text" token="create_add_task" depends="$show_inputs_create$" searchWhenChanged="true">
+        <label>Enter a new task:</label>
+      </input>
+      <input id="input_create_tasks" type="multiselect" token="create_tasks" depends="$show_inputs_create$">
+        <label>Tasks (readonly)</label>
+        <choice value="none">None</choice>
+        <delimiter> ;</delimiter>
+        <default>none</default>
+        <initialValue>none</initialValue>
+      </input>
+      <input type="dropdown" token="create_tlp" depends="$show_inputs_create$">
+        <label>TLP</label>
+        <choice value="0">WHITE - 0</choice>
+        <choice value="1">GREEN - 1</choice>
+        <choice value="2">AMBER - 2</choice>
+        <choice value="3">RED - 3</choice>
+      </input>
+      <input type="dropdown" token="create_pap" depends="$show_inputs_create$">
+        <label>PAP</label>
+        <choice value="0">WHITE - 0</choice>
+        <choice value="1">GREEN - 1</choice>
+        <choice value="2">AMBER - 2</choice>
+        <choice value="3">RED - 3</choice>
+      </input>
+      <input type="text" token="create_description" depends="$show_inputs_create$">
+        <label>Description</label>
+      </input>
+      <table>
+        <search>
+          <query>| makeresults
+| eval title="$create_title$", severity = "$create_severity$", tags="$create_tags$", pap = "$create_pap$", date = now(), tlp = "$create_tlp$", description="$create_description$", tasks = "$create_tasks$"
+| thehivecreate $instance_id$
+| eval thehive_case_tlp = case(thehive_case_tlp==0,"TLP:WHITE",thehive_case_tlp==1,"TLP:GREEN",thehive_case_tlp==2,"TLP:AMBER",thehive_case_tlp=3,"TLP:RED"), thehive_case_title = "#"+thehive_case_caseId+" - "+thehive_case_title, thehive_case_severity = case(thehive_case_severity==1,"Low",thehive_case_severity==2,"Medium",thehive_case_severity==3,"High",thehive_case_severity==4,"Critical",1=1,thehive_case_severity), status = if(thehive_case_status!="Open", thehive_case_status+" as "+thehive_case_resolutionStatus,thehive_case_status)+";"+if(thehive_case_status!="Open","Closed at "+strftime(thehive_case_endDate,"%+"),""), thehive_case_startDate = strftime(thehive_case_startDate,"%F %H:%M")
+| makemv delim=";" status
+| fillnull value="No task" thehive_case_tasks
+| table thehive_case_tlp, thehive_case_title, thehive_case_tags, thehive_case_severity, thehive_case_tasks, thehive_case_observables, thehive_case_owner, thehive_case_startDate, thehive_case_metrics, thehive_case_customFields, status, thehive_case_id
+| rename thehive_case_tlp as TLP, thehive_case_title as Title, thehive_case_tags as Tags, thehive_case_severity as Severity, thehive_case_tasks as Tasks, thehive_case_observables as Observables, thehive_case_owner as "Assignee", thehive_case_startDate as "Start Date", status as Status, thehive_case_metrics as "Metrics", thehive_case_customFields as "Custom Fields", thehive_case_id as "ID - Go to TheHive"</query>
+          <earliest>0</earliest>
+          <latest></latest>
+          <sampleRatio>1</sampleRatio>
+          <done>
+            <unset token="create_title"></unset>
+            <unset token="form.create_title"></unset>
+            <unset token="create_severity"></unset>
+            <unset token="form.create_severity"></unset>
+            <unset token="create_tags"></unset>
+            <unset token="form.create_tags"></unset>
+            <unset token="create_tasks"></unset>
+            <unset token="form.create_tasks"></unset>
+            <unset token="create_tlp"></unset>
+            <unset token="form.create_tlp"></unset>
+            <unset token="create_papa"></unset>
+            <unset token="form.create_pap"></unset>
+            <unset token="create_description"></unset>
+            <unset token="form.create_description"></unset>
+          </done>
+        </search>
+        <option name="count">20</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">cell</option>
+        <option name="percentagesRow">false</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="rowNumbers">false</option>
+        <option name="totalsRow">false</option>
+        <option name="wrap">true</option>
+        <format type="color" field="TLP">
+          <colorPalette type="map">{"TLP:WHITE":#FFFFFF,"TLP:GREEN":#53A051,"TLP:AMBER":#F8BE34,"TLP:RED":#DC4E41}</colorPalette>
+        </format>
+        <format type="color" field="Severity">
+          <colorPalette type="map">{"Low":#10A554,"Medium":#00C0EF,"High":#F39C12,"Critical":#DD4B39}</colorPalette>
+        </format>
+        <drilldown>
+          <condition field="Tasks">
+            <link target="_blank">$global_thehive_protocol$://$global_thehive_host$:$global_thehive_port$/index.html#!/case/$row.ID - Go to TheHive$/tasks</link>
+          </condition>
+          <condition field="Observables">
+            <link target="_blank">$global_thehive_protocol$://$global_thehive_host$:$global_thehive_port$/index.html#!/case/$row.ID - Go to TheHive$/observables</link>
+          </condition>
+          <condition field="ID - Go to TheHive">
+            <link target="_blank">$global_thehive_protocol$://$global_thehive_host$:$global_thehive_port$/index.html#!/case/$row.ID - Go to TheHive$/details</link>
+          </condition>
+          <condition></condition>
+        </drilldown>
+      </table>
     </panel>
   </row>
   <row>
@@ -123,7 +212,7 @@
           <sampleRatio>1</sampleRatio>
         </search>
         <option name="drilldown">none</option>
-        <option name="height">99</option>
+        <option name="height">48</option>
         <option name="refresh.display">progressbar</option>
         <option name="status_indicator_app.status_indicator.colorBy">field_value</option>
         <option name="status_indicator_app.status_indicator.fillTarget">background</option>
@@ -157,10 +246,10 @@
         <label>Severity</label>
         <delimiter>;</delimiter>
         <choice value="*">Any</choice>
-        <choice value="Critical">Critical</choice>
-        <choice value="High">High</choice>
-        <choice value="Medium">Medium</choice>
-        <choice value="Low">Low</choice>
+        <choice value="4">Critical</choice>
+        <choice value="3">High</choice>
+        <choice value="2">Medium</choice>
+        <choice value="1">Low</choice>
         <default>*</default>
         <initialValue>*</initialValue>
       </input>
@@ -170,15 +259,12 @@
         <default>*</default>
         <initialValue>*</initialValue>
         <delimiter>;</delimiter>
-        <fieldForLabel>thehive_case_tags</fieldForLabel>
-        <fieldForValue>thehive_case_tags</fieldForValue>
+        <fieldForLabel>tags</fieldForLabel>
+        <fieldForValue>tags</fieldForValue>
         <search>
-          <query>| makeresults
-| eval max_cases = "$max_cases$", sort_cases = "$sort_cases$"
-| thehivecases max_cases sort_cases
-| stats count by thehive_case_tags
-| table thehive_case_tags
-| sort thehive_case_tags</query>
+          <query>| loadjob $job_thehive_search_cases$
+| stats values(Tags) as tags
+| mvexpand tags</query>
         </search>
       </input>
       <input type="text" token="filter_title" searchWhenChanged="true">
@@ -192,22 +278,18 @@
         <default>*</default>
         <initialValue>*</initialValue>
         <delimiter>;</delimiter>
-        <fieldForLabel>thehive_case_owner</fieldForLabel>
-        <fieldForValue>thehive_case_owner</fieldForValue>
+        <fieldForLabel>Assignee</fieldForLabel>
+        <fieldForValue>Assignee</fieldForValue>
         <search>
-          <query>| makeresults
-| eval max_cases = "$max_cases$", sort_cases = "$sort_cases$"
-| thehivecases max_cases sort_cases
-| stats count by thehive_case_owner
-| table thehive_case_owner
-| sort thehive_case_owner</query>
+          <query>| loadjob $job_thehive_search_cases$
+| stats count by Assignee</query>
         </search>
       </input>
       <input type="time" token="filter_date" searchWhenChanged="true">
         <label>Date (days only)</label>
         <default>
-          <earliest>0</earliest>
-          <latest></latest>
+          <earliest>-2y</earliest>
+          <latest>now</latest>
         </default>
       </input>
       <input type="text" token="max_cases" searchWhenChanged="true" depends="$show_inputs_advanced$">
@@ -217,19 +299,22 @@
         <label>Sort cases</label>
       </input>
       <table>
-        <title>Click on the title to have more details in Splunk. Otherwise, you can click on the ID to open TheHive with the selected case</title>
+        <title>You can click on the ID to open TheHive with the selected case</title>
         <search>
           <query>| makeresults
 | eval keyword = "$filter_keyword$", status = "$filter_status$", severity = "$filter_severity$", tags = "$filter_tags$", title = "$filter_title$", assignee = "$filter_assignee$", date = "$filter_date_d1$ TO $filter_date_d2$", max_cases="$max_cases$", sort_cases="$sort_cases$"
-| thehivecases keyword status severity tags title assignee date max_cases sort_cases
+| thehivecases $instance_id$
 | eval thehive_case_tlp = case(thehive_case_tlp==0,"TLP:WHITE",thehive_case_tlp==1,"TLP:GREEN",thehive_case_tlp==2,"TLP:AMBER",thehive_case_tlp=3,"TLP:RED"), thehive_case_title = "#"+thehive_case_caseId+" - "+thehive_case_title, thehive_case_severity = case(thehive_case_severity==1,"Low",thehive_case_severity==2,"Medium",thehive_case_severity==3,"High",thehive_case_severity==4,"Critical",1=1,thehive_case_severity), status = if(thehive_case_status!="Open", thehive_case_status+" as "+thehive_case_resolutionStatus,thehive_case_status)+";"+if(thehive_case_status!="Open","Closed at "+strftime(thehive_case_endDate,"%+"),""), thehive_case_startDate = strftime(thehive_case_startDate,"%F %H:%M")
 | makemv delim=";" status
 | fillnull value="No task" thehive_case_tasks
-| table thehive_case_tlp, thehive_case_title, thehive_case_tags, thehive_case_severity, thehive_case_tasks, thehive_case_observables, thehive_case_owner, thehive_case_startDate, status, thehive_case_id
-| rename thehive_case_tlp as TLP, thehive_case_title as Title, thehive_case_tags as Tags, thehive_case_severity as Severity, thehive_case_tasks as Tasks, thehive_case_observables as Observables, thehive_case_owner as "Assignee", thehive_case_startDate as "Start Date", status as Status, thehive_case_id as "ID - Go to TheHive"</query>
+| table thehive_case_tlp, thehive_case_title, thehive_case_tags, thehive_case_severity, thehive_case_tasks, thehive_case_observables, thehive_case_owner, thehive_case_startDate, thehive_case_metrics, thehive_case_customFields, status, thehive_case_id
+| rename thehive_case_tlp as TLP, thehive_case_title as Title, thehive_case_tags as Tags, thehive_case_severity as Severity, thehive_case_tasks as Tasks, thehive_case_observables as Observables, thehive_case_owner as "Assignee", thehive_case_startDate as "Start Date", status as Status, thehive_case_metrics as "Metrics", thehive_case_customFields as "Custom Fields", thehive_case_id as "ID - Go to TheHive"</query>
           <earliest>$filter_date.earliest$</earliest>
           <latest>$filter_date.latest$</latest>
           <sampleRatio>1</sampleRatio>
+          <done>
+            <set token="job_thehive_search_cases">$job.sid$</set>
+          </done>
         </search>
         <option name="count">20</option>
         <option name="dataOverlayMode">none</option>
@@ -247,13 +332,13 @@
         </format>
         <drilldown>
           <condition field="Tasks">
-            <link target="_blank">$thehive_protocol$://$thehive_host$:$thehive_port$/index.html#!/case/$row.ID - Go to TheHive$/tasks</link>
+            <link target="_blank">$global_thehive_protocol$://$global_thehive_host$:$global_thehive_port$/index.html#!/case/$row.ID - Go to TheHive$/tasks</link>
           </condition>
           <condition field="Observables">
-            <link target="_blank">$thehive_protocol$://$thehive_host$:$thehive_port$/index.html#!/case/$row.ID - Go to TheHive$/observables</link>
+            <link target="_blank">$global_thehive_protocol$://$global_thehive_host$:$global_thehive_port$/index.html#!/case/$row.ID - Go to TheHive$/observables</link>
           </condition>
           <condition field="ID - Go to TheHive">
-            <link target="_blank">$thehive_protocol$://$thehive_host$:$thehive_port$/index.html#!/case/$row.ID - Go to TheHive$/details</link>
+            <link target="_blank">$global_thehive_protocol$://$global_thehive_host$:$global_thehive_port$/index.html#!/case/$row.ID - Go to TheHive$/details</link>
           </condition>
           <condition></condition>
         </drilldown>
@@ -262,6 +347,28 @@
   </row>
   <row>
     <panel depends="$always_hidden$">
+      <title>[Instance] Get information</title>
+      <table>
+        <search>
+          <done>
+            <set token="global_thehive_protocol">$result.protocol$</set>
+            <set token="global_thehive_host">$result.host$</set>
+            <set token="global_thehive_port">$result.port$</set>
+          </done>
+          <query>| inputlookup thehive_cortex_instances where id=$instance_id$</query>
+          <earliest>-24h@h</earliest>
+          <latest>now</latest>
+          <sampleRatio>1</sampleRatio>
+        </search>
+        <option name="count">20</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="refresh.display">progressbar</option>
+      </table>
+    </panel>
+  </row>
+  <row>
+    <panel depends="$always_hidden$">
+      <title>[Date] Format filters</title>
       <table>
         <search>
           <done>

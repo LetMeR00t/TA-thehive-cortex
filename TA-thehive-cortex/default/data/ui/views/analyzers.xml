@@ -1,18 +1,62 @@
-<dashboard stylesheet="cortex_analyzers.css" script="cortex_analyzers.js">
+<form>
   <label>Analyzers</label>
   <init>
-    <set token="updated">now()</set>
+    <set token="last_refresh">now()</set>
   </init>
+  <fieldset submitButton="false">
+    <input type="dropdown" token="action">
+      <label>Action</label>
+      <choice value="refresh">REFRESH</choice>
+      <choice value="list">LIST</choice>
+      <default>list</default>
+      <initialValue>list</initialValue>
+      <change>
+        <condition value="list">
+          <unset token="run_refresh"></unset>
+        </condition>
+        <condition value="refresh">
+          <set token="run_refresh">1</set>
+          <set token="status">Waiting for input</set>
+          <set token="status_color">red</set>
+        </condition>
+      </change>
+    </input>
+    <input type="dropdown" token="instance_id">
+      <label>Instance</label>
+      <fieldForLabel>instance_name</fieldForLabel>
+      <fieldForValue>id</fieldForValue>
+      <search>
+        <query>| inputlookup thehive_cortex_instances where type=Cortex*
+| eval instance_name = account_name+": "+host+":"+port</query>
+        <earliest>-24h@h</earliest>
+        <latest>now</latest>
+      </search>
+    </input>
+    <input type="radio" token="global_debug">
+      <label>Debug</label>
+      <choice value="0">No</choice>
+      <choice value="1">Yes</choice>
+      <default>0</default>
+      <change>
+        <condition value="0">
+          <unset token="show_debug"></unset>
+        </condition>
+        <condition value="1">
+          <set token="show_debug">1</set>
+        </condition>
+      </change>
+    </input>
+  </fieldset>
   <row>
     <panel>
-      <title>Informations</title>
+      <title>Analyzers found for instance "$instance_id$"</title>
       <table>
         <search>
-          <query>| inputlookup lookup_cortex_analyzers
-| eval updated = $updated$
-| makemv delim=";" dataTypeAllowed
-| table analyzer, dataTypeAllowed, description
-| rename analyzer as Analyzer, dataTypeAllowed as "Data Type allowed", description as Description</query>
+          <query>| inputlookup cortex_analyzers where instance_id=$instance_id$
+| eval updated = $last_refresh$
+| makemv delim=";" dataTypeList
+| table name, dataTypeList, description
+| rename name as Name, dataTypeList as "Data Type allowed", description as Description</query>
           <earliest>-24h@h</earliest>
           <latest>now</latest>
           <sampleRatio>1</sampleRatio>
@@ -28,4 +72,70 @@
       </table>
     </panel>
   </row>
-</dashboard>
+  <row>
+    <panel depends="$run_refresh$">
+      <viz type="status_indicator_app.status_indicator">
+        <search>
+          <query>| makeresults
+| eval time = strftime(now(),"%T"), status = "Analyzers refresh - $status$ at "+time, color = "$status_color$"
+| table status, color</query>
+          <earliest>-24h@h</earliest>
+          <latest>now</latest>
+          <sampleRatio>1</sampleRatio>
+        </search>
+        <option name="drilldown">none</option>
+        <option name="height">53</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="status_indicator_app.status_indicator.colorBy">field_value</option>
+        <option name="status_indicator_app.status_indicator.fillTarget">background</option>
+        <option name="status_indicator_app.status_indicator.fixIcon">warning</option>
+        <option name="status_indicator_app.status_indicator.icon">field_value</option>
+        <option name="status_indicator_app.status_indicator.precision">0</option>
+        <option name="status_indicator_app.status_indicator.showOption">3</option>
+        <option name="status_indicator_app.status_indicator.staticColor">#555</option>
+        <option name="status_indicator_app.status_indicator.useColors">true</option>
+        <option name="status_indicator_app.status_indicator.useThousandSeparator">true</option>
+      </viz>
+    </panel>
+  </row>
+  <row>
+    <panel depends="$show_debug$">
+      <title>[DEBUG] Refresh analyzers for the given instance "$instance_id$"</title>
+      <table>
+        <title>This search is used to add a new instance</title>
+        <search>
+          <progress>
+            <set token="status">Ongoing</set>
+            <set token="status_color">orange</set>
+          </progress>
+          <done>
+            <eval token="last_refresh">now()</eval>
+            <set token="status">Done</set>
+            <set token="status_color">green</set>
+          </done>
+          <query>| inputlookup cortex_analyzers
+| where instance_id!="$instance_id$"
+| append [
+    | makeresults
+    | cortexrefreshanalyzers $instance_id$
+    | eval cortex_analyzer_dataTypeList = mvjoin(cortex_analyzer_dataTypeList,";"), enable = $run_refresh$
+    | table cortex_analyzer_name, cortex_analyzer_description, cortex_analyzer_dataTypeList
+    | rename cortex_analyzer_* as *
+    | eval instance_id = "$instance_id$"]
+| outputlookup cortex_analyzers</query>
+          <earliest>-24h@h</earliest>
+          <latest>now</latest>
+          <sampleRatio>1</sampleRatio>
+        </search>
+        <option name="count">20</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">none</option>
+        <option name="percentagesRow">false</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="rowNumbers">false</option>
+        <option name="totalsRow">false</option>
+        <option name="wrap">true</option>
+      </table>
+    </panel>
+  </row>
+</form>
