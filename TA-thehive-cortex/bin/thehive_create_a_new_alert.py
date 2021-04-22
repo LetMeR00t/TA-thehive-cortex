@@ -9,13 +9,13 @@ import sys
 from alert_actions_base import ModularAlertBase
 import modalert_thehive_create_a_new_alert_helper
 
+
 class AlertActionWorkerthehive_create_a_new_alert(ModularAlertBase):
 
     def __init__(self, ta_name, alert_name):
         super(AlertActionWorkerthehive_create_a_new_alert, self).__init__(ta_name, alert_name)
 
     def validate_params(self):
-
         if not self.get_global_setting("cortex_max_jobs"):
             self.log_error('cortex_max_jobs is a mandatory setup parameter, but its value is None.')
             return False
@@ -39,7 +39,7 @@ class AlertActionWorkerthehive_create_a_new_alert(ModularAlertBase):
         if not self.get_global_setting("thehive_sort_alerts"):
             self.log_error('thehive_sort_alerts is a mandatory setup parameter, but its value is None.')
             return False
-
+        
         if not self.get_param("thehive_instance_id"):
             self.log_error('thehive_instance_id is a mandatory parameter, but its value is None.')
             return False
@@ -83,6 +83,7 @@ class AlertActionWorkerthehive_create_a_new_alert(ModularAlertBase):
                 self.log_error(msg.format(traceback.format_exc()))
             return 5
         return status
+
 
 if __name__ == "__main__":
     exitcode = AlertActionWorkerthehive_create_a_new_alert("TA-thehive-cortex", "thehive_create_a_new_alert").run(sys.argv)

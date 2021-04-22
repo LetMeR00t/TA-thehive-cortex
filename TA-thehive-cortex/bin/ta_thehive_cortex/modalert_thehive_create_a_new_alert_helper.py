@@ -19,7 +19,7 @@ from thehive4py.models import Alert
 
 __author__ = "Alexandre Demeyer, Remi Seguy"
 __license__ = "LGPLv3"
-__version__ = "2.0.0"
+__version__ = "2.2.0"
 __maintainer__ = "Alexandre Demeyer"
 __email__ = "letmer00t@gmail.com"
 
@@ -244,7 +244,6 @@ def process_event(helper, *args, **kwargs):
     [sample_code_macro:end]
     """
 
-
     # Set the current LOG level
     helper.log_info("[CAA-THCA-35] LOG level to: " + helper.log_level)
     helper.set_log_level(helper.log_level)
@@ -327,6 +326,15 @@ def create_alert(helper, thehive_api, alert_args):
         customFields = dict()
         alert = dict()
 
+        # Splunk makes a bunch of dumb empty multivalue fields
+        # replace value by multivalue if required
+        helper.log_debug("[CAA-THCA-65] Row before pre-processing: " + str(row))
+        for key, value in row.items():
+            if not key.startswith("__mv_") and "__mv_" + key in row and row["__mv_" + key] not in [None, '']:
+                row[key] = [e[1:len(e) - 1] for e in row["__mv_" + key].split(";")]
+        # we filter those out here
+        row = {key: value for key, value in row.items() if not key.startswith("__mv_") and key not in ["rid"]}
+        helper.log_debug("[CAA-THCA-66] Row after pre-processing: " + str(row))
         # define thehive alert unique ID (if duplicated, alert creations fails)
 
         if alert_args["alert_mode"] == "es_mode":
@@ -345,16 +353,6 @@ def create_alert(helper, thehive_api, alert_args):
                 sourceRef = "SPK" + alert_reference_time
         else:
             sourceRef = "SPK" + alert_reference_time
-
-        # Splunk makes a bunch of dumb empty multivalue fields
-        # replace value by multivalue if required
-        helper.log_debug("[CAA-THCA-65] Row before pre-processing: " + str(row))
-        for key, value in row.items():
-            if not key.startswith("__mv_") and "__mv_" + key in row and row["__mv_" + key] not in [None, '']:
-                row[key] = [e[1:len(e) - 1] for e in row["__mv_" + key].split(";")]
-        # we filter those out here
-        row = {key: value for key, value in row.items() if not key.startswith("__mv_") and key not in ["rid"]}
-        helper.log_debug("[CAA-THCA-66] Row after pre-processing: " + str(row))
 
         helper.log_debug("[CAA-THCA-70] sourceRef: {} ".format(sourceRef))
 
