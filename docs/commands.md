@@ -137,12 +137,12 @@ Every new field will start with "thehive_*". As an exemple, you can recover:
 
 	| makeresults
 	| eval title="Test", description="Test 2"
-	| thehivecases $$INSTANCE_ID$$
+	| thehivecreate $$INSTANCE_ID$$
 	# This will create a new case with the title "Test" and the description set to "Test 2"
 
 	| makeresults
 	| eval title="Critical case", severity = "4", tags="important;emergency", pap = "4", date = now(), description="Very important case"
-	| thehivecases $$INSTANCE_ID$$
+	| thehivecreate $$INSTANCE_ID$$
 	# This will creater a new case with the title "Critical case", with a CRITICAL severity, with tags set to "important" and "emergency", with a PAP set to RED, with a description set to "Very important case"
 
 ## thehivealerts
