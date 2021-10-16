@@ -4,7 +4,8 @@
         "displayName": "TheHive-Cortex",
         "version": "2.1.0",
         "apiVersion": "3.0.0",
-        "restRoot": "TA_thehive_cortex"
+        "restRoot": "TA_thehive_cortex",
+        "schemaVersion": "0.0.2"
     },
     "pages": {
         "configuration": {
@@ -231,7 +232,7 @@
                             "type": "text",
                             "help": "(Only for Adaptive Response in Splunk ES) Specify the index where you want to store alerts",
                             "required": false,
-                            "defaultValue": "",
+                            "defaultValue": "summary",
                             "validators": [
                                 {
                                     "type": "string",

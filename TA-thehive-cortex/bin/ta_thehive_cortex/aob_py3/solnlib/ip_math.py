@@ -1,20 +1,11 @@
 # Copyright 2016 Splunk, Inc.
+# SPDX-FileCopyrightText: 2020 2020
 #
-# Licensed under the Apache License, Version 2.0 (the 'License'): you may
-# not use this file except in compliance with the License. You may obtain
-# a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an 'AS IS' BASIS, WITHOUT
-# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
-# License for the specific language governing permissions and limitations
-# under the License.
+# SPDX-License-Identifier: Apache-2.0
 
-'''
+"""
 This module provides IP manipulate/calculation functionalities.
-'''
+"""
 
 import re
 
@@ -24,18 +15,20 @@ except NameError:
     long = int
 
 
-__all__ = ['ip2long',
-           'long2ip',
-           'cidr2long',
-           'is_valid_mac',
-           'is_valid_ip',
-           'is_valid_mask',
-           'is_valid_cidr',
-           'expand_ip_range_to_cidr']
+__all__ = [
+    "ip2long",
+    "long2ip",
+    "cidr2long",
+    "is_valid_mac",
+    "is_valid_ip",
+    "is_valid_mask",
+    "is_valid_cidr",
+    "expand_ip_range_to_cidr",
+]
 
 
 def ip2long(addr):
-    '''Convert dotted IPv4 address to long.
+    """Convert dotted IPv4 address to long.
 
     :param addr: Dotted IPv4 addrss.
     :type addr: ``string``
@@ -43,63 +36,64 @@ def ip2long(addr):
     :rtype: ``long``
 
     :raises ValueError: If `addr` is not a valid ip address.
-    '''
+    """
 
     if is_valid_ip(addr):
-        ip = [int(x) for x in addr.split('.')]
+        ip = [int(x) for x in addr.split(".")]
         return 16777216 * ip[0] + 65536 * ip[1] + 256 * ip[2] + ip[3]
 
-    raise ValueError('Invalid ip address, should be a dotted IPv4 string.')
+    raise ValueError("Invalid ip address, should be a dotted IPv4 string.")
 
 
 def long2ip(addr):
-    '''Convert long to dotted IPv4 address.
+    """Convert long to dotted IPv4 address.
 
     :param addr: Long IPv4 address.
     :type addr: ``(int, long)``
     :returns: Dotted IPv4 address.
     :rtype: ``string``
-    '''
+    """
 
     if isinstance(addr, (int, long)):
         ip = long(addr)
         if ip >= 0 and ip < pow(2, 32):
-            return '{}.{}.{}.{}'.format((ip >> 24) % 256, (ip >> 16) % 256,
-                                        (ip >> 8) % 256, ip % 256)
+            return "{}.{}.{}.{}".format(
+                (ip >> 24) % 256, (ip >> 16) % 256, (ip >> 8) % 256, ip % 256
+            )
         else:
-            raise ValueError('Invalid ip address, not in valid ip range.')
+            raise ValueError("Invalid ip address, not in valid ip range.")
 
-    raise ValueError('Invalid ip address, should be an integer.')
+    raise ValueError("Invalid ip address, should be an integer.")
 
 
 def cidr2long(addr):
-    '''Convert a CIDR to (ip_range_min, ip_range_max).
+    """Convert a CIDR to (ip_range_min, ip_range_max).
 
     :param addr: IPv4 CIDR.
     :type addr: ``string``
     :returns: Tuple of (ip_range_min, ip_range_max).
     :rtype: ``tuple``
-    '''
+    """
 
     if is_valid_cidr(addr):
-        subnet, mask = addr.split('/')
+        subnet, mask = addr.split("/")
         range_min = ip2long(subnet)
         hosts = pow(2, 32 - long(mask)) - 1
         return (range_min, range_min + hosts)
 
-    raise ValueError('Invalid CIDR address: %s.' % addr)
+    raise ValueError("Invalid CIDR address: %s." % addr)
 
 
 def is_valid_mac(addr):
-    '''Validate a MAC address.
+    """Validate a MAC address.
 
     :param addr: MAC address to validate.
     :type addr: ``string``
     :returns: True if is valid else False
     :rtype: ``bool``
-    '''
+    """
 
-    mac_rx = re.compile('^(([0-9A-Fa-f]{1,2}:){5}[0-9A-Fa-f]{1,2})$')
+    mac_rx = re.compile("^(([0-9A-Fa-f]{1,2}:){5}[0-9A-Fa-f]{1,2})$")
     try:
         return mac_rx.match(addr.strip())
     except AttributeError:
@@ -108,15 +102,16 @@ def is_valid_mac(addr):
 
 
 def is_valid_ip(addr):
-    '''Validate an IPV4 address.
+    """Validate an IPV4 address.
 
     :param addr: IP address to validate.
     :type addr: ``string``
     :returns: True if is valid else False.
     :rtype: ``bool``
-    '''
+    """
 
-    ip_rx = re.compile(r'''
+    ip_rx = re.compile(
+        r"""
         ^(((
               [0-1]\d{2}                  # matches 000-199
             | 2[0-4]\d                    # matches 200-249
@@ -124,7 +119,9 @@ def is_valid_ip(addr):
             | \d{1,2}                     # matches 0-9, 00-99
         )\.){3})                          # 3 of the preceding stanzas
         ([0-1]\d{2}|2[0-4]\d|25[0-5]|\d{1,2})$     # final octet
-    ''', re.VERBOSE)
+    """,
+        re.VERBOSE,
+    )
 
     try:
         return ip_rx.match(addr.strip())
@@ -134,13 +131,13 @@ def is_valid_ip(addr):
 
 
 def is_valid_mask(mask):
-    '''Validate an IPv4 netmask.
+    """Validate an IPv4 netmask.
 
     :param mask: IPv4 netmask to validate.
     :type mask: ``integer``
     :returns: True if is valid else False
     :rtype: ``bool``
-    '''
+    """
 
     try:
         return int(mask) >= 0 and int(mask) <= 32
@@ -149,16 +146,16 @@ def is_valid_mask(mask):
 
 
 def is_valid_cidr(addr):
-    '''Validate an IPv4 CIDR.
+    """Validate an IPv4 CIDR.
 
     :param addr: IPv4 CIDR to validate.
     :type addr: ``string``
     :returns: True if is valid else False
     :rtype: ``bool``
-    '''
+    """
 
     try:
-        subnet, mask = addr.split('/', 1)
+        subnet, mask = addr.split("/", 1)
         if is_valid_ip(subnet) and is_valid_mask(mask):
             subnet_long = ip2long(subnet)
             mask = int(mask)
@@ -177,7 +174,7 @@ def is_valid_cidr(addr):
 
 
 def expand_ip_range_to_cidr(ip_range, clean_single_ips=False):
-    '''Convert ip_range to a list of CIDR addresses.
+    """Convert ip_range to a list of CIDR addresses.
 
     It will return a minimal list of CIDR addresses covering the same IPv4
     range as the input range, inclusive. The input range MUST be one of the
@@ -191,7 +188,7 @@ def expand_ip_range_to_cidr(ip_range, clean_single_ips=False):
     :type clean_single_ips: ``bool``
     :returns: A list of strings 'a.b.c.d[/N]' where 0 <= N <= 32.
     :rtype: ``list``
-    '''
+    """
 
     # The output list of subnets.
     subnets = []
@@ -201,8 +198,7 @@ def expand_ip_range_to_cidr(ip_range, clean_single_ips=False):
 
     range_start, range_end = ip_range
 
-    if range_start <= range_end and range_start >= RANGE_MIN and \
-       range_end <= RANGE_MAX:
+    if range_start <= range_end and range_start >= RANGE_MIN and range_end <= RANGE_MAX:
 
         # Begin range-to-CIDR algorithm.
         #
@@ -285,7 +281,7 @@ def expand_ip_range_to_cidr(ip_range, clean_single_ips=False):
             if clean_single_ips and mask == 32:
                 subnets.append(long2ip(range_start))
             else:
-                subnets.append('/'.join([long2ip(range_start), str(mask)]))
+                subnets.append("/".join([long2ip(range_start), str(mask)]))
 
             range_start = last_in_subnet + 1
 
@@ -296,15 +292,14 @@ def expand_ip_range_to_cidr(ip_range, clean_single_ips=False):
             if clean_single_ips:
                 subnets.append(long2ip(range_start))
             else:
-                subnets.append(long2ip(range_start) + '/32')
+                subnets.append(long2ip(range_start) + "/32")
         else:
             # This should never happen due to the exit condition on the above
             # while loop.
-            raise ValueError('Subnet calculation failed unexpectedly.')
+            raise ValueError("Subnet calculation failed unexpectedly.")
 
     else:
         # Invalid IP range.
-        raise ValueError(
-            'Invalid IP range specified (perhaps reversed).')
+        raise ValueError("Invalid IP range specified (perhaps reversed).")
 
-    return sorted(subnets, key=lambda x: x.split('/')[1])
+    return sorted(subnets, key=lambda x: x.split("/")[1])

@@ -1,20 +1,11 @@
 # Copyright 2016 Splunk, Inc.
+# SPDX-FileCopyrightText: 2020 2020
 #
-# Licensed under the Apache License, Version 2.0 (the 'License'): you may
-# not use this file except in compliance with the License. You may obtain
-# a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an 'AS IS' BASIS, WITHOUT
-# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
-# License for the specific language governing permissions and limitations
-# under the License.
+# SPDX-License-Identifier: Apache-2.0
 
-'''
+"""
 This module contains configuration parser for Splunk local.metadata.
-'''
+"""
 
 import os
 import re
@@ -22,38 +13,43 @@ import re
 try:
     from configparser import ConfigParser, NoSectionError, NoOptionError
 except ImportError:
-    from ConfigParser import SafeConfigParser as ConfigParser, NoSectionError, NoOptionError
+    from ConfigParser import (
+        SafeConfigParser as ConfigParser,
+        NoSectionError,
+        NoOptionError,
+    )
 
 from .splunkenv import make_splunkhome_path
 
-__all__ = ['MetadataReader']
+__all__ = ["MetadataReader"]
 
 
 class MetadataReader(object):
-    '''Metadata reader for `app`.
+    """Metadata reader for `app`.
 
     :param app: App name.
     :type app: ``string``
 
     :raises IOError: If Splunk `app` doesn't exist.
-    '''
+    """
 
     def __init__(self, app):
         local_meta = make_splunkhome_path(
-            ['etc', 'apps', app, 'metadata', 'local.meta'])
+            ["etc", "apps", app, "metadata", "local.meta"]
+        )
 
         self._cfg = ConfigParser()
         # Loosen restriction on stanzas without header names.
-        self._cfg.SECTCRE = re.compile(r'\[(?P<header>[^]]*)\]')
+        self._cfg.SECTCRE = re.compile(r"\[(?P<header>[^]]*)\]")
 
         if os.path.isfile(local_meta):
             # May raise ConfigParser.ParsingError
             self._cfg.read(local_meta)
         else:
-            raise IOError('No such file: %s.' % local_meta)
+            raise IOError("No such file: %s." % local_meta)
 
     def get(self, conf, stanza, option):
-        '''Return the metadata value of option in [conf/stanza] section.
+        """Return the metadata value of option in [conf/stanza] section.
 
         :param conf: Conf name.
         :type conf: ``string``
@@ -69,15 +65,15 @@ class MetadataReader(object):
 
         - The section does not exist.
         - The section exists but the option does not exist.
-        '''
+        """
 
         try:
-            return self._cfg.get('/'.join([conf, stanza]), option)
+            return self._cfg.get("/".join([conf, stanza]), option)
         except (NoSectionError, NoOptionError):
-            raise ValueError('The metadata value could not be determined.')
+            raise ValueError("The metadata value could not be determined.")
 
     def get_float(self, conf, stanza, option):
-        '''Return the metadata value of option in [conf/stanza] section as a float.
+        """Return the metadata value of option in [conf/stanza] section as a float.
 
         :param conf: Conf name.
         :type conf: ``string``
@@ -95,9 +91,9 @@ class MetadataReader(object):
           been updated).
         - The stanza does not exist.
         - The value exists but cannot be converted to a float.
-        '''
+        """
 
         try:
-            return self._cfg.getfloat('/'.join([conf, stanza]), option)
+            return self._cfg.getfloat("/".join([conf, stanza]), option)
         except (NoSectionError, NoOptionError):
-            raise ValueError('The metadata value could not be determined.')
+            raise ValueError("The metadata value could not be determined.")

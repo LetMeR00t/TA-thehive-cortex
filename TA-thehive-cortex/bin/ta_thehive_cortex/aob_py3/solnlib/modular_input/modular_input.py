@@ -1,54 +1,50 @@
 # Copyright 2016 Splunk, Inc.
+# SPDX-FileCopyrightText: 2020 2020
 #
-# Licensed under the Apache License, Version 2.0 (the 'License'): you may
-# not use this file except in compliance with the License. You may obtain
-# a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an 'AS IS' BASIS, WITHOUT
-# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
-# License for the specific language governing permissions and limitations
-# under the License.
+# SPDX-License-Identifier: Apache-2.0
 
-'''
+"""
 This module provides a base class of Splunk modular input.
-'''
+"""
 
 import logging
 import sys
 import traceback
 
 try:
-    from urllib import parse as urlparse
+    from urllib3 import parse_url as urlparse
+    from urllib3.exceptions import InsecureRequestWarning
+
+    urllib3.disable_warnings(InsecureRequestWarning)
 except ImportError:
-    from urllib2 import urlparse
+    try:
+        from urllib2 import urlparse
+    except ImportError:
+        from urllib import parse as urlparse
 
 from abc import ABCMeta, abstractmethod
-from ..packages.splunklib.six import with_metaclass
+from six import with_metaclass
 
 try:
     import xml.etree.cElementTree as ET
 except ImportError:
     import xml.etree.ElementTree as ET
 
-from ..packages.splunklib import binding
-from ..packages.splunklib.modularinput.argument import Argument
-from ..packages.splunklib.modularinput.scheme import Scheme
-from ..packages.splunklib.modularinput.input_definition import InputDefinition
-from ..packages.splunklib.modularinput.validation_definition import ValidationDefinition
+from splunklib import binding
+from splunklib.modularinput.argument import Argument
+from splunklib.modularinput.scheme import Scheme
+from splunklib.modularinput.input_definition import InputDefinition
+from splunklib.modularinput.validation_definition import ValidationDefinition
 
 from .. import utils
 from . import checkpointer
 from . import event_writer
 from ..orphan_process_monitor import OrphanProcessMonitor
 
-__all__ = ['ModularInputException',
-           'ModularInput']
+__all__ = ["ModularInputException", "ModularInput"]
 
 
-SCHEME_ENCODING = 'unicode' if sys.version_info >= (3, 0) else 'utf-8'
+SCHEME_ENCODING = "unicode" if sys.version_info >= (3, 0) else "utf-8"
 
 
 class ModularInputException(Exception):
@@ -56,7 +52,7 @@ class ModularInputException(Exception):
 
 
 class ModularInput(with_metaclass(ABCMeta, object)):
-    '''Base class of Splunk modular input.
+    """Base class of Splunk modular input.
 
     It's a base modular input, it should be inherited by sub modular input. For
     sub modular input, properties: 'app', 'name', 'title' and 'description' must
@@ -94,7 +90,7 @@ class ModularInput(with_metaclass(ABCMeta, object)):
        >>> if __name__ == '__main__':
        >>>     md = TestModularInput()
        >>>     md.execute()
-    '''
+    """
 
     # App name, must be overriden
     app = None
@@ -146,30 +142,35 @@ class ModularInput(with_metaclass(ABCMeta, object)):
         if not all([self.app, self.name, self.title, self.description]):
             raise ModularInputException(
                 'Attributes: "app", "name", "title", "description" must '
-                'be overriden.')
+                "be overriden."
+            )
 
         if self.use_kvstore_checkpointer:
             if self.kvstore_checkpointer_collection_name is None:
                 raise ModularInputException(
                     'Attribute: "kvstore_checkpointer_collection_name" must'
-                    'be overriden if "use_kvstore_checkpointer" is True".')
-            elif self.kvstore_checkpointer_collection_name.strip() == '':
+                    'be overriden if "use_kvstore_checkpointer" is True".'
+                )
+            elif self.kvstore_checkpointer_collection_name.strip() == "":
                 raise ModularInputException(
                     'Attribute: "kvstore_checkpointer_collection_name" can'
-                    ' not be empty.')
+                    " not be empty."
+                )
 
         if self.use_hec_event_writer:
             if self.hec_input_name is None:
                 raise ModularInputException(
                     'Attribute: "hec_input_name" must be overriden '
-                    'if "use_hec_event_writer" is True.')
-            elif self.hec_input_name.strip() == '':
+                    'if "use_hec_event_writer" is True.'
+                )
+            elif self.hec_input_name.strip() == "":
                 raise ModularInputException(
-                    'Attribute: "hec_input_name" can not be empty.')
+                    'Attribute: "hec_input_name" can not be empty.'
+                )
 
     @property
     def checkpointer(self):
-        '''Get checkpointer object.
+        """Get checkpointer object.
 
         The checkpointer returned depends on use_kvstore_checkpointer flag,
         if use_kvstore_checkpointer is true will return an KVStoreCheckpointer
@@ -177,7 +178,7 @@ class ModularInput(with_metaclass(ABCMeta, object)):
 
         :returns: An checkpointer object.
         :rtype: ``Checkpointer object``
-        '''
+        """
 
         if self._checkpointer is not None:
             return self._checkpoint_dir
@@ -187,24 +188,30 @@ class ModularInput(with_metaclass(ABCMeta, object)):
 
     def _create_checkpointer(self):
         if self.use_kvstore_checkpointer:
-            checkpointer_name = ':'.join(
-                [self.app, self.config_name,
-                 self.kvstore_checkpointer_collection_name])
+            checkpointer_name = ":".join(
+                [self.app, self.config_name, self.kvstore_checkpointer_collection_name]
+            )
             try:
                 return checkpointer.KVStoreCheckpointer(
-                    checkpointer_name, self.session_key,
-                    self.app, owner='nobody', scheme=self.server_scheme,
-                    host=self.server_host, port=self.server_port)
+                    checkpointer_name,
+                    self.session_key,
+                    self.app,
+                    owner="nobody",
+                    scheme=self.server_scheme,
+                    host=self.server_host,
+                    port=self.server_port,
+                )
             except binding.HTTPError as e:
-                logging.error('Failed to init kvstore checkpointer: %s.',
-                              traceback.format_exc())
+                logging.error(
+                    "Failed to init kvstore checkpointer: %s.", traceback.format_exc()
+                )
                 raise
         else:
             return checkpointer.FileCheckpointer(self._checkpoint_dir)
 
     @property
     def event_writer(self):
-        '''Get event writer object.
+        """Get event writer object.
 
         The event writer returned depends on use_hec_event_writer flag,
         if use_hec_event_writer is true will return an HECEventWriter
@@ -212,7 +219,7 @@ class ModularInput(with_metaclass(ABCMeta, object)):
 
         :returns: Event writer object.
         :rtype: ``EventWriter object``
-        '''
+        """
 
         if self._event_writer is not None:
             return self._event_writer
@@ -222,28 +229,32 @@ class ModularInput(with_metaclass(ABCMeta, object)):
 
     def _create_event_writer(self):
         if self.use_hec_event_writer:
-            hec_input_name = ':'.join([self.app, self.hec_input_name])
+            hec_input_name = ":".join([self.app, self.hec_input_name])
             try:
                 return event_writer.HECEventWriter(
-                    hec_input_name, self.session_key,
-                    scheme=self.server_scheme, host=self.server_host,
-                    port=self.server_port)
+                    hec_input_name,
+                    self.session_key,
+                    scheme=self.server_scheme,
+                    host=self.server_host,
+                    port=self.server_port,
+                )
             except binding.HTTPError as e:
-                logging.error('Failed to init HECEventWriter: %s.',
-                              traceback.format_exc())
+                logging.error(
+                    "Failed to init HECEventWriter: %s.", traceback.format_exc()
+                )
                 raise
         else:
             return event_writer.ClassicEventWriter()
 
     def _update_metadata(self, metadata):
-        self.server_host_name = metadata['server_host']
-        splunkd = urlparse.urlsplit(metadata['server_uri'])
+        self.server_host_name = metadata["server_host"]
+        splunkd = urlparse.urlsplit(metadata["server_uri"])
         self.server_uri = splunkd.geturl()
         self.server_scheme = splunkd.scheme
         self.server_host = splunkd.hostname
         self.server_port = splunkd.port
-        self.session_key = metadata['session_key']
-        self._checkpoint_dir = metadata['checkpoint_dir']
+        self.session_key = metadata["session_key"]
+        self._checkpoint_dir = metadata["checkpoint_dir"]
 
     def _do_scheme(self):
         scheme = Scheme(self.title)
@@ -253,24 +264,30 @@ class ModularInput(with_metaclass(ABCMeta, object)):
         scheme.use_single_instance = self.use_single_instance
 
         for argument in self.extra_arguments():
-            name = argument['name']
-            title = argument.get('title', None)
-            description = argument.get('description', None)
-            validation = argument.get('validation', None)
-            data_type = argument.get('data_type', Argument.data_type_string)
-            required_on_edit = argument.get('required_on_edit', False)
-            required_on_create = argument.get('required_on_create', False)
+            name = argument["name"]
+            title = argument.get("title", None)
+            description = argument.get("description", None)
+            validation = argument.get("validation", None)
+            data_type = argument.get("data_type", Argument.data_type_string)
+            required_on_edit = argument.get("required_on_edit", False)
+            required_on_create = argument.get("required_on_create", False)
 
             scheme.add_argument(
-                Argument(name, title=title, description=description,
-                         validation=validation, data_type=data_type,
-                         required_on_edit=required_on_edit,
-                         required_on_create=required_on_create))
+                Argument(
+                    name,
+                    title=title,
+                    description=description,
+                    validation=validation,
+                    data_type=data_type,
+                    required_on_edit=required_on_edit,
+                    required_on_create=required_on_create,
+                )
+            )
 
         return ET.tostring(scheme.to_xml(), encoding=SCHEME_ENCODING)
 
     def extra_arguments(self):
-        '''Extra arguments for modular input.
+        """Extra arguments for modular input.
 
         Default implementation is returning an empty list.
 
@@ -284,12 +301,12 @@ class ModularInput(with_metaclass(ABCMeta, object)):
                                             {...},
                                             {...}]
         :rtype: ``list``
-        '''
+        """
 
         return []
 
     def do_validation(self, parameters):
-        '''Handles external validation for modular input kinds.
+        """Handles external validation for modular input kinds.
 
         When Splunk calls a modular input script in validation mode, it will
         pass in an XML document giving information about the Splunk instance
@@ -301,13 +318,13 @@ class ModularInput(with_metaclass(ABCMeta, object)):
         :param parameters: The parameters of input passed by splunkd.
 
         :raises Exception: If validation is failed.
-        '''
+        """
 
         pass
 
     @abstractmethod
     def do_run(self, inputs):
-        '''Runs this modular input
+        """Runs this modular input
 
         :param inputs: Command line arguments passed to this modular input.
             For single instance mode, inputs like: {
@@ -319,12 +336,12 @@ class ModularInput(with_metaclass(ABCMeta, object)):
             'stanza_name1': {'arg1': 'arg1_value', 'arg2': 'arg2_value', ...}
             }.
         :type inputs: ``dict``
-        '''
+        """
 
         pass
 
     def register_teardown_handler(self, handler, *args):
-        '''Register teardown signal handler.
+        """Register teardown signal handler.
 
         :param handler: Teardown signal handler.
 
@@ -333,7 +350,7 @@ class ModularInput(with_metaclass(ABCMeta, object)):
            >>> def teardown_handler(arg1, arg2, ...):
            >>>     ...
            >>> mi.register_teardown_handler(teardown_handler, arg1, arg2, ...)
-        '''
+        """
 
         def _teardown_handler(signum, frame):
             handler(*args)
@@ -341,7 +358,7 @@ class ModularInput(with_metaclass(ABCMeta, object)):
         utils.handle_teardown_signals(_teardown_handler)
 
     def register_orphan_handler(self, handler, *args):
-        '''Register orphan process handler.
+        """Register orphan process handler.
 
         :param handler: Orphan process handler.
 
@@ -350,7 +367,7 @@ class ModularInput(with_metaclass(ABCMeta, object)):
            >>> def orphan_handler(arg1, arg2, ...):
            >>>     ...
            >>> mi.register_orphan_handler(orphan_handler, arg1, arg2, ...)
-        '''
+        """
 
         def _orphan_handler():
             handler(*args)
@@ -360,7 +377,7 @@ class ModularInput(with_metaclass(ABCMeta, object)):
             self._orphan_monitor.start()
 
     def get_validation_definition(self):
-        '''Get validation definition.
+        """Get validation definition.
 
         This method can be overwritten to get validation definition from
         other input instead `stdin`.
@@ -376,16 +393,16 @@ class ModularInput(with_metaclass(ABCMeta, object)):
             parameters: {'args1': value1, 'args2': value2}
             }
         :rtype: ``dict``
-        '''
+        """
 
         validation_definition = ValidationDefinition.parse(sys.stdin)
         return {
-            'metadata': validation_definition.metadata,
-            'parameters': validation_definition.parameters
+            "metadata": validation_definition.metadata,
+            "parameters": validation_definition.parameters,
         }
 
     def get_input_definition(self):
-        '''Get input definition.
+        """Get input definition.
 
         This method can be overwritten to get input definition from
         other input instead `stdin`.
@@ -404,16 +421,16 @@ class ModularInput(with_metaclass(ABCMeta, object)):
             }
             }
         :rtype: ``dict``
-        '''
+        """
 
         input_definition = InputDefinition.parse(sys.stdin)
         return {
-            'metadata': input_definition.metadata,
-            'inputs': input_definition.inputs
+            "metadata": input_definition.metadata,
+            "inputs": input_definition.inputs,
         }
 
     def execute(self):
-        '''Modular input entry.
+        """Modular input entry.
 
         Usage::
            >>> Class TestModularInput(ModularInput):
@@ -422,50 +439,57 @@ class ModularInput(with_metaclass(ABCMeta, object)):
            >>> if __name__ == '__main__':
            >>>     md = TestModularInput()
            >>>     md.execute()
-        '''
+        """
 
         if len(sys.argv) == 1:
             try:
                 input_definition = self.get_input_definition()
-                self._update_metadata(input_definition['metadata'])
+                self._update_metadata(input_definition["metadata"])
                 if self.use_single_instance:
                     self.config_name = self.name
                 else:
-                    self.config_name = list(input_definition['inputs'].keys())[0]
-                self.do_run(input_definition['inputs'])
-                logging.info('Modular input: %s exit normally.', self.name)
+                    self.config_name = list(input_definition["inputs"].keys())[0]
+                self.do_run(input_definition["inputs"])
+                logging.info("Modular input: %s exit normally.", self.name)
                 return 0
             except Exception as e:
-                logging.error('Modular input: %s exit with exception: %s.',
-                              self.name, traceback.format_exc())
+                logging.error(
+                    "Modular input: %s exit with exception: %s.",
+                    self.name,
+                    traceback.format_exc(),
+                )
                 return 1
             finally:
                 # Stop orphan monitor if any
                 if self._orphan_monitor:
                     self._orphan_monitor.stop()
 
-        elif str(sys.argv[1]).lower() == '--scheme':
+        elif str(sys.argv[1]).lower() == "--scheme":
             sys.stdout.write(self._do_scheme())
             sys.stdout.flush()
             return 0
 
-        elif sys.argv[1].lower() == '--validate-arguments':
+        elif sys.argv[1].lower() == "--validate-arguments":
             try:
                 validation_definition = self.get_validation_definition()
-                self._update_metadata(validation_definition['metadata'])
-                self.do_validation(validation_definition['parameters'])
+                self._update_metadata(validation_definition["metadata"])
+                self.do_validation(validation_definition["parameters"])
                 return 0
             except Exception as e:
                 logging.error(
-                    'Modular input: %s validate arguments with exception: %s.',
-                    self.name, traceback.format_exc())
-                root = ET.Element('error')
-                ET.SubElement(root, 'message').text = str(e)
+                    "Modular input: %s validate arguments with exception: %s.",
+                    self.name,
+                    traceback.format_exc(),
+                )
+                root = ET.Element("error")
+                ET.SubElement(root, "message").text = str(e)
                 sys.stderr.write(ET.tostring(root))
                 sys.stderr.flush()
                 return 1
         else:
             logging.error(
                 'Modular input: %s run with invalid arguments: "%s".',
-                self.name, ' '.join(sys.argv[1:]))
+                self.name,
+                " ".join(sys.argv[1:]),
+            )
             return 1

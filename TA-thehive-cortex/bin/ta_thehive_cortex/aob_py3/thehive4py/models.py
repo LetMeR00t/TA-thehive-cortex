@@ -7,14 +7,14 @@ import json
 import os
 import time
 
-from enum import Enum
+from enum import Enum, IntEnum
 import requests
 from future.utils import raise_with_traceback
 
 from thehive4py.exceptions import TheHiveException, CaseException
 
 
-class Version(Enum):
+class Version(IntEnum):
     """
     Enumeration representing a version used to specify the version of TheHive instance
 
@@ -24,7 +24,7 @@ class Version(Enum):
     THEHIVE_4 = 4
 
 
-class Tlp(Enum):
+class Tlp(IntEnum):
     """
     Enumeration representing TLP, used in cases, observables and alerts
 
@@ -36,7 +36,7 @@ class Tlp(Enum):
     RED = 3
 
 
-class Pap(Enum):
+class Pap(IntEnum):
     """
     Enumeration representing PAP, used in cases, observables and alerts (TheHive 4 only)
 
@@ -48,7 +48,7 @@ class Pap(Enum):
     RED = 3
 
 
-class Severity(Enum):
+class Severity(IntEnum):
     """
     Enumeration representing severity, used in cases and alerts
 

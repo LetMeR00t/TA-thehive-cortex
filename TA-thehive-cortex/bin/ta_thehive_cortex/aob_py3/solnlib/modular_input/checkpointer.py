@@ -1,21 +1,12 @@
 # Copyright 2016 Splunk, Inc.
+# SPDX-FileCopyrightText: 2020 2020
 #
-# Licensed under the Apache License, Version 2.0 (the 'License'): you may
-# not use this file except in compliance with the License. You may obtain
-# a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an 'AS IS' BASIS, WITHOUT
-# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
-# License for the specific language governing permissions and limitations
-# under the License.
+# SPDX-License-Identifier: Apache-2.0
 
-'''
+"""
 This module provides two kinds of checkpointer: KVStoreCheckpointer,
 FileCheckpointer for modular input to save checkpoint.
-'''
+"""
 
 import base64
 import json
@@ -27,13 +18,11 @@ import traceback
 from abc import ABCMeta, abstractmethod
 
 from .. import splunk_rest_client as rest_client
-from ..packages.splunklib import binding
-from ..packages.splunklib.six import with_metaclass
+from splunklib import binding
+from six import with_metaclass
 from ..utils import retry
 
-__all__ = ['CheckpointerException',
-           'KVStoreCheckpointer',
-           'FileCheckpointer']
+__all__ = ["CheckpointerException", "KVStoreCheckpointer", "FileCheckpointer"]
 
 
 class CheckpointerException(Exception):
@@ -41,12 +30,11 @@ class CheckpointerException(Exception):
 
 
 class Checkpointer(with_metaclass(ABCMeta, object)):
-    '''Base class of checkpointer.
-    '''
+    """Base class of checkpointer."""
 
     @abstractmethod
     def update(self, key, state):
-        '''Update checkpoint.
+        """Update checkpoint.
 
         :param key: Checkpoint key.
         :type key: ``string``
@@ -59,13 +47,13 @@ class Checkpointer(with_metaclass(ABCMeta, object)):
                                                      'Splunk_TA_test')
            >>> ck.update('checkpoint_name1', {'k1': 'v1', 'k2': 'v2'})
            >>> ck.update('checkpoint_name2', 'checkpoint_value2')
-        '''
+        """
 
         pass
 
     @abstractmethod
     def batch_update(self, states):
-        '''Batch update checkpoint.
+        """Batch update checkpoint.
 
         :param states: List of checkpoint. Each state in the list is a
             json object which should contain '_key' and 'state' keys.
@@ -84,13 +72,13 @@ class Checkpointer(with_metaclass(ABCMeta, object)):
                                 {'_key': 'checkpoint_name2',
                                  'state': 'checkpoint_value2'},
                                 {...}])
-        '''
+        """
 
         pass
 
     @abstractmethod
     def get(self, key):
-        '''Get checkpoint.
+        """Get checkpoint.
 
         :param key: Checkpoint key.
         :type key: ``string``
@@ -103,13 +91,13 @@ class Checkpointer(with_metaclass(ABCMeta, object)):
                                                      'Splunk_TA_test')
            >>> ck.get('checkpoint_name1')
            >>> returns: {'k1': 'v1', 'k2': 'v2'}
-        '''
+        """
 
         pass
 
     @abstractmethod
     def delete(self, key):
-        '''Delete checkpoint.
+        """Delete checkpoint.
 
         :param key: Checkpoint key.
         :type key: ``string``
@@ -119,13 +107,13 @@ class Checkpointer(with_metaclass(ABCMeta, object)):
            >>> ck = checkpointer.KVStoreCheckpointer(session_key,
                                                      'Splunk_TA_test')
            >>> ck.delete('checkpoint_name1')
-        '''
+        """
 
         pass
 
 
 class KVStoreCheckpointer(Checkpointer):
-    '''KVStore checkpointer.
+    """KVStore checkpointer.
 
     Use KVStore to save modular input checkpoint.
 
@@ -155,43 +143,55 @@ class KVStoreCheckpointer(Checkpointer):
                                                 'Splunk_TA_test')
         >>> ck.update(...)
         >>> ck.get(...)
-    '''
+    """
 
-    def __init__(self, collection_name, session_key, app, owner='nobody',
-                 scheme=None, host=None, port=None, **context):
+    def __init__(
+        self,
+        collection_name,
+        session_key,
+        app,
+        owner="nobody",
+        scheme=None,
+        host=None,
+        port=None,
+        **context
+    ):
         try:
             self._collection_data = self._get_collection_data(
-                collection_name, session_key, app, owner,
-                scheme, host, port, **context)
+                collection_name, session_key, app, owner, scheme, host, port, **context
+            )
         except KeyError:
-            raise CheckpointerException('Get kvstore checkpointer failed.')
+            raise CheckpointerException("Get kvstore checkpointer failed.")
 
     @retry(exceptions=[binding.HTTPError])
-    def _get_collection_data(self, collection_name, session_key, app, owner,
-                             scheme, host, port, **context):
+    def _get_collection_data(
+        self, collection_name, session_key, app, owner, scheme, host, port, **context
+    ):
 
-        if not context.get('pool_connections'):
-            context['pool_connections'] = 5
+        if not context.get("pool_connections"):
+            context["pool_connections"] = 5
 
-        if not context.get('pool_maxsize'):
-            context['pool_maxsize'] = 5
+        if not context.get("pool_maxsize"):
+            context["pool_maxsize"] = 5
 
-        kvstore = rest_client.SplunkRestClient(session_key,
-                                               app,
-                                               owner=owner,
-                                               scheme=scheme,
-                                               host=host,
-                                               port=port,
-                                               **context).kvstore
+        kvstore = rest_client.SplunkRestClient(
+            session_key,
+            app,
+            owner=owner,
+            scheme=scheme,
+            host=host,
+            port=port,
+            **context
+        ).kvstore
 
-        collection_name = re.sub(r'[^\w]+', '_', collection_name)
+        collection_name = re.sub(r"[^\w]+", "_", collection_name)
         try:
             kvstore.get(name=collection_name)
         except binding.HTTPError as e:
             if e.status != 404:
                 raise
 
-            fields = {'state': 'string'}
+            fields = {"state": "string"}
             kvstore.create(collection_name, fields=fields)
 
         collections = kvstore.list(search=collection_name)
@@ -199,17 +199,17 @@ class KVStoreCheckpointer(Checkpointer):
             if collection.name == collection_name:
                 return collection.data
         else:
-            raise KeyError('Get collection data: %s failed.' % collection_name)
+            raise KeyError("Get collection data: %s failed." % collection_name)
 
     @retry(exceptions=[binding.HTTPError])
     def update(self, key, state):
-        record = {'_key': key, 'state': json.dumps(state)}
+        record = {"_key": key, "state": json.dumps(state)}
         self._collection_data.batch_save(record)
 
     @retry(exceptions=[binding.HTTPError])
     def batch_update(self, states):
         for state in states:
-            state['state'] = json.dumps(state['state'])
+            state["state"] = json.dumps(state["state"])
             self._collection_data.batch_save(*states)
 
     @retry(exceptions=[binding.HTTPError])
@@ -218,13 +218,12 @@ class KVStoreCheckpointer(Checkpointer):
             record = self._collection_data.query_by_id(key)
         except binding.HTTPError as e:
             if e.status != 404:
-                logging.error(
-                    'Get checkpoint failed: %s.', traceback.format_exc(e))
+                logging.error("Get checkpoint failed: %s.", traceback.format_exc(e))
                 raise
 
             return None
 
-        return json.loads(record['state'])
+        return json.loads(record["state"])
 
     @retry(exceptions=[binding.HTTPError])
     def delete(self, key):
@@ -232,13 +231,12 @@ class KVStoreCheckpointer(Checkpointer):
             self._collection_data.delete_by_id(key)
         except binding.HTTPError as e:
             if e.status != 404:
-                logging.error(
-                    'Delete checkpoint failed: %s.', traceback.format_exc(e))
+                logging.error("Delete checkpoint failed: %s.", traceback.format_exc(e))
                 raise
 
 
 class FileCheckpointer(Checkpointer):
-    '''File checkpointer.
+    """File checkpointer.
 
     Use file to save modular input checkpoint.
 
@@ -250,7 +248,7 @@ class FileCheckpointer(Checkpointer):
         >>> ck = checkpointer.FileCheckpointer('/opt/splunk/var/...')
         >>> ck.update(...)
         >>> ck.get(...)
-    '''
+    """
 
     def __init__(self, checkpoint_dir):
         self._checkpoint_dir = checkpoint_dir
@@ -260,7 +258,7 @@ class FileCheckpointer(Checkpointer):
 
     def update(self, key, state):
         file_name = op.join(self._checkpoint_dir, self.encode_key(key))
-        with open(file_name + '_new', 'w') as fp:
+        with open(file_name + "_new", "w") as fp:
             json.dump(state, fp)
 
         if op.exists(file_name):
@@ -269,16 +267,16 @@ class FileCheckpointer(Checkpointer):
             except IOError:
                 pass
 
-        os.rename(file_name + '_new', file_name)
+        os.rename(file_name + "_new", file_name)
 
     def batch_update(self, states):
         for state in states:
-            self.update(state['_key'], state['state'])
+            self.update(state["_key"], state["state"])
 
     def get(self, key):
         file_name = op.join(self._checkpoint_dir, self.encode_key(key))
         try:
-            with open(file_name, 'r') as fp:
+            with open(file_name, "r") as fp:
                 return json.load(fp)
         except (IOError, ValueError):
             return None

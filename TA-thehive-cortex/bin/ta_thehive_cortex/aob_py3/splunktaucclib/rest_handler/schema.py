@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2020 2020
+#
+# SPDX-License-Identifier: Apache-2.0
+
 """
 REST Schema
 """
@@ -8,8 +12,8 @@ from builtins import object
 from abc import abstractproperty
 
 __all__ = [
-    'RestSchemaError',
-    'RestSchema',
+    "RestSchemaError",
+    "RestSchema",
 ]
 
 
@@ -27,7 +31,7 @@ class RestSchema(object):
 
     @staticmethod
     def endpoint_name(name, namespace):
-        return '{}_{}'.format(namespace, name)
+        return "{}_{}".format(namespace, name)
 
     @abstractproperty
     def product(self):

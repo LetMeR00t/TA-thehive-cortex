@@ -1,22 +1,13 @@
 # Copyright 2016 Splunk, Inc.
+# SPDX-FileCopyrightText: 2020 2020
 #
-# Licensed under the Apache License, Version 2.0 (the 'License'): you may
-# not use this file except in compliance with the License. You may obtain
-# a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an 'AS IS' BASIS, WITHOUT
-# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
-# License for the specific language governing permissions and limitations
-# under the License.
+# SPDX-License-Identifier: Apache-2.0
 
-'''
+"""
 This module contains simple interfaces for Splunk config file management,
 you can update/get/delete stanzas and encrypt/decrypt some fields of stanza
 automatically.
-'''
+"""
 
 import json
 import logging
@@ -25,13 +16,15 @@ import traceback
 from . import splunk_rest_client as rest_client
 from .credentials import CredentialManager
 from .credentials import CredentialNotExistException
-from .packages.splunklib import binding
+from splunklib import binding
 from .utils import retry
 
-__all__ = ['ConfStanzaNotExistException',
-           'ConfFile',
-           'ConfManagerException',
-           'ConfManager']
+__all__ = [
+    "ConfStanzaNotExistException",
+    "ConfFile",
+    "ConfManagerException",
+    "ConfManager",
+]
 
 
 class ConfStanzaNotExistException(Exception):
@@ -39,7 +32,7 @@ class ConfStanzaNotExistException(Exception):
 
 
 class ConfFile(object):
-    '''Configuration file.
+    """Configuration file.
 
     :param name: Configuration file name.
     :type name: ``string``
@@ -61,14 +54,25 @@ class ConfFile(object):
     :type port: ``integer``
     :param context: Other configurations for Splunk rest client.
     :type context: ``dict``
-    '''
+    """
 
-    ENCRYPTED_TOKEN = '******'
+    ENCRYPTED_TOKEN = "******"
 
-    reserved_keys = ('userName', 'appName')
+    reserved_keys = ("userName", "appName")
 
-    def __init__(self, name, conf, session_key, app, owner='nobody',
-                 scheme=None, host=None, port=None, realm=None,**context):
+    def __init__(
+        self,
+        name,
+        conf,
+        session_key,
+        app,
+        owner="nobody",
+        scheme=None,
+        host=None,
+        port=None,
+        realm=None,
+        **context
+    ):
         self._name = name
         self._conf = conf
         self._session_key = session_key
@@ -90,9 +94,15 @@ class ConfFile(object):
     def _cred_mgr(self):
         if self._cred_manager is None:
             self._cred_manager = CredentialManager(
-                self._session_key, self._app, owner=self._owner,
-                realm=self._realm, scheme=self._scheme, host=self._host,
-                port=self._port, **self._context)
+                self._session_key,
+                self._app,
+                owner=self._owner,
+                realm=self._realm,
+                scheme=self._scheme,
+                host=self._host,
+                port=self._port,
+                **self._context
+            )
 
         return self._cred_manager
 
@@ -107,7 +117,7 @@ class ConfFile(object):
         if not encrypt_keys:
             return stanza
 
-        encrypt_stanza_keys = [ k for k in encrypt_keys if k in stanza ]
+        encrypt_stanza_keys = [k for k in encrypt_keys if k in stanza]
         encrypt_fields = {key: stanza[key] for key in encrypt_stanza_keys}
         if not encrypt_fields:
             return stanza
@@ -119,11 +129,13 @@ class ConfFile(object):
         return stanza
 
     def _decrypt_stanza(self, stanza_name, encrypted_stanza):
-        encrypted_keys = [key for key in encrypted_stanza if
-                          encrypted_stanza[key] == self.ENCRYPTED_TOKEN]
+        encrypted_keys = [
+            key
+            for key in encrypted_stanza
+            if encrypted_stanza[key] == self.ENCRYPTED_TOKEN
+        ]
         if encrypted_keys:
-            encrypted_fields = json.loads(
-                self._cred_mgr.get_password(stanza_name))
+            encrypted_fields = json.loads(self._cred_mgr.get_password(stanza_name))
             for key in encrypted_keys:
                 encrypted_stanza[key] = encrypted_fields[key]
 
@@ -134,7 +146,7 @@ class ConfFile(object):
 
     @retry(exceptions=[binding.HTTPError])
     def stanza_exist(self, stanza_name):
-        '''Check whether stanza exists.
+        """Check whether stanza exists.
 
         :param stanza_name: Stanza name.
         :type stanza_name: ``string``
@@ -148,7 +160,7 @@ class ConfFile(object):
                                               'Splunk_TA_test')
            >>> conf = cfm.get_conf('test')
            >>> conf.stanza_exist('test_stanza')
-        '''
+        """
 
         try:
             self._conf.list(name=stanza_name)[0]
@@ -162,7 +174,7 @@ class ConfFile(object):
 
     @retry(exceptions=[binding.HTTPError])
     def get(self, stanza_name, only_current_app=False):
-        '''Get stanza from configuration file.
+        """Get stanza from configuration file.
 
         :param stanza_name: Stanza name.
         :type stanza_name: ``string``
@@ -183,13 +195,15 @@ class ConfFile(object):
                                               'Splunk_TA_test')
            >>> conf = cfm.get_conf('test')
            >>> conf.get('test_stanza')
-        '''
+        """
 
         try:
             if only_current_app:
                 stanza_mgrs = self._conf.list(
-                    search='eai:acl.app={} name={}'.format(
-                        self._app, stanza_name.replace('=', r'\=')))
+                    search="eai:acl.app={} name={}".format(
+                        self._app, stanza_name.replace("=", r"\=")
+                    )
+                )
             else:
                 stanza_mgrs = self._conf.list(name=stanza_name)
         except binding.HTTPError as e:
@@ -197,22 +211,22 @@ class ConfFile(object):
                 raise
 
             raise ConfStanzaNotExistException(
-                'Stanza: %s does not exist in %s.conf' %
-                (stanza_name, self._name))
+                "Stanza: %s does not exist in %s.conf" % (stanza_name, self._name)
+            )
 
         if len(stanza_mgrs) == 0:
             raise ConfStanzaNotExistException(
-                'Stanza: %s does not exist in %s.conf' %
-                (stanza_name, self._name))
+                "Stanza: %s does not exist in %s.conf" % (stanza_name, self._name)
+            )
 
         stanza = self._decrypt_stanza(stanza_mgrs[0].name, stanza_mgrs[0].content)
-        stanza['eai:access'] = stanza_mgrs[0].access
-        stanza['eai:appName'] = stanza_mgrs[0].access.app
+        stanza["eai:access"] = stanza_mgrs[0].access
+        stanza["eai:appName"] = stanza_mgrs[0].access.app
         return stanza
 
     @retry(exceptions=[binding.HTTPError])
     def get_all(self, only_current_app=False):
-        '''Get all stanzas from configuration file.
+        """Get all stanzas from configuration file.
 
         :returns: All stanzas, like: {'test': {
             'disabled': '0',
@@ -229,24 +243,24 @@ class ConfFile(object):
                                               'Splunk_TA_test')
            >>> conf = cfm.get_conf('test')
            >>> conf.get_all()
-        '''
+        """
 
         if only_current_app:
-            stanza_mgrs = self._conf.list(search='eai:acl.app={}'.format(self._app))
+            stanza_mgrs = self._conf.list(search="eai:acl.app={}".format(self._app))
         else:
             stanza_mgrs = self._conf.list()
         res = {}
         for stanza_mgr in stanza_mgrs:
             name = stanza_mgr.name
             key_values = self._decrypt_stanza(name, stanza_mgr.content)
-            key_values['eai:access'] = stanza_mgr.access
-            key_values['eai:appName'] = stanza_mgr.access.app
+            key_values["eai:access"] = stanza_mgr.access
+            key_values["eai:appName"] = stanza_mgr.access.app
             res[name] = key_values
         return res
 
     @retry(exceptions=[binding.HTTPError])
     def update(self, stanza_name, stanza, encrypt_keys=None):
-        '''Update stanza.
+        """Update stanza.
 
         It will try to encrypt the credential automatically fist if
         encrypt_keys are not None else keep stanza untouched.
@@ -267,12 +281,10 @@ class ConfFile(object):
                                               'Splunk_TA_test')
            >>> conf = cfm.get_conf('test')
            >>> conf.update('test_stanza', {'k1': 1, 'k2': 2}, ['k1'])
-        '''
+        """
 
         stanza = self._filter_stanza(stanza)
-        encrypted_stanza = self._encrypt_stanza(stanza_name,
-                                                stanza,
-                                                encrypt_keys)
+        encrypted_stanza = self._encrypt_stanza(stanza_name, stanza, encrypt_keys)
 
         try:
             stanza_mgr = self._conf.list(name=stanza_name)[0]
@@ -286,7 +298,7 @@ class ConfFile(object):
 
     @retry(exceptions=[binding.HTTPError])
     def delete(self, stanza_name):
-        '''Delete stanza.
+        """Delete stanza.
 
         :param stanza_name: Stanza name to delete.
         :type stanza_name: ``string``
@@ -300,7 +312,7 @@ class ConfFile(object):
                                               'Splunk_TA_test')
            >>> conf = cfm.get_conf('test')
            >>> conf.delete('test_stanza')
-        '''
+        """
 
         try:
             self._cred_mgr.delete_password(stanza_name)
@@ -310,15 +322,16 @@ class ConfFile(object):
         try:
             self._conf.delete(stanza_name)
         except KeyError as e:
-            logging.error('Delete stanza: %s error: %s.',
-                          stanza_name, traceback.format_exc())
+            logging.error(
+                "Delete stanza: %s error: %s.", stanza_name, traceback.format_exc()
+            )
             raise ConfStanzaNotExistException(
-                'Stanza: %s does not exist in %s.conf' %
-                (stanza_name, self._name))
+                "Stanza: %s does not exist in %s.conf" % (stanza_name, self._name)
+            )
 
     @retry(exceptions=[binding.HTTPError])
     def reload(self):
-        '''Reload configuration file.
+        """Reload configuration file.
 
         Usage::
 
@@ -327,9 +340,9 @@ class ConfFile(object):
                                               'Splunk_TA_test')
            >>> conf = cfm.get_conf('test')
            >>> conf.reload()
-        '''
+        """
 
-        self._conf.get('_reload')
+        self._conf.get("_reload")
 
 
 class ConfManagerException(Exception):
@@ -337,7 +350,7 @@ class ConfManagerException(Exception):
 
 
 class ConfManager(object):
-    '''Configuration file manager.
+    """Configuration file manager.
 
     :param session_key: Splunk access token.
     :type session_key: ``string``
@@ -370,10 +383,19 @@ class ConfManager(object):
             >>> from solnlib import conf_manager
             >>> cfm = conf_manager.ConfManager(session_key,
                                               'Splunk_TA_test', realm='__REST_CREDENTIAL__#Splunk_TA_test#configs/conf-CONF_FILENAME')
-    '''
+    """
 
-    def __init__(self, session_key, app, owner='nobody',
-                 scheme=None, host=None, port=None, realm=None, **context):
+    def __init__(
+        self,
+        session_key,
+        app,
+        owner="nobody",
+        scheme=None,
+        host=None,
+        port=None,
+        realm=None,
+        **context
+    ):
         self._session_key = session_key
         self._app = app
         self._owner = owner
@@ -388,13 +410,14 @@ class ConfManager(object):
             scheme=self._scheme,
             host=self._host,
             port=self._port,
-            **self._context)
+            **self._context
+        )
         self._confs = None
         self._realm = realm
 
     @retry(exceptions=[binding.HTTPError])
     def get_conf(self, name, refresh=False):
-        '''Get conf file.
+        """Get conf file.
 
         :param name: Conf file name.
         :type name: ``string``
@@ -404,7 +427,7 @@ class ConfManager(object):
         :rtype: ``solnlib.conf_manager.ConfFile``
 
         :raises ConfManagerException: If `conf_file` does not exist.
-        '''
+        """
 
         if self._confs is None or refresh:
             # Fix bug that can't pass `-` as app name.
@@ -416,27 +439,44 @@ class ConfManager(object):
         try:
             conf = self._confs[name]
         except KeyError:
-            raise ConfManagerException(
-                'Config file: %s does not exist.' % name)
+            raise ConfManagerException("Config file: %s does not exist." % name)
 
-        return ConfFile(name, conf,
-                        self._session_key, self._app, self._owner,
-                        self._scheme, self._host, self._port, self._realm, **self._context)
+        return ConfFile(
+            name,
+            conf,
+            self._session_key,
+            self._app,
+            self._owner,
+            self._scheme,
+            self._host,
+            self._port,
+            self._realm,
+            **self._context
+        )
 
     @retry(exceptions=[binding.HTTPError])
     def create_conf(self, name):
-        '''Create conf file.
+        """Create conf file.
 
         :param name: Conf file name.
         :type name: ``string``
         :returns: Conf file object.
         :rtype: ``solnlib.conf_manager.ConfFile``
-        '''
+        """
 
         if self._confs is None:
             self._confs = self._rest_client.confs
 
         conf = self._confs.create(name)
-        return ConfFile(name, conf,
-                        self._session_key, self._app, self._owner,
-                        self._scheme, self._host, self._port, self._realm, **self._context)
+        return ConfFile(
+            name,
+            conf,
+            self._session_key,
+            self._app,
+            self._owner,
+            self._scheme,
+            self._host,
+            self._port,
+            self._realm,
+            **self._context
+        )

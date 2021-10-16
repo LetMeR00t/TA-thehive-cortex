@@ -36,7 +36,7 @@ if __name__ == '__main__':
         createDate = float(configuration.checkAndValidate(result, "date", default=DATE_DEFAULT, is_mandatory=False))*1000
         createTLP = int(configuration.checkAndValidate(result, "tlp", default=TLP_DEFAULT, is_mandatory=True))
         createDescription = configuration.checkAndValidate(result, "description", default="", is_mandatory=True)
-        createTasks = [CaseTask(title=t) for t in configuration.checkAndValidate(result, "tasks", default=[], is_mandatory=False).split(" ;")]
+        createTasks = [CaseTask(title=t) for t in configuration.checkAndValidate(result, "tasks", default="", is_mandatory=False).split(" ;") if t!=""]
 
         # create the query from parameters
         new_case = Case(title=createTitle, severity=createSeverity, tags=createTags, pap=createPAP, startDate=createDate, tlp=createTLP, description=createDescription, tasks=createTasks)

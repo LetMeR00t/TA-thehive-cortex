@@ -1,31 +1,21 @@
 # Copyright 2016 Splunk, Inc.
+# SPDX-FileCopyrightText: 2020 2020
 #
-# Licensed under the Apache License, Version 2.0 (the 'License'): you may
-# not use this file except in compliance with the License. You may obtain
-# a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an 'AS IS' BASIS, WITHOUT
-# WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
-# License for the specific language governing permissions and limitations
-# under the License.
+# SPDX-License-Identifier: Apache-2.0
 
-'''
+"""
 Orphan process monitor.
-'''
+"""
 
 import os
 import threading
 import time
 
-__all__ = ['OrphanProcessChecker',
-           'OrphanProcessMonitor']
+__all__ = ["OrphanProcessChecker", "OrphanProcessMonitor"]
 
 
 class OrphanProcessChecker(object):
-    '''Orphan process checker.
+    """Orphan process checker.
 
     Only work for Linux platform. On Windows platform, is_orphan
     is always False and there is no need to do this monitoring on
@@ -33,37 +23,37 @@ class OrphanProcessChecker(object):
 
     :param callback: (optional) Callback for orphan process.
     :type callback: ``function``
-    '''
+    """
 
     def __init__(self, callback=None):
-        if os.name == 'nt':
+        if os.name == "nt":
             self._ppid = 0
         else:
             self._ppid = os.getppid()
         self._callback = callback
 
     def is_orphan(self):
-        '''Check process is orphan.
+        """Check process is orphan.
 
         For windows platform just return False.
 
         :returns: True for orphan process else False
         :rtype: ``bool``
-        '''
+        """
 
-        if os.name == 'nt':
+        if os.name == "nt":
             return False
         return self._ppid != os.getppid()
 
     def check_orphan(self):
-        '''Check if the process becomes orphan.
+        """Check if the process becomes orphan.
 
         If the process becomes orphan then call callback function
         to handle properly.
 
         :returns: True for orphan process else False
         :rtype: ``bool``
-        '''
+        """
 
         res = self.is_orphan()
         if res and self._callback:
@@ -72,7 +62,7 @@ class OrphanProcessChecker(object):
 
 
 class OrphanProcessMonitor(object):
-    '''Orpan process monitor.
+    """Orpan process monitor.
 
     Check if process become orphan in background thread per
     iterval and call callback if process become orphan.
@@ -81,7 +71,7 @@ class OrphanProcessMonitor(object):
     :type callback: ``function``
     :param interval: (optional) Interval to monitor.
     :type interval: ``integer``
-    '''
+    """
 
     def __init__(self, callback, interval=1):
         self._checker = OrphanProcessChecker(callback)
@@ -91,9 +81,9 @@ class OrphanProcessMonitor(object):
         self._interval = interval
 
     def start(self):
-        '''
+        """
         Start orphan process monitor.
-        '''
+        """
 
         if self._started:
             return
@@ -102,9 +92,9 @@ class OrphanProcessMonitor(object):
         self._thr.start()
 
     def stop(self):
-        '''
+        """
         Stop orphan process monitor.
-        '''
+        """
 
         joinable = self._started
         self._started = False

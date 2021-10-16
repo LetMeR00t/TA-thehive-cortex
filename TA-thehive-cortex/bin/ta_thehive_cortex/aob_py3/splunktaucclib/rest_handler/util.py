@@ -1,15 +1,57 @@
-from __future__ import absolute_import
+# SPDX-FileCopyrightText: 2020 2020
+#
+# SPDX-License-Identifier: Apache-2.0
 
+from __future__ import absolute_import
+from __future__ import print_function
 import os.path
 
 from .error import RestError
 
+try:
+    from splunk import admin
+except:
+    print('Some functions will not be available outside of a splunk hosted process')
+
+try:
+    from splunktalib.common import util
+except:
+    print('Python Lib for Splunk add-on "splunktalib" is required')
+    raise BaseException()
 
 __all__ = [
     'get_base_app_name',
     'remove_http_proxy_env_vars',
+    'makeConfItem',
+    'getBaseAppName'
 ]
 
+def getBaseAppName():
+    """Base App name, which this script belongs to.
+    """
+    appName = util.get_appname_from_path(__file__)
+    if appName is None:
+        raise Exception('Cannot get app name from file: %s' % __file__)
+    return appName
+
+def makeConfItem(name, entity, confInfo, user='nobody', app='-'):
+    confItem = confInfo[name]
+    for key, val in list(entity.items()):
+        if key not in ("eai:attributes", "eai:userName", "eai:appName"):
+            confItem[key] = val
+    confItem["eai:userName"] = entity.get("eai:userName") or user
+    confItem["eai:appName"] = entity.get("eai:appName") or app
+    confItem.setMetadata(admin.EAI_ENTRY_ACL,
+                         entity.get(admin.EAI_ENTRY_ACL) or
+                         {'owner': user,
+                          'app': app,
+                          'global': 1,
+                          'can_write': 1,
+                          'modifiable': 1,
+                          'removable': 1,
+                          'sharing': 'global',
+                          'perms': {'read': ['*'], 'write': ['admin']}})
+    return confItem
 
 def get_base_app_name():
     """
