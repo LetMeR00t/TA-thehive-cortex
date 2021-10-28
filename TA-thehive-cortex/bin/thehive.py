@@ -115,9 +115,9 @@ class TheHive(TheHiveApi):
             self.find_cases(query={}, range='all')
 
             if apiKey is not None:
-                self.logger.debug("[TH40] TheHive API connection to (URL=\""+url+"\",API key=\""+apiKey+"\") is successful")
+                self.logger.debug("[TH40] TheHive API connection to (URL=\""+url+"\" is successful")
             elif password is not None:
-                self.logger.debug("[TH41] TheHive API connection to (URL=\""+url+"\",Username=\""+username+"\",Password=\""+password+"\") is successful")
+                self.logger.debug("[TH41] TheHive API connection to (URL=\""+url+"\",Username=\""+username+"\") is successful")
         except thehive4py.exceptions.TheHiveException as e:
             if "CERTIFICATE_VERIFY_FAILED" in str(e):
                 self.logger.warning("[TH45] THE_HIVE_CERTIFICATE_FAILED - It seems that the certificate verification failed. Please check that the certificate authority is added to \""+str(certifi.where())+"\". Complete error: "+str(e))

@@ -1,4 +1,4 @@
-<form script="thehive_cases.js">
+<form script="thehive_cases.js" version="1.1">
   <label>TheHive: Cases</label>
   <fieldset submitButton="false" autoRun="false">
     <input type="dropdown" token="action">
@@ -187,13 +187,13 @@
         </format>
         <drilldown>
           <condition field="Tasks">
-            <link target="_blank">$global_thehive_protocol$://$global_thehive_host$:$global_thehive_port$/index.html#!/case/$row.ID - Go to TheHive$/tasks</link>
+            <link target="_blank">https://$global_thehive_host$:$global_thehive_port$/index.html#!/case/$row.ID - Go to TheHive$/tasks</link>
           </condition>
           <condition field="Observables">
-            <link target="_blank">$global_thehive_protocol$://$global_thehive_host$:$global_thehive_port$/index.html#!/case/$row.ID - Go to TheHive$/observables</link>
+            <link target="_blank">https://$global_thehive_host$:$global_thehive_port$/index.html#!/case/$row.ID - Go to TheHive$/observables</link>
           </condition>
           <condition field="ID - Go to TheHive">
-            <link target="_blank">$global_thehive_protocol$://$global_thehive_host$:$global_thehive_port$/index.html#!/case/$row.ID - Go to TheHive$/details</link>
+            <link target="_blank">https://$global_thehive_host$:$global_thehive_port$/index.html#!/case/$row.ID - Go to TheHive$/details</link>
           </condition>
           <condition></condition>
         </drilldown>
@@ -332,13 +332,13 @@
         </format>
         <drilldown>
           <condition field="Tasks">
-            <link target="_blank">$global_thehive_protocol$://$global_thehive_host$:$global_thehive_port$/index.html#!/case/$row.ID - Go to TheHive$/tasks</link>
+            <link target="_blank">https://$global_thehive_host$:$global_thehive_port$/index.html#!/case/$row.ID - Go to TheHive$/tasks</link>
           </condition>
           <condition field="Observables">
-            <link target="_blank">$global_thehive_protocol$://$global_thehive_host$:$global_thehive_port$/index.html#!/case/$row.ID - Go to TheHive$/observables</link>
+            <link target="_blank">https://$global_thehive_host$:$global_thehive_port$/index.html#!/case/$row.ID - Go to TheHive$/observables</link>
           </condition>
           <condition field="ID - Go to TheHive">
-            <link target="_blank">$global_thehive_protocol$://$global_thehive_host$:$global_thehive_port$/index.html#!/case/$row.ID - Go to TheHive$/details</link>
+            <link target="_blank">https://$global_thehive_host$:$global_thehive_port$/index.html#!/case/$row.ID - Go to TheHive$/details</link>
           </condition>
           <condition></condition>
         </drilldown>
@@ -351,7 +351,6 @@
       <table>
         <search>
           <done>
-            <set token="global_thehive_protocol">$result.protocol$</set>
             <set token="global_thehive_host">$result.host$</set>
             <set token="global_thehive_port">$result.port$</set>
           </done>

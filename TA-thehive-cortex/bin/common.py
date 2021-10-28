@@ -152,7 +152,7 @@ class Settings(object):
             sys.exit(26)
 
         self.logger.debug("[S30] This instance ID ("+str(instance_id)+") returns: "+str(instance))
-        return instance["protocol"]+"://"+instance["host"]+":"+str(instance["port"])
+        return "https://"+instance["host"]+":"+str(instance["port"])
 
     def getInstanceUsernameApiKey(self, instance_id):
         """ This function returns the Username/Secret (password or API key) of the given instance """
@@ -165,7 +165,7 @@ class Settings(object):
         if "username" not in instance:
             instance["username"] = "-"
             instance["password"] = "-"
-        self.logger.debug("[S35] This instance ID ("+str(instance_id)+") returns: "+str(instance))
+        self.logger.debug("[S35] This instance ID ("+str(instance_id)+") returns: "+str(instance["username"]))
         return (instance["username"], instance["password"])
 
     def getInstanceSetting(self, instance_id, setting):

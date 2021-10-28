@@ -104,7 +104,7 @@ class Cortex(Api):
             # Try to connect to the API by recovering all enabled analyzers
             self.analyzers.find_all({}, range='all')
 
-            self.logger.debug("[C21] Cortex API connection to (URL=\""+url+"\",API key=\""+apiKey+"\") is successful")
+            self.logger.debug("[C21] Cortex API connection to (URL=\""+url+"\") is successful")
         except cortex4py.exceptions.NotFoundError as e:
             self.logger.error("[C25-ERROR] RESOURCE NOT FOUND - Cortex service is unavailable, is configuration correct ?")
             sys.exit(25)

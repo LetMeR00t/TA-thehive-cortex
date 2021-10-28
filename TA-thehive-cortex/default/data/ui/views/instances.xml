@@ -18,8 +18,6 @@
           <unset token="add_account_name"></unset>
           <unset token="form.add_type"></unset>
           <unset token="add_type"></unset>
-          <unset token="form.add_protocol"></unset>
-          <unset token="add_protocol"></unset>
           <unset token="form.add_host"></unset>
           <unset token="add_host"></unset>
           <unset token="form.add_account_name"></unset>
@@ -63,11 +61,6 @@
     <input type="text" token="add_organisation" depends="$show_action_add$">
       <label>Organisation (Default:-)</label>
       <default>-</default>
-    </input>
-    <input type="dropdown" token="add_protocol" depends="$show_action_add$">
-      <label>Protocol</label>
-      <choice value="http">HTTP</choice>
-      <choice value="https">HTTPS</choice>
     </input>
     <input type="radio" token="add_verify" depends="$show_action_add$">
       <label>Certificate verification ('HTTPS' only) (Default:True)</label>
@@ -122,12 +115,12 @@
     <panel>
       <title>Instances</title>
       <table>
-        <title>This is the current list of instances configured</title>
+        <title>This is the current list of instances configured - ⚠️ HTTPS is used by default and this can't be modified ⚠️</title>
         <search>
           <query>| inputlookup thehive_cortex_instances
-| eval last_refresh = "$last_refresh$", action=case("$global_action$"=="remove","$action_remove_instance$",1==1,"-"), verify = if(protocol="https",case(verify="1","True",verify="0","False"),"-"), protocol = upper(protocol), authentication_type = case(authentication_type=="password","Password",authentication_type=="api_key","API Key",1==1,"")
-| table id account_name, authentication_type, type, protocol, host, port, proxy_url, proxy_account, client_cert, verify, organisation, action
-| rename id as "ID", account_name as "Account name", type as "Type", protocol as "Protocol", host as "Host", port as "Port", action as "Available Action", authentication_type as "Authentication type", proxy_url as "Proxy URL",  proxy_account as "Proxy Account", client_cert as "Client Certificate", verify as "Certificate verification ('HTTPS' only)", organisation as "Organisation"</query>
+| eval last_refresh = "$last_refresh$", action=case("$global_action$"=="remove","$action_remove_instance$",1==1,"-"), verify = case(verify="1","True",verify="0","False"),  authentication_type = case(authentication_type=="password","Password",authentication_type=="api_key","API Key",1==1,"")
+| table id account_name, authentication_type, type, host, port, proxy_url, proxy_account, client_cert, verify, organisation, action
+| rename id as "ID", account_name as "Account name", type as "Type", host as "Host", port as "Port", action as "Available Action", authentication_type as "Authentication type", proxy_url as "Proxy URL",  proxy_account as "Proxy Account", client_cert as "Client Certificate", verify as "Certificate verification ('HTTPS' only)", organisation as "Organisation"</query>
           <earliest>-24h@h</earliest>
           <latest>now</latest>
           <sampleRatio>1</sampleRatio>
@@ -136,7 +129,6 @@
         <option name="dataOverlayMode">none</option>
         <option name="drilldown">cell</option>
         <option name="percentagesRow">false</option>
-        <option name="refresh.display">progressbar</option>
         <option name="rowNumbers">false</option>
         <option name="totalsRow">false</option>
         <option name="wrap">true</option>
@@ -167,8 +159,6 @@
             <unset token="add_account_name"></unset>
             <unset token="form.add_type"></unset>
             <unset token="add_type"></unset>
-            <unset token="form.add_protocol"></unset>
-            <unset token="add_protocol"></unset>
             <unset token="form.add_host"></unset>
             <unset token="add_host"></unset>
             <unset token="form.add_account_name"></unset>
@@ -189,8 +179,8 @@
           </done>
           <query>| inputlookup thehive_cortex_instances
 | append [| makeresults
-         | eval account_name = "$add_account_name$", type="$add_type$", protocol="$add_protocol$", host="$add_host$", port="$add_port$", authentication_type="$add_authentication_type$", proxy_url="$add_proxy_url$", proxy_account="$add_proxy_account$", client_cert="$add_client_certificate$", verify="$add_verify$", organisation="$add_organisation$", id=substr(sha1(_time+type+account_name+protocol+host+port),0,8)
-         | table id account_name, authentication_type, type, protocol, host, port, proxy_url, proxy_account, client_cert, verify, organisation]
+         | eval account_name = "$add_account_name$", type="$add_type$", host="$add_host$", port="$add_port$", authentication_type="$add_authentication_type$", proxy_url="$add_proxy_url$", proxy_account="$add_proxy_account$", client_cert="$add_client_certificate$", verify="$add_verify$", organisation="$add_organisation$", id=substr(sha1(_time+type+account_name+host+port),0,8)
+         | table id account_name, authentication_type, type, host, port, proxy_url, proxy_account, client_cert, verify, organisation]
 | sort 0 type account_name
 | outputlookup thehive_cortex_instances</query>
           <earliest>-24h@h</earliest>
