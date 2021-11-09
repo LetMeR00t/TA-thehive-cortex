@@ -38,7 +38,7 @@
       <fieldForValue>id</fieldForValue>
       <search>
         <query>| inputlookup thehive_cortex_instances where type=TheHive*
-| eval instance_name = account_name+": "+host+":"+port</query>
+| eval instance_name = account_name+": "+host+":"+port+if(isnotnull(uri),uri,"/")</query>
         <earliest>-24h@h</earliest>
         <latest>now</latest>
       </search>

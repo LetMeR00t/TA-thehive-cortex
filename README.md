@@ -87,12 +87,17 @@ Once you've done that, you can configure all your instances. An instance is an e
 - **Client Certificate**: Filename of you client certificate if you need one. This certificate must be placed under "\$APP_FOLDER\$/local" and you just have to set the name of the file here. This certificate will be used during the proxy authentication. Default to "-" meaning None.
 - **Host**: Host of your instance (hostname or IP).
 - **Port**: Port used by your instance (Default:9000 for TheHive, 9001 for Cortex).
+- **URI**: Indicates what is the URI based for your instance. By default, TheHive/Cortex is installed at the root of the server so the URI would be "/". If you are using a Cloud instance, you may have to specify the URI used by your cloud instance. For example, if your TheHive instance is accessible with this URL : "https://my-cloud-website.com:443/mythehiveinstance", then you should specify in the URI field "/mythehiveinstance".
 
 
 ![](images/instances_add.png)
 *This image shows the addition of a new instance (partially filled fields) by specifying an account name defined beforehand.*
 
-On the above example, you can see a list of defined instances.
+On the above example, you can see a list of defined instances:
+- The 1st example could be an on-premise instance with its own certificate
+- The 2nd example could be an on-premise instance with custom destination port
+- The 3rd example could be an on-premise instance with a custom proxy
+- The 4th example could be a Cloud instance with a custom URI (here, the instance is accessible using "https://my-cloud-website.com:443/thehive"
 
 ### Logging
 

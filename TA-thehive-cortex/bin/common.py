@@ -94,6 +94,10 @@ class Settings(object):
 
                 row["organisation"] = row["organisation"] if row["organisation"] != "-" else None
 
+                # If nothing is defined for the URI, then use the root by default
+                if "uri" not in row or row["uri"] is None or row["uri"] == "-":
+                    row["uri"] = "/"
+
                 self.logger.debug("[S10] KVStore, adding key \"" + str(row_id) + "\" " + str(row))
                 # Store the new instance
                 row_dict = json.loads(json.dumps(row))
@@ -121,8 +125,12 @@ class Settings(object):
                 password = self.getAccountPassword(account)
                 for i in instances_of_account_name:
                     self.__instances[i]["password"] = password
-        self.logger.debug("[S25] Getting these passwords from storage passwords: " + str(self.__instances))
+        self.logger.debug("[S25] Successfully recovering passwords from storage passwords")
 
+    def sanitizeInstance(self, instance):
+        result = instance
+        result["password"] = "**********"
+        return result
 
     def getAccountUsername(self, account):
         """ Get the username of an account """
@@ -151,8 +159,9 @@ class Settings(object):
             self.logger.debug("[S26-ERROR] This instance ID ("+instance_id+") doesn't exist in your configuration")
             sys.exit(26)
 
-        self.logger.debug("[S30] This instance ID ("+str(instance_id)+") returns: "+str(instance))
-        return "https://"+instance["host"]+":"+str(instance["port"])
+        
+        self.logger.debug("[S30] This instance ID ("+str(instance_id)+") returns: "+str(self.sanitizeInstance(instance)))
+        return "https://"+instance["host"]+":"+str(instance["port"])+str(instance["uri"])
 
     def getInstanceUsernameApiKey(self, instance_id):
         """ This function returns the Username/Secret (password or API key) of the given instance """
