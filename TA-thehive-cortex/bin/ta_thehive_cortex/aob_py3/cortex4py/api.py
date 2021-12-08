@@ -11,7 +11,6 @@ from .controllers.users import UsersController
 from .controllers.jobs import JobsController
 from .controllers.analyzers import AnalyzersController
 
-
 class Api(object):
     """This is the main class for communicating with the Cortex API. As this is a new major version, authentication is
     only possible through the api key. Basic auth with user/pass is deprecated."""
@@ -27,7 +26,8 @@ class Api(object):
         self.__url = url
         self.__base_url = '{}/api/'.format(url)
         self.__proxies = kwargs.get('proxies', {})
-        self.__verify_cert = kwargs.get('verify_cert', kwargs.get('cert', True))
+        self.__cert = kwargs.get('cert',None)
+        self.__verify_cert = kwargs.get('verify_cert', True)
 
         self.organizations = OrganizationsController(self)
         self.users = UsersController(self)
@@ -63,6 +63,7 @@ class Api(object):
                                     headers=headers,
                                     params=params,
                                     proxies=self.__proxies,
+                                    cert=self.__cert,
                                     verify=self.__verify_cert)
 
             response.raise_for_status()
@@ -80,6 +81,7 @@ class Api(object):
                                      headers=headers,
                                      proxies=self.__proxies,
                                      data=data,
+                                     cert=self.__cert,
                                      verify=self.__verify_cert,
                                      **kwargs)
             response.raise_for_status()
@@ -99,6 +101,7 @@ class Api(object):
                                      proxies=self.__proxies,
                                      json=data,
                                      params=params,
+                                     cert=self.__cert,
                                      verify=self.__verify_cert,
                                      **kwargs)
             response.raise_for_status()
@@ -118,6 +121,7 @@ class Api(object):
                                       proxies=self.__proxies,
                                       json=data,
                                       params=params,
+                                      cert=self.__cert,
                                       verify=self.__verify_cert)
             response.raise_for_status()
             return response
@@ -133,6 +137,7 @@ class Api(object):
             response = requests.delete('{}{}'.format(self.__base_url, endpoint),
                                        headers=headers,
                                        proxies=self.__proxies,
+                                       cert=self.__cert,
                                        verify=self.__verify_cert)
             response.raise_for_status()
             return True

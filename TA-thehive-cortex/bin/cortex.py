@@ -77,7 +77,7 @@ def create_cortex_instance(instance_id, settings, logger):
         logger.error("[C7-ERROR] Cortex instance will be initialized with a password (not an API key) - This is not supported for Cortex")
     elif (cortex_authentication_type == "api_key"):
         logger.debug("[C8] Cortex instance will be initialized with an API Key (not a password)")
-        cortex = Cortex(url=cortex_url, apiKey=cortex_secret, sid=settings["sid"], logger=logger)
+        cortex = Cortex(url=cortex_url, apiKey=cortex_secret, sid=settings["sid"], proxies=cortex_proxies, verify=cortex_verify, cert=cortex_cert, logger=logger)
     else:
         logger.error("[C9-ERROR] WRONG_AUTHENTICATION_TYPE - Authentication type is not one of the expected values (password or api_key), given value: "+cortex_authentication_type)
         exit(20)
@@ -88,7 +88,7 @@ def create_cortex_instance(instance_id, settings, logger):
 class Cortex(Api):
     """ This class is used to represent a Cortex instance"""
 
-    def __init__(self, url = None, apiKey = None, sid = "", logger = None):
+    def __init__(self, url = None, apiKey = None, sid = "", proxies = {}, cert = None , verify = True, logger = None):
         self.logger = logger
         try :
             if apiKey is None:
@@ -96,9 +96,9 @@ class Cortex(Api):
                 exit(15)
 
             if sys.version_info[0] < 3:
-                super(Cortex,self).__init__(str(url),str(apiKey))
+                super(Cortex,self).__init__(str(url),str(apiKey),proxies=proxies,verify_cert=verify,cert=cert)
             else:
-                super().__init__(str(url),str(apiKey))
+                super().__init__(str(url),str(apiKey),proxies=proxies,verify_cert=verify,cert=cert)
             logger.debug("[C20] Cortex object instanciated")
 
             # Try to connect to the API by recovering all enabled analyzers
