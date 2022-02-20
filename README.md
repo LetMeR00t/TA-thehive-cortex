@@ -1,5 +1,6 @@
-
-![](images/logo.png)
+<p align="center">
+  <img src="https://github.com/LetMeR00t/TA-thehive-cortex/blob/master/images/logo.png?raw=true" alt="Logo TA-thehive-cortex"/>
+</p>
 
 # Table of content
 * [ Introduction ](#introduction)  
