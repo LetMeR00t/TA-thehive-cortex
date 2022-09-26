@@ -22,6 +22,7 @@ class Version(IntEnum):
     """
     THEHIVE_3 = 3
     THEHIVE_4 = 4
+    THEHIVE_5 = 5
 
 
 class Tlp(IntEnum):

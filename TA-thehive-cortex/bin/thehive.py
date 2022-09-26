@@ -72,7 +72,13 @@ class TheHive(TheHiveApi):
     def __init__(self, url = None, username = None, password = None, apiKey = None, proxies={}, cert = None , verify = True, organisation = None, version = None, sid = "", logger = None):
 
         self.logger = logger
-        if version=="TheHive4":
+        if version=="TheHive5":
+            self.logger.debug("[TH24] TheHive version is 5.x")
+            if sys.version_info[0] < 3:
+                version = Version.THEHIVE_5
+            else:
+                version = Version.THEHIVE_5.value
+        elif version=="TheHive4":
             self.logger.debug("[TH25] TheHive version is 4.x")
             if sys.version_info[0] < 3:
                 version = Version.THEHIVE_4
@@ -112,7 +118,11 @@ class TheHive(TheHiveApi):
             self.logger.debug("[TH35] TheHive instance is initialized")
 
             # Try to connect to the API by recovering some cases
-            self.find_cases(query={}, range='all')
+            test = self.find_cases(query={}, range='all')
+            if  test.status_code >= 300:
+                self.logger.error("[TH36-ERROR] THE_HIVE_AUTHENTICATION_RESPONSE - Server didn't send a 2xx response. Got: "+str(test.status_code))
+                self.logger.debug("[TH37] Payload content - Headers: "+str(test.request.headers))
+                self.logger.debug("[TH37] Payload content - URL: "+str(test.request.url))
 
             if apiKey is not None:
                 self.logger.debug("[TH40] TheHive API connection to (URL=\""+url+"\" is successful")
