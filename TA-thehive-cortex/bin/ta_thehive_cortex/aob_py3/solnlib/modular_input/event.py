@@ -1,29 +1,26 @@
-# Copyright 2016 Splunk, Inc.
-# SPDX-FileCopyrightText: 2020 2020
 #
-# SPDX-License-Identifier: Apache-2.0
+# Copyright 2021 Splunk Inc.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
 
-"""
-This module provides Splunk modular input event encapsulation.
-"""
+"""This module provides Splunk modular input event encapsulation."""
 
 import json
+from typing import List
+from xml.etree import ElementTree as ET  # nosemgrep
 
-try:
-    import xml.etree.cElementTree as ET
-except ImportError:
-    import xml.etree.ElementTree as ET
-
-try:
-    unicode
-except NameError:
-    unicode = str
-
-try:
-    basestring
-except NameError:
-    basestring = str
-
+import defusedxml.ElementTree as defused_et
 
 __all__ = ["EventException", "XMLEvent", "HECEvent"]
 
@@ -32,47 +29,37 @@ class EventException(Exception):
     pass
 
 
-class Event(object):
+class Event:
     """Base class of modular input event."""
 
     def __init__(
         self,
-        data,
-        time=None,
-        index=None,
-        host=None,
-        source=None,
-        sourcetype=None,
-        fields=None,
-        stanza=None,
-        unbroken=False,
-        done=False,
+        data: dict,
+        time: float = None,
+        index: str = None,
+        host: str = None,
+        source: str = None,
+        sourcetype: str = None,
+        fields: dict = None,
+        stanza: str = None,
+        unbroken: bool = False,
+        done: bool = False,
     ):
         """Modular input event.
 
-        :param data: Event data.
-        :type data: ``json object``
-        :param time: (optional) Event timestamp, default is None.
-        :type time: ``float``
-        :param index: (optional) The index event will be written to, default
-            is None
-        :type index: ``string``
-        :param host: (optional) Event host, default is None.
-        :type host: ``string``
-        :param source: (optional) Event source, default is None.
-        :type source: ``string``
-        :param sourcetype: (optional) Event sourcetype, default is None.
-        :type sourcetype: ``string``
-        :param fields: (optional) Event fields, default is None.
-        :type fields: ``json object``
-        :param stanza: (optional) Event stanza name, default is None.
-        :type stanza: ``string``
-        :param unbroken: (optional) Event unbroken flag, default is False.
-        :type unbroken: ``bool``
-        :param done: (optional) The last unbroken event, default is False.
-        :returns: ``bool``
+        Arguments:
+            data: Event data.
+            time: (optional) Event timestamp, default is None.
+            index: (optional) The index event will be written to, default is None.
+            host: (optional) Event host, default is None.
+            source: (optional) Event source, default is None.
+            sourcetype: (optional) Event sourcetype, default is None.
+            fields: (optional) Event fields, default is None.
+            stanza: (optional) Event stanza name, default is None.
+            unbroken: (optional) Event unbroken flag, default is False.
+            done: (optional) The last unbroken event, default is False.
 
-        Usage::
+        Examples:
            >>> event = Event(
            >>>     data='This is a test data.',
            >>>     time=1372274622.493,
@@ -80,7 +67,7 @@ class Event(object):
            >>>     host='localhost',
            >>>     source='Splunk',
            >>>     sourcetype='misc',
-           >>>     fields= {'Cloud':'AWS','region': 'us-west-1'}
+           >>>     fields= {'Cloud':'AWS','region': 'us-west-1'},
            >>>     stanza='test_scheme://test',
            >>>     unbroken=True,
            >>>     done=True)
@@ -119,13 +106,14 @@ class Event(object):
         return json.dumps(event)
 
     @classmethod
-    def format_events(cls, events):
+    def format_events(cls, events: List) -> List:
         """Format events to list of string.
 
-        :param events: List of events to format.
-        :type events: ``list``
-        :returns: List of formated events string.
-        :rtype: ``list``
+        Arguments:
+            events: List of events to format.
+
+        Returns:
+            List of formatted events string.
         """
 
         raise EventException('Unimplemented "format_events".')
@@ -154,7 +142,7 @@ class XMLEvent(Event):
             if value:
                 ET.SubElement(_event, node).text = value
 
-        if isinstance(self._data, (unicode, basestring)):
+        if isinstance(self._data, str):
             ET.SubElement(_event, "data").text = self._data
         else:
             ET.SubElement(_event, "data").text = json.dumps(self._data)
@@ -165,35 +153,46 @@ class XMLEvent(Event):
         return _event
 
     @classmethod
-    def format_events(cls, events):
-        """Output: [
-        '<stream>
-        <event stanza="test_scheme://test" unbroken="1">
-        <time>1459919070.994</time>
-        <index>main</index>
-        <host>localhost</host>
-        <source>test</source>
-        <sourcetype>test</sourcetype>
-        <data>{"kk": [1, 2, 3]}</data>
-        <done />
-        </event>
-        <event stanza="test_scheme://test" unbroken="1">
-        <time>1459919082.961</time>
-        <index>main</index>
-        <host>localhost</host>
-        <source>test</source>
-        <sourcetype>test</sourcetype>
-        <data>{"kk": [3, 2, 3]}</data>
-        <done />
-        </event>
-        </stream>']
+    def format_events(cls, events: List) -> List:
+        """Format events to list of string.
+
+        Arguments:
+            events: List of events to format.
+
+        Returns:
+            List of formatted events string, example::
+
+                [
+                    '<stream>
+                    <event stanza="test_scheme://test" unbroken="1">
+                    <time>1459919070.994</time>
+                    <index>main</index>
+                    <host>localhost</host>
+                    <source>test</source>
+                    <sourcetype>test</sourcetype>
+                    <data>{"kk": [1, 2, 3]}</data>
+                    <done />
+                    </event>
+                    <event stanza="test_scheme://test" unbroken="1">
+                    <time>1459919082.961</time>
+                    <index>main</index>
+                    <host>localhost</host>
+                    <source>test</source>
+                    <sourcetype>test</sourcetype>
+                    <data>{"kk": [3, 2, 3]}</data>
+                    <done />
+                    </event>
+                    </stream>'
+                ]
         """
 
         stream = ET.Element("stream")
         for event in events:
             stream.append(event._to_xml())
 
-        return [ET.tostring(stream, encoding="utf-8", method="xml").decode("utf-8")]
+        return [
+            defused_et.tostring(stream, encoding="utf-8", method="xml").decode("utf-8")
+        ]
 
 
 class HECEvent(Event):
@@ -220,11 +219,21 @@ class HECEvent(Event):
         return json.dumps(event)
 
     @classmethod
-    def format_events(cls, events, event_field="event"):
-        """Output: [
-        '{"index": "main", ... "event": {"kk": [1, 2, 3]}}\\n
-        {"index": "main", ... "event": {"kk": [3, 2, 3]}}',
-        '...']
+    def format_events(cls, events: List, event_field: str = "event") -> List:
+        """Format events to list of string.
+
+        Arguments:
+            events: List of events to format.
+            event_field: Event field.
+
+        Returns:
+            List of formatted events string, example::
+
+                [
+                    '{"index": "main", ... "event": {"kk": [1, 2, 3]}}\\n
+                    {"index": "main", ... "event": {"kk": [3, 2, 3]}}',
+                '...'
+                ]
         """
 
         size = 0
