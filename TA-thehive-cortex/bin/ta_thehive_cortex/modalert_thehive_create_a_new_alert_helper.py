@@ -19,7 +19,7 @@ from thehive4py.models import Alert
 
 __author__ = "Alexandre Demeyer, Remi Seguy"
 __license__ = "LGPLv3"
-__version__ = "2.0.0"
+__version__ = "2.2.0"
 __maintainer__ = "Alexandre Demeyer"
 __email__ = "letmer00t@gmail.com"
 
@@ -355,6 +355,24 @@ def create_alert(helper, thehive_api, alert_args):
         # we filter those out here
         row = {key: value for key, value in row.items() if not key.startswith("__mv_") and key not in ["rid"]}
         helper.log_debug("[CAA-THCA-66] Row after pre-processing: " + str(row))
+        # define thehive alert unique ID (if duplicated, alert creations fails)
+
+        if alert_args["alert_mode"] == "es_mode":
+            if "_time" in row:
+                message = row["_time"]
+            else:
+                message = alert_reference_time
+            message = message + str(row)
+            sourceRef = alert_args["splunk_es_alerts_index"] + "@@" + hashlib.md5(message.encode('utf-8')).hexdigest()
+        elif alert_args['unique_id_field'] in row:
+            newSource = str(row[alert_args['unique_id_field']])
+            if newSource not in [None, '']:
+                # grabs that field's value and assigns it to our sourceRef
+                sourceRef = newSource
+            else:
+                sourceRef = "SPK" + alert_reference_time
+        else:
+            sourceRef = "SPK" + alert_reference_time
 
         helper.log_debug("[CAA-THCA-70] sourceRef: {} ".format(sourceRef))
 
