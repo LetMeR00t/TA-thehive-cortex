@@ -19,10 +19,7 @@ from __future__ import absolute_import, division, print_function
 from io import TextIOWrapper
 from collections import deque, namedtuple
 from splunklib import six
-try:
-    from collections import OrderedDict  # must be python 2.7
-except ImportError:
-    from ..ordereddict import OrderedDict
+from collections import OrderedDict
 from splunklib.six.moves import StringIO
 from itertools import chain
 from splunklib.six.moves import map as imap
@@ -508,6 +505,7 @@ class RecordWriter(object):
         self._chunk_count = 0
         self._pending_record_count = 0
         self._committed_record_count = 0
+        self.custom_fields = set()
 
     @property
     def is_flushed(self):
@@ -572,6 +570,7 @@ class RecordWriter(object):
 
     def write_records(self, records):
         self._ensure_validity()
+        records = list(records)
         write_record = self._write_record
         for record in records:
             write_record(record)
@@ -593,6 +592,7 @@ class RecordWriter(object):
 
         if fieldnames is None:
             self._fieldnames = fieldnames = list(record.keys())
+            self._fieldnames.extend([i for i in self.custom_fields if i not in self._fieldnames])
             value_list = imap(lambda fn: (str(fn), str('__mv_') + str(fn)), fieldnames)
             self._writerow(list(chain.from_iterable(value_list)))
 
