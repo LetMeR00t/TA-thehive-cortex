@@ -187,13 +187,13 @@
         </format>
         <drilldown>
           <condition field="Tasks">
-            <link target="_blank">https://$global_thehive_host$:$global_thehive_port$/index.html#!/case/$row.ID - Go to TheHive$/tasks</link>
+            <link target="_blank">https://$global_thehive_host$:$global_thehive_port$$global_thehive_uri|n$/$global_thehive_case_uri$/$row.ID - Go to TheHive$/tasks</link>
           </condition>
           <condition field="Observables">
-            <link target="_blank">https://$global_thehive_host$:$global_thehive_port$/index.html#!/case/$row.ID - Go to TheHive$/observables</link>
+            <link target="_blank">https://$global_thehive_host$:$global_thehive_port$$global_thehive_uri|n$/$global_thehive_case_uri$/$row.ID - Go to TheHive$/observables</link>
           </condition>
           <condition field="ID - Go to TheHive">
-            <link target="_blank">https://$global_thehive_host$:$global_thehive_port$/index.html#!/case/$row.ID - Go to TheHive$/details</link>
+            <link target="_blank">https://$global_thehive_host$:$global_thehive_port$$global_thehive_uri|n$/$global_thehive_case_uri$/$row.ID - Go to TheHive$/details</link>
           </condition>
           <condition></condition>
         </drilldown>
@@ -332,13 +332,13 @@
         </format>
         <drilldown>
           <condition field="Tasks">
-            <link target="_blank">https://$global_thehive_host$:$global_thehive_port$/index.html#!/case/$row.ID - Go to TheHive$/tasks</link>
+            <link target="_blank">https://$global_thehive_host$:$global_thehive_port$$global_thehive_uri|n$/$global_thehive_case_uri$/$row.ID - Go to TheHive$/tasks</link>
           </condition>
           <condition field="Observables">
-            <link target="_blank">https://$global_thehive_host$:$global_thehive_port$/index.html#!/case/$row.ID - Go to TheHive$/observables</link>
+            <link target="_blank">https://$global_thehive_host$:$global_thehive_port$$global_thehive_uri|n$/$global_thehive_case_uri$/$row.ID - Go to TheHive$/observables</link>
           </condition>
           <condition field="ID - Go to TheHive">
-            <link target="_blank">https://$global_thehive_host$:$global_thehive_port$/index.html#!/case/$row.ID - Go to TheHive$/details</link>
+            <link target="_blank">https://$global_thehive_host$:$global_thehive_port$$global_thehive_uri|n$/$global_thehive_case_uri$/$row.ID - Go to TheHive$/details</link>
           </condition>
           <condition></condition>
         </drilldown>
@@ -353,8 +353,10 @@
           <done>
             <set token="global_thehive_host">$result.host$</set>
             <set token="global_thehive_port">$result.port$</set>
+            <set token="global_thehive_uri">$result.uri$</set>
+            <set token="global_thehive_case_uri">$result.case_uri$</set>
           </done>
-          <query>| inputlookup thehive_cortex_instances where id=$instance_id$</query>
+          <query>| inputlookup thehive_cortex_instances where id=$instance_id$ | eval case_uri = if(type=="TheHive5","cases","case")</query>
           <earliest>-24h@h</earliest>
           <latest>now</latest>
           <sampleRatio>1</sampleRatio>
