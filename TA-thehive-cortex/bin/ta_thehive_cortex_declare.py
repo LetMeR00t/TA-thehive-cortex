@@ -9,10 +9,7 @@ import os
 import sys
 import re
 
-if sys.version_info[0] < 3:
-    py_version = "aob_py2"
-else:
-    py_version = "aob_py3"
+py_version = "aob_py3"
 
 ta_name = 'TA-thehive-cortex'
 ta_lib_name = 'ta_thehive_cortex'
