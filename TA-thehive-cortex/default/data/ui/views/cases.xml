@@ -332,13 +332,13 @@
         </format>
         <drilldown>
           <condition field="Tasks">
-            <link target="_blank">https://$global_thehive_host$:$global_thehive_port$$global_thehive_uri|n$/$global_thehive_case_uri$/$row.ID - Go to TheHive$/tasks</link>
+            <link target="_blank">https://$global_thehive_host$:$global_thehive_port$$global_thehive_uri|n$$global_thehive_case_uri$/$row.ID - Go to TheHive$/tasks</link>
           </condition>
           <condition field="Observables">
-            <link target="_blank">https://$global_thehive_host$:$global_thehive_port$$global_thehive_uri|n$/$global_thehive_case_uri$/$row.ID - Go to TheHive$/observables</link>
+            <link target="_blank">https://$global_thehive_host$:$global_thehive_port$$global_thehive_uri|n$$global_thehive_case_uri$/$row.ID - Go to TheHive$/observables</link>
           </condition>
           <condition field="ID - Go to TheHive">
-            <link target="_blank">https://$global_thehive_host$:$global_thehive_port$$global_thehive_uri|n$/$global_thehive_case_uri$/$row.ID - Go to TheHive$/details</link>
+            <link target="_blank">https://$global_thehive_host$:$global_thehive_port$$global_thehive_uri|n$$global_thehive_case_uri$/$row.ID - Go to TheHive$/details</link>
           </condition>
           <condition></condition>
         </drilldown>
