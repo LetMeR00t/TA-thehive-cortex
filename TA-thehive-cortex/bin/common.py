@@ -159,9 +159,11 @@ class Settings(object):
             self.logger.debug("[S26-ERROR] This instance ID ("+instance_id+") doesn't exist in your configuration")
             sys.exit(26)
 
+        # Empty the root URI as it will be filled by the API library directly
+        uri = str(instance["uri"]) if str(instance["uri"])!="/" else ""
         
         self.logger.debug("[S30] This instance ID ("+str(instance_id)+") returns: "+str(self.sanitizeInstance(instance)))
-        return "https://"+instance["host"]+":"+str(instance["port"])+str(instance["uri"])
+        return "https://"+instance["host"]+":"+str(instance["port"])+uri
 
     def getInstanceUsernameApiKey(self, instance_id):
         """ This function returns the Username/Secret (password or API key) of the given instance """
