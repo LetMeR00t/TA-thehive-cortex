@@ -529,10 +529,11 @@ def create_alert(helper, thehive_api, alert_args):
                         if artifact not in artifacts:
                             artifacts.append(artifact)
 
+        alert['artifacts'] = list(artifacts)
+        alert['customFields'] = customFields
+        alerts[sourceRef] = alert
+
         if artifacts:
-            alert['artifacts'] = list(artifacts)
-            alert['customFields'] = customFields
-            alerts[sourceRef] = alert
             helper.log_debug("[CAA-THCA-115] Artifacts found for an alert: " + str(artifacts))
         else:
             helper.log_debug("[CAA-THCA-116] No artifact found for an alert: " + str(alert))
