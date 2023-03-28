@@ -133,8 +133,13 @@ if __name__ == '__main__':
 
             ## OBSERVABLES ##
             observables = thehive.alert.find_observables(alert["_id"])
-            event["thehive_alert_observables"] = len(observables)
-            logger.debug("[thsc-45] thehive - observables: "+str(event["thehive_alert_observables"])) 
+            event["thehive_alert_observables"] = [str(o) for o in observables]
+            logger.debug("[THSC-45] thehive - observables: "+str(len(event["thehive_alert_observables"]))) 
+
+            ## TTPS ##
+            ttps = thehive.alert.find_procedures(alert["_id"])
+            event["thehive_alert_ttps"] = [str(ttp) for ttp in ttps]
+            logger.debug("[THSC-46] thehive - ttps: "+str(len(event["thehive_alert_ttps"]))) 
 
 
             logger.debug("[THSA-46] Event after post processing: "+str(event))
