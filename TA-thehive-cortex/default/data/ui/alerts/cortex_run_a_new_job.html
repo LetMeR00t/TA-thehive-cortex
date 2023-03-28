@@ -1,66 +1,73 @@
 <form class="form-horizontal form-complex">
-<div class="control-group">
-	<label class="control-label" for="cortex_run_a_new_job_cortex_instance_id">Cortex Instance ID <span class="required">*</span> </label>
-    <div class="controls">
-	<input type="text" name="action.cortex_run_a_new_job.param.cortex_instance_id" id="cortex_run_a_new_job_cortex_instance_id"/>
-                <span class="help-block"> 
-                    Indicate which instance to use (Set the "id" provided under "Instances")
-                </span>
+    <div class="control-group">
+        <label class="control-label" for="cortex_run_a_new_job_cortex_instance_id">Cortex Instance ID <span
+                class="required">*</span> </label>
+        <div class="controls">
+            <input type="text" name="action.cortex_run_a_new_job.param.cortex_instance_id"
+                id="cortex_run_a_new_job_cortex_instance_id" />
+            <span class="help-block">
+                Indicate which instance to use (Set the "id" provided under "Instances")
+            </span>
+        </div>
     </div>
-</div>
-<div class="control-group">
-	<label class="control-label" for="cortex_run_a_new_job_data_field_name">Data field name <span class="required">*</span> </label>
-    <div class="controls">
-	<input type="text" name="action.cortex_run_a_new_job.param.data_field_name" id="cortex_run_a_new_job_data_field_name"/>
-                <span class="help-block"> 
-                    Name of the field to use as "data"
-                </span>
+    <div class="control-group">
+        <label class="control-label" for="cortex_run_a_new_job_data_field_name">Data field name <span
+                class="required">*</span> </label>
+        <div class="controls">
+            <input type="text" name="action.cortex_run_a_new_job.param.data_field_name"
+                id="cortex_run_a_new_job_data_field_name" />
+            <span class="help-block">
+                Name of the field to use as "data"
+            </span>
+        </div>
     </div>
-</div>
-<div class="control-group">
-	<label class="control-label" for="cortex_run_a_new_job_datatype_field_name">Datatype field name <span class="required">*</span> </label>
-    <div class="controls">
-	<input type="text" name="action.cortex_run_a_new_job.param.datatype_field_name" id="cortex_run_a_new_job_datatype_field_name"/>
-                <span class="help-block"> 
-                    Name of the field to use as "datatype"
-                </span>
+    <div class="control-group">
+        <label class="control-label" for="cortex_run_a_new_job_datatype_field_name">Datatype field name <span
+                class="required">*</span> </label>
+        <div class="controls">
+            <input type="text" name="action.cortex_run_a_new_job.param.datatype_field_name"
+                id="cortex_run_a_new_job_datatype_field_name" />
+            <span class="help-block">
+                Name of the field to use as "datatype"
+            </span>
+        </div>
     </div>
-</div>
-<div class="control-group">
-	<label class="control-label" for="cortex_run_a_new_job_analyzers">Analyzers <span class="required">*</span> </label>
-    <div class="controls">
-	<input type="text" name="action.cortex_run_a_new_job.param.analyzers" id="cortex_run_a_new_job_analyzers"/>
-                <span class="help-block"> 
-                    Indicate which analyzers to use by specifying the name of all analyzers separated by ";"
-                </span>
+    <div class="control-group">
+        <label class="control-label" for="cortex_run_a_new_job_analyzers">Analyzers <span class="required">*</span>
+        </label>
+        <div class="controls">
+            <input type="text" name="action.cortex_run_a_new_job.param.analyzers" id="cortex_run_a_new_job_analyzers" />
+            <span class="help-block">
+                Indicate which analyzers to use by specifying the name of all analyzers separated by ";"
+            </span>
+        </div>
     </div>
-</div>
-<div class="control-group">
-	<label class="control-label" for="cortex_run_a_new_job_tlp">TLP: <span class="required">*</span> </label>
-    <div class="controls">
-<select name="action.cortex_run_a_new_job.param.tlp" id="cortex_run_a_new_job_tlp">
-        <option value="4">RED</option>
-        <option value="3">AMBER</option>
-        <option value="2">GREEN</option>
-        <option value="1">WHITE</option>
-</select>
-                <span class="help-block"> 
-                    Select the TLP level of the created job. Default is TLP:AMBER
-                </span>
+    <div class="control-group">
+        <label class="control-label" for="cortex_run_a_new_job_tlp">TLP: <span class="required">*</span> </label>
+        <div class="controls">
+            <select name="action.cortex_run_a_new_job.param.tlp" id="cortex_run_a_new_job_tlp">
+                <option value="4">RED</option>
+                <option value="3">AMBER</option>
+                <option value="2">GREEN</option>
+                <option value="1">WHITE</option>
+            </select>
+            <span class="help-block">
+                Select the TLP level of the created job. Default is TLP:AMBER
+            </span>
+        </div>
     </div>
-</div>
-<div class="control-group">
-	<label class="control-label" for="cortex_run_a_new_job_pap">PAP: <span class="required">*</span> </label>
-    <div class="controls">
-<select name="action.cortex_run_a_new_job.param.pap" id="cortex_run_a_new_job_pap">
-        <option value="4">RED</option>
-        <option value="3">AMBER</option>
-        <option value="2">GREEN</option>
-        <option value="1">WHITE</option>
-</select>
-                <span class="help-block"> 
-                    Permissible Action Protocol. Default to PAP:AMBER
-                </span>
+    <div class="control-group">
+        <label class="control-label" for="cortex_run_a_new_job_pap">PAP: <span class="required">*</span> </label>
+        <div class="controls">
+            <select name="action.cortex_run_a_new_job.param.pap" id="cortex_run_a_new_job_pap">
+                <option value="4">RED</option>
+                <option value="3">AMBER</option>
+                <option value="2">GREEN</option>
+                <option value="1">WHITE</option>
+            </select>
+            <span class="help-block">
+                Permissible Action Protocol. Default to PAP:AMBER
+            </span>
+        </div>
     </div>
-</div>
 </form>

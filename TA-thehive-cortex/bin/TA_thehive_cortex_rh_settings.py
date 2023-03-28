@@ -47,6 +47,16 @@ fields_additional_parameters = [
         )
     ), 
     field.RestField(
+        'thehive_default_instance',
+        required=False,
+        encrypted=False,
+        default='',
+        validator=validator.String(
+            min_len=0, 
+            max_len=8192, 
+        )
+    ), 
+    field.RestField(
         'thehive_max_cases',
         required=True,
         encrypted=False,
@@ -81,6 +91,16 @@ fields_additional_parameters = [
         required=True,
         encrypted=False,
         default='-date',
+        validator=validator.String(
+            min_len=0, 
+            max_len=8192, 
+        )
+    ), 
+    field.RestField(
+        'thehive_ttp_catalog_name',
+        required=True,
+        encrypted=False,
+        default='Enterprise Attack',
         validator=validator.String(
             min_len=0, 
             max_len=8192, 

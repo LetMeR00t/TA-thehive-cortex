@@ -5,12 +5,12 @@ import ta_thehive_cortex_declare
 import sys
 
 from alert_actions_base import ModularAlertBase
-import modalert_thehive_create_a_new_alert_helper
+import modalert_thehive_create_a_new_case_helper
 
-class AlertActionWorkerthehive_create_a_new_alert(ModularAlertBase):
+class AlertActionWorkerthehive_create_a_new_case(ModularAlertBase):
 
     def __init__(self, ta_name, alert_name):
-        super(AlertActionWorkerthehive_create_a_new_alert, self).__init__(ta_name, alert_name)
+        super(AlertActionWorkerthehive_create_a_new_case, self).__init__(ta_name, alert_name)
 
     def validate_params(self):
 
@@ -68,7 +68,7 @@ class AlertActionWorkerthehive_create_a_new_alert(ModularAlertBase):
         try:
             if not self.validate_params():
                 return 3
-            status = modalert_thehive_create_a_new_alert_helper.process_event(self, *args, **kwargs)
+            status = modalert_thehive_create_a_new_case_helper.process_event(self, *args, **kwargs)
         except (AttributeError, TypeError) as ae:
             self.log_error("Error: {}. Please double check spelling and also verify that a compatible version of Splunk_SA_CIM is installed.".format(str(ae)))
             return 4
@@ -83,5 +83,5 @@ class AlertActionWorkerthehive_create_a_new_alert(ModularAlertBase):
         return status
 
 if __name__ == "__main__":
-    exitcode = AlertActionWorkerthehive_create_a_new_alert("TA-thehive-cortex", "thehive_create_a_new_alert").run(sys.argv)
+    exitcode = AlertActionWorkerthehive_create_a_new_case("TA-thehive-cortex", "thehive_create_a_new_case").run(sys.argv)
     sys.exit(exitcode)

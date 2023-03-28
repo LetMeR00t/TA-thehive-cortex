@@ -1,6 +1,6 @@
 # encoding = utf-8
 #!/usr/bin/env python
-# Generate TheHive alerts
+# Generate TheHive cases
 #
 # Author: Alexandre Demeyer <letmer00t@gmail.com>
 # Inspired by: Remi Seguy <remg427@gmail.com>
@@ -12,9 +12,9 @@ import re
 import time
 from  modalert_thehive_common import parse_events
 from thehive import TheHive, create_thehive_instance
-from thehive4py.types.alert import InputAlert
+from thehive4py.types.case import InputCase
 
-__author__ = "Alexandre Demeyer, Remi Seguy"
+__author__ = "Alexandre Demeyer"
 __maintainer__ = "Alexandre Demeyer"
 __email__ = "letmer00t@gmail.com"
 
@@ -115,29 +115,27 @@ def process_event(helper, *args, **kwargs):
     helper.log_info("server_uri={}".format(helper.settings["server_uri"]))
     [sample_code_macro:end]
     """
-
     # Set the current LOG level
-    helper.log_info("[CAA-THCA-35] LOG level to: " + helper.log_level)
+    helper.log_info("[CAA-THCC-35] LOG level to: " + helper.log_level)
     helper.set_log_level(helper.log_level)
 
-    helper.log_info("[CAA-THCA-36] Alert action thehive_create_a_new_alert started at {}".format(time.time()))
+    helper.log_info("[CAA-THCC-36] Alert action thehive_create_a_new_alert started at {}".format(time.time()))
 
     # Get the instance connection and initialize settings
     instance_id = helper.get_param("thehive_instance_id")
-    helper.log_debug("[CAA-THCA-40] TheHive instance found: " + str(instance_id))
+    helper.log_debug("[CAA-THCC-40] TheHive instance found: " + str(instance_id))
 
     (thehive, configuration, defaults, logger) = create_thehive_instance(instance_id=instance_id, settings=helper.settings, logger=helper._logger)
 
-    helper.log_debug("[CAA-THCA-41] TheHive URL instance used after retrieving the configuration: " + str(thehive.session.hive_url))
-    helper.log_debug("[CAA-THCA-45] TheHive connection is ready. Processing alert parameters...")
+    helper.log_debug("[CAA-THCC-41] TheHive URL instance used after retrieving the configuration: " + str(thehive.session.hive_url))
+    helper.log_debug("[CAA-THCC-45] TheHive connection is ready. Processing alert parameters...")
 
     # Get alert arguments
     alert_args = {}
     # Get string values from alert form
-    alert_args["alert_mode"] = helper.get_param("alert_mode") if helper.get_param("alert_mode") else "es_mode" 
+    alert_args["case_mode"] = helper.get_param("case_mode") if helper.get_param("case_mode") else "es_mode" 
     alert_args["unique_id_field"] = helper.get_param("unique_id_field") if helper.get_param("unique_id_field") else "oneEvent" 
     alert_args["caseTemplate"] = helper.get_param("case_template") if helper.get_param("case_template") else None
-    alert_args["type"] = helper.get_param("type") if helper.get_param("type") else "alert"
     alert_args["source"] = helper.get_param("source") if helper.get_param("source") else "splunk"
     if not helper.get_param("timestamp_field"):
         alert_args['timestamp'] = int(time.time() * 1000)
@@ -150,81 +148,99 @@ def process_event(helper, *args, **kwargs):
     alert_args["title"] = helper.get_param("title") if helper.get_param("title") else "Notable event"
     alert_args["description"] = helper.get_param("description").replace("\\n","\n").replace("\\r","\r") if helper.get_param("description") else "No description provided"
     alert_args["tags"] = list(dict.fromkeys(helper.get_param("tags").split(","))) if helper.get_param("tags") else []
-    helper.log_debug("[CAA-THCA-50] scope: {} ".format(helper.get_param("scope")))
+    helper.log_debug("[CAA-THCC-50] scope: {} ".format(helper.get_param("scope")))
     alert_args["scope"] = True if int(helper.get_param("scope")) == 0 else False
     # Get numeric values from alert form
     alert_args["severity"] = int(helper.get_param("severity")) if helper.get_param("severity") is not None else 2
     alert_args["tlp"] = int(helper.get_param("tlp")) if helper.get_param("tlp") is not None else 2
     alert_args["pap"] = int(helper.get_param("pap")) if helper.get_param("pap") is not None else 2
     alert_args["splunk_es_alerts_index"] = helper.get_global_setting("splunk_es_alerts_index") if helper.get_global_setting("splunk_es_alerts_index") is not None else "summary"
-    helper.log_debug("[CAA-THCA-55] Arguments recovered: " + str(alert_args))
+    helper.log_debug("[CAA-THCC-55] Arguments recovered: " + str(alert_args))
 
     # Create the alert
-    helper.log_info("[CAA-THCA-56] Configuration is ready. Creating the alert...")
-    create_alert(helper, thehive, alert_args, defaults)
+    helper.log_info("[CAA-THCC-56] Configuration is ready. Creating the alert...")
+    create_case(helper, thehive, alert_args, defaults)
     return 0
 
 
 
-def create_alert(helper, thehive: TheHive, alert_args, defaults):
+def create_case(helper, thehive: TheHive, alert_args, defaults):
     """ This function is used to create the alert using the API, settings and search results """
  
     # Parse events
-    alerts = parse_events(helper, thehive, alert_args, defaults, "alert")
+    cases = parse_events(helper, thehive, alert_args, defaults, "case")
 
     # actually send the request to create the alert; fail gracefully
-    for srcRef in alerts.keys():
+    for srcRef in cases.keys():
         # Create the Alert object
-        alert = InputAlert(
-            title=alerts[srcRef]['title'],
-            date=int(alerts[srcRef]['timestamp']),
-            description=alerts[srcRef]['description'],
+        case = InputCase(
+            title=cases[srcRef]['title'],
+            date=int(cases[srcRef]['timestamp']),
+            description=cases[srcRef]['description'],
             tags=alert_args['tags'],
             severity=alert_args['severity'],
             tlp=alert_args['tlp'],
             pap=alert_args['pap'],
-            type=alert_args['type'],
-            observables=alerts[srcRef]['observables'],
-            customFields=alerts[srcRef]['customFields'],
+            customFields=cases[srcRef]['customFields'],
             source=alert_args['source'],
             caseTemplate=alert_args['caseTemplate'],
             sourceRef=srcRef,
             externalLink=helper.settings["results_link"]
         )
 
-        helper.log_debug("[CAA-THCA-120] Processing alert: " + str(alert))
-        # Get API and create the alert
-        new_alert = thehive.alert.create(alert)
+        helper.log_debug("[CAA-THCC-120] Processing case: " + str(case))
+        # Get API and create the case
+        new_case = thehive.case.create(case)
 
-        if "_id" in new_alert:
+        if "_id" in new_case:
             # log response status
             helper.log_info(
-                "[CAA-THCA-125] TheHive alert {} is successfully created on url={}".format(new_alert["_id"],thehive.session.hive_url)
+                "[CAA-THCC-125] TheHive case #{} is successfully created on url={}".format(new_case["number"],thehive.session.hive_url)
             )
 
         else:
             # somehow we got a bad response code from thehive
             helper.log_error(
-                "[CAA-THCA-126-ERROR] TheHive alert creation has failed. "
+                "[CAA-THCC-126-ERROR] TheHive case creation has failed. "
                 "url={}, data={}, content={}"
-                .format(thehive.session.hive_url, str(alert), str(new_alert))
+                .format(thehive.session.hive_url, str(case), str(new_case))
             )
-        
-        # Processing TTPs if any
-        if "ttps" in alerts[srcRef]:
-            for ttp in alerts[srcRef]["ttps"]:
-                response = thehive.procedure.create_in_alert(alert_id=new_alert["_id"], procedure=ttp)
+
+        # Processing Observables if any
+        if "observables" in cases[srcRef]:
+            for observable in cases[srcRef]['observables']:
+                response = thehive.observable.create_in_case(case_id=new_case["_id"],observable=observable)[0]
 
                 if "_id" in response:
                     # log response status
                     helper.log_info(
-                        "[CAA-THCA-130] TheHive alert {} was successfully updated with the TTP on url={}".format(new_alert["_id"],thehive.session.hive_url)
+                        "[CAA-THCC-130] TheHive case {} was successfully updated with the observable {} on url={}".format(new_case["_id"],response["data"].replace(".","[.]"),thehive.session.hive_url)
                     )
 
                 else:
                     # somehow we got a bad response code from thehive
                     helper.log_error(
-                        "[CAA-THCA-135-ERROR] TheHive TTP update on recent alert creation has failed. "
-                        "url={}, data={}, content={}, ttp={}"
-                        .format(thehive.session.hive_url, str(alert), str(response), str(ttp))
+                        "[CAA-THCC-135-ERROR] TheHive observable update on recent case creation has failed. "
+                        "url={}, data={}, content={}, observable={}"
+                        .format(thehive.session.hive_url, str(case), str(response), str(observable))
+                    ) 
+        
+        # Processing TTPs if any
+        if "ttps" in cases[srcRef]:
+            for ttp in cases[srcRef]["ttps"]:
+                response = thehive.procedure.create_in_case(case_id=new_case["_id"], procedure=ttp)
+
+                if "_id" in response:
+                    # log response status
+                    helper.log_info(
+                        "[CAA-THCC-140] TheHive case {} was successfully updated with the TTP on url={}".format(new_case["_id"],thehive.session.hive_url)
                     )
+
+                else:
+                    # somehow we got a bad response code from thehive
+                    helper.log_error(
+                        "[CAA-THCC-145-ERROR] TheHive TTP update on recent case creation has failed. "
+                        "url={}, data={}, content={}, ttp={}"
+                        .format(thehive.session.hive_url, str(case), str(response), str(ttp))
+                    )
+

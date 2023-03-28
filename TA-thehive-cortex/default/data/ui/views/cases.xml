@@ -94,15 +94,50 @@
   </row>
   <row>
     <panel depends="$show_dashboards_create$">
-      <input type="text" token="create_title" depends="$show_inputs_create$">
-        <label>Title</label>
+      <input type="radio" token="launch_alert" searchWhenChanged="true">
+        <label>Launch case action</label>
+        <choice value="True">Run</choice>
+        <choice value="False">Preparation</choice>
+        <change>
+          <condition match="$value$=&quot;False&quot;">
+            <unset token="launch_create_case"></unset>
+          </condition>
+          <condition match="$value$=&quot;True&quot;">
+            <set token="launch_create_case">"True"</set>
+          </condition>
+        </change>
+        <default>False</default>
+        <initialValue>False</initialValue>
       </input>
-      <input type="dropdown" token="create_severity" depends="$show_inputs_create$">
-        <label>Severity</label>
-        <choice value="4">CRITICAL (!!) - 4</choice>
-        <choice value="3">HIGH - 3</choice>
-        <choice value="2">MEDIUM - 2</choice>
-        <choice value="1">LOW - 1</choice>
+      <input type="text" token="create_sid">
+        <label>Job SID (input data)</label>
+      </input>
+      <input type="radio" token="create_case_mode">
+        <label>Case mode</label>
+        <choice value="es_mode">ES notable mode</choice>
+        <choice value="regular_mode">Alert action mode</choice>
+        <default>es_mode</default>
+        <initialValue>es_mode</initialValue>
+      </input>
+      <input type="text" token="create_unique_id_field">
+        <label>Unique ID field</label>
+      </input>
+      <input type="text" token="create_case_template">
+        <label>Case Template</label>
+        <default></default>
+      </input>
+      <input type="text" token="create_source">
+        <label>Source</label>
+        <default>splunk</default>
+      </input>
+      <input type="text" token="create_timestamp_field">
+        <label>Timestamp field (if not provided now())</label>
+      </input>
+      <input type="text" token="create_title" depends="$show_inputs_create$">
+        <label>Title*</label>
+      </input>
+      <input type="text" token="create_description" depends="$show_inputs_create$">
+        <label>Description</label>
       </input>
       <input id="input_create_add_tag" type="text" token="create_add_tag" depends="$show_inputs_create$" searchWhenChanged="true">
         <label>Enter a new tag:</label>
@@ -114,62 +149,43 @@
         <default>none</default>
         <initialValue>none</initialValue>
       </input>
-      <input id="input_create_add_task" type="text" token="create_add_task" depends="$show_inputs_create$" searchWhenChanged="true">
-        <label>Enter a new task:</label>
+      <input type="dropdown" token="create_scope">
+        <label>Scope*</label>
+        <choice value="0">Include only listed fields in thehive_datatypes.csv)</choice>
+        <choice value="1">Include all fields (default datatype is 'other')</choice>
+        <default>0</default>
       </input>
-      <input id="input_create_tasks" type="multiselect" token="create_tasks" depends="$show_inputs_create$">
-        <label>Tasks (readonly)</label>
-        <choice value="none">None</choice>
-        <delimiter> ;</delimiter>
-        <default>none</default>
-        <initialValue>none</initialValue>
+      <input type="dropdown" token="create_severity" depends="$show_inputs_create$">
+        <label>Severity*</label>
+        <choice value="4">CRITICAL (!!) - 4</choice>
+        <choice value="3">HIGH - 3</choice>
+        <choice value="2">MEDIUM - 2</choice>
+        <choice value="1">LOW - 1</choice>
       </input>
       <input type="dropdown" token="create_tlp" depends="$show_inputs_create$">
-        <label>TLP</label>
+        <label>TLP*</label>
         <choice value="0">WHITE - 0</choice>
         <choice value="1">GREEN - 1</choice>
         <choice value="2">AMBER - 2</choice>
         <choice value="3">RED - 3</choice>
       </input>
       <input type="dropdown" token="create_pap" depends="$show_inputs_create$">
-        <label>PAP</label>
+        <label>PAP*</label>
         <choice value="0">WHITE - 0</choice>
         <choice value="1">GREEN - 1</choice>
         <choice value="2">AMBER - 2</choice>
         <choice value="3">RED - 3</choice>
       </input>
-      <input type="text" token="create_description" depends="$show_inputs_create$">
-        <label>Description</label>
-      </input>
       <table>
         <search>
-          <query>| makeresults
-| eval title="$create_title$", severity = "$create_severity$", tags="$create_tags$", pap = "$create_pap$", date = now(), tlp = "$create_tlp$", description="$create_description$", tasks = "$create_tasks$"
-| thehivecreate $instance_id$
-| eval thehive_case_tlp = case(thehive_case_tlp==0,"TLP:WHITE",thehive_case_tlp==1,"TLP:GREEN",thehive_case_tlp==2,"TLP:AMBER",thehive_case_tlp=3,"TLP:RED"), thehive_case_title = "#"+thehive_case_caseId+" - "+thehive_case_title, thehive_case_severity = case(thehive_case_severity==1,"Low",thehive_case_severity==2,"Medium",thehive_case_severity==3,"High",thehive_case_severity==4,"Critical",1=1,thehive_case_severity), status = if(thehive_case_status!="Open", thehive_case_status+" as "+thehive_case_resolutionStatus,thehive_case_status)+";"+if(thehive_case_status!="Open","Closed at "+strftime(thehive_case_endDate,"%+"),""), thehive_case_startDate = strftime(thehive_case_startDate,"%F %H:%M")
-| makemv delim=";" status
-| fillnull value="No task" thehive_case_tasks
-| table thehive_case_tlp, thehive_case_title, thehive_case_tags, thehive_case_severity, thehive_case_tasks, thehive_case_observables, thehive_case_owner, thehive_case_startDate, thehive_case_metrics, thehive_case_customFields, status, thehive_case_id
-| rename thehive_case_tlp as TLP, thehive_case_title as Title, thehive_case_tags as Tags, thehive_case_severity as Severity, thehive_case_tasks as Tasks, thehive_case_observables as Observables, thehive_case_owner as "Assignee", thehive_case_startDate as "Start Date", status as Status, thehive_case_metrics as "Metrics", thehive_case_customFields as "Custom Fields", thehive_case_id as "ID - Go to TheHive"</query>
+          <query>| loadjob $create_sid$
+          | append
+          [| makeresults
+| eval _time="sendalert thehive_create_a_new_case param.thehive_instance_id=$instance_id$ param.case_mode=\"$create_case_mode$\" param.unique_id_field=\"$create_unique_id_field$\" param.case_template=\"$create_case_template$\" param.source=\"$create_source$\" param.timestamp_field=\"$create_timestamp_field$\" param.title=\"$create_title$\" param.description=\"$create_description$\" param.tags=\"$create_tags$\" param.scope=$create_scope$ param.severity=$create_severity$ param.tlp=$create_tlp$ param.pap=$create_pap$"
+|table _time]</query>
           <earliest>0</earliest>
           <latest></latest>
           <sampleRatio>1</sampleRatio>
-          <done>
-            <unset token="create_title"></unset>
-            <unset token="form.create_title"></unset>
-            <unset token="create_severity"></unset>
-            <unset token="form.create_severity"></unset>
-            <unset token="create_tags"></unset>
-            <unset token="form.create_tags"></unset>
-            <unset token="create_tasks"></unset>
-            <unset token="form.create_tasks"></unset>
-            <unset token="create_tlp"></unset>
-            <unset token="form.create_tlp"></unset>
-            <unset token="create_papa"></unset>
-            <unset token="form.create_pap"></unset>
-            <unset token="create_description"></unset>
-            <unset token="form.create_description"></unset>
-          </done>
         </search>
         <option name="count">20</option>
         <option name="dataOverlayMode">none</option>
@@ -185,18 +201,37 @@
         <format type="color" field="Severity">
           <colorPalette type="map">{"Low":#10A554,"Medium":#00C0EF,"High":#F39C12,"Critical":#DD4B39}</colorPalette>
         </format>
-        <drilldown>
-          <condition field="Tasks">
-            <link target="_blank">https://$global_thehive_host$:$global_thehive_port$$global_thehive_uri|n$/$global_thehive_case_uri$/$row.ID - Go to TheHive$/tasks</link>
-          </condition>
-          <condition field="Observables">
-            <link target="_blank">https://$global_thehive_host$:$global_thehive_port$$global_thehive_uri|n$/$global_thehive_case_uri$/$row.ID - Go to TheHive$/observables</link>
-          </condition>
-          <condition field="ID - Go to TheHive">
-            <link target="_blank">https://$global_thehive_host$:$global_thehive_port$$global_thehive_uri|n$/$global_thehive_case_uri$/$row.ID - Go to TheHive$/details</link>
-          </condition>
-          <condition></condition>
-        </drilldown>
+      </table>
+    </panel>
+  </row>
+  <row>
+    <panel depends="$launch_create_case$">
+      <table>
+        <search>
+          <query>| loadjob $create_sid$
+ | where $launch_create_case$=="True"
+| sendalert thehive_create_a_new_case param.thehive_instance_id=$instance_id$ param.case_mode="$create_case_mode$" param.unique_id_field="$create_unique_id_field$"
+param.case_template="$create_case_template$" param.source="$create_source$" param.timestamp_field="$create_timestamp_field$" 
+param.title="$create_title$" param.description="$create_description$" param.tags="$create_tags$" param.scope=$create_scope$
+param.severity=$create_severity$ param.tlp=$create_tlp$ param.pap=$create_pap$</query>
+          <earliest>0</earliest>
+          <latest></latest>
+          <sampleRatio>1</sampleRatio>
+        </search>
+        <option name="count">20</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">cell</option>
+        <option name="percentagesRow">false</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="rowNumbers">false</option>
+        <option name="totalsRow">false</option>
+        <option name="wrap">true</option>
+        <format type="color" field="TLP">
+          <colorPalette type="map">{"TLP:WHITE":#FFFFFF,"TLP:GREEN":#53A051,"TLP:AMBER":#F8BE34,"TLP:RED":#DC4E41}</colorPalette>
+        </format>
+        <format type="color" field="Severity">
+          <colorPalette type="map">{"Low":#10A554,"Medium":#00C0EF,"High":#F39C12,"Critical":#DD4B39}</colorPalette>
+        </format>
       </table>
     </panel>
   </row>
@@ -237,8 +272,13 @@
         <label>Status</label>
         <delimiter>;</delimiter>
         <choice value="*">Any</choice>
-        <choice value="Open">Open</choice>
-        <choice value="Resolved">Resolved</choice>
+        <choice value="New">New</choice>
+        <choice value="InProgress">InProgress</choice>
+        <choice value="TruePositive">TruePositive</choice>
+        <choice value="FalsePositive">FalsePositive</choice>
+        <choice value="Indeterminate">Indeterminate</choice>
+        <choice value="Other">Other</choice>
+        <choice value="Duplicated">Duplicated</choice>
         <default>*</default>
         <initialValue>*</initialValue>
       </input>
@@ -301,20 +341,20 @@
       <table>
         <title>You can click on the ID to open TheHive with the selected case</title>
         <search>
-          <query>| makeresults
-| eval keyword = "$filter_keyword$", status = "$filter_status$", severity = "$filter_severity$", tags = "$filter_tags$", title = "$filter_title$", assignee = "$filter_assignee$", date = "$filter_date_d1$ TO $filter_date_d2$", max_cases="$max_cases$", sort_cases="$sort_cases$"
-| thehivecases $instance_id$
-| eval thehive_case_tlp = case(thehive_case_tlp==0,"TLP:WHITE",thehive_case_tlp==1,"TLP:GREEN",thehive_case_tlp==2,"TLP:AMBER",thehive_case_tlp=3,"TLP:RED"), thehive_case_title = "#"+thehive_case_caseId+" - "+thehive_case_title, thehive_case_severity = case(thehive_case_severity==1,"Low",thehive_case_severity==2,"Medium",thehive_case_severity==3,"High",thehive_case_severity==4,"Critical",1=1,thehive_case_severity), status = if(thehive_case_status!="Open", thehive_case_status+" as "+thehive_case_resolutionStatus,thehive_case_status)+";"+if(thehive_case_status!="Open","Closed at "+strftime(thehive_case_endDate,"%+"),""), thehive_case_startDate = strftime(thehive_case_startDate,"%F %H:%M")
-| makemv delim=";" status
-| fillnull value="No task" thehive_case_tasks
-| table thehive_case_tlp, thehive_case_title, thehive_case_tags, thehive_case_severity, thehive_case_tasks, thehive_case_observables, thehive_case_owner, thehive_case_startDate, thehive_case_metrics, thehive_case_customFields, status, thehive_case_id
-| rename thehive_case_tlp as TLP, thehive_case_title as Title, thehive_case_tags as Tags, thehive_case_severity as Severity, thehive_case_tasks as Tasks, thehive_case_observables as Observables, thehive_case_owner as "Assignee", thehive_case_startDate as "Start Date", status as Status, thehive_case_metrics as "Metrics", thehive_case_customFields as "Custom Fields", thehive_case_id as "ID - Go to TheHive"</query>
-          <earliest>$filter_date.earliest$</earliest>
-          <latest>$filter_date.latest$</latest>
-          <sampleRatio>1</sampleRatio>
           <done>
             <set token="job_thehive_search_cases">$job.sid$</set>
           </done>
+          <query>| makeresults
+| eval keyword = "$filter_keyword$", status = "$filter_status$", severity = "$filter_severity$", tags = "$filter_tags$", title = "$filter_title$", assignee = "$filter_assignee$", date = "$filter_date_d1$ TO $filter_date_d2$", max_cases="$max_cases$", sort_cases="$sort_cases$"
+| thehivecases $instance_id$
+| eval thehive_case_tlp = case(thehive_case_tlp==0,"TLP:WHITE",thehive_case_tlp==1,"TLP:GREEN",thehive_case_tlp==2,"TLP:AMBER",thehive_case_tlp=3,"TLP:RED"), thehive_case_title = "#"+thehive_case_number+" - "+thehive_case_title, thehive_case_severity = case(thehive_case_severity==1,"Low",thehive_case_severity==2,"Medium",thehive_case_severity==3,"High",thehive_case_severity==4,"Critical",1=1,thehive_case_severity), status = if(thehive_case_stage!="New", thehive_case_stage+" as "+thehive_case_status,thehive_case_status)+";"+if(thehive_case_stage!="New","Closed on "+strftime(thehive_case_endDate,"%+"),""), thehive_case_startDate = strftime(thehive_case_startDate,"%F %H:%M")
+| makemv delim=";" status
+| fillnull value="No task" thehive_case_tasks
+| table thehive_case_tlp, thehive_case_title, thehive_case_tags, thehive_case_severity, thehive_case_tasks, thehive_case_observables, thehive_case_assignee, thehive_case_startDate, thehive_case_customFields, status, thehive_case_id
+| rename thehive_case_tlp as TLP, thehive_case_title as Title, thehive_case_tags as Tags, thehive_case_severity as Severity, thehive_case_tasks as Tasks, thehive_case_observables as Observables, thehive_case_assignee as "Assignee", thehive_case_startDate as "Start Date", status as Status, thehive_case_customFields as "Custom Fields", thehive_case_id as "ID - Go to TheHive"</query>
+          <earliest>$filter_date.earliest$</earliest>
+          <latest>$filter_date.latest$</latest>
+          <sampleRatio>1</sampleRatio>
         </search>
         <option name="count">20</option>
         <option name="dataOverlayMode">none</option>
@@ -356,7 +396,7 @@
             <set token="global_thehive_uri">$result.uri$</set>
             <set token="global_thehive_case_uri">$result.case_uri$</set>
           </done>
-          <query>| inputlookup thehive_cortex_instances where id=$instance_id$ | eval case_uri = if(type=="TheHive5","cases","case")</query>
+          <query>| inputlookup thehive_cortex_instances where id=$instance_id$ | eval case_uri = if(type=="TheHive5","cases","case") | eval case_uri = if(uri!="/","/"+case_uri,case_uri)</query>
           <earliest>-24h@h</earliest>
           <latest>now</latest>
           <sampleRatio>1</sampleRatio>

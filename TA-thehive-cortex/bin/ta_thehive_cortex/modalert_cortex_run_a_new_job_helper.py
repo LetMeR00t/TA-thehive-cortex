@@ -39,6 +39,8 @@ def process_event(helper, *args, **kwargs):
     helper.log_info("cortex_max_jobs={}".format(cortex_max_jobs))
     cortex_sort_jobs = helper.get_global_setting("cortex_sort_jobs")
     helper.log_info("cortex_sort_jobs={}".format(cortex_sort_jobs))
+    thehive_default_instance = helper.get_global_setting("thehive_default_instance")
+    helper.log_info("thehive_default_instance={}".format(thehive_default_instance))
     thehive_max_cases = helper.get_global_setting("thehive_max_cases")
     helper.log_info("thehive_max_cases={}".format(thehive_max_cases))
     thehive_sort_cases = helper.get_global_setting("thehive_sort_cases")
@@ -138,7 +140,7 @@ def run_job(helper, cortex_api, job_args):
         try:
             data = row[job_args["data"]]
             datatype = row[job_args["datatype"]]
-        except e as Exception:
+        except Exception as e:
             helper.log_warning(e)
             sys.exit(1)
 
