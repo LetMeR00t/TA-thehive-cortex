@@ -147,7 +147,7 @@ def process_event(helper, *args, **kwargs):
         if epoch10 is not None:
             alert_args['timestamp'] = int(alert_args['timestamp']) * 1000
 
-    alert_args["title"] = helper.get_param("title") if helper.get_param("title") else "Notable event"
+    alert_args["title"] = helper.get_param("title") if helper.get_param("title") else None
     alert_args["description"] = helper.get_param("description").replace("\\n","\n").replace("\\r","\r") if helper.get_param("description") else "No description provided"
     alert_args["tags"] = list(dict.fromkeys(helper.get_param("tags").split(","))) if helper.get_param("tags") else []
     helper.log_debug("[CAA-THCA-50] scope: {} ".format(helper.get_param("scope")))
@@ -180,7 +180,7 @@ def create_alert(helper, thehive: TheHive, alert_args, defaults):
             date=int(alerts[srcRef]['timestamp']),
             description=alerts[srcRef]['description'],
             tags=alert_args['tags'],
-            severity=alert_args['severity'],
+            severity=alerts[srcRef]['severity'],
             tlp=alert_args['tlp'],
             pap=alert_args['pap'],
             type=alert_args['type'],
@@ -212,19 +212,18 @@ def create_alert(helper, thehive: TheHive, alert_args, defaults):
         
         # Processing TTPs if any
         if "ttps" in alerts[srcRef]:
-            for ttp in alerts[srcRef]["ttps"]:
-                response = thehive.procedure.create_in_alert(alert_id=new_alert["_id"], procedure=ttp)
+            helper.log_info(alerts[srcRef]["ttps"])
+            response = thehive.alert.create_procedures(alert_id=new_alert["_id"], procedures=alerts[srcRef]["ttps"])[0]
 
-                if "_id" in response:
-                    # log response status
-                    helper.log_info(
-                        "[CAA-THCA-130] TheHive alert {} was successfully updated with the TTP on url={}".format(new_alert["_id"],thehive.session.hive_url)
-                    )
+            if "_id" in response:
+                # log response status
+                helper.log_info(
+                    "[CAA-THCA-130] TheHive alert {} was successfully updated with the TTPs on url={}".format(new_alert["_id"],thehive.session.hive_url)
+                )
 
-                else:
-                    # somehow we got a bad response code from thehive
-                    helper.log_error(
-                        "[CAA-THCA-135-ERROR] TheHive TTP update on recent alert creation has failed. "
-                        "url={}, data={}, content={}, ttp={}"
-                        .format(thehive.session.hive_url, str(alert), str(response), str(ttp))
-                    )
+            else:
+                # somehow we got a bad response code from thehive
+                helper.log_error(
+                    "[CAA-THCA-135-ERROR] TheHive TTPs update on recent alert creation has failed. "
+                    "url={}, data={}, content={}, ttp={}"
+                    .format(thehive.session.hive_url, str(alert), str(response), str(alerts[srcRef]["ttps"])))

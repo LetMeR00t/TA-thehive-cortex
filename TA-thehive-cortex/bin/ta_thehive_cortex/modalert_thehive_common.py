@@ -37,6 +37,14 @@ OBSERVABLE_TLP = {
     "3": "TLP:RED"
 }
 
+SEVERITY = {
+    "informational": 1,
+    "low": 1,
+    "medium": 2,
+    "high": 3,
+    "critical": 4
+}
+
 # All available data types
 dataTypeList = [
     "autonomous-system",
@@ -200,15 +208,24 @@ def parse_events(helper, thehive: TheHive, alert_args, defaults, target):
 
         # check if title contains a field name instead of a string.
         # if yes, strip it from the row and assign value to title
-        alert["title"] = extract_field(helper, row, alert_args["title"])
+        if alert_args["title"]:
+            alert["title"] = extract_field(helper, row, alert_args["title"])
+        elif "search_name" in row:
+            # Use this information coming from Splunk ES
+            alert["title"] = row["search_name"]
+        else:
+            # Give a default name
+            alert["title"] = "Notable event"
 
         # check if description contains a field name instead of a string.
         # if yes, strip it from the row and assign value to description
         alert["description"] = extract_field(helper, row, alert_args["description"])
 
+        # check if severity is provided or not in the logs (Splunk ES event)
+        alert["severity"] = SEVERITY[row["severity"]] if "severity" in row else alert_args['severity']
+
         # find the field name used for a valid timestamp
         # and strip it from the row
-
         if alert_args['timestamp'] in row:
             newTimestamp = str(int(float(row.pop(alert_args['timestamp']))))
             helper.log_debug("[CAA-THC-80] new Timestamp from row: {} ".format(newTimestamp))
@@ -339,9 +356,22 @@ def parse_events(helper, thehive: TheHive, alert_args, defaults, target):
         else:
             helper.log_debug("[CAA-THC-116] No observable found for an alert: " + str(alert))
 
-        # Process customFields and TTPs
+        # Process customFields
         alert['customFields'] = [InputCustomField(cf) for cf in customFields]
-        alert['ttps'] = [InputProcedure(ttp) for ttp in ttps]
+
+        # Process TTPs
+        if len(ttps) > 0:
+            # TTPs are given manually
+            alert['ttps'] = [InputProcedure(ttp) for ttp in ttps]
+        else:
+            # Try to extract them from Splunk ES information if available
+            mitre_tactics = row["annotations.mitre_attack.mitre_tactic"]
+            mitre_technics = row["annotations.mitre_attack"]
+            date = datetime.datetime.fromtimestamp(int(row['_time'])).strftime("%Y-%m-%d") 
+            alert['ttps'] = []
+            for i in range(0,len(mitre_technics)):
+                ttp = {"tactic": mitre_tactics[i], "patternId": mitre_technics[i], "occurDate": date}
+                alert['ttps'].append(InputProcedure(ttp))
 
         # Store the parsed event
         parsed_events[sourceRef] = alert
