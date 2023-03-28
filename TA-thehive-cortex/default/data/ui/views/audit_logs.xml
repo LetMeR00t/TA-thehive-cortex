@@ -27,7 +27,6 @@
         </search>
         <option name="count">25</option>
         <option name="drilldown">none</option>
-        <option name="refresh.display">progressbar</option>
         <format type="color" field="Level">
           <colorPalette type="map">{"ERROR":#DC4E41,"WARNING":#F1813F,"INFO":#62B3B2,"DEBUG":#708794}</colorPalette>
         </format>
