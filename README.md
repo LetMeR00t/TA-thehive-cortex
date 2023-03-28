@@ -20,7 +20,7 @@
 		- [TheHive Alert History](#thehive-alert-history)
 		- [Create a new alert](#create-a-new-alert)
 	- ["TheHive: Cases" dashboard](#thehive-cases-dashboard)
-		- [TheHive History](#thehive-history)
+		- [TheHive Case History](#thehive-case-history)
 		- [Create a new case](#create-a-new-case)
 		- [View datatypes](#view-datatypes)
 	- ["Cortex: Jobs" dashboard](#cortex-jobs-dashboard)
@@ -216,7 +216,7 @@ The application integrates a preconfigured dashboard with searches allowing you 
 
 ![Cases list](images/cases_list.png)
 
-### TheHive History
+### TheHive Case History
 
 You can retrieve the history of cases in TheHive using the action "LIST".
 For each job, you can see :
