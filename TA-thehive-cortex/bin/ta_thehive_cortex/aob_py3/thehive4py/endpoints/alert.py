@@ -172,6 +172,13 @@ class AlertEndpoint(EndpointBase):
         return self._session.make_request(
             "POST", path=f"/api/v1/alert/{alert_id}/procedure", json=procedure
         )
+    
+    def create_procedures(
+        self, alert_id: str, procedures: List[InputProcedure]
+    ) -> List[OutputProcedure]:
+        return self._session.make_request(
+            "POST", path=f"/api/v1/alert/{alert_id}/procedures", json={"procedures": procedures}
+        )
 
     def find_procedures(
         self,
