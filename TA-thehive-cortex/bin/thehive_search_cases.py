@@ -1,10 +1,10 @@
 # encoding = utf-8
-import ta_thehive_cortex_declare
 import splunk.Intersplunk
 from thehive import initialize_thehive_instance
-from thehive4py.query import And, Eq, Or, Like, Between, String
+from thehive4py.query.filters import Eq, Like, Between
+from thehive4py.query.sort import Asc, Desc
+from thehive4py.query.page import Paginate
 from copy import deepcopy
-import json
 import time
 
 # Global variables
@@ -44,110 +44,111 @@ if __name__ == '__main__':
         filterAssignee = configuration.checkAndValidate(result, "assignee", default=FILTER_ASSIGNEE_DEFAULT, is_mandatory=False)
         filterDate = configuration.checkAndValidate(result, "date", default=FILTER_DATE_DEFAULT, is_mandatory=False)
         maxCases = configuration.checkAndValidate(result, "max_cases", default=defaults["MAX_CASES_DEFAULT"], is_mandatory=False)
+        paginate = Paginate(start=0,end=int(maxCases))
         sortCases = configuration.checkAndValidate(result, "sort_cases", default=defaults["SORT_CASES_DEFAULT"], is_mandatory=False)
+        # Check if the sortCases is using the right object (will not if set manually in the search)
+        if type(sortCases) not in [Asc,Desc]:
+            sortCases = Desc(sortCases[1:]) if sortCases[0] == "-" else Asc(sortCases)
 
-        logger.debug("[THSC-5] Filters are: filterKeyword: "+filterKeyword+", filterStatus: "+filterStatus+", filterSeverity: "+filterSeverity+", filterTags: "+filterTags+", filterTitle: "+filterTitle+", filterAssignee: "+filterAssignee+", filterDate: "+filterDate+", max_cases: "+maxCases+", sort_cases: "+sortCases)
+        logger.debug("[THSC-5] Filters are: filterKeyword: "+filterKeyword+", filterStatus: "+filterStatus+", filterSeverity: "+filterSeverity+", filterTags: "+filterTags+", filterTitle: "+filterTitle+", filterAssignee: "+filterAssignee+", filterDate: "+filterDate+", max_cases: "+str(paginate)+", sort_cases: "+str(sortCases))
 
         # Format the query
-        query = {}
-        elements = []
+        filters = {}
+        
         if filterKeyword != FILTER_KEYWORD_DEFAULT:
-            element = String(filterKeyword)
-            elements.append(element)
+            f = Eq("keyword", filterKeyword)
+            filters = f
         if filterStatus != FILTER_STATUS_DEFAULT:
-            element = Or(*[Eq("status",s) for s in filterStatus.replace(" ","").split(";") if s != "*"])
-            elements.append(element)
+            subFilters = [Eq("status",s) for s in filterStatus.replace(" ","").split(";") if s != "*"]
+            f = subFilters.pop()
+            for otherSubF in subFilters:
+                f = f|otherSubF
+            filters = f if filters == {} else f&filters
         if filterSeverity != FILTER_SEVERITY_DEFAULT:
-            element = Or(*[Eq("severity",s) for s in filterSeverity.replace(" ","").split(";") if s != "*"])
-            elements.append(element)
+            subFilters = [Eq("severity",int(s)) for s in filterSeverity.replace(" ","").split(";") if s != "*"]
+            f = subFilters.pop()
+            for otherSubF in subFilters:
+                f = f|otherSubF
+            filters = f if filters == {} else f&filters
         if filterTags != FILTER_TAGS_DEFAULT:
-            element = Or(*[Eq("tags",s) for s in filterTags.replace(" ","").split(";") if s != "*"])
-            elements.append(element)
+            subFilters = [Eq("tags",s) for s in filterTags.replace(" ","").split(";") if s != "*"]
+            f = subFilters.pop()
+            for otherSubF in subFilters:
+                f = f|otherSubF
+            filters = f if filters == {} else f&filters
         if filterTitle != FILTER_TITLE_DEFAULT:
-            element = Like("title",filterTitle)
-            elements.append(element)
+            f = Like("title", filterTitle)
+            filters = f if filters == {} else f&filters
         if filterAssignee != FILTER_ASSIGNEE_DEFAULT:
-            element = Or(*[Eq("owner",s) for s in filterAssignee.replace(" ","").split(";") if s != "*"])
-            elements.append(element)
+            subFilters = [Eq("assignee",s) for s in filterAssignee.replace(" ","").split(";") if s != "*"]
+            f = subFilters.pop()
+            for otherSubF in subFilters:
+                f = f|otherSubF
+            filters = f if filters == {} else f&filters
         if filterDate != FILTER_DATE_DEFAULT:
             filterDate = filterDate.split(" TO ")
             d1 = filterDate[0] if filterDate[0] != "*" else "*"
             d2 = filterDate[1] if filterDate[1] != "*" else "*"
-            element = Between("startDate",d1,d2)
-            elements.append(element)
-        query = And(*elements)
+            f = Between("startDate",d1,d2)
+            filters = f if filters == {} else f&filters
 
-        logger.info("[THSC-15] Query is: "+json.dumps(query))
+        logger.info("[THSC-15] Query is: "+str(filters))
     
         ## CASES ##
         # Get cases using the query
-        cases = thehive.find_cases(query=query,range='0-'+maxCases, sort=sortCases)
+        cases = thehive.case.find(filters=filters, sortby=sortCases, paginate=paginate)
 
-        # Check status_code and process results
-        if cases.status_code not in (200,201):
-            logger.error("[THSC-20-ERROR] "+str(cases.content))
+        for case in cases:
+            logger.debug("[THSC-25] Getting this case: "+str(case))
+            result_copy = deepcopy(result)
 
-        for case in cases.json():
-             logger.debug("[THSC-25] Getting this case: "+str(case))
-             result_copy = deepcopy(result)
+            logger.debug("[THSC-26] Get case ID \""+str(case["_id"])+"\"")
 
-             logger.debug("[THSC-26] Get case ID \""+str(case["id"])+"\"")
+            # Remove double underscore due to private data in the response
+            event = {("thehive_case_"+k).replace("__","_"):v for k,v in case.items()}
 
-             event = { "thehive_case_"+k:v for k,v in case.items() if not k.startswith('_') }
-
-             logger.debug("[THSC-30] Event before post processing: "+str(event))
+            logger.debug("[THSC-30] Event before post processing: "+str(event))
              
-             # Post processing for Splunk
-             ## CUSTOM FIELDS ##
-             if "thehive_case_customFields" in event and event["thehive_case_customFields"] != {}:
-                 customFields = []
-                 logger.debug("[THSC-31] Found custom fields: "+str(event["thehive_case_customFields"]))
-                 for cf in event["thehive_case_customFields"]:
-                     for cftype in ["string","number","integer","boolean","date","float"]:
-                         if cftype in event["thehive_case_customFields"][cf]:
-                             # Pre-processing
-                             if cftype=="date" and event["thehive_case_customFields"][cf][cftype] is not None:
-                                 event["thehive_case_customFields"][cf][cftype] = time.strftime("%c %z",time.gmtime(int(event["thehive_case_customFields"][cf][cftype])/1000))
-                             customFields.append(cf+"::"+str(event["thehive_case_customFields"][cf][cftype]))
-                             break
-                 event["thehive_case_customFields"] = customFields
-                 logger.debug("[THSC-35] TheHive - Custom fields: "+str(customFields))
+            # Post processing for Splunk
+            ## CUSTOM FIELDS ##
+            if "thehive_case_customFields" in event and event["thehive_case_customFields"] != []:
+                customFields = []
+                logger.debug("[THSC-31] Found custom fields: "+str(event["thehive_case_customFields"]))
+                for cf in event["thehive_case_customFields"]:
+                    cftype = cf["type"]
+                    if cftype=="date":
+                        cf["value"] = time.strftime("%c %z",time.gmtime(int(cf["value"])/1000))
+                    customFields.append(cf["name"]+"::"+str(cf["value"]))
+                event["thehive_case_customFields"] = customFields
+                logger.debug("[THSC-35] TheHive - Custom fields: "+str(customFields))
 
-             ## METRICS ##
-             if "thehive_case_metrics" in event and event["thehive_case_metrics"] != {}:
-                 metrics = []
-                 for m in event["thehive_case_metrics"]:
-                     metrics.append(m+"::"+str(event["thehive_case_metrics"][m]))
-                 event["thehive_case_metrics"] = metrics
-                 logger.debug("[THSC-36] TheHive - Metrics: "+str(metrics))
+            ## DATES ##
+            event["thehive_case_startDate"] = event["thehive_case_startDate"]/1000
+            if "thehive_case_endDate" in event and event["thehive_case_endDate"] is not None:
+                event["thehive_case_endDate"] = event["thehive_case_endDate"]/1000
+            event["thehive_case_createdAt"] = event["thehive_case_createdAt"]/1000
+            if "thehive_case_updatedAt" in event and event["thehive_case_updatedAt"] is not None: 
+                event["thehive_case_updatedAt"] = event["thehive_case_updatedAt"]/1000
 
-             ## DATES ##
-             event["thehive_case_startDate"] = event["thehive_case_startDate"]/1000
-             if "thehive_case_endDate" in event and event["thehive_case_endDate"] is not None:
-                 event["thehive_case_endDate"] = event["thehive_case_endDate"]/1000
-             event["thehive_case_createdAt"] = event["thehive_case_createdAt"]/1000
-             if "thehive_case_updatedAt" in event and event["thehive_case_updatedAt"] is not None: 
-                 event["thehive_case_updatedAt"] = event["thehive_case_updatedAt"]/1000
+            ## TASKS ##
+            tasks = thehive.case.find_tasks(case["_id"])
+            tasks_statuses = {}
+            for task in tasks:
+                if task["status"] in tasks_statuses:
+                    tasks_statuses[task["status"]] += 1
+                else:
+                    tasks_statuses[task["status"]] = 1
+            event["thehive_case_tasks"] = [k+":"+str(v) for k,v in tasks_statuses.items()]
+            logger.debug("[THSC-40] TheHive - Tasks: "+str(event["thehive_case_tasks"]))
 
-             ## TASKS ##
-             tasks = thehive.get_case_tasks(case["id"])
-             tasks_statuses = {}
-             for task in tasks.json():
-                 if task["status"] in tasks_statuses:
-                     tasks_statuses[task["status"]] += 1
-                 else:
-                     tasks_statuses[task["status"]] = 1
-             event["thehive_case_tasks"] = [k+":"+str(v) for k,v in tasks_statuses.items()]
-             logger.debug("[THSC-40] TheHive - Tasks: "+str(event["thehive_case_tasks"]))
+            ## OBSERVABLES ##
+            observables = thehive.case.find_observables(case["_id"])
+            event["thehive_case_observables"] = len(observables)
+            logger.debug("[thsc-45] thehive - observables: "+str(event["thehive_case_observables"])) 
 
-             ## OBSERVABLES ##
-             observables = thehive.get_case_observables(case["id"])
-             event["thehive_case_observables"] = len([o for o in observables.json() if "status" in o and o["status"] == "ok"])
-             logger.debug("[thsc-45] thehive - observables: "+str(event["thehive_case_observables"])) 
-
-             logger.debug("[THSC-46] Event after post processing: "+str(event))
+            logger.debug("[THSC-46] Event after post processing: "+str(event))
          
-             result_copy.update(event)
-             outputResults.append(deepcopy(result_copy))
+            result_copy.update(event)
+            outputResults.append(deepcopy(result_copy))
 
     splunk.Intersplunk.outputResults(outputResults)
