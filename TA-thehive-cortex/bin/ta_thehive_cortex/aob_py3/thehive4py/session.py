@@ -9,7 +9,6 @@ import requests.auth
 from thehive4py.__version__ import __version__
 from thehive4py.errors import TheHiveError
 
-
 class SessionJSONEncoder(jsonlib.JSONEncoder):
     """Custom JSON encoder class for TheHive session."""
 
@@ -26,11 +25,15 @@ class TheHiveSession(requests.Session):
         apikey: Optional[str] = None,
         username: Optional[str] = None,
         password: Optional[str] = None,
+        proxies={},
         verify=None,
+        cert=None
     ):
         super().__init__()
         self.hive_url = self._sanitize_hive_url(url)
+        self.proxies = proxies
         self.verify = verify
+        self.cert = cert
         self.headers["User-Agent"] = f"thehive4py/{__version__}"
 
         if username and password:
@@ -75,7 +78,9 @@ class TheHiveSession(requests.Session):
             data=data,
             files=files,
             headers=headers,
+            proxies=self.proxies,
             verify=self.verify,
+            cert=self.cert,
             stream=bool(download_path),
         )
 

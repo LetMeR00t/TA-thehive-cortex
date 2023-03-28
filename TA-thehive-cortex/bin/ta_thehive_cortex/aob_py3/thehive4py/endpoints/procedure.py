@@ -11,6 +11,10 @@ from thehive4py.types.procedure import (
     InputUpdateProcedure,
     OutputProcedure,
 )
+from thehive4py.types.catalog import OutputCatalog
+from thehive4py.types.pattern import OutputPattern
+from thehive4py.query import Eq, Asc
+
 
 
 class ProcedureEndpoint(EndpointBase):
@@ -65,5 +69,44 @@ class ProcedureEndpoint(EndpointBase):
             "POST",
             path="/api/v1/query",
             params={"name": "procedures"},
+            json={"query": query},
+        )
+
+    def find_list_catalog(
+        self,
+        filters: Optional[FilterExpr] = None,
+        sortby: Optional[SortExpr] = None,
+        paginate: Optional[Paginate] = None,
+    ) -> List[OutputCatalog]:
+        query: QueryExpr = [
+            {"_name": "listCatalog"},
+            *self._build_subquery(filters=filters, sortby=sortby, paginate=paginate),
+        ]
+
+        return self._session.make_request(
+            "POST",
+            path="/api/v1/query",
+            params={"name": "get-list-catalog"},
+            json={"query": query},
+        )
+
+    def get_catalog(
+        self,
+        catalog_id: str
+    ) -> List[OutputPattern]:
+        
+        filters = Eq("PatternType","attack-pattern")&Eq("revoked",False)
+        sortby = Asc("patternId")
+
+        query: QueryExpr = [
+            {"_name": "getCatalog", "idOrName": catalog_id},
+            {"_name": "patterns"},
+            *self._build_subquery(filters=filters, sortby=sortby),
+        ]
+
+        return self._session.make_request(
+            "POST",
+            path="/api/v1/query",
+            params={"name": "get-catalog-"+catalog_id+"-patterns"},
             json={"query": query},
         )
