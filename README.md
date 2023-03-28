@@ -170,7 +170,8 @@ For each alert, you can see :
 - **TLP**: TLP of the alert
 - **Source**: the set source of the alert (default is "splunk")
 - **Severity**: Severity of the alert
-- **Observables**: number of observables in the alert
+- **TTPs**: TTPs of the case (just the number but you can retrieve the full detail in the logs)
+- **Observables**: Number of observables for the case (just the number but you can retrieve the full detail in the logs)
 - **Date**: date & time of the alert
 - **Custom Fields**: custom fields of the alert
 - **Tags**: Tags of the alert
@@ -226,7 +227,8 @@ For each job, you can see :
 - **Tags**: Tags of the case
 - **Severity**: Severity of the case
 - **Tasks**: Tasks of the case by status
-- **Observables**: Number of observables for the case
+- **TTPs**: TTPs of the case (just the number but you can retrieve the full detail in the logs)
+- **Observables**: Number of observables for the case (just the number but you can retrieve the full detail in the logs)
 - **Assignee**: Current assignee for the case
 - **Start Date**: Date and time for the start of the case
 - **Custom Fields**: Current custom fields for the case
