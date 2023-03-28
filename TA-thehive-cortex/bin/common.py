@@ -1,14 +1,14 @@
 # encoding = utf-8
 import os
 import sys
-import ta_thehive_cortex_declare
 import json
-from splunk.clilib import cli_common as cli
+from thehive4py.query.sort import Asc, Desc
 import re
+import csv
 
 class Settings(object):
 
-    def __init__(self, client, search_settings=None, logger=None):
+    def __init__(self, client=None, settings=None, logger=None):
         # Initialize all settings to None
         self.logger = logger
 
@@ -21,30 +21,49 @@ class Settings(object):
         self.query = {"output_mode": "json"}
 
         # Get instances
-        if search_settings is not None and "namespace" in search_settings:
-            namespace = search_settings["namespace"]
+        if settings is not None and "namespace" in settings:
+            namespace = settings["namespace"]
             # Get logging
-            logging_settings = json.loads(
-                self.client.get("TA_thehive_cortex_settings/logging", owner="nobody", app=self.namespace, **self.query).body.read())["entry"][0]["content"]
-            if "loglevel" in logging_settings:
-                logger.setLevel(logging_settings["loglevel"])
+            logging_settings = self.readDefaultLocalConfiguration("ta_thehive_cortex_settings.conf")["logging"]
+            logger.setLevel(logging_settings["loglevel"])
             self.logger.debug("[S2] Logging mode set to " + str(logging_settings["loglevel"]))
 
-        proxy_clear_password = None
-        for credential in self.client.storage_passwords:
-            username = credential.content.get('username')
-            if 'proxy' in username:
-                clear_credentials = credential.content.get('clear_password')
-                if 'proxy_password' in clear_credentials:
-                    proxy_creds = json.loads(clear_credentials)
-                    proxy_clear_password = str(proxy_creds['proxy_password'])
+        # Retrieve password information in a dedicated list
+        if client is not None:
+            self._passwords = {}
+            proxy_clear_password = None
+            sp = self.client.storage_passwords
+            for credential in sp:
+                username = credential['username'].split("``")[0]
+                # Process proxy credentials settings
+                if 'proxy' in username:
+                    clear_credentials = credential['clear_password']
+                    if 'proxy_password' in clear_credentials:
+                        proxy_creds = json.loads(clear_credentials)
+                        proxy_clear_password = str(proxy_creds['proxy_password'])
+                        #TODO: Review this part as it's seems to not be used
+                # Otherwise, keep it as a standard user
+                else:
+                    # Only keep the value if it's a clear dictionnary
+                    if "password" in credential['clear_password']:
+                        clear_password = json.loads(credential['clear_password'])
+                        self._passwords[username] = clear_password["password"]
 
         self.__instances = {}
         instances_by_account_name = {}
-        try:
-            content = self.client.kvstore["kv_thehive_cortex_instances"].data.query()
-            for row in content:
-                self.logger.debug("[S5] KVStore, getting " + str(row))
+
+        # Open and read the file with the instances information
+        instances_file = os.path.join(os.environ['SPLUNK_HOME'], 'etc', 'apps', 'TA-thehive-cortex','lookups', 'thehive_cortex_instances.csv')
+        
+        with open(instances_file, 'r') as file:
+            content = csv.reader(file)
+            header = next(content)
+            for line in content:
+                # Build the row as a dict
+                row = {}
+                for i in range(0,len(line)):
+                    row[header[i]] = line[i]
+                self.logger.debug("[S5] New instance detected, getting " + str(row))
                 # Process the new instance
                 row_id = row["id"]
                 del row["id"]
@@ -62,6 +81,9 @@ class Settings(object):
                         row["client_cert"] = client_certificate
                     else:
                         self.logger.warning("[S8] Be aware that a client certificate for instance \""+str(row_id)+"\" was provided but the file doesn't exist: "+client_certificate)
+
+                # Translate the verify parameter
+                row["verify"] = True if row["verify"] == 1 else False
 
                 # get proxy parameters if any
                 if row["proxy_url"] != "-":
@@ -98,66 +120,93 @@ class Settings(object):
                 if "uri" not in row or row["uri"] is None or row["uri"] == "-":
                     row["uri"] = "/"
 
-                self.logger.debug("[S10] KVStore, adding key \"" + str(row_id) + "\" " + str(row))
+                self.logger.debug("[S10] New instance parsed, adding key \"" + str(row_id) + "\" " + str(row))
                 # Store the new instance
                 row_dict = json.loads(json.dumps(row))
                 self.__instances[row_id] = row_dict
-        except IOError as e:
-            self.logger.error("[S11-ERROR] Could not open/access/process KVStore: ")
-            sys.exit(11)
 
         # Get additional parameters
-        self.__additional_parameters = json.loads(self.client.get("TA_thehive_cortex_settings/additional_parameters", owner="nobody", app=self.namespace, **self.query).body.read())["entry"][0]["content"]
+        self.__additional_parameters = self.readDefaultLocalConfiguration("ta_thehive_cortex_settings.conf")["additional_parameters"]
         self.logger.debug("[S15] Getting these additional parameters: " + str(self.__additional_parameters))
 
         # Get username of account name
+        usernames_by_account = self.readConfFile("local","ta_thehive_cortex_account.conf")
         for account in instances_by_account_name.keys():
             instances_of_account_name = instances_by_account_name[account]
-            username = self.getAccountUsername(account)
+            username = usernames_by_account[account]["username"]
             for i in instances_of_account_name:
                     self.__instances[i]["username"] = username 
         self.logger.debug("[S20] Getting these usernames from account: "+str(self.__instances))
 
-        # Get storage passwords for account passwords
-        for account in instances_by_account_name.keys():
-            # Get account details by instance
-                instances_of_account_name = instances_by_account_name[account]
-                password = self.getAccountPassword(account)
-                for i in instances_of_account_name:
-                    self.__instances[i]["password"] = password
-        self.logger.debug("[S25] Successfully recovering passwords from storage passwords")
+        if client is not None:
+            # Get storage passwords for account passwords
+            for account in instances_by_account_name.keys():
+                # Get account details by instance
+                    instances_of_account_name = instances_by_account_name[account]
+                    password = self.getAccountPassword(account)
+                    for i in instances_of_account_name:
+                        self.__instances[i]["password"] = password
+            self.logger.debug("[S25] Successfully recovering passwords from storage passwords")
+
+    def readConfFile(self, folder, filename):
+        """ This function is used to retrieve information from a .conf file stored in a specified folder in this application """
+        conf = {}
+
+        # Open and read the conf file
+        conf_file = os.path.join(os.environ['SPLUNK_HOME'], 'etc', 'apps', 'TA-thehive-cortex',folder, filename)
+        with open(conf_file, 'r') as file:
+            stanza = None
+            for line in file:
+                if line.startswith("["):
+                    # We have a new stanza
+                    stanza = line.strip()[1:][:-1]
+                    conf[stanza] = {}
+                if " = " in line:
+                    # Build a dictionnary with the information
+                    key, value = line.partition(" = ")[::2]
+                    # Check if the key exist. If so, then create a list of detected values accordingly
+                    skey = key.strip()
+                    if skey in conf:
+                        if type(conf[skey]) is list:
+                            conf[stanza][skey] += [value.rstrip('\n')]
+                        else:
+                            conf[stanza][skey] = [value.rstrip('\n')] + [conf[skey]]
+                    else:
+                        conf[stanza][skey] = value.rstrip('\n')
+        self.logger.debug("[S26] Configuration "+folder+"/"+filename+" was read: "+str(conf))
+        return conf
+
+    def readDefaultLocalConfiguration(self, filename):
+        """ This function is used to retrieve information from a default/local configuration merged dictionnary where local is prior to default settings """
+
+        # Open and read the default file
+        default = self.readConfFile('default', filename)
+        # Do the same with the local file if it's existing and merge information
+        local = self.readConfFile('local', filename)
+
+        return {**default, **local}
 
     def sanitizeInstance(self, instance):
         result = instance
         result["password"] = "**********"
         return result
 
-    def getAccountUsername(self, account):
-        """ Get the username of an account """
-        username = None
-        for account_details in json.loads(self.client.get("TA_thehive_cortex_account", owner="nobody", app=self.namespace,**self.query).body.read())["entry"]:
-            account_details_name = account_details["name"]
-            if account_details_name == account:
-                if "username" in account_details["content"]:
-                    username = account_details["content"]["username"] 
-        return username
-
     def getAccountPassword(self, account):
         """ Get storage passwords for the account password """
         password = None
-        for s in self.client.storage_passwords:
-            if account in s['username'] and "password" in s['clear_password']:
-                password = str(json.loads(s["clear_password"])["password"])
+        if account in self._passwords:
+            password = self._passwords[account]
+        else:
+            self.logger.error("[S27-ERROR] This account ("+account+") doesn't exist in your configuration and it's password can't be retrieved")
         return password
-
 
     def getInstanceURL(self, instance_id):
         """ This function returns the URL of the given instance """
         try:
             instance = self.__instances[instance_id]
         except KeyError as e:
-            self.logger.debug("[S26-ERROR] This instance ID ("+instance_id+") doesn't exist in your configuration")
-            sys.exit(26)
+            self.logger.error("[S29-ERROR] This instance ID ("+instance_id+") doesn't exist in your configuration")
+            sys.exit(27)
 
         # Empty the root URI as it will be filled by the API library directly
         uri = str(instance["uri"]) if str(instance["uri"])!="/" else ""
@@ -170,12 +219,14 @@ class Settings(object):
         try:
             instance = self.__instances[instance_id]
         except KeyError as e:
-            self.logger.debug("[S31-ERROR] This instance ID ("+instance_id+") doesn't exist in your configuration")
+            self.logger.error("[S31-ERROR] This instance ID ("+instance_id+") doesn't exist in your configuration")
             sys.exit(31)
 
         if "username" not in instance:
             instance["username"] = "-"
             instance["password"] = "-"
+        elif "password" not in instance:
+            instance["password"] = None
         self.logger.debug("[S35] This instance ID ("+str(instance_id)+") returns: "+str(instance["username"]))
         return (instance["username"], instance["password"])
 
@@ -189,6 +240,12 @@ class Settings(object):
             self.logger.warning("[S41] Can't recover the setting \""+str(setting)+"\" for the instance \""+str(instance_id)+"\"")
         return instance
 
+    def getTheHiveDefaultInstance(self):
+        """ This function returns the default instance ID of a TheHive instance if set"""
+        param = self.__additional_parameters["thehive_default_instance"] if "thehive_default_instance" in self.__additional_parameters else None
+        self.logger.debug("[S45] Getting this parameter : thehive_max_cases="+str(param))
+        return param
+
     def getTheHiveCasesMax(self):
         """ This function returns the maximum number of cases to return of a TheHive instance """
         param = self.__additional_parameters["thehive_max_cases"] if "thehive_max_cases" in self.__additional_parameters else 100
@@ -198,6 +255,7 @@ class Settings(object):
     def getTheHiveCasesSort(self):
         """ This function returns the sort key to use for cases of a TheHive instance """
         param = self.__additional_parameters["thehive_sort_cases"] if "thehive_sort_cases" in self.__additional_parameters else "-startedAt"
+        param = Desc(param[1:]) if param[0] == "-" else Asc(param)
         self.logger.debug("[S50] Getting this parameter: thehive_sort_cases="+str(param))
         return param
 
@@ -210,7 +268,14 @@ class Settings(object):
     def getTheHiveAlertsSort(self):
         """ This function returns the sort key to use for alerts of a TheHive instance """
         param = self.__additional_parameters["thehive_sort_alerts"] if "thehive_sort_alerts" in self.__additional_parameters else "-date"
+        param = Desc(param[1:]) if param[0] == "-" else Asc(param)
         self.logger.debug("[S52] Getting this parameter: thehive_sort_alerts="+str(param))
+        return param
+
+    def getTheHiveTTPCatalogName(self):
+        """ This function returns the TTP Catalog name of a TheHive instance """
+        param = self.__additional_parameters["thehive_ttp_catalog_name"] if "thehive_ttp_catalog_name" in self.__additional_parameters else "Enterprise Attack"
+        self.logger.debug("[S52] Getting this parameter: thehive_ttp_catalog_name="+str(param))
         return param
 
     def getCortexJobsMax(self):

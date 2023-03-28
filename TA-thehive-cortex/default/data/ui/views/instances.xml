@@ -54,8 +54,6 @@
     </input>
     <input type="dropdown" token="add_type" depends="$show_action_add$">
       <label>Type</label>
-      <choice value="TheHive3">TheHive3</choice>
-      <choice value="TheHive4">TheHive4</choice>
       <choice value="TheHive5">TheHive5</choice>
       <choice value="Cortex3">Cortex3</choice>
     </input>
