@@ -16,14 +16,13 @@
 		- [Logging](#logging)
 	- [Refreshing the available analyzers](#refreshing-the-available-analyzers)
 - [Usage](#usage)
-	- ["TheHive: Cases" dashboard](#thehive-cases-dashboard)
-		- [TheHive History](#thehive-history)
-		- [Create a new case](#create-a-new-case)
 	- ["TheHive: Alerts" dashboard](#thehive-alerts-dashboard)
 		- [TheHive Alert History](#thehive-alert-history)
 		- [Create a new alert](#create-a-new-alert)
+	- ["TheHive: Cases" dashboard](#thehive-cases-dashboard)
+		- [TheHive History](#thehive-history)
+		- [Create a new case](#create-a-new-case)
 		- [View datatypes](#view-datatypes)
-		- [View logs](#view-logs)
 	- ["Cortex: Jobs" dashboard](#cortex-jobs-dashboard)
 		- [Cortex History](#cortex-history)
 		- [Run new tasks](#run-new-tasks)
@@ -34,29 +33,29 @@
 
 # Introduction
 
-This TA allows to **add interaction features** between [TheHive or Cortex (TheHive project)](https://thehive-project.org/) and Splunk. It allows to retrieve all cases/jobs information from TheHive/Cortex and to perform actions on these instances using Splunk, from a search or from a predefined dashboard.
-All data types work with the exception of "file" because Splunk does not allow to send a file easily.
+This TA allows to **add interaction features** between [TheHive or Cortex (StrangeBee)](https://www.strangebee.com/) and Splunk. It allows to retrieve all kind of information from TheHive/Cortex and to perform actions on these instances using Splunk, from a search or from a predefined dashboard.
 
-This TA is supporting both versions of TheHive (3 and 4). It's also supporting the Cortex 3 version.
+This TA is supporting only TheHive 5. For having an app supporting TheHive 3 or 4, please check the oldest releases. It's also supporting the Cortex 3 version.
 
-**Note**:
-It's working using Python3 with the official thehive4py and cortex4api library included. Please note that few modifications were performed to avoid using the "magic" library which is difficult to add in this app.
-**A support was added to use Python2**. This is not an official library, it's a syntactically-revised version.
-This application is also available for Splunk version>7.x.
+> **Note**:
+It's working using Python3 with the official thehive4py and cortex4api library included. Please note that few modifications were performed to improve the features of those libraries and are shared with the original repositories owners in order to merge them in a future version
+**A support was added to use Python 3.7**. As Splunk is using at most Python 3.7.11 at this time of writing, we added the support to the original library. This is not an official library, it's a syntactically-revised version.
 
 # What is TheHive/Cortex ?
 
-If you need more information about TheHive/Cortex project, please [follow this link](https://thehive-project.org/).
-You can find the related [TheHive Github here](https://github.com/TheHive-Project/TheHive) and [Cortex Github here](https://github.com/TheHive-Project/Cortex) .
+If you need more information about TheHive/Cortex project, please [follow this link](https://www.strangebee.com/).
+You can find the related [TheHive Project here](https://github.com/TheHive-Project) (including Cortex).
 
 # Use Cases
 
-The objective is to interface a SIEM tool such as Splunk in order to be able to perform automated tasks on observables/IOCs.
+The objective is to interface a SIEM tool such as Splunk in order to be able to perform automated tasks on observables/IOCs or TTPs.
 This TA has been designed in such a way that :
 
-- You can retrieve information from TheHive about the different cases that were created
+- You can pull events periodically from TheHive about the different cases/alerts that were created or updated
+- You can create new alert or case from Splunk in TheHive using the power of Splunk whether in a search or in a predefined dashboard.
+- You can run a function in TheHive from an alert action
+- You can interface Splunk Enterprise Security with TheHive
 - You can retrieve information from Cortex about the different jobs that are being performed on the scanners.
-- You can create new case from Splunk in TheHive using the power of Splunk whether in a search or in a predefined dashboard.
 - You can run new tasks from Splunk in Cortex using the power of Splunk whether in a search or a predefined dashboard.
 
 # Installation
@@ -68,6 +67,16 @@ This application contains all the python libraries to work autonomously.
 **However**, predefined dashboards of the application requires the installation of this application : [Status Indicator - Custom Visualization](https://splunkbase.splunk.com/app/3119/)
 
 You should create a specific user and organization in your TheHive/Cortex instances to interact with Splunk.
+
+> ⚠️ If you were using an old application (such as v2.3.1) and wants to migrate to the last major version (v3.x.x), there is a change with the way how instances are stored into Splunk. It's not using anymore a KVStore but a CSV lookup to do so. Please, follow the below procedure
+
+Before the migration, you should backup your instances information using a:
+
+- `| inputlookup thehive_cortex_instances | outputlookup thehive_cortex_instances_bk.csv`
+
+in another application such as "search"), then migrate and finally restore the backup using a:
+
+- `| thehive_cortex_instances_bk.csv | outputlookup thehive_cortex_instances`
 
 ## Configuration
 
@@ -86,7 +95,7 @@ An account is used to authenticate to one instance. You have to add every accoun
 - **Password**: The password field must be filled with **a valid API key** to use for authentification
 
 ![Accounts](images/accounts.png)
-*This image is an example of one registered account named "Splunk_TheHive3"*
+*This image is an example of one registered account named "TheHive5_Cloud"*
 
 ### TheHive/Cortex instances
 
@@ -113,17 +122,19 @@ Once you've done that, you can configure all your instances. An instance is an e
 
 On the above example, you can see a list of defined instances:
 
-- The 1st example could be an on-premise instance with its own certificate
-- The 2nd example could be an on-premise instance with custom destination port
-- The 3rd example could be an on-premise instance with a custom proxy
-- The 4th example could be a Cloud instance with a custom URI (here, the instance is accessible using "https://my-cloud-website.com:443/thehive"
+- The 1st example could be an on-premise instance without any security check
+- The 2nd example could be an on-premise instance with a client certificate to use for the authentication to a proxy
+- The 3rd example could be a Cloud instance with a custom URI to access the TheHive application but without any certificate check
+- The 4th example could be a Cloud instance with a custom URI to access the TheHive application, to a certain organisation and ensuring the certificate check
 
 ### Logging
 
 You can enable a "debug" logging mode (under **Configuration**) to have more information in searches/logs.
-By default, a logging file is created under `$SPLUNK_HOME/var/log/splunk/` with the file name starting with "command_"
+By default, all logging files are created under `$SPLUNK_HOME/var/log/splunk/`
 
-You will be able to have these logs in your search.log.
+You will be able to have these logs in your search.log too.
+
+![Audit logs](images/audit_logs.png)
 
 ## Refreshing the available analyzers
 
@@ -141,60 +152,6 @@ These information are stored in Splunk in order to have a mapping between availa
 
 Once the application is configured and the analyzers are loaded, you have several options for interfacing with TheHive/Cortex.
 
-## "TheHive: Cases" dashboard
-
-The application integrates a preconfigured dashboard with searches allowing you to easily interface with TheHive.
-
-![Cases list](images/cases_list.png)
-
-### TheHive History
-
-You can retrieve the history of cases in TheHive using the action "LIST".
-For each job, you can see :
-
-- **TLP**: TLP of the case
-- **Title**: Title of the case
-- **Tags**: Tags of the case
-- **Severity**: Severity of the case
-- **Tasks**: Tasks of the case by status
-- **Observables**: Number of observables for the case
-- **Assignee**: Current assignee for the case
-- **Start Date**: Date and time for the start of the case
-- **Metrics**: Current metrics for the case
-- **Custom Fields**: Current custom fields for the case
-- **Status**: Current status for the case with detailed resolution
-- **ID**: ID of the job
-
-**Note: You can click on the ID to view the result of the job directly on TheHive** (you should be authenticated to TheHive)
-
-You can set filters for the history:
-
-- **Keyword**: A keyword to search on
-- **Status**: Status of the case
-- **Severity**: Severity of the case
-- **Tags**: Tags of the case
-- **Title**: Title of the case
-- **Assignee**: Assignee of the case
-- **Date**: Creation date of the case
-
-### Create a new case
-
-You can create a new case from Splunk using the "CREATE" action.
-
-![Cases create](images/cases_create.png)
-
-You have to specify some inputs:
-
-- **Title**: Title for this new case
-- **Severity**: Severity for this new case
-- **Tags**: Tags for this new case (they are added by specifiying values in the "Enter a new tag" input)
-- **Tasks**  Tasks for this new case (they are added by specifying values in the "Enter a new task" input)
-- **TLP**: TLP for this new case
-- **PAP**: PAP for this new case
-- **Description**: Description for this new case
-
-The search will create the new case and return information such as the job ID.
-
 ## "TheHive: Alerts" dashboard
 
 The application integrates a preconfigured dashboard with searches allowing you to easily interface with TheHive and manage TheHive alerts.  
@@ -208,14 +165,12 @@ You can retrieve the history of alerts in TheHive using the action "LIST".
 For each alert, you can see :
 
 - **Alert ID**: ID of the alert
-- **Reference**: the unique reference for this alert (default is "SPK&lt;EPOCH timestamp&gt;")
-- **Type**: type of alert (default is "alert")
+- **Title**: Title of the alert
 - **Read**: the status of the alert on TheHive (unread, read, imported)
 - **TLP**: TLP of the alert
-- **Title**: Title of the alert
 - **Source**: the set source of the alert (default is "splunk")
 - **Severity**: Severity of the alert
-- **Artifacts**: number of artifacts (observables) in the alert
+- **Observables**: number of observables in the alert
 - **Date**: date & time of the alert
 - **Custom Fields**: custom fields of the alert
 - **Tags**: Tags of the alert
@@ -255,23 +210,74 @@ You have to specify some inputs:
 
 The search will retrieve the results from SID and create the new alert. You can check the new alert in TheHive Alert History
 
+## "TheHive: Cases" dashboard
+
+The application integrates a preconfigured dashboard with searches allowing you to easily interface with TheHive.
+
+![Cases list](images/cases_list.png)
+
+### TheHive History
+
+You can retrieve the history of cases in TheHive using the action "LIST".
+For each job, you can see :
+
+- **TLP**: TLP of the case
+- **Title**: Title of the case
+- **Tags**: Tags of the case
+- **Severity**: Severity of the case
+- **Tasks**: Tasks of the case by status
+- **Observables**: Number of observables for the case
+- **Assignee**: Current assignee for the case
+- **Start Date**: Date and time for the start of the case
+- **Custom Fields**: Current custom fields for the case
+- **Status**: Current status for the case with detailed resolution
+- **ID**: ID of the job
+
+**Note: You can click on the ID to view the result of the job directly on TheHive** (you should be authenticated to TheHive)
+
+You can set filters for the history:
+
+- **Keyword**: A keyword to search on
+- **Status**: Status of the case
+- **Severity**: Severity of the case
+- **Tags**: Tags of the case
+- **Title**: Title of the case
+- **Assignee**: Assignee of the case
+- **Date**: Creation date of the case
+
+### Create a new case
+
+The standard way is to use the alert action "TheHive - Create a new case" in your saved Splunk alerts or correlation searches.
+You can manually create a new case from Splunk using the "CREATE" action and a valid SID of a Splunk search.
+
+![Cases create](images/cases_create.png)
+
+You have to specify some inputs:
+
+- **Job SID (input data)**: SID of a search (you can retrieve SIDs from Splunk > Activity > Jobs)
+- **Title**: Title for this new case
+- **Severity**: Severity for this new case
+- **Tags**: Tags for this new case (they are added by specifiying values in the "Enter a new tag" input)
+- **TLP**: TLP for this new case
+- **PAP**: PAP for this new case
+- **Source**: source of this case (you can provide a field name to set this value from results)
+- **Timestamp field**: field containing a valid EPOCH timestamp (10-digit for s;13-digit for ms) - if not present, default to now()
+- **Unique ID field**: the unique reference for this case. If a field name is provided, it is used to group results rows in several alerts
+- **Case Template**: Case template to use by default when importing alert into a case
+- **Scope**: a swithc to include all fields from result set (as type "other") or only field names listed in lookup table "thehive_datatypes.csv"
+
+The search will create the new case accordingly
+
 ### View datatypes
 
-Alert action "TheHive - Create a new alert" uses a lookup table to identidy supported fields as TheHive datatypes or custom fields.
+Alert action "TheHive - Create a new alert" uses a lookup table to identify supported fields as TheHive datatypes or custom fields.
 If this lookup table is missing, first call of alert action will attempt to create it with default list of supported data types.
-You can extend this list with :  
 
-- standard CIM fields:  e.g. field src of field type "artifact" and data type "ip")
-- custom fields: e.g. SAW_link of field type "customField" (case sensitive) and data type "string". Supported custom fields are `string`, `boolean`, `number` (only TH3), `date`, `integer` (only TH4), `float` (only TH4)
+For every event that will be processed by a custom alert action, the script will try to determine which fields are observables and for that it will rely on this table accordingly. For instance, if you event has a field named "fqdn", it will consider the value of the field as a "fqdn" observable. You can update your list with your own fields accordingly by updating the lookup.
 
-![Alerts lookup thehive datatypes](images/alerts_lookup_thehive_datatypes)
+> For custom fields, we are directly retrieving the custom fields from the TheHive instance and it's working the same meaning that if you have a custom field named "my_custom_field", then you just need to have a field named "my_custom_field" with the value you want to set for this custom field.
 
-### View logs
-
-This view shows a summary of successfully created alert and failed alert creation for given time frame.
-The panel underneath provides details depending on log level set for the app (recommended level is INFO).
-
-![Alerts view logs](images/alerts_view_logs.png)
+![Alerts lookup thehive datatypes](images/alerts_lookup_thehive_datatypes.png)
 
 ## "Cortex: Jobs" dashboard
 
