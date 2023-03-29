@@ -120,8 +120,6 @@ def process_event(helper, *args, **kwargs):
     helper.log_info("[CAA-THCA-35] LOG level to: " + helper.log_level)
     helper.set_log_level(helper.log_level)
 
-    helper.log_info("[CAA-THCA-36] Alert action thehive_create_a_new_alert started at {}".format(time.time()))
-
     # Get the instance connection and initialize settings
     instance_id = helper.get_param("thehive_instance_id")
     helper.log_debug("[CAA-THCA-40] TheHive instance found: " + str(instance_id))
@@ -161,16 +159,16 @@ def process_event(helper, *args, **kwargs):
 
     # Create the alert
     helper.log_info("[CAA-THCA-56] Configuration is ready. Creating the alert...")
-    create_alert(helper, thehive, alert_args, defaults)
+    create_alert(helper, thehive, configuration, alert_args)
     return 0
 
 
 
-def create_alert(helper, thehive: TheHive, alert_args, defaults):
+def create_alert(helper, thehive: TheHive, configuration, alert_args):
     """ This function is used to create the alert using the API, settings and search results """
  
     # Parse events
-    alerts = parse_events(helper, thehive, alert_args, defaults, "alert")
+    alerts = parse_events(helper, thehive, configuration, alert_args)
 
     # actually send the request to create the alert; fail gracefully
     for srcRef in alerts.keys():
@@ -212,7 +210,7 @@ def create_alert(helper, thehive: TheHive, alert_args, defaults):
         
         # Processing TTPs if any
         if "ttps" in alerts[srcRef]:
-            helper.log_info(alerts[srcRef]["ttps"])
+            
             response = thehive.alert.create_procedures(alert_id=new_alert["_id"], procedures=alerts[srcRef]["ttps"])[0]
 
             if "_id" in response:

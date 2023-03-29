@@ -5,10 +5,11 @@ import json
 from thehive4py.query.sort import Asc, Desc
 import re
 import csv
+import splunklib.client as client
 
 class Settings(object):
 
-    def __init__(self, client=None, settings=None, logger=None):
+    def __init__(self, client: client = None, settings=None, logger=None):
         # Initialize all settings to None
         self.logger = logger
 

@@ -25,7 +25,7 @@ def create_thehive_instance(instance_id, settings, logger):
     """ This function is used to create an instance of TheHive """
     # Initialize settings
     token = settings["sessionKey"] if "sessionKey" in settings else settings["session_key"]
-    spl = client.connect(app="TA-thehive-cortex",owner="nobody",token=token)
+    spl = client.connect(token=token)
     logger.debug("[TH5] Connection to Splunk done")
     configuration = Settings(spl, settings, logger)
     logger.debug("[TH6] Settings recovered")

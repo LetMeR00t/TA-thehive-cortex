@@ -89,7 +89,7 @@
                 id="thehive_create_a_new_alert_title" />
             <span class="help-block">
                 The title to use for created alerts. IMPORTANT you can specify a field name that contains the title
-                text.
+                text. Defaults to "&lt;inheritance&gt;" that will take the information from the alert/notable event
             </span>
         </div>
     </div>
@@ -100,7 +100,8 @@
                 id="thehive_create_a_new_alert_description" />
             <span class="help-block">
                 The description to send with the alert. IMPORTANT You can specify a field name that contains the
-                description text.
+                description text. Defaults to "&lt;inheritance&gt;" that will take the information from the
+                alert/notable event
             </span>
         </div>
     </div>
@@ -142,13 +143,13 @@
         </div>
     </div>
     <div class="control-group">
-        <label class="control-label" for="thehive_create_a_new_alert_tlp_">TLP: <span class="required">*</span> </label>
+        <label class="control-label" for="thehive_create_a_new_alert_tlp">TLP: <span class="required">*</span> </label>
         <div class="controls">
-            <select name="action.thehive_create_a_new_alert.param.tlp_" id="thehive_create_a_new_alert_tlp_">
-                <option value="4">RED</option>
-                <option value="3">AMBER</option>
-                <option value="2">GREEN</option>
-                <option value="1">WHITE</option>
+            <select name="action.thehive_create_a_new_alert.param.tlp" id="thehive_create_a_new_alert_tlp">
+                <option value="3">RED</option>
+                <option value="2">AMBER</option>
+                <option value="1">GREEN</option>
+                <option value="0">WHITE</option>
             </select>
             <span class="help-block">
                 Select the TLP level of the created alert. Default is TLP:AMBER
@@ -156,13 +157,13 @@
         </div>
     </div>
     <div class="control-group">
-        <label class="control-label" for="thehive_create_a_new_alert_pap_">PAP: <span class="required">*</span> </label>
+        <label class="control-label" for="thehive_create_a_new_alert_pap">PAP: <span class="required">*</span> </label>
         <div class="controls">
-            <select name="action.thehive_create_a_new_alert.param.pap_" id="thehive_create_a_new_alert_pap_">
-                <option value="4">RED</option>
-                <option value="3">AMBER</option>
-                <option value="2">GREEN</option>
-                <option value="1">WHITE</option>
+            <select name="action.thehive_create_a_new_alert.param.pap" id="thehive_create_a_new_alert_pap">
+                <option value="3">RED</option>
+                <option value="2">AMBER</option>
+                <option value="1">GREEN</option>
+                <option value="0">WHITE</option>
             </select>
             <span class="help-block">
                 Permissible Action Protocol. Default to PAP:AMBER

@@ -50,12 +50,12 @@ class AlertActionWorkerthehive_create_a_new_alert(ModularAlertBase):
             self.log_error('severity is a mandatory parameter, but its value is None.')
             return False
 
-        if not self.get_param("tlp_"):
-            self.log_error('tlp_ is a mandatory parameter, but its value is None.')
+        if not self.get_param("tlp"):
+            self.log_error('tlp is a mandatory parameter, but its value is None.')
             return False
 
-        if not self.get_param("pap_"):
-            self.log_error('pap_ is a mandatory parameter, but its value is None.')
+        if not self.get_param("pap"):
+            self.log_error('pap is a mandatory parameter, but its value is None.')
             return False
         return True
 
