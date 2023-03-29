@@ -5,12 +5,12 @@
     "id": {
       "group": null,
       "name": "TA-thehive-cortex",
-      "version": "2.3.1"
+      "version": "3.0.0"
     },
     "author": [
       {
         "name": "Alexandre Demeyer",
-        "email": null,
+        "email": "letmer00t@gmail.com",
         "company": null
       }
     ],
