@@ -27,6 +27,7 @@
 		- [Cortex History](#cortex-history)
 		- [Run new tasks](#run-new-tasks)
 	- [Commands in searches](#commands-in-searches)
+	- [Everything you need to know about the custom alert actions or adaptative responses](#everything-you-need-to-know-about-the-custom-alert-actions-or-adaptative-responses)
 - [Support](#support)
 - [Credits](#credits)
 - [Licence](#licence)
@@ -328,6 +329,11 @@ The search will execute all jobs (one data with one analyzer) and return informa
 ## Commands in searches
 
 You can use new commands within your searches. For more information, please [read the associated documentation](https://github.com/LetMeR00t/TA-cortex/tree/master/docs/commands.md).
+
+
+## Everything you need to know about the custom alert actions or adaptative responses
+
+For more information, please [read the associated documentation](https://github.com/LetMeR00t/TA-cortex/tree/master/docs/alert_actions_and_adaptive_response.md).
 
 # Support
 
