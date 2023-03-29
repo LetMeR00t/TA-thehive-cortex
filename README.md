@@ -328,12 +328,12 @@ The search will execute all jobs (one data with one analyzer) and return informa
 
 ## Commands in searches
 
-You can use new commands within your searches. For more information, please [read the associated documentation](https://github.com/LetMeR00t/TA-cortex/tree/master/docs/commands.md).
+You can use new commands within your searches. For more information, please [read the associated documentation](https://github.com/LetMeR00t/TA-cortex/tree/main/docs/commands.md).
 
 
 ## Everything you need to know about the custom alert actions or adaptative responses
 
-For more information, please [read the associated documentation](https://github.com/LetMeR00t/TA-cortex/tree/master/docs/alert_actions_and_adaptive_response.md).
+For more information, please [read the associated documentation](https://github.com/LetMeR00t/TA-cortex/tree/main/docs/alert_actions_and_adaptive_response.md).
 
 # Support
 
