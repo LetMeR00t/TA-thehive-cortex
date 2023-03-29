@@ -10,16 +10,15 @@
 
 import csv
 import gzip
-import hashlib
 import os
 import re
 import time
 import datetime
-import random
 from thehive import TheHive
 from thehive4py.types.observable import InputObservable
 from thehive4py.types.custom_field import InputCustomField
 from thehive4py.types.procedure import InputProcedure
+from common import Settings
 
 __author__ = "Alexandre Demeyer"
 __maintainer__ = "Alexandre Demeyer"
@@ -126,7 +125,7 @@ def get_datatype_dict(helper):
         helper.log_debug("[CAA-THC-20] dataType_dict built from inline table")
     return dataType_dict
 
-def extract_field(helper, row, field):
+def extract_field(row, field):
     """ This function is used to extract information from a potential field in a row and sanitize it if needed. If the field is not found, use the field name directly as value """
 
     result = field
@@ -138,7 +137,7 @@ def extract_field(helper, row, field):
             result = newValue
     return result
 
-def parse_events(helper, thehive: TheHive, alert_args, defaults, target):
+def parse_events(helper, thehive: TheHive, configuration: Settings, alert_args):
     # iterate through each row, cleaning multivalue fields
     # and then adding the attributes under same alert key
     # this builds the dict parsed_events
@@ -208,18 +207,32 @@ def parse_events(helper, thehive: TheHive, alert_args, defaults, target):
 
         # check if title contains a field name instead of a string.
         # if yes, strip it from the row and assign value to title
-        if alert_args["title"]:
-            alert["title"] = extract_field(helper, row, alert_args["title"])
-        elif "search_name" in row:
-            # Use this information coming from Splunk ES
-            alert["title"] = row["search_name"]
+        if alert_args["title"] == "<inheritance>":
+            # Find the most accurate information for the title
+            if "search_name" in row:
+                # Use this information coming from Splunk ES
+                alert["title"] = row["search_name"]
+            else:
+                # Take the name of the savedsearch itself
+                alert["title"] = helper.settings["search_name"]
+        elif alert_args["title"]:
+            # Field is not null but it's not inheritance, try to format the field
+            alert["title"] = extract_field(row, alert_args["title"])
         else:
             # Give a default name
             alert["title"] = "Notable event"
 
         # check if description contains a field name instead of a string.
         # if yes, strip it from the row and assign value to description
-        alert["description"] = extract_field(helper, row, alert_args["description"])
+        if alert_args["description"]:
+            # Field is not null, try to format the field
+            alert["description"] = extract_field(row, alert_args["description"])
+        elif "description" in row:
+            # Description is provided in the event
+            alert["description"] = row["description"]
+        else:
+            # Give a default name
+            alert["description"] = "No description provided"
 
         # check if severity is provided or not in the logs (Splunk ES event)
         alert["severity"] = SEVERITY[row["severity"]] if "severity" in row else alert_args['severity']
@@ -316,17 +329,21 @@ def parse_events(helper, thehive: TheHive, alert_args, defaults, target):
                     except ValueError as e:
                         date_check = False
                     if len(values) == 3 and values[1].startswith("T") and date_check is True:
-                        ttps += [{"tactic": values[0], "patternId": values[1], "occurDate": values[2]}]
-                        helper.log_debug('[CAA-THC-108] ttp was parsed correctly and added to the alert: {}'.format(value))
+                        new_ttp = {"tactic": values[0], "patternId": values[1], "occurDate": values[2]}
+                        if new_ttp not in ttps:
+                            ttps.append(new_ttp)
+                            helper.log_debug('[CAA-THC-108] ttp was parsed correctly and added to the alert: {}'.format(value))
+                        else:
+                            helper.log_debug('[CAA-THC-109] ttp already exist, ignoring duplicates: {}'.format(value))
                     else:
-                        helper.error('[CAA-THC-109-ERROR] ttp field was detected but malformed, expected one value with the pattern \"tactic::patternId::occurDate\" with occurDate as \"YYYY-mm-dd\", got: {}'.format(value))
+                        helper.error('[CAA-THC-110-ERROR] ttp field was detected but malformed, expected one value with the pattern \"tactic::patternId::occurDate\" with occurDate as \"YYYY-mm-dd\", got: {}'.format(value))
 
 
                 if observable_key not in [None, '']:
-                    helper.log_debug("[CAA-THC-110] Processing observable key: " + str(observable_key) + " (" + str(value) + ") (" + observableMessage + ")")
+                    helper.log_debug("[CAA-THC-111] Processing observable key: " + str(observable_key) + " (" + str(value) + ") (" + observableMessage + ")")
                     cTags.append('field:' + str(key))
                     if isinstance(value,list) :  # was a multivalue field
-                        helper.log_debug('[CAA-THC-111] value is not a simple string: {} '.format(value))
+                        helper.log_debug('[CAA-THC-112] value is not a simple string: {} '.format(value))
                         for val in value:
                             if val != "":
                                 observable = dict(dataType=observable_key,
@@ -362,9 +379,10 @@ def parse_events(helper, thehive: TheHive, alert_args, defaults, target):
         # Process TTPs
         if len(ttps) > 0:
             # TTPs are given manually
+            # Ensure that there is no duplicate
             alert['ttps'] = [InputProcedure(ttp) for ttp in ttps]
-        else:
-            # Try to extract them from Splunk ES information if available
+        elif "annotations.mitre_attack.mitre_tactic" in row:
+            # Try to extract them from Splunk ES notable event
             mitre_tactics = row["annotations.mitre_attack.mitre_tactic"]
             mitre_technics = row["annotations.mitre_attack"]
             date = datetime.datetime.fromtimestamp(int(row['_time'])).strftime("%Y-%m-%d") 
