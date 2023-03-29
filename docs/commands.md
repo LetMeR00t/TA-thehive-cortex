@@ -4,7 +4,6 @@ Every command requires an "Instance ID" parameter which is used to specify which
 
 # Table of content
 * [ thehivecases ](#thehivecases)  
-* [ thehivecreate ](#thehivecreate)
 * [ thehivealerts ](#thehivealerts)
 * [ cortexjobs ](#cortexjobs)
 * [ cortexrun ](#cortexrun)
@@ -82,68 +81,6 @@ Every new field will start with "thehive_*". As an exemple, you can recover:
 	| eval status = "Open;Resolved"
 	| thehivecases $$INSTANCE_ID$$
 	# This will recover any "Open" or "Resolved" case
-
-## thehivecreate
-This command is used to create a new case to TheHive (\$..\$ are tokens examples but you can use it directly in your searches).
-
-	| makeresults
-	| eval title="$create_title$", severity = "$create_severity$", tags="$create_tags$", pap = "$create_pap$", date = now(), tlp = "$create_tlp$", description="$create_description$", tasks = "$create_tasks$"
-	| thehivecreate $$INSTANCE_ID$$
-
-### Parameters (input results)
-
-One row will result in executing the script one time. So if you specify 5 rows, the script will be executed 5 times and all results will be appended.
-
-* (Mandatory) **title**: Specify the title of the new case
-* (Optional) **severity**: Specify the severity of the new case (1=LOW,2=MEDIUM,3=HIGH,4=CRITICAL) (Default: 2)
-* (Optional) **tags**: Specify the tags of the new case (Default: None)
-* (Optional) **pap**: PAP to use for analysis (0=WHITE,1=GREEN,2=AMBER,3=RED) (Default: 2)
-* (Optional) **date**: Specify the date of the new case (Default: the current date/time)
-* (Optional) **tlp**: TLP to use for analysis (0=WHITE,1=GREEN,2=AMBER,3=RED) (Default: 2)
-* (Mandatory) **description**: Specify the description of the new case
-* (Optional) **tasks**: Specify the tasks of the new case (Default: None)
-
-**Note**: These parameters are the **expected fields name**.
-
-### Return
-
-This command append new fields per row to previous results.
-Every new field will start with "thehive_*". As an exemple, you can recover:
-
- - thehive_case_caseId
- - thehive_case_createdAt
- - thehive_case_createdBy
- - thehive_case_customFields
- - thehive_case_description
- - thehive_case_endDate
- - thehive_case_flag
- - thehive_case_id
- - thehive_case_impactStatus
- - thehive_case_metrics
- - thehive_case_observables
- - thehive_case_owner
- - thehive_case_pap
- - thehive_case_resolutionStatus
- - thehive_case_severity
- - thehive_case_startDate
- - thehive_case_status
- - thehive_case_summary
- - thehive_case_tags
- - thehive_case_tasks
-
-
-### Examples
-
-
-	| makeresults
-	| eval title="Test", description="Test 2"
-	| thehivecreate $$INSTANCE_ID$$
-	# This will create a new case with the title "Test" and the description set to "Test 2"
-
-	| makeresults
-	| eval title="Critical case", severity = "4", tags="important;emergency", pap = "4", date = now(), description="Very important case"
-	| thehivecreate $$INSTANCE_ID$$
-	# This will creater a new case with the title "Critical case", with a CRITICAL severity, with tags set to "important" and "emergency", with a PAP set to RED, with a description set to "Very important case"
 
 ## thehivealerts
 
