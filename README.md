@@ -109,14 +109,14 @@ Once you've done that, you can configure all your instances. An instance is an e
 - **Authentication type**: Authentication type for your instance. Password is working only with TheHive but we recommand you to use an API key everytime
 - **Type**: Type of your instance (TheHive (v3 or v4) or Cortex (v3)).
 - **Organisation**: The name of the organisation against which api calls will be run. Default to "-" meaning None.
-- **Protocol**: Protocol to use (HTTP or HTTPS). Default to HTTP.
-- **Certificate Verification**: Indicate if the certificate verification is required. If you use an HTTPS connection with a self-signed certificate of a custom certificate authority, you must add your trusted certificate to the "certifi" library. To do so, append your certificate under "\$APP_FOLDER\$/bin/ta_thehive_cortex/aob_py3/certifi/cacert.pem" (or aob_py2 if you use Python 2.7). Default to True.
 - **Proxy URL**: A string that indicates what is the proxy URL to use for this instance if there is any. You can specify http/https if you want but the same value will be used for both protocols. Default to "-" meaning None
 - **Proxy account**: This is the name of the account to use for the proxy authentication (only basic) that you added under "Accounts". It will list you all available accounts you have previously set up. Default to "None".
 - **Client Certificate**: Filename of you client certificate if you need one. This certificate must be placed under "\$APP_FOLDER\$/local" and you just have to set the name of the file here. This certificate will be used during the proxy authentication. Default to "-" meaning None.
 - **Host**: Host of your instance (hostname or IP).
 - **Port**: Port used by your instance (Default:9000 for TheHive, 9001 for Cortex).
 - **URI**: Indicates what is the URI based for your instance. By default, TheHive/Cortex is installed at the root of the server so the URI would be "/". If you are using a Cloud instance, you may have to specify the URI used by your cloud instance. For example, if your TheHive instance is accessible with this URL : "https://my-cloud-website.com:443/mythehiveinstance", then you should specify in the URI field "/mythehiveinstance".
+
+> **Note**: Protocol used by default is HTTPS and can't be modified. Moreover, the certificate verification is mandatory and set to True. If you use an HTTPS connection with a self-signed certificate of a custom certificate authority, you must add your trusted certificate to the "certifi" library. To do so, append your certificate under "\$APP_FOLDER\$/bin/ta_thehive_cortex/aob_py3/certifi/cacert.pem"
 
 ![Instances add](images/instances_add.png)
 *This image shows the addition of a new instance (partially filled fields) by specifying an account name defined beforehand.*

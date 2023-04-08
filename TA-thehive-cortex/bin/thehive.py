@@ -53,17 +53,16 @@ def create_thehive_instance(instance_id, settings, logger):
     thehive_proxies = configuration.getInstanceSetting(instance_id_final,"proxies")
     thehive_cert = configuration.getInstanceSetting(instance_id_final,"client_cert")
     thehive_cert = None if thehive_cert == "-" else thehive_cert
-    thehive_verify = configuration.getInstanceSetting(instance_id_final,"verify")
     thehive_organisation = configuration.getInstanceSetting(instance_id_final,"organisation")
     thehive_version = configuration.getInstanceSetting(instance_id_final,"type") 
     thehive = None
 
     if (thehive_authentication_type == "password"):
         logger.debug("[TH15] TheHive instance will be initialized with a password (not an API key)")
-        thehive = TheHive(url=thehive_url, username=thehive_username, password=thehive_secret, proxies=thehive_proxies, verify=thehive_verify, cert=thehive_cert, organisation=thehive_organisation, version=thehive_version, sid=settings["sid"], logger=logger)
+        thehive = TheHive(url=thehive_url, username=thehive_username, password=thehive_secret, proxies=thehive_proxies, verify=True, cert=thehive_cert, organisation=thehive_organisation, version=thehive_version, sid=settings["sid"], logger=logger)
     elif (thehive_authentication_type == "api_key"):
         logger.debug("[TH16] TheHive instance will be initialized with an API Key (not a password)")
-        thehive = TheHive(url=thehive_url, apiKey=thehive_secret, proxies=thehive_proxies, verify=thehive_verify, cert=thehive_cert, organisation=thehive_organisation, version=thehive_version, sid=settings["sid"], logger=logger)
+        thehive = TheHive(url=thehive_url, apiKey=thehive_secret, proxies=thehive_proxies, verify=True, cert=thehive_cert, organisation=thehive_organisation, version=thehive_version, sid=settings["sid"], logger=logger)
     else:
         logger.error("[TH20-ERROR] WRONG_AUTHENTICATION_TYPE - Authentication type is not one of the expected values (password or api_key), given value: "+thehive_authentication_type)
         exit(20)
@@ -95,17 +94,16 @@ def create_thehive_instance_modular_input(instance_id, helper):
     thehive_proxies = configuration.getInstanceSetting(instance_id_final,"proxies")
     thehive_cert = configuration.getInstanceSetting(instance_id_final,"client_cert")
     thehive_cert = None if thehive_cert == "-" else thehive_cert
-    thehive_verify = configuration.getInstanceSetting(instance_id_final,"verify")
     thehive_organisation = configuration.getInstanceSetting(instance_id_final,"organisation")
     thehive_version = configuration.getInstanceSetting(instance_id_final,"type") 
     thehive = None
 
     if (thehive_authentication_type == "password"):
         logger.debug("[TH30] TheHive instance will be initialized with a password (not an API key)")
-        thehive = TheHive(url=thehive_url, username=thehive_username, password=thehive_secret, proxies=thehive_proxies, verify=thehive_verify, cert=thehive_cert, organisation=thehive_organisation, version=thehive_version, sid=None, logger=logger)
+        thehive = TheHive(url=thehive_url, username=thehive_username, password=thehive_secret, proxies=thehive_proxies, verify=True, cert=thehive_cert, organisation=thehive_organisation, version=thehive_version, sid=None, logger=logger)
     elif (thehive_authentication_type == "api_key"):
         logger.debug("[TH40] TheHive instance will be initialized with an API Key (not a password)")
-        thehive = TheHive(url=thehive_url, apiKey=thehive_secret, proxies=thehive_proxies, verify=thehive_verify, cert=thehive_cert, organisation=thehive_organisation, version=thehive_version, sid=None, logger=logger)
+        thehive = TheHive(url=thehive_url, apiKey=thehive_secret, proxies=thehive_proxies, verify=True, cert=thehive_cert, organisation=thehive_organisation, version=thehive_version, sid=None, logger=logger)
     else:
         logger.error("[TH50-ERROR] WRONG_AUTHENTICATION_TYPE - Authentication type is not one of the expected values (password or api_key), given value: "+thehive_authentication_type)
         exit(20)

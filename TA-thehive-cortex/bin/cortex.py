@@ -68,7 +68,6 @@ def create_cortex_instance(instance_id, settings, logger):
     cortex_proxies = configuration.getInstanceSetting(instance_id,"proxies")
     cortex_cert = configuration.getInstanceSetting(instance_id,"client_cert")
     cortex_cert = None if cortex_cert == "-" else cortex_cert
-    cortex_verify = configuration.getInstanceSetting(instance_id,"verify")
     cortex_organisation = configuration.getInstanceSetting(instance_id,"organisation")
     cortex_version = configuration.getInstanceSetting(instance_id,"type") 
     cortex = None
@@ -77,7 +76,7 @@ def create_cortex_instance(instance_id, settings, logger):
         logger.error("[C7-ERROR] Cortex instance will be initialized with a password (not an API key) - This is not supported for Cortex")
     elif (cortex_authentication_type == "api_key"):
         logger.debug("[C8] Cortex instance will be initialized with an API Key (not a password)")
-        cortex = Cortex(url=cortex_url, apiKey=cortex_secret, sid=settings["sid"], proxies=cortex_proxies, verify=cortex_verify, cert=cortex_cert, logger=logger)
+        cortex = Cortex(url=cortex_url, apiKey=cortex_secret, sid=settings["sid"], proxies=cortex_proxies, verify=True, cert=cortex_cert, logger=logger)
     else:
         logger.error("[C9-ERROR] WRONG_AUTHENTICATION_TYPE - Authentication type is not one of the expected values (password or api_key), given value: "+cortex_authentication_type)
         exit(20)
