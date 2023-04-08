@@ -76,6 +76,39 @@
   </row>
   <row>
     <panel>
+      <title>Audit logs : Custom commands regarding TheHive Cortex API</title>
+      <table>
+        <search>
+          <query>(index=_* OR index=cim_*) source="*command_thehive_*.log"
+| rex field=_raw " (?&lt;type&gt;\w+)\t(?&lt;location&gt;[^\-]+) \- (?&lt;signature&gt;.*)"
+| eval signature = coalesce(signature,_raw)
+| table _time, type, location, signature
+| sort 0 -_time
+| rename type as "Type", location as "Location", signature as "Message"</query>
+          <earliest>$time.earliest$</earliest>
+          <latest>$time.latest$</latest>
+          <sampleRatio>1</sampleRatio>
+        </search>
+        <option name="count">30</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">none</option>
+        <option name="percentagesRow">false</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="rowNumbers">false</option>
+        <option name="totalsRow">false</option>
+        <option name="wrap">true</option>
+        <format type="color" field="Type">
+          <colorPalette type="map">{"DEBUG":#602CA1,"INFO":#0099E0,"WARN":#CBA700,"ERROR":#D41F1F}</colorPalette>
+        </format>
+        <format type="color" field="SID">
+          <colorPalette type="sharedList"></colorPalette>
+          <scale type="sharedCategory"></scale>
+        </format>
+      </table>
+    </panel>
+  </row>
+  <row>
+    <panel>
       <title>Number of alerts and detected issues</title>
       <chart>
         <search>
