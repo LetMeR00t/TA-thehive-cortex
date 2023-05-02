@@ -117,7 +117,10 @@ if __name__ == '__main__':
                 for cf in event["thehive_case_customFields"]:
                     cftype = cf["type"]
                     if cftype=="date":
-                        cf["value"] = time.strftime("%c %z",time.gmtime(int(cf["value"])/1000))
+                        if "value" in cf:
+                            cf["value"] = time.strftime("%c %z",time.gmtime(int(cf["value"])/1000))
+                        else:
+                            cf["value"] = "None"
                     customFields.append(cf["name"]+"::"+str(cf["value"]))
                 event["thehive_case_customFields"] = customFields
                 logger.debug("[THSC-35] TheHive - Custom fields: "+str(customFields))
