@@ -11,7 +11,7 @@ import certifi
 def initialize_thehive_instance(keywords, settings, logger_name="script"):
     """ This function is used to initialize a TheHive instance """
     logger = setup_logging(logger_name)
-
+    
     # Check the existence of the instance_id
     if len(keywords) == 1:
         instance_id = keywords[0]
@@ -25,7 +25,7 @@ def create_thehive_instance(instance_id, settings, logger):
     """ This function is used to create an instance of TheHive """
     # Initialize settings
     token = settings["sessionKey"] if "sessionKey" in settings else settings["session_key"]
-    spl = client.connect(token=token)
+    spl = client.connect(app="TA-thehive-cortex",owner="nobody",token=token)
     logger.debug("[TH5] Connection to Splunk done")
     configuration = Settings(spl, settings, logger)
     logger.debug("[TH6] Settings recovered")
