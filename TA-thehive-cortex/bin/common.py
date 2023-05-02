@@ -83,9 +83,6 @@ class Settings(object):
                     else:
                         self.logger.warning("[S8] Be aware that a client certificate for instance \""+str(row_id)+"\" was provided but the file doesn't exist: "+client_certificate)
 
-                # Translate the verify parameter
-                row["verify"] = True if row["verify"] == 1 else False
-
                 # get proxy parameters if any
                 if row["proxy_url"] != "-":
                     pattern = r"^(?P<proxy_protocol>https?:\/\/)?(?P<proxy_url>.*)$"
