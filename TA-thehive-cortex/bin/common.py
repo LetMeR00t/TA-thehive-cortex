@@ -35,20 +35,21 @@ class Settings(object):
             proxy_clear_password = None
             sp = self.client.storage_passwords
             for credential in sp:
-                username = credential['username'].split("``")[0]
-                # Process proxy credentials settings
-                if 'proxy' in username:
-                    clear_credentials = credential['clear_password']
-                    if 'proxy_password' in clear_credentials:
-                        proxy_creds = json.loads(clear_credentials)
-                        proxy_clear_password = str(proxy_creds['proxy_password'])
-                        #TODO: Review this part as it's seems to not be used
-                # Otherwise, keep it as a standard user
-                else:
-                    # Only keep the value if it's a clear dictionnary
-                    if "password" in credential['clear_password']:
-                        clear_password = json.loads(credential['clear_password'])
-                        self._passwords[username] = clear_password["password"]
+                if credential.access["app"] == "TA-thehive-cortex":
+                    username = credential['username'].split("``")[0]
+                    # Process proxy credentials settings
+                    if 'proxy' in username:
+                        clear_credentials = credential['clear_password']
+                        if 'proxy_password' in clear_credentials:
+                            proxy_creds = json.loads(clear_credentials)
+                            proxy_clear_password = str(proxy_creds['proxy_password'])
+                            #TODO: Review this part as it's seems to not be used
+                    # Otherwise, keep it as a standard user
+                    else:
+                        # Only keep the value if it's a clear dictionnary
+                        if "password" in credential['clear_password']:
+                            clear_password = json.loads(credential['clear_password'])
+                            self._passwords[username] = clear_password["password"]
 
         self.__instances = {}
         instances_by_account_name = {}
@@ -152,26 +153,29 @@ class Settings(object):
 
         # Open and read the conf file
         conf_file = os.path.join(os.environ['SPLUNK_HOME'], 'etc', 'apps', 'TA-thehive-cortex',folder, filename)
-        with open(conf_file, 'r') as file:
-            stanza = None
-            for line in file:
-                if line.startswith("["):
-                    # We have a new stanza
-                    stanza = line.strip()[1:][:-1]
-                    conf[stanza] = {}
-                if " = " in line:
-                    # Build a dictionnary with the information
-                    key, value = line.partition(" = ")[::2]
-                    # Check if the key exist. If so, then create a list of detected values accordingly
-                    skey = key.strip()
-                    if skey in conf:
-                        if type(conf[skey]) is list:
-                            conf[stanza][skey] += [value.rstrip('\n')]
+        if os.path.isfile(conf_file):
+            with open(conf_file, 'r') as file:
+                stanza = None
+                for line in file:
+                    if line.startswith("["):
+                        # We have a new stanza
+                        stanza = line.strip()[1:][:-1]
+                        conf[stanza] = {}
+                    if " = " in line:
+                        # Build a dictionnary with the information
+                        key, value = line.partition(" = ")[::2]
+                        # Check if the key exist. If so, then create a list of detected values accordingly
+                        skey = key.strip()
+                        if skey in conf:
+                            if type(conf[skey]) is list:
+                                conf[stanza][skey] += [value.rstrip('\n')]
+                            else:
+                                conf[stanza][skey] = [value.rstrip('\n')] + [conf[skey]]
                         else:
-                            conf[stanza][skey] = [value.rstrip('\n')] + [conf[skey]]
-                    else:
-                        conf[stanza][skey] = value.rstrip('\n')
-        self.logger.debug("[S26] Configuration "+folder+"/"+filename+" was read: "+str(conf))
+                            conf[stanza][skey] = value.rstrip('\n')
+            self.logger.debug("[S26] Configuration "+folder+"/"+filename+" was read: "+str(conf))
+        else:
+            self.logger.debug("[S26] Configuration "+folder+"/"+filename+" doesn't exist.")
         return conf
 
     def readDefaultLocalConfiguration(self, filename):
@@ -181,6 +185,9 @@ class Settings(object):
         default = self.readConfFile('default', filename)
         # Do the same with the local file if it's existing and merge information
         local = self.readConfFile('local', filename)
+
+        # Recovered configuration for the filename
+        self.logger.debug("[S27] Configuration retrieved for the filename '"+filename+"': "+str({**default, **local}))
 
         return {**default, **local}
 
@@ -195,7 +202,7 @@ class Settings(object):
         if account in self._passwords:
             password = self._passwords[account]
         else:
-            self.logger.error("[S27-ERROR] This account ("+account+") doesn't exist in your configuration and it's password can't be retrieved")
+            self.logger.error("[S28-ERROR] This account ("+account+") doesn't exist in your configuration and it's password can't be retrieved")
         return password
 
     def getInstanceURL(self, instance_id):
