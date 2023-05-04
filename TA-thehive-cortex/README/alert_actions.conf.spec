@@ -23,8 +23,8 @@ param.description = <string> Description.  It's default value is Create an alert
 param.tags = <string> Tags.
 param.scope = <list> Scope. It's a required parameter. It's default value is 0.
 param.severity = <list> Severity. It's a required parameter. It's default value is 3.
-param.tlp_ = <list> TLP:. It's a required parameter. It's default value is 3.
-param.pap_ = <list> PAP:. It's a required parameter. It's default value is 3.
+param.tlp = <list> TLP:. It's a required parameter. It's default value is 3.
+param.pap = <list> PAP:. It's a required parameter. It's default value is 3.
 param._cam = <json> Active response parameters.
 
 [thehive_create_a_new_case]
@@ -40,11 +40,11 @@ param.description = <string> Description.  It's default value is Create a case e
 param.tags = <string> Tags.
 param.scope = <list> Scope. It's a required parameter. It's default value is 0.
 param.severity = <list> Severity. It's a required parameter. It's default value is 3.
-param.tlp_ = <list> TLP:. It's a required parameter. It's default value is 3.
-param.pap_ = <list> PAP:. It's a required parameter. It's default value is 3.
+param.tlp = <list> TLP:. It's a required parameter. It's default value is 3.
+param.pap = <list> PAP:. It's a required parameter. It's default value is 3.
 param._cam = <json> Active response parameters.
 
-[thehive_create_a_new_case]
+[thehive_run_function]
 python.version = python3
 param.thehive_instance_id = <string> TheHive instance ID. It's a required parameter. You can use "<default>" to set automatically the ID to the default set parameter in the configuration page.
 param.title = <string> Title. The name of the function you want to call. Please note that a specific licence in TheHive is required to use this action
