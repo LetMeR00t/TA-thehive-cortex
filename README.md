@@ -3,27 +3,33 @@
 </p>
 
 # Table of content
-* [ Introduction ](#introduction)  
-* [ What is TheHive/Cortex ? ](#what-is-thehivecortex-)
-* [ Use Cases ](#use-cases)
-* [ Installation ](#installation)
-	* [ Requirements ](#requirements)
-	* [ Configuration ](#configuration)
-		* [ Accounts ](#accounts)
-		* [ TheHive/Cortex instances ](#thehivecortex-instances)
-		* [ Logging ](#logging)
-	* [ Refreshing the available analyzers ](#refreshing-the-available-analyzers)
-* [ Usage ](#usage)
-	* ["TheHive: Cases" dashboard](#thehive-cases-dashboard)
-		* [ TheHive History ](#thehive-history)
-		* [ Create a new case ](#create-a-new-case)
-	* [ "Cortex: Jobs" dashboard ](#cortex-jobs-dashboard)
-		* [ Cortex History ](#cortex-history)
-		* [ Run new tasks ](#run-new-tasks)
-	* [ Commands in searches ](#commands-in-searches)
-* [ Support ](#support)
-* [ Credits ](#credits)
-* [ Licence ](#licence)
+- [Table of content](#table-of-content)
+- [Introduction](#introduction)
+- [What is TheHive/Cortex ?](#what-is-thehivecortex-)
+- [Use Cases](#use-cases)
+- [Installation](#installation)
+	- [Requirements](#requirements)
+	- [Configuration](#configuration)
+		- [Accounts](#accounts)
+		- [TheHive/Cortex instances](#thehivecortex-instances)
+		- [Logging](#logging)
+	- [Refreshing the available analyzers](#refreshing-the-available-analyzers)
+- [Usage](#usage)
+	- ["TheHive: Cases" dashboard](#thehive-cases-dashboard)
+		- [TheHive History](#thehive-history)
+		- [Create a new case](#create-a-new-case)
+	- ["TheHive: Alerts" dashboard](#thehive-alerts-dashboard)
+		- [TheHive Alert History](#thehive-alert-history)
+		- [Create a new alert](#create-a-new-alert)
+		- [View datatypes](#view-datatypes)
+		- [View logs](#view-logs)
+	- ["Cortex: Jobs" dashboard](#cortex-jobs-dashboard)
+		- [Cortex History](#cortex-history)
+		- [Run new tasks](#run-new-tasks)
+	- [Commands in searches](#commands-in-searches)
+- [Support](#support)
+- [Credits](#credits)
+- [Licence](#licence)
 
 # Introduction
 This TA allows to **add interaction features** between [TheHive or Cortex (TheHive project)](https://thehive-project.org/) and Splunk. It allows to retrieve all cases/jobs information from TheHive/Cortex and to perform actions on these instances using Splunk, from a search or from a predefined dashboard.
@@ -85,7 +91,7 @@ Once you've done that, you can configure all your instances. An instance is an e
 - **Certificate Verification**: Indicate if the certificate verification is required. If you use an HTTPS connection with a self-signed certificate of a custom certificate authority, you must add your trusted certificate to the "certifi" library. To do so, append your certificate under "\$APP_FOLDER\$/bin/ta_thehive_cortex/aob_py3/certifi/cacert.pem" (or aob_py2 if you use Python 2.7). Default to True.
 - **Proxy URL**: A string that indicates what is the proxy URL to use for this instance if there is any. You can specify http/https if you want but the same value will be used for both protocols. Default to "-" meaning None 
 - **Proxy account**: This is the name of the account to use for the proxy authentication (only basic) that you added under "Accounts". It will list you all available accounts you have previously set up. Default to "None".
-- **Client Certificate**: Filename of you client certificate if you need one. This certificate must be placed under "\$APP_FOLDER\$/local" and you just have to set the name of the file here. This certificate will be used during the proxy authentication. Default to "-" meaning None.
+- **Client Certificate**: Filename of you client certificate if you need one. This certificate must be placed under "\$APP_FOLDER\$/local" and you just have to set the name of the file here. You can provide your certificate with a base64 encoded string that will decoded and stored inside a certificate from the GUI. This certificate will be used during the proxy authentication. Default to "-" meaning None.
 - **Host**: Host of your instance (hostname or IP).
 - **Port**: Port used by your instance (Default:9000 for TheHive, 9001 for Cortex).
 - **URI**: Indicates what is the URI based for your instance. By default, TheHive/Cortex is installed at the root of the server so the URI would be "/". If you are using a Cloud instance, you may have to specify the URI used by your cloud instance. For example, if your TheHive instance is accessible with this URL : "https://my-cloud-website.com:443/mythehiveinstance", then you should specify in the URI field "/mythehiveinstance".
