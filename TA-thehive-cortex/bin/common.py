@@ -1,4 +1,6 @@
 # encoding = utf-8
+import base64
+import datetime
 import os
 import sys
 import ta_thehive_cortex_declare
@@ -56,7 +58,31 @@ class Settings(object):
                     instances_by_account_name[row["account_name"]].append(row_id)
                 
                 # get self.client certificate if it's specified
-                if row["client_cert"] != "-" and ".." not in row["client_cert"]:
+                if row["client_cert"] != "-" and re.search(r"^[-A-Za-z0-9+/]+={0,3}$", row["client_cert"]):
+                    self.logger.info("[S7] Base64 client certificate found")
+                    try:
+                        client_certificate_pem = base64.b64decode(row["client_cert"]).decode()
+
+                        client_certificate_path = os.path.join(os.environ['SPLUNK_HOME'], 'etc', 'apps', 'TA-thehive-cortex', 'local')
+                        self.logger.debug("[S7] Client certificate path: %s", client_certificate_path)
+
+                        os.makedirs(client_certificate_path, exist_ok=True)
+                        self.logger.debug("[S7] Client certificate path checked")
+
+                        client_certificate = os.path.join(client_certificate_path, "certificate-%s.pem" % datetime.date.today().year)
+                        self.logger.debug("[S7] Client certificate filename: %s", client_certificate)
+
+                        with open(client_certificate,"w") as fh:
+                            fh.write(client_certificate_pem)
+                        self.logger.debug("[S7] Client certificate written")
+
+                        row["client_cert"] = client_certificate
+                    except ValueError:
+                        self.logger.warning("[S8] Client certificate base 64 decoding has failed.")
+                    except PermissionError as error:
+                        self.logger.warning(f"[S8] Client certificate permission error for: {error.filename}.")
+
+                elif row["client_cert"] != "-" and ".." not in row["client_cert"]:
                     client_certificate = os.path.join(os.environ['SPLUNK_HOME'], 'etc', 'apps', 'TA-thehive-cortex','local', row["client_cert"])
                     if os.path.exists(client_certificate):
                         row["client_cert"] = client_certificate
@@ -146,7 +172,7 @@ class Settings(object):
         """ Get storage passwords for the account password """
         password = None
         for s in self.client.storage_passwords:
-            if account in s['username'] and "password" in s['clear_password']:
+            if account in s['username'] and s.access["app"] == "TA-thehive-cortex" and "password" in s['clear_password']:
                 password = str(json.loads(s["clear_password"])["password"])
         return password
 
