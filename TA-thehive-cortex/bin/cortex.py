@@ -51,7 +51,7 @@ def create_cortex_instance(instance_id, settings, logger):
     """ This function is used to create an instance of TheHive """
     # Initialize settings
     token = settings["sessionKey"] if "sessionKey" in settings else settings["session_key"]
-    spl = client.connect(token=token)
+    spl = client.connect(app="TA-thehive-cortex",owner="nobody",token=token)
     logger.debug("[C5] Connection to Splunk done")
     configuration = Settings(spl, settings, logger)
     logger.debug("[C6] Settings recovered")
@@ -74,12 +74,13 @@ def create_cortex_instance(instance_id, settings, logger):
 
     if (cortex_authentication_type == "password"):
         logger.error("[C7-ERROR] Cortex instance will be initialized with a password (not an API key) - This is not supported for Cortex")
+        sys.exit(7)
     elif (cortex_authentication_type == "api_key"):
         logger.debug("[C8] Cortex instance will be initialized with an API Key (not a password)")
         cortex = Cortex(url=cortex_url, apiKey=cortex_secret, sid=settings["sid"], proxies=cortex_proxies, verify=True, cert=cortex_cert, logger=logger)
     else:
         logger.error("[C9-ERROR] WRONG_AUTHENTICATION_TYPE - Authentication type is not one of the expected values (password or api_key), given value: "+cortex_authentication_type)
-        exit(20)
+        sys.exit(20)
 
     return (cortex, configuration, defaults, logger) 
 
@@ -92,12 +93,10 @@ class Cortex(Api):
         try :
             if apiKey is None:
                 self.logger.error("[C15-ERROR] API Key is null, this is the only way to connect to a Cortex instance")
-                exit(15)
+                sys.exit(15)
 
-            if sys.version_info[0] < 3:
-                super(Cortex,self).__init__(str(url),str(apiKey),proxies=proxies,verify_cert=verify,cert=cert)
-            else:
-                super().__init__(str(url),str(apiKey),proxies=proxies,verify_cert=verify,cert=cert)
+            logger.debug('[C19] Cortex object will be instanciated with url "{0}"'.format(url))
+            super().__init__(str(url),str(apiKey),proxies=proxies,verify_cert=verify,cert=cert)
             logger.debug("[C20] Cortex object instanciated")
 
             # Try to connect to the API by recovering all enabled analyzers
@@ -105,10 +104,10 @@ class Cortex(Api):
 
             self.logger.debug("[C21] Cortex API connection to (URL=\""+url+"\") is successful")
         except cortex4py.exceptions.NotFoundError as e:
-            self.logger.error("[C25-ERROR] RESOURCE NOT FOUND - Cortex service is unavailable, is configuration correct ?")
+            self.logger.error("[C25-ERROR] RESOURCE NOT FOUND - Cortex service is unavailable, is the configuration correct ?")
             sys.exit(25)
         except cortex4py.exceptions.ServiceUnavailableError as e:
-            self.logger.error("[C26-ERROR] SERVICE UNAVAILABLE - Cortex service is unavailable, is configuration correct ?")
+            self.logger.error("[C26-ERROR] SERVICE UNAVAILABLE - Cortex service is unavailable, is the configuration correct ?")
             sys.exit(26)
         except cortex4py.exceptions.AuthenticationError as e:
             self.logger.error("[C27-ERROR] AUTHENTICATION ERROR - Credentials are invalid")
