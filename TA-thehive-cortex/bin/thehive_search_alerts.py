@@ -118,7 +118,7 @@ if __name__ == '__main__':
                 for cf in event["thehive_alert_customFields"]:
                     cftype = cf["type"]
                     if cftype=="date":
-                        if "value" in cf:
+                        if "value" in cf and cf["value"] is not None:
                             cf["value"] = time.strftime("%c %z",time.gmtime(int(cf["value"])/1000))
                         else:
                             cf["value"] = "None"
