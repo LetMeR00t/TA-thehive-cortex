@@ -148,7 +148,7 @@
           <colorPalette type="map">{"PAP:WHITE":#FFFFFF,"PAP:GREEN":#53A051,"PAP:AMBER":#F8BE34,"PAP:RED":#DC4E41}</colorPalette>
         </format>
         <drilldown>
-          <link target="_blank">$cortex_protocol$://$cortex_host$:$cortex_port$/index.html#!/jobs/$row.ID (Go to Cortex)$</link>
+          <link target="_blank">https://$cortex_host$:$cortex_port$/index.html#!/jobs/$row.ID (Go to Cortex)$</link>
         </drilldown>
       </table>
     </panel>
@@ -252,7 +252,7 @@
           <colorPalette type="map">{"TLP:WHITE":#FFFFFF,"TLP:GREEN":#53A051,"TLP:AMBER":#F8BE34,"TLP:RED":#DC4E41}</colorPalette>
         </format>
         <drilldown>
-          <link target="_blank">$global_cortex_protocol$://$global_cortex_host$:$global_cortex_port$/index.html#!/jobs/$row.ID (Go to Cortex)$</link>
+          <link target="_blank">https://$global_cortex_host$:$global_cortex_port$/index.html#!/jobs/$row.ID (Go to Cortex)$</link>
         </drilldown>
       </table>
     </panel>
@@ -263,7 +263,6 @@
       <table>
         <search>
           <done>
-            <set token="global_cortex_protocol">$result.protocol$</set>
             <set token="global_cortex_host">$result.host$</set>
             <set token="global_cortex_port">$result.port$</set>
           </done>
