@@ -1,5 +1,7 @@
 # encoding = utf-8
 import os
+import base64
+import datetime
 import sys
 import json
 from thehive4py.query.sort import Asc, Desc
@@ -77,12 +79,37 @@ class Settings(object):
                     instances_by_account_name[row["account_name"]].append(row_id)
                 
                 # get self.client certificate if it's specified
-                if row["client_cert"] != "-" and ".." not in row["client_cert"]:
+
+                if row["client_cert"] != "-" and re.search(r"^[-A-Za-z0-9+/]+={0,3}$", row["client_cert"]):
+                    self.logger.info("[S6] Base64 client certificate found")
+                    try:
+                        client_certificate_pem = base64.b64decode(row["client_cert"]).decode()
+
+                        client_certificate_path = os.path.join(os.environ['SPLUNK_HOME'], 'etc', 'apps', 'TA-thehive-cortex', 'local')
+                        self.logger.debug("[S7] Client certificate path: %s", client_certificate_path)
+
+                        os.makedirs(client_certificate_path, exist_ok=True)
+                        self.logger.debug("[S8] Client certificate path checked")
+
+                        client_certificate = os.path.join(client_certificate_path, "certificate-%s.pem" % datetime.date.today().year)
+                        self.logger.debug("[S9] Client certificate filename: %s", client_certificate)
+
+                        with open(client_certificate,"w") as fh:
+                            fh.write(client_certificate_pem)
+                        self.logger.debug("[S10] Client certificate written")
+
+                        row["client_cert"] = client_certificate
+                    except ValueError:
+                        self.logger.warning("[S11] Client certificate base 64 decoding has failed.")
+                    except PermissionError as error:
+                        self.logger.warning(f"[S12] Client certificate permission error for: {error.filename}.")
+
+                elif row["client_cert"] != "-" and ".." not in row["client_cert"]:
                     client_certificate = os.path.join(os.environ['SPLUNK_HOME'], 'etc', 'apps', 'TA-thehive-cortex','local', row["client_cert"])
                     if os.path.exists(client_certificate):
                         row["client_cert"] = client_certificate
                     else:
-                        self.logger.warning("[S8] Be aware that a client certificate for instance \""+str(row_id)+"\" was provided but the file doesn't exist: "+client_certificate)
+                        self.logger.warning("[S13] Be aware that a client certificate for instance \""+str(row_id)+"\" was provided but the file doesn't exist: "+client_certificate)
 
                 # get proxy parameters if any
                 if row["proxy_url"] != "-":
@@ -119,7 +146,7 @@ class Settings(object):
                 if "uri" not in row or row["uri"] is None or row["uri"] == "-":
                     row["uri"] = "/"
 
-                self.logger.debug("[S10] New instance parsed, adding key \"" + str(row_id) + "\" " + str(row))
+                self.logger.debug("[S14] New instance parsed, adding key \"" + str(row_id) + "\" " + str(row))
                 # Store the new instance
                 row_dict = json.loads(json.dumps(row))
                 self.__instances[row_id] = row_dict
