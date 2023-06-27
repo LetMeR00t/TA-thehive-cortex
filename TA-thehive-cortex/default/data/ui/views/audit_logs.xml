@@ -79,7 +79,7 @@
       <title>Audit logs : Custom commands regarding TheHive Cortex API</title>
       <table>
         <search>
-          <query>(index=_* OR index=cim_*) source="*command_thehive_*.log"
+          <query>(index=_* OR index=cim_*) (source="*command_thehive_*.log" OR source="*command_cortex_*.log")
 | rex field=_raw " (?&lt;type&gt;\w+)\t(?&lt;location&gt;[^\-]+) \- (?&lt;signature&gt;.*)"
 | eval signature = coalesce(signature,_raw)
 | table _time, type, location, signature
