@@ -144,7 +144,7 @@ class TheHive(TheHiveApi):
             elif password is not None:
                 self.logger.debug("[TH80] TheHive API connection to (URL=\""+url+"\",Username=\""+username+"\") is successful")
 
-        except TheHiveError as e:
+        except Exception as e:
             if "CERTIFICATE_VERIFY_FAILED" in str(e):
                 self.logger.warning("[TH85] THE_HIVE_CERTIFICATE_FAILED - It seems that the certificate verification failed. Please check that the certificate authority is added to \""+str(certifi.where())+"\". Complete error: "+str(e))
                 sys.exit(45)
