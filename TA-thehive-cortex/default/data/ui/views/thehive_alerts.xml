@@ -435,7 +435,7 @@ param.severity=$create_severity$ param.tlp=$create_tlp$ param.pap=$create_pap$</
       <table>
         <search>
           <query>| inputlookup thehive_datatypes.csv
-| table field_name, field_type, datatype, description, regex</query>
+| table field_name, field_type, datatype, description</query>
           <earliest>-24h@h</earliest>
           <latest>now</latest>
           <sampleRatio>1</sampleRatio>
@@ -444,6 +444,7 @@ param.severity=$create_severity$ param.tlp=$create_tlp$ param.pap=$create_pap$</
         <option name="dataOverlayMode">none</option>
         <option name="drilldown">none</option>
         <option name="percentagesRow">false</option>
+        <option name="refresh.display">progressbar</option>
         <option name="rowNumbers">false</option>
         <option name="totalsRow">false</option>
         <option name="wrap">true</option>

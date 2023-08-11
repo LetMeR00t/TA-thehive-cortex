@@ -21,6 +21,19 @@ class ObservableTypeEndpoint(EndpointBase):
         return self._session.make_request(
             "GET", path=f"/api/v1/observable/type/{observable_type_id}"
         )
+    
+    def list(self, sortby: Optional[SortExpr] = None) -> List[OutputObservableType]:
+        query: QueryExpr = [
+            {"_name": "listObservableType"},
+            *self._build_subquery(sortby=sortby)
+        ]
+
+        return self._session.make_request(
+            "POST",
+            path="/api/v1/query",
+            params={"name": "get-all-observable-types"},
+            json={"query": query},
+        )
 
     def delete(self, observable_type_id: str) -> None:
         return self._session.make_request(

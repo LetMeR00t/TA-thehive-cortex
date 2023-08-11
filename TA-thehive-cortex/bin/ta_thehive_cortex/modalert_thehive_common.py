@@ -64,32 +64,43 @@ dataTypeList = [
 ]
 
 
-def create_datatype_lookup(helper):
+def create_datatype_lookup(helper, thehive):
     """ This function is used to create a datatype lookup if it doesn't exist """
 
+    dataType_dict = dict()
     # if it does not exist, create thehive_datatypes.csv
     _SPLUNK_PATH = os.environ['SPLUNK_HOME']
     directory = os.path.join(_SPLUNK_PATH, 'etc', 'apps', "TA-thehive-cortex", 'lookups')
     th_dt_filename = os.path.join(directory, 'thehive_datatypes.csv')
-    helper.log_debug("[CAA-THC-1] Directory found: " + str(directory))
 
     if not os.path.exists(th_dt_filename):
         # file th_dt_filename.csv doesn't exist. Create the file
         observables = list()
-        observables.append(['field_name', 'field_type', 'datatype', 'regex', 'description'])
-        for dt in dataTypeList:
-            observables.append([dt, 'observable', dt, '', ''])
+        observables.append(['field_name', 'field_type', 'datatype', 'description'])
+
+        # Get the list of datatypes from TheHive itself
+        th_datatypes = thehive.observable_type.list()
+        helper.log_debug("[CAA-THC-2] Datatypes recovered from TheHive: " + str(th_datatypes))
+
+        # Parse the response
+        for dt in th_datatypes:
+            observables.append([dt["name"], "observable", dt["name"], ""])
+            dataType_dict[dt["name"]] = dt["name"]
+
+        # Write the file
         try:
             if not os.path.exists(directory):
                 os.makedirs(directory)
-            with open(th_dt_filename, 'w') as file_object:
+            with open(th_dt_filename, 'w', newline='') as file_object:
                 csv_writer = csv.writer(file_object, delimiter=',')
                 for observable in observables:
                     csv_writer.writerow(observable)
         except IOError:
             helper.log_error("[CAA-THC-5-ERROR] FATAL {} could not be opened in write mode".format(th_dt_filename))
 
-def get_datatype_dict(helper):
+    return dataType_dict    
+
+def get_datatype_dict(helper, thehive):
     """ This function is used to recover information from a lookup that contain datatypes """
 
     dataType_dict = dict()
@@ -117,12 +128,7 @@ def get_datatype_dict(helper):
             except IOError:  # file thehive_datatypes.csv not readable
                 helper.log_error('[CAA-THC-16-ERROR] file {} empty, malformed or not readable'.format(th_dt_filename))
     else:
-        create_datatype_lookup(helper)
-    if not dataType_dict:
-        dataType_dict = dict()
-        for dt in dataTypeList:
-            dataType_dict[dt] = dt
-        helper.log_debug("[CAA-THC-20] dataType_dict built from inline table")
+        dataType_dict = create_datatype_lookup(helper, thehive)
     return dataType_dict
 
 def extract_field(row, field):
@@ -141,7 +147,7 @@ def parse_events(helper, thehive: TheHive, configuration: Settings, alert_args):
     # iterate through each row, cleaning multivalue fields
     # and then adding the attributes under same alert key
     # this builds the dict parsed_events
-    data_type = get_datatype_dict(helper)
+    data_type = get_datatype_dict(helper, thehive)
     custom_fields = {cf["name"]:cf for cf in thehive.custom_field.list()}
     alert_reference_time = str(int(time.time()))
     parsed_events = dict()

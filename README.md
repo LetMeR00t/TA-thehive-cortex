@@ -22,7 +22,7 @@
 	- ["TheHive: Cases" dashboard](#thehive-cases-dashboard)
 		- [TheHive Case History](#thehive-case-history)
 		- [Create a new case](#create-a-new-case)
-		- [View datatypes](#view-datatypes)
+		- [Fields and datatypes](#fields-and-datatypes)
 	- ["Cortex: Jobs" dashboard](#cortex-jobs-dashboard)
 		- [Cortex History](#cortex-history)
 		- [Run new tasks](#run-new-tasks)
@@ -271,12 +271,21 @@ You have to specify some inputs:
 
 The search will create the new case accordingly
 
-### View datatypes
+### Fields and datatypes
 
-Alert action "TheHive - Create a new alert" uses a lookup table to identify supported fields as TheHive datatypes or custom fields.
-If this lookup table is missing, first call of alert action will attempt to create it with default list of supported data types.
+Alert actions use a lookup table (`thehive_datatypes.csv`) to identify supported fields as TheHive datatypes.
+If this lookup table is missing, first action will attempt to create it with default list of supported data types extracted from the TheHive instance itself.
 
-For every event that will be processed by a custom alert action, the script will try to determine which fields are observables and for that it will rely on this table accordingly. For instance, if you event has a field named "fqdn", it will consider the value of the field as a "fqdn" observable. You can update your list with your own fields accordingly by updating the lookup.
+For every event that will be processed by a custom alert action, the script will try to determine which fields are observables and for that it will rely on this table accordingly. For instance, if your event has a field named "fqdn", it will consider the value of the field as a "fqdn" observable. You can update your list with your own fields accordingly by updating the lookup directly.
+
+The file is build with those fields:
+
+- `field_name`: Name of the field to match within your events.
+- `field_type`: Always set to "observable".
+- `datatype`: Indicates the datatype to use within TheHive for this field.
+- `description`: Free text within your lookup. No description is provided for default datatypes.
+
+As mentionned, you can add custom field names linked to datatypes within TheHive directly by adding them within this lookup. As long as the lookup is existing, your changes will be applied.
 
 > For custom fields, we are directly retrieving the custom fields from the TheHive instance and it's working the same meaning that if you have a custom field named "my_custom_field", then you just need to have a field named "my_custom_field" with the value you want to set for this custom field.
 
