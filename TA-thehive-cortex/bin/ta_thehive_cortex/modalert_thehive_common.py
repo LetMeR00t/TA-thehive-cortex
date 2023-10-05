@@ -14,6 +14,7 @@ import os
 import re
 import time
 import datetime
+from tomark import Tomark
 from thehive import TheHive
 from thehive4py.types.observable import InputObservable
 from thehive4py.types.custom_field import InputCustomField
@@ -160,6 +161,7 @@ def parse_events(helper, thehive: TheHive, configuration: Settings, alert_args):
         observableTags = []
         observableMessage = ''
         customFields = []
+        events = []
         alert = dict()
 
         # Define thehive alert unique ID (if duplicated, alert creations fails)
@@ -173,11 +175,16 @@ def parse_events(helper, thehive: TheHive, configuration: Settings, alert_args):
             newSource = str(row[alert_args['unique_id_field']])
             if newSource not in [None, '']:
                 # grabs that field's value and assigns it to our sourceRef
-                sourceRef = "SPLUNK_JOB:"+ helper.sid + newSource
+                sourceRef = newSource
             else:
-                sourceRef = "SPLUNK_JOB:"+ helper.sid + alert_reference_time
+                sourceRef = "SPL_JOB:"+ helper.sid + alert_reference_time
         else:
-            sourceRef = "SPLUNK_JOB:"+ helper.sid + alert_reference_time
+            sourceRef = "SPL_JOB:"+ helper.sid + alert_reference_time
+
+        # Check if sourceRef is not too long, otherwise cut to 127 characters
+        if len(sourceRef)>128:
+            helper.log_debug("[CAA-THC-63] original sourceRef: {} was cut as it was a string too long (max 128 char).".format(sourceRef))
+            sourceRef = sourceRef[0:127]
 
         helper.log_debug("[CAA-THC-64] sourceRef: {} ".format(sourceRef))
 
@@ -189,27 +196,31 @@ def parse_events(helper, thehive: TheHive, configuration: Settings, alert_args):
                 row[key] = [e[1:len(e) - 1] for e in row["__mv_" + key].split(";")]
         # we filter those out here
         row = {key: value for key, value in row.items() if not key.startswith("__mv_") and key not in ["rid"]}
+        row_sanitized = row.copy()
         helper.log_debug("[CAA-THC-66] Row after pre-processing: " + str(row))
 
         if 'th_inline_tags' in row:
+            del row_sanitized["th_inline_tags"]
             # grabs that field's value and assigns it to
             observableTags = list(str(row.pop("th_inline_tags")).split(","))
 
         # check if the field th_msg exists and strip it from the row.
         # The value will be used as message attached to observables
         if 'th_msg' in row:
+            del row_sanitized["th_msg"]
             # grabs that field's value and assigns it to
             observableMessage = str(row.pop("th_msg"))
-        helper.log_debug("[CAA-THC-75] observable message: {} ".format(observableMessage))
-        helper.log_debug("[CAA-THC-76] observable tags: {} ".format(observableTags))
+            helper.log_debug("[CAA-THC-75] observable message: {} ".format(observableMessage))
+            helper.log_debug("[CAA-THC-76] observable tags: {} ".format(observableTags))
 
         # check if observables have been stored for this sourceRef.
         # If yes, retrieve them to add new ones from this row
         if sourceRef in parsed_events:
             alert = parsed_events[sourceRef]
-            ttps = list(alert["ttps"])
-            observables = list(alert["observables"])
-            customFields = list(alert['customFields'])
+            events = alert["events"]
+            ttps = list(alert["ttps"]) if "ttps" in alert else []
+            observables = list(alert["observables"]) if "observables" in alert else []
+            customFields = list(alert['customFields']) if "customFields" in alert else []
 
         # check if title contains a field name instead of a string.
         # if yes, strip it from the row and assign value to title
@@ -217,6 +228,7 @@ def parse_events(helper, thehive: TheHive, configuration: Settings, alert_args):
             # Find the most accurate information for the title
             if "search_name" in row:
                 # Use this information coming from Splunk ES
+                del row_sanitized["search_name"]
                 alert["title"] = row["search_name"]
             else:
                 # Take the name of the savedsearch itself
@@ -236,16 +248,22 @@ def parse_events(helper, thehive: TheHive, configuration: Settings, alert_args):
         elif "description" in row:
             # Description is provided in the event
             alert["description"] = row["description"]
+            del row_sanitized["description"]
         else:
             # Give a default name
             alert["description"] = "No description provided"
 
         # check if severity is provided or not in the logs (Splunk ES event)
-        alert["severity"] = SEVERITY[row["severity"]] if "severity" in row else alert_args['severity']
+        if "severity" in row:
+            alert["severity"] = SEVERITY[row["severity"]]
+            del row_sanitized["severity"]
+        else:
+            alert["severity"] = alert_args['severity']
 
         # find the field name used for a valid timestamp
         # and strip it from the row
         if alert_args['timestamp'] in row:
+            del row_sanitized[alert_args['timestamp']]
             newTimestamp = str(int(float(row.pop(alert_args['timestamp']))))
             helper.log_debug("[CAA-THC-80] new Timestamp from row: {} ".format(newTimestamp))
             epoch10 = re.match("^[0-9]{10}$", newTimestamp)
@@ -278,9 +296,11 @@ def parse_events(helper, thehive: TheHive, configuration: Settings, alert_args):
                     else:
                         cTags.append(str(dType[1]).replace(" ", "_"))
                 if key in data_type:
+                    del row_sanitized[key]
                     helper.log_debug('[CAA-THC-95] key is an observable: {} '.format(key))
                     observable_key = data_type[key]
                 elif key in custom_fields:
+                    del row_sanitized[key]
                     custom_type = custom_fields[key]["type"]
                     helper.log_debug('[CAA-THC-96] key is a custom field: {}, with type {} '.format(key,custom_type))
                     custom_field_check = False
@@ -326,6 +346,7 @@ def parse_events(helper, thehive: TheHive, configuration: Settings, alert_args):
                     helper.log_debug('[CAA-THC-105] key is added as another observable (scope is False): {}'.format(key))
                     observable_key = 'other'
                 elif key == "ttp":
+                    del row_sanitized["ttp"]
                     # Expected pattern is: tactic::patternId::occurDate
                     values = value.split("::")
                     # Validate the excepted occurDate format (YYYY-mm-dd)
@@ -377,6 +398,7 @@ def parse_events(helper, thehive: TheHive, configuration: Settings, alert_args):
             alert['observables'] = [InputObservable(o) for o in observables]
             helper.log_debug("[CAA-THC-115] observables found for an alert: " + str(observables))
         else:
+            alert['observables'] = []
             helper.log_debug("[CAA-THC-116] No observable found for an alert: " + str(alert))
 
         # Process customFields
@@ -397,8 +419,38 @@ def parse_events(helper, thehive: TheHive, configuration: Settings, alert_args):
                 ttp = {"tactic": mitre_tactics[i], "patternId": mitre_technics[i], "occurDate": date}
                 alert['ttps'].append(InputProcedure(ttp))
 
+        # Store original event
+        alert["events"] = alert["events"]+[row_sanitized] if "events" in alert else [row_sanitized]
+        alert["events_keys"] = list(set(alert["events_keys"]+list(row_sanitized.keys()))) if "events_keys" in alert else list(row_sanitized.keys())
+
         # Store the parsed event
         parsed_events[sourceRef] = alert
 
+    for sourceRef in parsed_events:
+        # Store original events if required
+        # check if we need to append the results to the description
+        if alert_args["append_results"]:
+
+            # Sanitize dictionnaries 
+            # Get all keys from events
+            # Check all events for each key
+            for k in parsed_events[sourceRef]["events_keys"]:
+                count = 0
+                total = len(parsed_events[sourceRef]["events"])
+                for event in parsed_events[sourceRef]["events"]:
+                    # If empty, count + 1
+                    if k not in event or event[k] == "":
+                        count += 1
+                if count == total:
+                    # This means that all fields are empty, remove the key
+                    for event in parsed_events[sourceRef]["events"]:
+                        if k in event:
+                            del event[k]
+
+            helper.log_debug("[CAA-THC-77] Append results to description as markdown table")
+            parsed_events[sourceRef]['description'] += "\r\n"+Tomark.table(parsed_events[sourceRef]["events"])
+
+        # Remove events
+        del parsed_events[sourceRef]["events"]
 
     return parsed_events
