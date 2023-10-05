@@ -158,7 +158,7 @@ class TheHive(TheHiveApi):
                 self.logger.warning("[TH100] THE_HIVE_PROXY_ERROR - It seems that the connection to the proxy has failed. Proxy information are: "+str(proxies)+". Complete error: "+str(e))
                 sys.exit(48)
             else:
-                self.logger.error("[TH110-GENERIC-ERROR] THE_HIVE_CONNECTION_ERROR - Error: "+str(e))
+                self.logger.error("[TH110-GENERIC-ERROR] THEHIVE_CONNECTION_ERROR - Error: "+str(e))
                 sys.exit(60)
 
         self.__sid = sid
