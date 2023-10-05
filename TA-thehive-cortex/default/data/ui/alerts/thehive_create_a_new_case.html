@@ -121,6 +121,7 @@
         </label>
         <div class="controls">
             <select name="action.thehive_create_a_new_case.param.severity" id="thehive_create_a_new_case_severity">
+                <option value="4">Critical</option>
                 <option value="3">High</option>
                 <option value="2">Medium</option>
                 <option value="1">Low</option>
@@ -155,6 +156,19 @@
             </select>
             <span class="help-block">
                 Permissible Action Protocol. Default to PAP:AMBER
+            </span>
+        </div>
+    </div>
+    <div class="control-group">
+        <label class="control-label" for="thehive_create_a_new_calse_append_results">Append results to description <span class="required">*</span>
+        </label>
+        <div class="controls">
+            <select name="action.thehive_create_a_new_case.param.append_results" id="thehive_create_a_new_case_append_results">
+                <option value="0">No</option>
+                <option value="1">Yes</option>
+            </select>
+            <span class="help-block">
+                Set to yes if you want to append a markdown table with the results to the description
             </span>
         </div>
     </div>

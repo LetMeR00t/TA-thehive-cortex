@@ -25,6 +25,7 @@ param.scope = <list> Scope. It's a required parameter. It's default value is 0.
 param.severity = <list> Severity. It's a required parameter. It's default value is 3.
 param.tlp = <list> TLP:. It's a required parameter. It's default value is 3.
 param.pap = <list> PAP:. It's a required parameter. It's default value is 3.
+param.append_results = <int> Indicates if we need to append the results to the description.
 param._cam = <json> Active response parameters.
 
 [thehive_create_a_new_case]
@@ -42,6 +43,7 @@ param.scope = <list> Scope. It's a required parameter. It's default value is 0.
 param.severity = <list> Severity. It's a required parameter. It's default value is 3.
 param.tlp = <list> TLP:. It's a required parameter. It's default value is 3.
 param.pap = <list> PAP:. It's a required parameter. It's default value is 3.
+param.append_results = <int> Indicates if we need to append the results to the description.
 param._cam = <json> Active response parameters.
 
 [thehive_run_function]
