@@ -164,6 +164,17 @@ def parse_events(helper, thehive: TheHive, configuration: Settings, alert_args):
         events = []
         alert = dict()
 
+        # Splunk makes a bunch of dumb empty multivalue fields
+        # replace value by multivalue if required
+        helper.log_debug("[CAA-THC-61] Row before pre-processing: " + str(row))
+        for key, value in row.items():
+            if not key.startswith("__mv_") and "__mv_" + key in row and row["__mv_" + key] not in [None, '']:
+                row[key] = [e[1:len(e) - 1] for e in row["__mv_" + key].split(";")]
+        # we filter those out here
+        row = {key: value for key, value in row.items() if not key.startswith("__mv_") and key not in ["rid"]}
+        row_sanitized = row.copy()
+        helper.log_debug("[CAA-THC-62] Row after pre-processing: " + str(row))
+
         # Define thehive alert unique ID (if duplicated, alert creations fails)
         if ("alert_mode" in alert_args and alert_args["alert_mode"] == "es_mode") or ("case_mode" in alert_args and alert_args["case_mode"] == "es_mode"):
             # Check if it's coming from Splunk ES
@@ -176,6 +187,7 @@ def parse_events(helper, thehive: TheHive, configuration: Settings, alert_args):
             if newSource not in [None, '']:
                 # grabs that field's value and assigns it to our sourceRef
                 sourceRef = newSource
+                del row_sanitized[alert_args['unique_id_field']]
             else:
                 sourceRef = "SPL_JOB:"+ helper.sid + alert_reference_time
         else:
@@ -187,17 +199,6 @@ def parse_events(helper, thehive: TheHive, configuration: Settings, alert_args):
             sourceRef = sourceRef[0:127]
 
         helper.log_debug("[CAA-THC-64] sourceRef: {} ".format(sourceRef))
-
-        # Splunk makes a bunch of dumb empty multivalue fields
-        # replace value by multivalue if required
-        helper.log_debug("[CAA-THC-65] Row before pre-processing: " + str(row))
-        for key, value in row.items():
-            if not key.startswith("__mv_") and "__mv_" + key in row and row["__mv_" + key] not in [None, '']:
-                row[key] = [e[1:len(e) - 1] for e in row["__mv_" + key].split(";")]
-        # we filter those out here
-        row = {key: value for key, value in row.items() if not key.startswith("__mv_") and key not in ["rid"]}
-        row_sanitized = row.copy()
-        helper.log_debug("[CAA-THC-66] Row after pre-processing: " + str(row))
 
         if 'th_inline_tags' in row:
             del row_sanitized["th_inline_tags"]
@@ -448,7 +449,7 @@ def parse_events(helper, thehive: TheHive, configuration: Settings, alert_args):
                             del event[k]
 
             helper.log_debug("[CAA-THC-77] Append results to description as markdown table")
-            parsed_events[sourceRef]['description'] += "\r\n"+Tomark.table(parsed_events[sourceRef]["events"])
+            parsed_events[sourceRef]['description'] += "\r\nRaw events:\r\n"+Tomark.table(parsed_events[sourceRef]["events"])
 
         # Remove events
         del parsed_events[sourceRef]["events"]
