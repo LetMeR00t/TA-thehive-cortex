@@ -124,10 +124,10 @@ Input:
 | table ip, ttp, unique]
 | eventstats values(ip) as all_ip by unique
 | eval all_ip = mvjoin(all_ip,", ")
-| eval name = "Massive scan on website company.corp from "+all_ip, cert-alerted-on=now(), risk="Medium"
+| eval name = "Massive scan on website company.corp from "+all_ip, cert-alerted-on=now(), risk="Medium", info="A custom info added to the event"
 ```
 
-> Please note that the field "all_ip" is used to build the title but will not be taking into account by the script as it's not a relevant field (not a custom field nor an observable or a reserved named field for TheHive)
+> Please note that the field "all_ip" is used to build the title but will not be taking into account by the script as it's not a relevant field (not a custom field nor an observable or a reserved named field for TheHive). However, the option to append the results was selected and a table will be added to the description containing this information.
 
 Output:
 
@@ -243,7 +243,7 @@ Output:
 | Field | Description | UC1 | UC2 | UC3 | UC4
 |---|---|---|---|---|---|
 | Title | This is used to create the title of an alert/case in TheHive  | Use the parameter "&lt;inheritance&gt;" that will take the name of the savedsearch as the title | Use the field named "name" from the results as the title | Use the parameter "&lt;inheritance&gt;" that will take the name of the correlation search as the title | Same as UC3 (if nothing was provided, the name of the search_name from Splunk ES would be taken by default) |
-| Description | This is used to create the description of an alert/case in TheHive| Static string sentence set in the Description alert parameter | Use the savedsearch description itself as the description of the alert/case | Same as UC2 | [Intentional bug] The default "No description provided" is used as the token `$description$` is returning nothing because it's a notable event and not a savedsearch or correlation search |
+| Description | This is used to create the description of an alert/case in TheHive| Static string sentence set in the Description alert parameter | Use the savedsearch description itself as the description of the alert/case, including the results appened thanks to the option configuration in the Splunk alert. Fields are sanitized to remove any field already used by TheHive in another field. | Same as UC2, without results appened | [Intentional bug] The default "No description provided" is used as the token `$description$` is returning nothing because it's a notable event and not a savedsearch or correlation search |
 | TLP | This is used to set the TLP of an alert/case | Set to "AMBER" in the savedsearch configuration | Same as UC1 | Set to "AMBER" in the correlation search configuration | Set to "RED" in the adaptative response configuration |
 | PAP | This is used to set the PAP of an alert/case | Set to "AMBER" in the savedsearch configuration | Same as UC1 | Set to "AMBER" in the correlation search configuration | Set to "GREEN" in the adaptative response configuration |
 | Severity | This is used to set the severity of an alert/case | Set to "Medium" in the savedsearch configuration | Same as UC1 | Set to "High" in the correlation search configuration | Automatically set based on the notable event severity, here "CRITICAL" |
