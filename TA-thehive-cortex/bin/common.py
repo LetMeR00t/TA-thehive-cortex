@@ -325,14 +325,14 @@ class Settings(object):
     def checkAndValidate(self, d, name, default="", is_mandatory=False):
         """ This function is use to check and validate an expected value format """
         if name in d:
-            self.logger.info("[S65] Found parameter \""+str(name)+"\"="+str(d[name]))
+            self.logger.debug("[S65] Found parameter \""+str(name)+"\"="+str(d[name]))
             return d[name]
         else:
             if is_mandatory:
                 self.logger.error("[S66-ERROR] Missing parameter (no \""+str(name)+"\" field found)")
                 sys.exit(66)
             else:
-                self.logger.info("[S67] Parameter \""+str(name)+"\" not found, using default value=\""+str(default)+"\"")
+                self.logger.debug("[S67] Parameter \""+str(name)+"\" not found, using default value=\""+str(default)+"\"")
                 return default 
 
 
