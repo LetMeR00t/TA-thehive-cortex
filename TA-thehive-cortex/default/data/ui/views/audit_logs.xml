@@ -93,12 +93,11 @@
         <option name="dataOverlayMode">none</option>
         <option name="drilldown">none</option>
         <option name="percentagesRow">false</option>
-        <option name="refresh.display">progressbar</option>
         <option name="rowNumbers">false</option>
         <option name="totalsRow">false</option>
         <option name="wrap">true</option>
         <format type="color" field="Type">
-          <colorPalette type="map">{"DEBUG":#602CA1,"INFO":#0099E0,"WARN":#CBA700,"ERROR":#D41F1F}</colorPalette>
+          <colorPalette type="map">{"DEBUG":#602CA1,"INFO":#0099E0,"WARNING":#CBA700,"ERROR":#D41F1F}</colorPalette>
         </format>
         <format type="color" field="SID">
           <colorPalette type="sharedList"></colorPalette>
