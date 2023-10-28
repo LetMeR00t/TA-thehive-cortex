@@ -13,16 +13,18 @@
     - [Splunk search](#splunk-search-1)
     - [Splunk screenshots](#splunk-screenshots-1)
     - [TheHive screenshots](#thehive-screenshots-1)
+    - [Splunk screenshot](#splunk-screenshot)
+    - [TheHive screenshots](#thehive-screenshots-2)
   - [UC3: Correlation Search - One single case](#uc3-correlation-search---one-single-case)
     - [Prerequisites](#prerequisites-2)
     - [Splunk search](#splunk-search-2)
     - [Splunk screenshots](#splunk-screenshots-2)
-    - [TheHive screenshots](#thehive-screenshots-2)
+    - [TheHive screenshots](#thehive-screenshots-3)
   - [UC4: Notable event - Adaptative Response](#uc4-notable-event---adaptative-response)
     - [Prerequisites](#prerequisites-3)
     - [Splunk search](#splunk-search-3)
     - [Splunk screenshots](#splunk-screenshots-3)
-    - [TheHive screenshots](#thehive-screenshots-3)
+    - [TheHive screenshots](#thehive-screenshots-4)
   - [UC5: TheHive Function - Saved search, Correlation search or Adaptative Response](#uc5-thehive-function---saved-search-correlation-search-or-adaptative-response)
     - [Prerequisites](#prerequisites-4)
     - [TheHive Function screenshots](#thehive-function-screenshots)
@@ -123,8 +125,9 @@ Input:
 | eval ip="1.3.5.8", ttp="reconnaissance::T1593.002::"+tostring(strftime(now(),"%Y-%m-%d")), unique=tostring(now())+".2"
 | table ip, ttp, unique]
 | eventstats values(ip) as all_ip by unique
-| eval all_ip = mvjoin(all_ip,", ")
+| eval all_ip = mvjoin(all_ip,", ") 
 | eval name = "Massive scan on website company.corp from "+all_ip, cert-alerted-on=now(), risk="Medium", info="A custom info added to the event"
+| fields - all_ip
 ```
 
 > Please note that the field "all_ip" is used to build the title but will not be taking into account by the script as it's not a relevant field (not a custom field nor an observable or a reserved named field for TheHive). However, the option to append the results was selected and a table will be added to the description containing this information.
@@ -138,6 +141,7 @@ Output:
 
 ![UC2 - Saved search configuration 1](images/../../images/uc2_ss1.png)
 ![UC2 - Saved search configuration 2](images/../../images/uc2_ss2.png)
+![UC2 - Saved search configuration 3](images/../../images/uc2_ss3.png)
 
 ### TheHive screenshots
 
@@ -148,6 +152,17 @@ Output:
 ![UC2 - TheHive alert 5](images/../../images/uc2_thehive5.png)
 ![UC2 - TheHive alert 6](images/../../images/uc2_thehive6.png)
 ![UC2 - TheHive alert 7](images/../../images/uc2_thehive7.png)
+
+Alternative output could be, with the same configuration but without keeping the observables in the sanitized table provided in the description as is:
+
+### Splunk screenshot
+
+![UC2 - Saved search configuration Alt 2](images/../../images/uc2_ss2_alt.png)
+
+### TheHive screenshots
+
+![UC2 - TheHive alert Alt 2](images/../../images/uc2_thehive2_alt.png)
+![UC2 - TheHive alert Alt 5](images/../../images/uc2_thehive5_alt.png)
 
 ## UC3: Correlation Search - One single case
 
