@@ -171,15 +171,28 @@
         </div>
     </div>
     <div class="control-group">
-        <label class="control-label" for="thehive_create_a_new_alert_append_results">Append results to description <span class="required">*</span>
+        <label class="control-label" for="thehive_create_a_new_alert_description_results_enable">[Description] Append sanitized results<span class="required">*</span>
         </label>
         <div class="controls">
-            <select name="action.thehive_create_a_new_alert.param.append_results" id="thehive_create_a_new_alert_append_results">
+            <select name="action.thehive_create_a_new_alert.param.description_results_enable" id="thehive_create_a_new_alert_description_results_enable">
                 <option value="0">No</option>
                 <option value="1">Yes</option>
             </select>
             <span class="help-block">
-                Set to yes if you want to append a markdown table with the results to the description
+                Set to yes if you want to append a sanitized markdown table with the results to the description
+            </span>
+        </div>
+    </div>
+    <div class="control-group">
+        <label class="control-label" for="thehive_create_a_new_alert_description_results_keep_observable">[Description] Keep observables in the results<span class="required">*</span>
+        </label>
+        <div class="controls">
+            <select name="action.thehive_create_a_new_alert.param.description_results_keep_observable" id="thehive_create_a_new_alert_description_results_keep_observable">
+                <option value="0">No</option>
+                <option value="1">Yes</option>
+            </select>
+            <span class="help-block">
+                Set to yes if you want to keep observables in the description. Otherwise, they will be removed from the sanitized markdown table
             </span>
         </div>
     </div>

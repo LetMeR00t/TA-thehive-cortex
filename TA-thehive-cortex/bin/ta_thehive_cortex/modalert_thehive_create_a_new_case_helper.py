@@ -153,7 +153,8 @@ def process_event(helper, *args, **kwargs):
     alert_args["tlp"] = int(helper.get_param("tlp")) if helper.get_param("tlp") is not None else 2
     alert_args["pap"] = int(helper.get_param("pap")) if helper.get_param("pap") is not None else 2
     alert_args["splunk_es_alerts_index"] = helper.get_global_setting("splunk_es_alerts_index") if helper.get_global_setting("splunk_es_alerts_index") is not None else "summary"
-    alert_args["append_results"] = True if int(helper.get_param("append_results")) == 1 else False
+    alert_args["description_results_enable"] = True if int(helper.get_param("description_results_enable")) == 1 else False
+    alert_args["description_results_keep_observable"] = True if int(helper.get_param("description_results_keep_observable")) == 1 else False
     helper.log_debug("[CAA-THCC-55] Arguments recovered: " + str(alert_args))
 
     # Create the alert

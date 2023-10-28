@@ -189,9 +189,9 @@ def parse_events(helper, thehive: TheHive, configuration: Settings, alert_args):
                 sourceRef = newSource
                 del row_sanitized[alert_args['unique_id_field']]
             else:
-                sourceRef = "SPL_JOB:"+ helper.sid + alert_reference_time
+                sourceRef = helper.sid + alert_reference_time
         else:
-            sourceRef = "SPL_JOB:"+ helper.sid + alert_reference_time
+            sourceRef = helper.sid + alert_reference_time
 
         # Check if sourceRef is not too long, otherwise cut to 127 characters
         if len(sourceRef)>128:
@@ -237,6 +237,9 @@ def parse_events(helper, thehive: TheHive, configuration: Settings, alert_args):
         elif alert_args["title"]:
             # Field is not null but it's not inheritance, try to format the field
             alert["title"] = extract_field(row, alert_args["title"])
+            # Check if sanitization is required
+            if alert_args["title"] in row:
+                del row_sanitized[alert_args["title"]]
         else:
             # Give a default name
             alert["title"] = "Notable event"
@@ -246,6 +249,9 @@ def parse_events(helper, thehive: TheHive, configuration: Settings, alert_args):
         if alert_args["description"]:
             # Field is not null, try to format the field
             alert["description"] = extract_field(row, alert_args["description"])
+            # Check if sanitization is required
+            if alert_args["description"] in row:
+                del row_sanitized[alert_args["description"]]
         elif "description" in row:
             # Description is provided in the event
             alert["description"] = row["description"]
@@ -297,7 +303,9 @@ def parse_events(helper, thehive: TheHive, configuration: Settings, alert_args):
                     else:
                         cTags.append(str(dType[1]).replace(" ", "_"))
                 if key in data_type:
-                    del row_sanitized[key]
+                    # Check if observables must be kept in the sanitized results or not
+                    if not alert_args["description_results_keep_observable"]:
+                        del row_sanitized[key]
                     helper.log_debug('[CAA-THC-95] key is an observable: {} '.format(key))
                     observable_key = data_type[key]
                 elif key in custom_fields:
@@ -430,7 +438,7 @@ def parse_events(helper, thehive: TheHive, configuration: Settings, alert_args):
     for sourceRef in parsed_events:
         # Store original events if required
         # check if we need to append the results to the description
-        if alert_args["append_results"]:
+        if alert_args["description_results_enable"]:
 
             # Sanitize dictionnaries 
             # Get all keys from events
