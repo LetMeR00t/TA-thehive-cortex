@@ -178,16 +178,16 @@ Input:
 ```text
 | makeresults
 | eval other="account-12345", hostname="mycloud.aws.instance.corp"
-| eval cert-alerted-on=now(), risk="Medium"
+| eval cert-alerted-on=now(), risk="Medium", th_severity=4, th_tlp="AMBER+STRICT", th_pap="2"
 ```
 
 Output:
 
-![UC3 - Search](images/../../images/uc34_search.png)
+![UC3 - Search](images/../../images/uc3_search.png)
 
 ### Splunk screenshots
 
-![UC3 - Saved search configuration 1](images/../../images/uc34_cs1.png)
+![UC3 - Saved search configuration 1](images/../../images/uc3_cs1.png)
 ![UC3 - Saved search configuration 2](images/../../images/uc3_cs2.png)
 
 ### TheHive screenshots
@@ -216,12 +216,12 @@ Input:
 
 Output:
 
-![UC4 - Search](images/../../images/uc34_search.png)
+![UC4 - Search](images/../../images/uc4_search.png)
 
 
 ### Splunk screenshots
 
-![UC4 - Saved search configuration 1](images/../../images/uc34_cs1.png)
+![UC4 - Saved search configuration 1](images/../../images/uc4_cs1.png)
 ![UC4 - Saved search configuration 2](images/../../images/uc4_cs2.png)
 ![UC4 - Saved search configuration 3](images/../../images/uc4_cs3.png)
 ![UC4 - Saved search configuration 4](images/../../images/uc4_cs4.png)
@@ -259,9 +259,9 @@ Output:
 |---|---|---|---|---|---|
 | Title | This is used to create the title of an alert/case in TheHive  | Use the parameter "&lt;inheritance&gt;" that will take the name of the savedsearch as the title | Use the field named "name" from the results as the title | Use the parameter "&lt;inheritance&gt;" that will take the name of the correlation search as the title | Same as UC3 (if nothing was provided, the name of the search_name from Splunk ES would be taken by default) |
 | Description | This is used to create the description of an alert/case in TheHive| Static string sentence set in the Description alert parameter | Use the savedsearch description itself as the description of the alert/case, including the results appened thanks to the option configuration in the Splunk alert. Fields are sanitized to remove any field already used by TheHive in another field. | Same as UC2, without results appened | [Intentional bug] The default "No description provided" is used as the token `$description$` is returning nothing because it's a notable event and not a savedsearch or correlation search |
-| TLP | This is used to set the TLP of an alert/case | Set to "AMBER" in the savedsearch configuration | Same as UC1 | Set to "AMBER" in the correlation search configuration | Set to "RED" in the adaptative response configuration |
-| PAP | This is used to set the PAP of an alert/case | Set to "AMBER" in the savedsearch configuration | Same as UC1 | Set to "AMBER" in the correlation search configuration | Set to "GREEN" in the adaptative response configuration |
-| Severity | This is used to set the severity of an alert/case | Set to "Medium" in the savedsearch configuration | Same as UC1 | Set to "High" in the correlation search configuration | Automatically set based on the notable event severity, here "CRITICAL" |
+| TLP | This is used to set the TLP of an alert/case | Set to "AMBER" in the savedsearch configuration | Set to "AMBER+STRICT" directly in the search results using the field "th_tlp" | Set to "AMBER" in the correlation search configuration | Set to "RED" in the adaptative response configuration |
+| PAP | This is used to set the PAP of an alert/case | Set to "AMBER" in the savedsearch configuration | Set to "AMBER" directly in the search results using the field "th_pap" | Set to "AMBER" in the correlation search configuration | Set to "GREEN" in the adaptative response configuration |
+| Severity | This is used to set the severity of an alert/case | Set to "Medium" in the savedsearch configuration | Set to "CRITICAL" directly in the search results using the field "th_severity" | Set to "High" in the correlation search configuration | Automatically set based on the notable event severity, here "CRITICAL" |
 | Owner | This is used to indicate who is the owner of the case | No owner in alerts | Same as UC1 | Owner is set automatically to the account that created the case (used to communicate with TheHive) | Same as UC3 |
 | Source | This indicates the source of the alert | Manually set in the savedsearch configuration | Same as UC1| No source in cases | Same as UC3 |
 | Type | This indicates the type of the alert | Manually set in the savedsearch configuration | Same as UC1 | No type in cases | Same as UC3 |

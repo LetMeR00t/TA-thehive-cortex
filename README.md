@@ -198,10 +198,10 @@ You have to specify some inputs:
 
 - **Job SID (input data)**: SID of a search (you can retrieve SIDs from Splunk > Activity > Jobs)
 - **Title**: Title for this new alert
-- **Severity**: Severity for this new alert
+- **Severity**: Severity for this new alert. You can use the field `th_severity` in the search to set the severity value from the results. You can use the following values (values between parenthesis will be processed the same way): [(W,0,WHITE),(G,1,GREEN),(A,2,AMBER),(AS,3,AMBER+STRICT),(R,4,RED)]
 - **Tags**: Tags for this new alert (they are added by specifiying values in the "Enter a new tag" input)
-- **TLP**: TLP for this new alert
-- **PAP**: PAP for this new alert
+- **TLP**: TLP for this new alert. You can use the field `th_tlp` in the search to set the TLP value from the results. You can use the following values (values between parenthesis will be processed the same way): [(W,0,WHITE),(G,1,GREEN),(A,2,AMBER),(R,3,RED)]
+- **PAP**: PAP for this new alert. You can use the field `th_pap` in the search to set the PAP value from the results. You can use the following values (values between parenthesis will be processed the same way): [(W,0,WHITE),(G,1,GREEN),(A,2,AMBER),(R,3,RED)]
 - **Source**: source of this alert (you can provide a field name to set this value from results)
 - **Timestamp field**: field containing a valid EPOCH timestamp (10-digit for s;13-digit for ms) - if not present, default to now()
 - **Unique ID field**: the unique reference for this alert. If a field name is provided, it is used to group results rows in several alerts - default is SPK+now()
@@ -259,10 +259,10 @@ You have to specify some inputs:
 
 - **Job SID (input data)**: SID of a search (you can retrieve SIDs from Splunk > Activity > Jobs)
 - **Title**: Title for this new case
-- **Severity**: Severity for this new case
+- **Severity**: Severity for this new case. You can use the field `th_severity` in the search to set the severity value from the results. You can use the following values (values between parenthesis will be processed the same way): [(W,0,WHITE),(G,1,GREEN),(A,2,AMBER),(AS,3,AMBER+STRICT),(R,4,RED)]
 - **Tags**: Tags for this new case (they are added by specifiying values in the "Enter a new tag" input)
-- **TLP**: TLP for this new case
-- **PAP**: PAP for this new case
+- **TLP**: TLP for this new case. You can use the field `th_tlp` in the search to set the TLP value from the results. You can use the following values (values between parenthesis will be processed the same way): [(W,0,WHITE),(G,1,GREEN),(A,2,AMBER),(R,3,RED)]
+- **PAP**: PAP for this new case. You can use the field `th_pap` in the search to set the PAP value from the results. You can use the following values (values between parenthesis will be processed the same way): [(W,0,WHITE),(G,1,GREEN),(A,2,AMBER),(R,3,RED)]
 - **Source**: source of this case (you can provide a field name to set this value from results)
 - **Timestamp field**: field containing a valid EPOCH timestamp (10-digit for s;13-digit for ms) - if not present, default to now()
 - **Unique ID field**: the unique reference for this case. If a field name is provided, it is used to group results rows in several alerts

@@ -26,23 +26,48 @@ __maintainer__ = "Alexandre Demeyer"
 __email__ = "letmer00t@gmail.com"
 
 # All available data types
-OBSERVABLE_TLP = {
+TLP = {
+    "W": 0,
+    "G": 1,
+    "A": 2,
+    "AS": 3,
+    "R": 4,
+    "0": 0,
+    "1": 1,
+    "2": 2,
+    "3": 3,
+    "4": 4,
+    "WHITE": 0,
+    "GREEN": 1,
+    "AMBER": 2,
+    "AMBER+STRICT": 3,
+    "RED": 4
+}
+
+PAP = {
     "W": 0,
     "G": 1,
     "A": 2,
     "R": 3,
-    "0": "TLP:WHITE",
-    "1": "TLP:GREEN",
-    "2": "TLP:AMBER",
-    "3": "TLP:RED"
+    "0": 0,
+    "1": 1,
+    "2": 2,
+    "3": 3,
+    "WHITE": 0,
+    "GREEN": 1,
+    "AMBER": 2,
+    "RED": 3
 }
 
 SEVERITY = {
-    "informational": 1,
     "low": 1,
     "medium": 2,
     "high": 3,
-    "critical": 4
+    "critical": 4,
+    "1": 1,
+    "2": 2,
+    "3": 3,
+    "4": 4
 }
 
 # All available data types
@@ -261,11 +286,25 @@ def parse_events(helper, thehive: TheHive, configuration: Settings, alert_args):
             alert["description"] = "No description provided"
 
         # check if severity is provided or not in the logs (Splunk ES event)
-        if "severity" in row:
-            alert["severity"] = SEVERITY[row["severity"]]
-            del row_sanitized["severity"]
+        if "th_severity" in row:
+            alert["severity"] = SEVERITY[row["th_severity"]]
+            del row_sanitized["th_severity"]
         else:
             alert["severity"] = alert_args['severity']
+
+        # check if tlp is provided or not in the logs (Splunk ES event)
+        if "th_tlp" in row:
+            alert["tlp"] = TLP[row["th_tlp"]]
+            del row_sanitized["th_tlp"]
+        else:
+            alert["tlp"] = alert_args['tlp']
+
+        # check if pap is provided or not in the logs (Splunk ES event)
+        if "th_pap" in row:
+            alert["pap"] = PAP[row["th_pap"]]
+            del row_sanitized["th_pap"]
+        else:
+            alert["pap"] = alert_args['pap']
 
         # check if there are some tags and remove them from the markdown table
         if alert_args["tags"] and len(alert_args["tags"])>0:
@@ -306,8 +345,8 @@ def parse_events(helper, thehive: TheHive, configuration: Settings, alert_args):
                     # it is on letter W G A or R appended to field name
                     observable_tlp_check = re.match("^(W|G|A|R)$", str(dType[1]))
                     if observable_tlp_check is not None:
-                        cTLP = OBSERVABLE_TLP[dType[1]]
-                        cTags.append(OBSERVABLE_TLP[str(cTLP)])
+                        cTLP = TLP[dType[1]]
+                        cTags.append(TLP[str(cTLP)])
                     else:
                         cTags.append(str(dType[1]).replace(" ", "_"))
                 if key in data_type:
