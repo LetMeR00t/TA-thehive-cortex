@@ -465,7 +465,7 @@ def parse_events(helper, thehive: TheHive, configuration: Settings, alert_args):
                             del event[k]
 
             helper.log_debug("[CAA-THC-77] Append results to description as markdown table")
-            parsed_events[sourceRef]['description'] += "\r\nRaw events:\r\n"+Tomark.table(parsed_events[sourceRef]["events"])
+            parsed_events[sourceRef]['description'] += "\r\n\r\n-----\r\nRaw events:\r\n\r\n"+Tomark.table(parsed_events[sourceRef]["events"])
 
         # Remove events
         del parsed_events[sourceRef]["events"]
