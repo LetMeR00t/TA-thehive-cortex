@@ -13,6 +13,7 @@ import time
 from  modalert_thehive_common import parse_events
 from thehive import TheHive, create_thehive_instance
 from thehive4py.types.case import InputCase
+from thehive4py.errors import TheHiveError
 
 __author__ = "Alexandre Demeyer"
 __maintainer__ = "Alexandre Demeyer"
@@ -190,55 +191,65 @@ def create_case(helper, thehive: TheHive, configuration, alert_args):
 
         helper.log_debug("[CAA-THCC-120] Processing case: " + str(case))
         # Get API and create the case
-        new_case = thehive.case.create(case)
-
-        if "_id" in new_case:
-            # log response status
-            helper.log_info(
-                "[CAA-THCC-125] TheHive case #{} is successfully created on url={}".format(new_case["number"],thehive.session.hive_url)
-            )
-
-        else:
-            # somehow we got a bad response code from thehive
+        new_case = None
+        try:
+            new_case = thehive.case.create(case)
+        except TheHiveError as e:
             helper.log_error(
                 "[CAA-THCC-126-ERROR] TheHive case creation has failed. "
-                "url={}, data={}, content={}"
-                .format(thehive.session.hive_url, str(case), str(new_case))
+                "url={}, data={}, content={}, error={}"
+                .format(thehive.session.hive_url, str(case), str(new_case), str(e))
             )
 
-        # Processing Observables if any
-        if "observables" in cases[srcRef]:
-            for observable in cases[srcRef]['observables']:
-                response = thehive.observable.create_in_case(case_id=new_case["_id"],observable=observable)[0]
-
-                if "_id" in response:
-                    # log response status
-                    helper.log_info(
-                        "[CAA-THCC-130] TheHive case {} was successfully updated with the observable {} on url={}".format(new_case["_id"],response["data"].replace(".","[.]"),thehive.session.hive_url)
-                    )
-
-                else:
-                    # somehow we got a bad response code from thehive
-                    helper.log_error(
-                        "[CAA-THCC-135-ERROR] TheHive observable update on recent case creation has failed. "
-                        "url={}, data={}, content={}, observable={}"
-                        .format(thehive.session.hive_url, str(case), str(response), str(observable))
-                    ) 
-        
-        # Processing TTPs if any
-        if "ttps" in cases[srcRef]:
-            
-            response = thehive.case.create_procedures(case_id=new_case["_id"], procedures=cases[srcRef]["ttps"])[0]
-
-            if "_id" in response:
+        if new_case is not None:
+            if "_id" in new_case:
                 # log response status
                 helper.log_info(
-                    "[CAA-THCA-130] TheHive case {} was successfully updated with the TTPs on url={}".format(new_case["_id"],thehive.session.hive_url)
+                    "[CAA-THCC-125] TheHive case #{} is successfully created on url={}".format(new_case["number"],thehive.session.hive_url)
                 )
 
             else:
                 # somehow we got a bad response code from thehive
                 helper.log_error(
-                    "[CAA-THCA-135-ERROR] TheHive TTPs update on recent case creation has failed. "
-                    "url={}, data={}, content={}, ttp={}"
-                    .format(thehive.session.hive_url, str(case), str(response), str(cases[srcRef]["ttps"])))
+                    "[CAA-THCC-126-ERROR] TheHive case creation has failed. "
+                    "url={}, data={}, content={}"
+                    .format(thehive.session.hive_url, str(case), str(new_case))
+                )
+
+            # Processing Observables if any
+            if "observables" in cases[srcRef]:
+                for observable in cases[srcRef]['observables']:
+                    response = thehive.observable.create_in_case(case_id=new_case["_id"],observable=observable)
+                    
+                    if "failure" in response:
+                        # somehow we got a bad response code from thehive
+                        helper.log_error(
+                            "[CAA-THCC-135-ERROR] TheHive observable update on recent case creation has failed. "
+                            "url={}, data={}, content={}, observable={}, error={}"
+                            .format(thehive.session.hive_url, str(case), str(response), str(observable), str(response["failure"]))
+                        ) 
+                    else:
+                        response = response[0]
+                        # log response status
+                        helper.log_info(
+                            "[CAA-THCC-130] TheHive case {} was successfully updated with the observable {} on url={}".format(new_case["_id"],response["data"].replace(".","[.]"),thehive.session.hive_url)
+                        )
+
+            
+            # Processing TTPs if any
+            if "ttps" in cases[srcRef]:
+                
+                response = thehive.case.create_procedures(case_id=new_case["_id"], procedures=cases[srcRef]["ttps"])[0]
+
+                if "_id" in response:
+                    # log response status
+                    helper.log_info(
+                        "[CAA-THCA-130] TheHive case {} was successfully updated with the TTPs on url={}".format(new_case["_id"],thehive.session.hive_url)
+                    )
+
+                else:
+                    # somehow we got a bad response code from thehive
+                    helper.log_error(
+                        "[CAA-THCA-135-ERROR] TheHive TTPs update on recent case creation has failed. "
+                        "url={}, data={}, content={}, ttp={}"
+                        .format(thehive.session.hive_url, str(case), str(response), str(cases[srcRef]["ttps"])))

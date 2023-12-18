@@ -13,6 +13,7 @@ import time
 from  modalert_thehive_common import parse_events
 from thehive import TheHive, create_thehive_instance
 from thehive4py.types.alert import InputAlert
+from thehive4py.errors import TheHiveError
 
 __author__ = "Alexandre Demeyer, Remi Seguy"
 __maintainer__ = "Alexandre Demeyer"
@@ -194,36 +195,45 @@ def create_alert(helper, thehive: TheHive, configuration, alert_args):
 
         helper.log_debug("[CAA-THCA-120] Processing alert: " + str(alert))
         # Get API and create the alert
-        new_alert = thehive.alert.create(alert)
-
-        if "_id" in new_alert:
-            # log response status
-            helper.log_info(
-                "[CAA-THCA-125] TheHive alert {} is successfully created on url={}".format(new_alert["_id"],thehive.session.hive_url)
-            )
-
-        else:
-            # somehow we got a bad response code from thehive
+        new_alert = None
+        try:
+            new_alert = thehive.alert.create(alert)
+        except TheHiveError as e:
             helper.log_error(
-                "[CAA-THCA-126-ERROR] TheHive alert creation has failed. "
-                "url={}, data={}, content={}"
-                .format(thehive.session.hive_url, str(alert), str(new_alert))
+                "[CAA-THCA-122-ERROR] TheHive alert creation has failed. "
+                "url={}, data={}, content={}, error={}"
+                .format(thehive.session.hive_url, str(alert), str(new_alert), str(e))
             )
-        
-        # Processing TTPs if any
-        if "ttps" in alerts[srcRef]:
-            
-            response = thehive.alert.create_procedures(alert_id=new_alert["_id"], procedures=alerts[srcRef]["ttps"])[0]
 
-            if "_id" in response:
+        if new_alert is not None:
+            if "_id" in new_alert:
                 # log response status
                 helper.log_info(
-                    "[CAA-THCA-130] TheHive alert {} was successfully updated with the TTPs on url={}".format(new_alert["_id"],thehive.session.hive_url)
+                    "[CAA-THCA-125] TheHive alert {} is successfully created on url={}".format(new_alert["_id"],thehive.session.hive_url)
                 )
 
             else:
                 # somehow we got a bad response code from thehive
                 helper.log_error(
-                    "[CAA-THCA-135-ERROR] TheHive TTPs update on recent alert creation has failed. "
-                    "url={}, data={}, content={}, ttp={}"
-                    .format(thehive.session.hive_url, str(alert), str(response), str(alerts[srcRef]["ttps"])))
+                    "[CAA-THCA-126-ERROR] TheHive alert creation has failed. "
+                    "url={}, data={}, content={}"
+                    .format(thehive.session.hive_url, str(alert), str(new_alert))
+                )
+            
+            # Processing TTPs if any
+            if "ttps" in alerts[srcRef]:
+                
+                response = thehive.alert.create_procedures(alert_id=new_alert["_id"], procedures=alerts[srcRef]["ttps"])[0]
+
+                if "_id" in response:
+                    # log response status
+                    helper.log_info(
+                        "[CAA-THCA-130] TheHive alert {} was successfully updated with the TTPs on url={}".format(new_alert["_id"],thehive.session.hive_url)
+                    )
+
+                else:
+                    # somehow we got a bad response code from thehive
+                    helper.log_error(
+                        "[CAA-THCA-135-ERROR] TheHive TTPs update on recent alert creation has failed. "
+                        "url={}, data={}, content={}, ttp={}"
+                        .format(thehive.session.hive_url, str(alert), str(response), str(alerts[srcRef]["ttps"])))
