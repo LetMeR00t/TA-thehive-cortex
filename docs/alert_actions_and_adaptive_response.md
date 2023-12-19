@@ -33,12 +33,10 @@
   - [Tips \& Tricks](#tips--tricks)
     - [How to fill in form fields](#how-to-fill-in-form-fields)
     - [Alert overall description](#alert-overall-description)
-    - [Manage fields to become observable, enrich the alert with inline fields](#manage-fields-to-become-observable-enrich-the-alert-with-inline-fields)
+    - [Manage fields to become observables](#manage-fields-to-become-observables)
       - [Here some precisions](#here-some-precisions)
       - [Use fields to provide values for the alert](#use-fields-to-provide-values-for-the-alert)
-      - [Custom TLP per observable](#custom-tlp-per-observable)
-      - [Inline tag(s)](#inline-tags)
-    - [Advanced search results with additional tags](#advanced-search-results-with-additional-tags)
+      - [Composite fields (used for observables information)](#composite-fields-used-for-observables-information)
 
 # Introduction
 
@@ -114,16 +112,16 @@ Input:
 
 ```text
 | makeresults
-| eval ip="5.6.7.8", ttp="reconnaissance::T1595.001::"+tostring(strftime(now(),"%Y-%m-%d")), unique=tostring(now())+".1"
-| table ip, ttp, unique
+| eval ip="5.6.7.8", "ip:description" = "another description for this specific ip", "ip:tags" = "hello,world", ttp="reconnaissance::T1595.001::"+tostring(strftime(now(),"%Y-%m-%d")), unique=tostring(now())+".1"
+| table ip, "ip:description", "ip:tags", ttp, unique
 | append
     [| makeresults
-| eval ip="1.2.3.4", ttp="reconnaissance::T1593.002::"+tostring(strftime(now(),"%Y-%m-%d")), unique=tostring(now())+".1"
-| table ip, ttp, unique]
+| eval ip="1.2.3.4", ttp="reconnaissance::T1593.002::"+tostring(strftime(now(),"%Y-%m-%d")), unique=tostring(now())+".1", "ip:tlp" = "GREEN", "ip:pap" = "RED", "ip:is_ioc" = 1
+| table ip, "ip:tlp", "ip:pap", "ip:is_ioc", ttp, unique]
 | append
     [| makeresults
-| eval ip="1.3.5.8", ttp="reconnaissance::T1593.002::"+tostring(strftime(now(),"%Y-%m-%d")), unique=tostring(now())+".2"
-| table ip, ttp, unique]
+| eval ip="1.3.5.8", "ip:description" = "description for this ip", ttp="reconnaissance::T1593.002::"+tostring(strftime(now(),"%Y-%m-%d")), unique=tostring(now())+".2", "ip:sighted" = 1, "ip:sighted_at" = relative_time(now(),"-6h"), "ip:ignore_similarity" = 1
+| table ip, "ip:description", "ip:sighted", "ip:sighted_at", "ip:ignore_similarity", ttp, unique]
 | eventstats values(ip) as all_ip by unique
 | eval all_ip = mvjoin(all_ip,", ") 
 | eval name = "Massive scan on website company.corp from "+all_ip, cert-alerted-on=now(), risk="Medium", info="A custom info added to the event"
@@ -131,6 +129,8 @@ Input:
 ```
 
 > Please note that the field "all_ip" is used to build the title but will not be taking into account by the script as it's not a relevant field (not a custom field nor an observable or a reserved named field for TheHive). However, the option to append the results was selected and a table will be added to the description containing this information.
+
+> You'll notice the usage of composite fields (using colons) in this example. This is used to add more information about the observables.
 
 Output:
 
@@ -152,6 +152,9 @@ Output:
 ![UC2 - TheHive alert 5](images/../../images/uc2_thehive5.png)
 ![UC2 - TheHive alert 6](images/../../images/uc2_thehive6.png)
 ![UC2 - TheHive alert 7](images/../../images/uc2_thehive7.png)
+![UC2 - TheHive alert 8](images/../../images/uc2_thehive8.png)
+![UC2 - TheHive alert 9](images/../../images/uc2_thehive9.png)
+![UC2 - TheHive alert 10](images/../../images/uc2_thehive10.png)
 
 Alternative output could be, with the same configuration but without keeping the observables in the sanitized table provided in the description as is:
 
@@ -162,7 +165,7 @@ Alternative output could be, with the same configuration but without keeping the
 ### TheHive screenshots
 
 ![UC2 - TheHive alert Alt 2](images/../../images/uc2_thehive2_alt.png)
-![UC2 - TheHive alert Alt 5](images/../../images/uc2_thehive5_alt.png)
+![UC2 - TheHive alert Alt 5](images/../../images/uc2_thehive6_alt.png)
 
 ## UC3: Correlation Search - One single case
 
@@ -268,7 +271,7 @@ Output:
 | Tags | This is used to indicate the tags of an alert/case | Tags are defined in the savedsearch configuration with three tags separated by a comma (malicious,external,steganography) | Same as UC1 (even if the tags aren't accurate, it was more for an example) | Tag is defined in the correlation search configuration (cloud) | No tag was provided in the Adaptive Response |
 | Custom fields | This is used to define custom fields in TheHive for alerts/cases. **Note**: Custom fields information are retrieved from an API call at each execution | Two custom fields are given the results directly using the field name as the name of the custom field and the field value as the custom field value (in this example, `cert-alerted-on` and `risk`) | Same as UC1 (we could have different custom fields by alert) | Same as UC1 | Same as UC1 |
 | Tasks | This indicates the tasks of a case | No task in alerts | Same as UC1 | Tasks can't be created from events, you shoudl rely on the "`CaseTemplate`" savedsearch/correlation search parameter instead to define which case template (that will contains the tasks) you want to use | Same as UC3 |
-| Observables | This is used to define observables in alerts/cases | There are built from the results with name of the field as the type of the observable and the field value as the value of the observable (here 3 observables: ip, fqdn and hash). There is only one alert from these two events as it's the same `unique` value which is used by the savedsearch configuration to separate alerts | Same as UC1 except that we have two dedicated alerts (one with one IP, one with two IPs) because the `unique` field is different | Same as UC1 except that we have two observables (one other, one hostname) | Same as UC3 |
+| Observables | This is used to define observables in alerts/cases | There are built from the results with name of the field as the type of the observable and the field value as the value of the observable (here 3 observables: ip, fqdn and hash). There is only one alert from these two events as it's the same `unique` value which is used by the savedsearch configuration to separate alerts | Same as UC1 except that we have two dedicated alerts (one with one IP, one with two IPs) because the `unique` field is different. You can see an example of how you can enrich your observables information from the splunk search using composite fields (with colons) | Same as UC1 except that we have two observables (one other, one hostname) | Same as UC3 |
 | TTPs | This is used to indicate which TTPs are linked to alerts/cases | This is built from the events with the field named "ttp" which is having a string with 3 information (tactic, pattern ID and the occur date, all three mandatory) separated by two colons, here two TTPs for the same alert | Same as UC1 except we have 2 TTPs in one alert and 1 TTP in another alert | No TTP is provided from the events and as the correlation search is sending the events directly to the script as a savedsearch does, we don't have any information about the configured TTPs | TTPs are recovered from the notable event created that is having the list of TTPs linked to the correlation search. Those TTPs are automatically created from those information |
 
 
@@ -308,7 +311,7 @@ In this example, alert title will be the value of field `myfield` from result se
 - TLP: Change the TLP of the created alert. Default is TLP:AMBER
 - PAP: Change the PAP of the created alert. Default is PAP:AMBER
 
-### Manage fields to become observable, enrich the alert with inline fields
+### Manage fields to become observables
 
 #### Here some precisions
 
@@ -329,48 +332,36 @@ In the alert form, you can specify a field name instead of a static string for f
 
 **IMPORTANT** fields used to set timestamp, description or title are not removed from results set and pushed to TheHive as artifact or custom fields.
 
-#### Custom TLP per observable
+#### Composite fields (used for observables information)
 
-If you want to set a different TLP level than the one set for the alert, append to the field name
-    - :R for TLP:RED
-    - :A for TLP:AMBER
-    - :G for TLP:GREEN
-    - :W for TLP:WHITE
+Within your search, you can specify composite fields. A composite field is a field containing a colon (:) used to separate a main key and a subkey such as `main key:subkey`. For instance, the composite field `ip:description` has a main key set to `ip` and a subkey set to `description`. 
 
-```text
-For example if you rename src field as "src:R", then this observable will be set with TLP:RED whatever is the TLP level for the alert.
-```
+Those composite fields are used to enrich the observables information such as TLP, PAP, description etc. The `main key` shall be the field name of an observable defined in the thehive_datatype.csv lookup (datatype for the field will be deduce from this lookup) when the `subkey` shall be representing the information that you want to set.
 
-#### Inline tag(s)
+UC2 is showing a good example of how to use composite fields, here is the list of the possibilities:
 
-1 additional field can be used inline:
+- `<field>`: Indicates the name of the field containing the observable with the value set to it (such as `ip = 1.2.3.4` or `hostname = test.mydomain`)
+- `<field>:description`: Indicates the description for the provided observable `<field>`
+- `<field>:tlp`: Indicates the TLP for the provided observable `<field>`. For TLP, you can set the value the same way as the alert/case
+- `<field>:pap`: Indicates the PAP for the provided observable `<field>`. For PAP, you can set the value the same way as the alert/case
+- `<field>:tags`: Indicates the tags for the provided observable `<field>`. This shall be a string with the tags separated by a comma.
+- `<field>:is_ioc`: Indicates if the provided observable `<field>` is considered as an IOC. This shall be a string set to 0 (FALSE) or 1 (TRUE).
+- `<field>:sighted`: Indicates if the provided observable `<field>` was sighted. This shall be a string set to 0 (FALSE) or 1 (TRUE).
+- `<field>:sighted_at`: Indicates when the provided observable `<field>` was sighted This shall be string representing a UNIX timestamp.
+- `<field>:ignore_similarity`: Indicates if the provided observable `<field>` should be ignored regarding the similarities with other alerts/cases. This shall be a string set to 0 (FALSE) or 1 (TRUE).
 
-- th_inline_tags: if field **th_inline_tags** exists, then the list of tags (comma-separated string) is added to the observables taken from that row.  
-- A final tips to add specific tags to a field is to rename the field to append a text after a ":". For example, to add tag "C2 server" to an ip used this syntax (this option is not possible if you use custom TLP level).
+In order to be explicit on the usage, here is an example of the composite fields:
 
-```text
-| rename ip as "ip:C2 server"
-```
+> ⚠️ In this example, we consider that the field is named `src_ip` and the datatype defined in the thehive_datatype.csv lookup for this field is `ip`.
 
-In conclusion, the tags attached to each observable are field name, specific tags (using :), inline_tags and tags from the alert form
-
-### Advanced search results with additional tags
-
-1. add to your search a field th_inline_msg. Tags defined in that field will be attached to each artifact
-2. rename the field to include a tag section using the syntax "a dataType:some tag". the field name will be split on first ":" and the second part added to the list of tags
-
-You can try the following dummy search to illustrate this behaviour.
-
-```text
-index=_* 
-| streamstats count as rc 
-| where rc < 4
-| eval "ip:APTxx"="1.1.1."+rc 
-| eval domain="www.malicious.com" 
-| eval th_inline_tags="C2,Campaign1234,PAP:AMBER"
-| eval src=10.11.12.13 
-| rename src as "src:R"
-| eval playbook = "playbook title"
-| eval hash:md5="f3eef6f636a08768cc4a55f81c29f347"
-| table "ip:APTxx" hash:md5 domain "src:R" playbook th_inline_tags
-```
+| Field | Value | Main key | Subkey | Description
+|---|---|---|---|---|
+| src_ip | 1.2.3.4 | src_ip | (None) | This field is used to define the value of the ip, such as "1.2.3.4" |
+| src_ip:description | My custom description | src_ip | description | This field is used to define a description for the observable "1.2.3.4", such as "My custom description" |
+| src_ip:tlp | AMBER | src_ip | tlp | This field is used to define the TLP for the observable "1.2.3.4" such as "AMBER" |
+| src_ip:pap | 1 | src_ip | pap | This field is used to define the PAP for the observable "1.2.3.4", such as "1" (GREEN) |
+| src_ip:tags | hello,world| src_ip | tags | This field is used to define the tags for the observable "1.2.3.4", such as "hello" and "world" (tags are split by a comma) |
+| src_ip:is_ioc | 0 | src_ip | is_ioc | This field is used to define if the observable "1.2.3.4" is considered as an IOC, such as "0" (FALSE) |
+| src_ip:sighted | 0 | src_ip | sighted | This field is used to define if the observable "1.2.3.4" was sighted, such as "0" (FALSE) |
+| src_ip:sighted_at | 1702940801 | src_ip | sighted_at | This field is used to define when the observable "1.2.3.4" was sighted, such as "1702940801" (Monday 18 December 2023 23:06:41) |
+| src_ip:ignore_similarity | 0 | src_ip | ignore_similarity | This field is used to define if the observable "1.2.3.4" need to be ignored with similarities in other alerts/cases, such as "0" (FALSE) |

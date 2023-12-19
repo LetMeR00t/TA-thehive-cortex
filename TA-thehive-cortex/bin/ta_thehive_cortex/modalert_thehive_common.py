@@ -183,7 +183,6 @@ def parse_events(helper, thehive: TheHive, configuration: Settings, alert_args):
         # Initialize values
         observables = []
         ttps = []
-        observableTags = []
         observableMessage = ''
         customFields = []
         events = []
@@ -201,7 +200,7 @@ def parse_events(helper, thehive: TheHive, configuration: Settings, alert_args):
         helper.log_debug("[CAA-THC-62] Row after pre-processing: " + str(row))
 
         # Define thehive alert unique ID (if duplicated, alert creations fails)
-        if ("alert_mode" in alert_args and alert_args["alert_mode"] == "es_mode") or ("case_mode" in alert_args and alert_args["case_mode"] == "es_mode"):
+        if ("alert_mode" in alert_args and alert_args["alert_mode"] == "es_mode" and alert_args['unique_id_field'] not in row) or ("case_mode" in alert_args and alert_args["case_mode"] == "es_mode"):
             # Check if it's coming from Splunk ES
             if "event_id" in row:
                 sourceRef = row["event_id"]
@@ -224,20 +223,6 @@ def parse_events(helper, thehive: TheHive, configuration: Settings, alert_args):
             sourceRef = sourceRef[0:127]
 
         helper.log_debug("[CAA-THC-64] sourceRef: {} ".format(sourceRef))
-
-        if 'th_inline_tags' in row:
-            del row_sanitized["th_inline_tags"]
-            # grabs that field's value and assigns it to
-            observableTags = list(str(row.pop("th_inline_tags")).split(","))
-
-        # check if the field th_msg exists and strip it from the row.
-        # The value will be used as message attached to observables
-        if 'th_msg' in row:
-            del row_sanitized["th_msg"]
-            # grabs that field's value and assigns it to
-            observableMessage = str(row.pop("th_msg"))
-            helper.log_debug("[CAA-THC-75] observable message: {} ".format(observableMessage))
-            helper.log_debug("[CAA-THC-76] observable tags: {} ".format(observableTags))
 
         # check if observables have been stored for this sourceRef.
         # If yes, retrieve them to add new ones from this row
@@ -330,31 +315,40 @@ def parse_events(helper, thehive: TheHive, configuration: Settings, alert_args):
         else:
             alert['timestamp'] = alert_args['timestamp']
 
+        observables_data = dict()
         # now we take those KV pairs to add to dict
         for key, value in row.items():
-            cTags = observableTags[:]
             if value != "":
                 helper.log_debug('[CAA-THC-90] field to process: {}'.format(key))
-                observable_key = ''
-                cTLP = ''
                 if ':' in key:
-                    helper.log_debug('[CAA-THC-91] composite fieldvalue: {}'.format(key))
-                    dType = key.split(':', 1)
-                    key = str(dType[0])
-                    # extract TLP at observable level
-                    # it is on letter W G A or R appended to field name
-                    observable_tlp_check = re.match("^(W|G|A|R)$", str(dType[1]))
-                    if observable_tlp_check is not None:
-                        cTLP = TLP[dType[1]]
-                        cTags.append(TLP[str(cTLP)])
-                    else:
-                        cTags.append(str(dType[1]).replace(" ", "_"))
-                if key in data_type:
+                    helper.log_debug('[CAA-THC-91] composite fieldvalue detected: {}'.format(key))
+                    del row_sanitized[key]
+                    # Extract information
+                    compositekey = key.split(':', 1)
+                    mainkey = str(compositekey[0])
+                    subkey = str(compositekey[1])
+                    # Check if it's a specific datatype or not
+                    if mainkey in data_type:
+                        # This is a datatype, so we use the subkey to add information about an observable
+                        observable_datatype = data_type[mainkey]
+                        if mainkey not in observables_data:
+                            observables_data[mainkey] = {str(subkey): value, "datatype": observable_datatype}
+                        else:
+                            observables_data[mainkey][str(subkey)] = value
+                            observables_data[mainkey]["datatype"] = observable_datatype
+                    helper.log_debug('[CAA-THC-92] field: {} enriched with the information {} set to '.format(mainkey,subkey,value))
+                elif key in data_type:
                     # Check if observables must be kept in the sanitized results or not
                     if not alert_args["description_results_keep_observable"]:
                         del row_sanitized[key]
                     helper.log_debug('[CAA-THC-95] key is an observable: {} '.format(key))
-                    observable_key = data_type[key]
+                    # Given value of the row is the value of the datatype
+                    observable_datatype = data_type[key]
+                    if key not in observables_data:
+                        observables_data[key] = {"value": value, "datatype": observable_datatype}
+                    else:
+                        observables_data[key]["value"] = value
+                        observables_data[key]["datatype"] = observable_datatype
                 elif key in custom_fields:
                     del row_sanitized[key]
                     custom_type = custom_fields[key]["type"]
@@ -398,9 +392,6 @@ def parse_events(helper, thehive: TheHive, configuration: Settings, alert_args):
                             custom_field["value"] = int(value) * 1000
                     if custom_field_check is True:
                         customFields += [custom_field]
-                elif alert_args['scope'] is False:
-                    helper.log_debug('[CAA-THC-105] key is added as another observable (scope is False): {}'.format(key))
-                    observable_key = 'other'
                 elif key == "ttp":
                     del row_sanitized["ttp"]
                     # Expected pattern is: tactic::patternId::occurDate
@@ -420,35 +411,47 @@ def parse_events(helper, thehive: TheHive, configuration: Settings, alert_args):
                             helper.log_debug('[CAA-THC-109] ttp already exist, ignoring duplicates: {}'.format(value))
                     else:
                         helper.error('[CAA-THC-110-ERROR] ttp field was detected but malformed, expected one value with the pattern \"tactic::patternId::occurDate\" with occurDate as \"YYYY-mm-dd\", got: {}'.format(value))
-
-
-                if observable_key not in [None, '']:
-                    helper.log_debug("[CAA-THC-111] Processing observable key: " + str(observable_key) + " (" + str(value) + ") (" + observableMessage + ")")
-                    cTags.append('field:' + str(key))
-                    if isinstance(value,list) :  # was a multivalue field
-                        helper.log_debug('[CAA-THC-112] value is not a simple string: {} '.format(value))
-                        for val in value:
-                            if val != "":
-                                observable = dict(dataType=observable_key,
-                                                data=str(val),
-                                                message=observableMessage,
-                                                tags=cTags
-                                                )
-                                if cTLP != '':
-                                    observable['tlp'] = cTLP
-                                helper.log_debug("[CAA-THC-113] new observable is {}".format(observable))
-                                if observable not in observables:
-                                    observables.append(observable)
+                elif alert_args['scope'] is False:
+                    helper.log_debug('[CAA-THC-105] key is added as another observable (scope is False): {}'.format(key))
+                    # Given value of the row is the value of the datatype
+                    observable_datatype = data_type[key]
+                    if key not in observables_data:
+                        observables_data[key] = {"value": value, "datatype": "other"}
                     else:
-                        observable = dict(dataType=observable_key,
-                                        data=str(value),
-                                        message=observableMessage,
-                                        tags=cTags
-                                        )
-                        if cTLP != '':
-                            observable['tlp'] = cTLP
-                        if observable not in observables:
-                            observables.append(observable)
+                        observables_data[key]["value"] = value
+                        observables_data[key]["datatype"] = "other"
+
+        # Process all observables
+        if len(observables_data) > 0:
+            for field, data in observables_data.items():
+                helper.log_debug("[CAA-THC-111] Processing observable data: {} ({})".format(field, observables_data[field]))
+                obs_datatype = data["datatype"] if "datatype" in data else "other"
+                obs_data = data["value"]
+                obs_message = data["description"] if "description" in data else "No description provided for this observable"
+                obs_tags = data["tags"].split(",") if "tags" in data else []
+                obs_tlp = TLP[data["tlp"]] if "tlp" in data else TLP["AMBER"]
+                obs_pap = PAP[data["pap"]] if "pap" in data else PAP["AMBER"]
+                obs_is_ioc = bool(data["is_ioc"]) if "is_ioc" in data else False
+                obs_sighted = bool(data["sighted"]) if "sighted" in data else False
+                obs_sighted_at = int(float(data["sighted_at"])*1000) if "sighted_at" in data else None
+                obs_ignore_similarity = bool(data["ignore_similarity"]) if "ignore_similarity" in data else False
+
+                # Add the field in the tags
+                obs_tags += ["field:"+field]
+
+                observable = dict(dataType=obs_datatype,
+                                data=obs_data,
+                                message=obs_message,
+                                tags=obs_tags,
+                                tlp=obs_tlp,
+                                pap=obs_pap,
+                                ioc=obs_is_ioc,
+                                sighted=obs_sighted,
+                                sightedAt=obs_sighted_at,
+                                ignoreSimilarity=obs_ignore_similarity
+                                )
+                if observable not in observables:
+                    observables.append(observable)
 
         if observables:
             alert['observables'] = [InputObservable(o) for o in observables]
