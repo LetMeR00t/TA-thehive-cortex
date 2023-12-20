@@ -169,7 +169,7 @@ def extract_field(row, field):
             result = newValue
     return result
 
-def parse_events(helper, thehive: TheHive, configuration: Settings, alert_args):
+def parse_events(helper, thehive: TheHive, alert_args):
     # iterate through each row, cleaning multivalue fields
     # and then adding the attributes under same alert key
     # this builds the dict parsed_events

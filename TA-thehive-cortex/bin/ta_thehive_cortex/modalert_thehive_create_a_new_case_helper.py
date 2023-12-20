@@ -160,16 +160,16 @@ def process_event(helper, *args, **kwargs):
 
     # Create the alert
     helper.log_info("[CAA-THCC-56] Configuration is ready. Creating the alert...")
-    create_case(helper, thehive, configuration, alert_args)
+    create_case(helper, thehive, alert_args)
     return 0
 
 
 
-def create_case(helper, thehive: TheHive, configuration, alert_args):
+def create_case(helper, thehive: TheHive, alert_args):
     """ This function is used to create the alert using the API, settings and search results """
  
     # Parse events
-    cases = parse_events(helper, thehive, configuration, alert_args)
+    cases = parse_events(helper, thehive, alert_args)
 
     # actually send the request to create the alert; fail gracefully
     for srcRef in cases.keys():
