@@ -199,8 +199,9 @@ def parse_events(helper, thehive: TheHive, alert_args):
         row_sanitized = row.copy()
         helper.log_debug("[CAA-THC-62] Row after pre-processing: " + str(row))
 
+        sourceRef = ""
         # Define thehive alert unique ID (if duplicated, alert creations fails)
-        if ("alert_mode" in alert_args and alert_args["alert_mode"] == "es_mode" and alert_args['unique_id_field'] not in row) or ("case_mode" in alert_args and alert_args["case_mode"] == "es_mode"):
+        if ("alert_mode" in alert_args and alert_args["alert_mode"] == "es_mode" and alert_args['unique_id_field'] not in row) or ("case_mode" in alert_args and alert_args["case_mode"] == "es_mode" and alert_args['unique_id_field'] not in row):
             # Check if it's coming from Splunk ES
             if "event_id" in row:
                 sourceRef = row["event_id"]
@@ -412,14 +413,18 @@ def parse_events(helper, thehive: TheHive, alert_args):
                     else:
                         helper.error('[CAA-THC-110-ERROR] ttp field was detected but malformed, expected one value with the pattern \"tactic::patternId::occurDate\" with occurDate as \"YYYY-mm-dd\", got: {}'.format(value))
                 elif alert_args['scope'] is False:
-                    helper.log_debug('[CAA-THC-105] key is added as another observable (scope is False): {}'.format(key))
-                    # Given value of the row is the value of the datatype
-                    observable_datatype = data_type[key]
-                    if key not in observables_data:
-                        observables_data[key] = {"value": value, "datatype": "other"}
+                    # If the key wasn't removed, consider this as an other observable
+                    if key in row_sanitized:
+                        helper.log_debug('[CAA-THC-105] key is added as another observable (scope is False): {}'.format(key))
+                        # As we are taking a field as an "other" datatype, we build the value differently
+                        if key not in observables_data:
+                            observables_data[key] = {"value": key+":"+value, "datatype": "other", "tags": "value:"+value}
+                        else:
+                            observables_data[key]["value"] = key+":"+value
+                            observables_data[key]["datatype"] = "other"
+                            observables_data[key]["tags"] = "value:"+value
                     else:
-                        observables_data[key]["value"] = value
-                        observables_data[key]["datatype"] = "other"
+                        helper.log_debug('[CAA-THC-106] key is used by TheHive as an internal field (scope is False): {}. Key ignored to be added as an \"other\" observable.'.format(key))
 
         # Process all observables
         if len(observables_data) > 0:
