@@ -333,11 +333,11 @@ def parse_events(helper, thehive: TheHive, alert_args):
                         # This is a datatype, so we use the subkey to add information about an observable
                         observable_datatype = data_type[mainkey]
                         if mainkey not in observables_data:
-                            observables_data[mainkey] = {str(subkey): value, "datatype": observable_datatype}
+                            observables_data[mainkey] = {subkey: value, "datatype": observable_datatype}
                         else:
-                            observables_data[mainkey][str(subkey)] = value
+                            observables_data[mainkey][subkey] = value
                             observables_data[mainkey]["datatype"] = observable_datatype
-                    helper.log_debug('[CAA-THC-92] field: {} enriched with the information {} set to '.format(mainkey,subkey,value))
+                        helper.log_debug('[CAA-THC-92] field: {} enriched with the information {} set to '.format(mainkey,subkey,value))
                 elif key in data_type:
                     # Check if observables must be kept in the sanitized results or not
                     if not alert_args["description_results_keep_observable"]:
@@ -424,39 +424,44 @@ def parse_events(helper, thehive: TheHive, alert_args):
                             observables_data[key]["datatype"] = "other"
                             observables_data[key]["tags"] = "value:"+value
                     else:
-                        helper.log_debug('[CAA-THC-106] key is used by TheHive as an internal field (scope is False): {}. Key ignored to be added as an \"other\" observable.'.format(key))
+                        helper.log_warn('[CAA-THC-106] key is used by TheHive as an internal field (scope is False): {}. Key ignored to be added as an \"other\" observable.'.format(key))
 
         # Process all observables
         if len(observables_data) > 0:
             for field, data in observables_data.items():
                 helper.log_debug("[CAA-THC-111] Processing observable data: {} ({})".format(field, observables_data[field]))
                 obs_datatype = data["datatype"] if "datatype" in data else "other"
-                obs_data = data["value"]
-                obs_message = data["description"] if "description" in data else "No description provided for this observable"
-                obs_tags = data["tags"].split(",") if "tags" in data else []
-                obs_tlp = TLP[data["tlp"]] if "tlp" in data else TLP["AMBER"]
-                obs_pap = PAP[data["pap"]] if "pap" in data else PAP["AMBER"]
-                obs_is_ioc = bool(data["is_ioc"]) if "is_ioc" in data else False
-                obs_sighted = bool(data["sighted"]) if "sighted" in data else False
-                obs_sighted_at = int(float(data["sighted_at"])*1000) if "sighted_at" in data else None
-                obs_ignore_similarity = bool(data["ignore_similarity"]) if "ignore_similarity" in data else False
+                # Test if the observable has at least its value
+                if "value" in data:
+                    obs_data = data["value"]
+                    obs_message = data["description"] if "description" in data else "No description provided for this observable"
+                    obs_tags = data["tags"].split(",") if "tags" in data else []
+                    obs_tlp = TLP[data["tlp"]] if "tlp" in data else TLP["AMBER"]
+                    obs_pap = PAP[data["pap"]] if "pap" in data else PAP["AMBER"]
+                    obs_is_ioc = bool(data["is_ioc"]) if "is_ioc" in data else False
+                    obs_sighted = bool(data["sighted"]) if "sighted" in data else False
+                    obs_sighted_at = int(float(data["sighted_at"])*1000) if "sighted_at" in data else None
+                    obs_ignore_similarity = bool(data["ignore_similarity"]) if "ignore_similarity" in data else False
 
-                # Add the field in the tags
-                obs_tags += ["field:"+field]
+                    # Add the field in the tags
+                    obs_tags += ["field:"+field]
 
-                observable = dict(dataType=obs_datatype,
-                                data=obs_data,
-                                message=obs_message,
-                                tags=obs_tags,
-                                tlp=obs_tlp,
-                                pap=obs_pap,
-                                ioc=obs_is_ioc,
-                                sighted=obs_sighted,
-                                sightedAt=obs_sighted_at,
-                                ignoreSimilarity=obs_ignore_similarity
-                                )
-                if observable not in observables:
-                    observables.append(observable)
+                    observable = dict(dataType=obs_datatype,
+                                    data=obs_data,
+                                    message=obs_message,
+                                    tags=obs_tags,
+                                    tlp=obs_tlp,
+                                    pap=obs_pap,
+                                    ioc=obs_is_ioc,
+                                    sighted=obs_sighted,
+                                    sightedAt=obs_sighted_at,
+                                    ignoreSimilarity=obs_ignore_similarity
+                                    )
+                    if observable not in observables:
+                        observables.append(observable)
+                
+                else:
+                    helper.log_warn("[CAA-THC-113] Observable '{0}' doesn't have any value set (no field '{0}' or '{0}:value' was detected), ignored.".format(field))
 
         if observables:
             alert['observables'] = [InputObservable(o) for o in observables]
