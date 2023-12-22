@@ -121,13 +121,12 @@ def process_event(helper, *args, **kwargs):
     helper.set_log_level(helper.log_level)
 
     # Get the instance connection and initialize settings
-    instance_id = helper.get_param("thehive_instance_id")
-    helper.log_debug("[CAA-THCC-40] TheHive instance found: " + str(instance_id))
+    instances_id = helper.get_param("thehive_instance_id").split(",")
+    helper.log_debug("[CAA-THCC-40] TheHive instances found: " + str(instances_id))
 
-    (thehive, configuration, defaults, logger) = create_thehive_instance(instance_id=instance_id, settings=helper.settings, logger=helper._logger)
-
-    helper.log_debug("[CAA-THCC-41] TheHive URL instance used after retrieving the configuration: " + str(thehive.session.hive_url))
-    helper.log_debug("[CAA-THCC-45] TheHive connection is ready. Processing alert parameters...")
+    instances = []
+    for instance_id in instances_id:
+        instances.append(create_thehive_instance(instance_id=instance_id, settings=helper.settings, logger=helper._logger))
 
     # Get alert arguments
     alert_args = {}
@@ -158,9 +157,12 @@ def process_event(helper, *args, **kwargs):
     alert_args["description_results_keep_observable"] = True if int(helper.get_param("description_results_keep_observable")) == 1 else False
     helper.log_debug("[CAA-THCC-55] Arguments recovered: " + str(alert_args))
 
-    # Create the alert
-    helper.log_info("[CAA-THCC-56] Configuration is ready. Creating the alert...")
-    create_case(helper, thehive, alert_args)
+    # Create the case
+    helper.log_info("[CAA-THCC-56] Configuration is ready. Creating the case...")
+    for (thehive, configuration, defaults, logger, instance_id) in instances:
+        helper.log_debug("[CAA-THCC-57] TheHive URL instance used after retrieving the configuration: " + str(thehive.session.hive_url))
+        helper.log_debug("[CAA-THCC-58] Processing following instance ID: " + str(instance_id))
+        create_case(helper, thehive, alert_args)
     return 0
 
 
@@ -244,12 +246,12 @@ def create_case(helper, thehive: TheHive, alert_args):
                 if "_id" in response:
                     # log response status
                     helper.log_info(
-                        "[CAA-THCA-130] TheHive case {} was successfully updated with the TTPs on url={}".format(new_case["_id"],thehive.session.hive_url)
+                        "[CAA-THCC-130] TheHive case {} was successfully updated with the TTPs on url={}".format(new_case["_id"],thehive.session.hive_url)
                     )
 
                 else:
                     # somehow we got a bad response code from thehive
                     helper.log_error(
-                        "[CAA-THCA-135-ERROR] TheHive TTPs update on recent case creation has failed. "
+                        "[CAA-THCC-135-ERROR] TheHive TTPs update on recent case creation has failed. "
                         "url={}, data={}, content={}, ttp={}"
                         .format(thehive.session.hive_url, str(case), str(response), str(cases[srcRef]["ttps"])))

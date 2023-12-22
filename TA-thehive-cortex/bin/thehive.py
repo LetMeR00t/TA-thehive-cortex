@@ -8,18 +8,22 @@ import splunklib.client as client
 from ta_logging import setup_logging
 import certifi
 
-def initialize_thehive_instance(keywords, settings, logger_name="script"):
+def initialize_thehive_instances(keywords, settings, logger_name="script"):
     """ This function is used to initialize a TheHive instance """
     logger = setup_logging(logger_name)
     
     # Check the existence of the instance_id
     if len(keywords) == 1:
-        instance_id = keywords[0]
+        instances_id = keywords[0].split(",")
     else:
         logger.error("[TH1-ERROR] MISSING_INSTANCE_ID - No instance ID was given to the script")
         exit(1)
 
-    return create_thehive_instance(instance_id, settings, logger)
+    instances = []
+    for instance_id in instances_id:
+        instances.append(create_thehive_instance(instance_id, settings, logger))
+
+    return instances 
 
 def create_thehive_instance(instance_id, settings, logger):
     """ This function is used to create an instance of TheHive """
@@ -67,7 +71,7 @@ def create_thehive_instance(instance_id, settings, logger):
         logger.error("[TH20-ERROR] WRONG_AUTHENTICATION_TYPE - Authentication type is not one of the expected values (password or api_key), given value: "+thehive_authentication_type)
         exit(20)
 
-    return (thehive, configuration, defaults, logger) 
+    return (thehive, configuration, defaults, logger, instance_id) 
 
 def create_thehive_instance_modular_input(instance_id, helper):
     """ This function is used to create an instance of TheHive specifically for modular inputs that don't provide settings information """

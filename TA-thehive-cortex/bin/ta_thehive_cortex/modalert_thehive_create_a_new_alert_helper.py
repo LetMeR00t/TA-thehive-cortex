@@ -122,13 +122,12 @@ def process_event(helper, *args, **kwargs):
     helper.set_log_level(helper.log_level)
 
     # Get the instance connection and initialize settings
-    instance_id = helper.get_param("thehive_instance_id")
-    helper.log_debug("[CAA-THCA-40] TheHive instance found: " + str(instance_id))
+    instances_id = helper.get_param("thehive_instance_id").split(",")
+    helper.log_debug("[CAA-THCA-40] TheHive instances found: " + str(instances_id))
 
-    (thehive, configuration, defaults, logger) = create_thehive_instance(instance_id=instance_id, settings=helper.settings, logger=helper._logger)
-
-    helper.log_debug("[CAA-THCA-41] TheHive URL instance used after retrieving the configuration: " + str(thehive.session.hive_url))
-    helper.log_debug("[CAA-THCA-45] TheHive connection is ready. Processing alert parameters...")
+    instances = []
+    for instance_id in instances_id:
+        instances.append(create_thehive_instance(instance_id=instance_id, settings=helper.settings, logger=helper._logger))
 
     # Get alert arguments
     alert_args = {}
@@ -162,7 +161,10 @@ def process_event(helper, *args, **kwargs):
 
     # Create the alert
     helper.log_info("[CAA-THCA-56] Configuration is ready. Creating the alert...")
-    create_alert(helper, thehive, alert_args)
+    for (thehive, configuration, defaults, logger, instance_id) in instances:
+        helper.log_debug("[CAA-THCA-57] TheHive URL instance used after retrieving the configuration: " + str(thehive.session.hive_url))
+        helper.log_debug("[CAA-THCA-58] Processing following instance ID: " + str(instance_id))
+        create_alert(helper, thehive, alert_args)
     return 0
 
 

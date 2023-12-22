@@ -119,13 +119,12 @@ def process_event(helper, *args, **kwargs):
     helper.log_info("[CAA-THRF-36] Alert action thehive_create_a_new_alert started at {}".format(time.time()))
 
     # Get the instance connection and initialize settings
-    instance_id = helper.get_param("thehive_instance_id")
-    helper.log_debug("[CAA-THRF-40] TheHive instance found: " + str(instance_id))
+    instances_id = helper.get_param("thehive_instance_id").split(",")
+    helper.log_debug("[CAA-THRF-40] TheHive instances found: " + str(instances_id))
 
-    (thehive, configuration, defaults, logger) = create_thehive_instance(instance_id=instance_id, settings=helper.settings, logger=helper._logger)
-
-    helper.log_debug("[CAA-THRF-41] TheHive URL instance used after retrieving the configuration: " + str(thehive.session.hive_url))
-    helper.log_debug("[CAA-THRF-45] TheHive connection is ready. Processing alert parameters...")
+    instances = []
+    for instance_id in instances_id:
+        instances.append(create_thehive_instance(instance_id=instance_id, settings=helper.settings, logger=helper._logger))
 
     # Get alert arguments
     alert_args = {}
@@ -133,9 +132,12 @@ def process_event(helper, *args, **kwargs):
     alert_args["name"] = helper.get_param("name") if helper.get_param("name") else None
     helper.log_debug("[CAA-THRF-55] Arguments recovered: " + str(alert_args))
 
-    # Create the alert
+    # Execute the function
     helper.log_info("[CAA-THRF-56] Configuration is ready. Running the function...")
-    run_function(helper, thehive, alert_args)
+    for (thehive, configuration, defaults, logger, instance_id) in instances:
+        helper.log_debug("[CAA-THRF-57] TheHive URL instance used after retrieving the configuration: " + str(thehive.session.hive_url))
+        helper.log_debug("[CAA-THRF-58] Processing following instance ID: " + str(instance_id))
+        run_function(helper, thehive, alert_args)
     return 0
 
 

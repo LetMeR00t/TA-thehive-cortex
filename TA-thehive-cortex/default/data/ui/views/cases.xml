@@ -32,7 +32,7 @@
         </condition>
       </change>
     </input>
-    <input type="dropdown" token="instance_id">
+    <input type="multiselect" token="instance_id">
       <label>Instance</label>
       <fieldForLabel>instance_name</fieldForLabel>
       <fieldForValue>id</fieldForValue>
@@ -42,6 +42,7 @@
         <earliest>-24h@h</earliest>
         <latest>now</latest>
       </search>
+      <delimiter>,</delimiter>
     </input>
     <input type="radio" token="view_mode">
       <label>View mode</label>
@@ -181,7 +182,7 @@
           <query>| loadjob $create_sid$
           | append
           [| makeresults
-| eval _time="sendalert thehive_create_a_new_case param.thehive_instance_id=$instance_id$ param.case_mode=\"$create_case_mode$\" param.unique_id_field=\"$create_unique_id_field$\" param.case_template=\"$create_case_template$\" param.source=\"$create_source$\" param.timestamp_field=\"$create_timestamp_field$\" param.title=\"$create_title$\" param.description=\"$create_description$\" param.tags=\"$create_tags$\" param.scope=$create_scope$ param.severity=$create_severity$ param.tlp=$create_tlp$ param.pap=$create_pap$"
+| eval _time="sendalert thehive_create_a_new_case param.thehive_instance_id="$instance_id$" param.case_mode=\"$create_case_mode$\" param.unique_id_field=\"$create_unique_id_field$\" param.case_template=\"$create_case_template$\" param.source=\"$create_source$\" param.timestamp_field=\"$create_timestamp_field$\" param.title=\"$create_title$\" param.description=\"$create_description$\" param.tags=\"$create_tags$\" param.scope=$create_scope$ param.severity=$create_severity$ param.tlp=$create_tlp$ param.pap=$create_pap$"
 |table _time]</query>
           <earliest>0</earliest>
           <latest></latest>
@@ -210,7 +211,7 @@
         <search>
           <query>| loadjob $create_sid$
  | where $launch_create_case$=="True"
-| sendalert thehive_create_a_new_case param.thehive_instance_id=$instance_id$ param.case_mode="$create_case_mode$" param.unique_id_field="$create_unique_id_field$"
+| sendalert thehive_create_a_new_case param.thehive_instance_id="$instance_id$" param.case_mode="$create_case_mode$" param.unique_id_field="$create_unique_id_field$"
 param.case_template="$create_case_template$" param.source="$create_source$" param.timestamp_field="$create_timestamp_field$" 
 param.title="$create_title$" param.description="$create_description$" param.tags="$create_tags$" param.scope=$create_scope$
 param.severity=$create_severity$ param.tlp=$create_tlp$ param.pap=$create_pap$</query>
@@ -346,7 +347,7 @@ param.severity=$create_severity$ param.tlp=$create_tlp$ param.pap=$create_pap$</
           </done>
           <query>| makeresults
 | eval keyword = "$filter_keyword$", status = "$filter_status$", severity = "$filter_severity$", tags = "$filter_tags$", title = "$filter_title$", assignee = "$filter_assignee$", date = "$filter_date_d1$ TO $filter_date_d2$", max_cases="$max_cases$", sort_cases="$sort_cases$"
-| thehivecases $instance_id$
+| thehivecases "$instance_id$"
 | eval thehive_case_tlp = case(thehive_case_tlp==0,"TLP:WHITE",thehive_case_tlp==1,"TLP:GREEN",thehive_case_tlp==2,"TLP:AMBER",thehive_case_tlp=3,"TLP:RED"), thehive_case_title = "#"+thehive_case_number+" - "+thehive_case_title, thehive_case_severity = case(thehive_case_severity==1,"Low",thehive_case_severity==2,"Medium",thehive_case_severity==3,"High",thehive_case_severity==4,"Critical",1=1,thehive_case_severity), status = if(thehive_case_stage!=thehive_case_status, thehive_case_stage+" as "+thehive_case_status,thehive_case_status)+";"+if(thehive_case_stage!=thehive_case_status,"Closed on "+strftime(thehive_case_endDate,"%+"),""), thehive_case_startDate = strftime(thehive_case_startDate,"%F %H:%M"), thehive_case_observables = mvcount(thehive_case_observables), thehive_case_ttps = mvcount(thehive_case_ttps)
 | fillnull value=0 thehive_case_observables thehive_case_ttps
 | makemv delim=";" status
