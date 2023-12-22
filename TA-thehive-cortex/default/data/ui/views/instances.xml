@@ -23,6 +23,8 @@
           <unset token="form.add_account_name"></unset>
           <unset token="add_port"></unset>
           <unset token="form.add_port"></unset>
+          <unset token="add_comment"></unset>
+          <unset token="form.add_comment"></unset>
           <eval token="last_refresh">now()</eval>
         </condition>
         <condition value="list">
@@ -46,6 +48,14 @@
 | mvexpand accounts
 | table accounts</query>
       </search>
+    </input>
+    <input type="dropdown" token="add_environment" depends="$show_action_add$">
+      <label>Environment</label>
+      <choice value="PRODUCTION">PRODUCTION</choice>
+      <choice value="VALIDATION">VALIDATION</choice>
+      <choice value="INTEGRATION">INTEGRATION</choice>
+      <choice value="DEVELOPMENT">DEVELOPMENT</choice>
+      <default>PRODUCTION</default>
     </input>
     <input type="dropdown" token="add_authentication_type" depends="$show_action_add$">
       <label>Authentication type</label>
@@ -92,6 +102,9 @@
     <input type="text" token="add_uri" depends="$show_action_add$">
       <label>URI</label>
     </input>
+    <input type="text" token="add_comment" depends="$show_action_add$">
+      <label>Comment</label>
+    </input>
     <input type="radio" token="global_debug">
       <label>Debug</label>
       <choice value="0">No</choice>
@@ -115,8 +128,8 @@
         <search>
           <query>| inputlookup thehive_cortex_instances
 | eval last_refresh = "$last_refresh$", action=case("$global_action$"=="remove","$action_remove_instance$",1==1,"-"),  authentication_type = case(authentication_type=="password","Password",authentication_type=="api_key","API Key",1==1,"")
-| table id account_name, authentication_type, type, host, port, uri, proxy_url, proxy_account, client_cert, organisation, action
-| rename id as "ID", account_name as "Account name", type as "Type", host as "Host", port as "Port", uri as "URI", action as "Available Action", authentication_type as "Authentication type", proxy_url as "Proxy URL",  proxy_account as "Proxy Account", client_cert as "Client Certificate", organisation as "Organisation"</query>
+| table id account_name, authentication_type, environment, type, host, port, uri, proxy_url, proxy_account, client_cert, organisation, comment, action
+| rename id as "ID", account_name as "Account name", environment as "Environment", type as "Type", host as "Host", port as "Port", uri as "URI", action as "Available Action", authentication_type as "Authentication type", proxy_url as "Proxy URL",  proxy_account as "Proxy Account", client_cert as "Client Certificate", organisation as "Organisation", comment as "Comment"</query>
           <earliest>-24h@h</earliest>
           <latest>now</latest>
           <sampleRatio>1</sampleRatio>
@@ -134,6 +147,9 @@
         </format>
         <format type="color" field="Certificate verification ('HTTPS' only)">
           <colorPalette type="map">{"True":#53A051,"False":#DC4E41}</colorPalette>
+        </format>
+        <format type="color" field="Environment">
+          <colorPalette type="map">{"PRODUCTION":#D41F1F,"VALIDATION":#D94E17,"INTEGRATION":#CBA700,"DEVELOPMENT":#1182F3}</colorPalette>
         </format>
         <drilldown>
           <condition match="$click.value2$ == $action_remove_instance$">
@@ -172,11 +188,15 @@
             <unset token="form.add_client_certificate"></unset>
             <unset token="add_organisation"></unset>
             <unset token="form.add_organisation"></unset>
+            <unset token="add_environment"></unset>
+            <unset token="form.add_environment"></unset>
+            <unset token="add_comment"></unset>
+            <unset token="form.add_comment"></unset>
           </done>
           <query>| inputlookup thehive_cortex_instances
 | append [| makeresults
-         | eval account_name = "$add_account_name$", type="$add_type$", host="$add_host$", port="$add_port$", uri="$add_uri$", authentication_type="$add_authentication_type$", proxy_url="$add_proxy_url$", proxy_account="$add_proxy_account$", client_cert="$add_client_certificate$", organisation="$add_organisation$", id=substr(sha1(_time+type+account_name+host+port),0,8)
-         | table id account_name, authentication_type, type, host, port, uri, proxy_url, proxy_account, client_cert, organisation]
+         | eval account_name = "$add_account_name$", type="$add_type$", host="$add_host$", port="$add_port$", uri="$add_uri$", authentication_type="$add_authentication_type$", proxy_url="$add_proxy_url$", proxy_account="$add_proxy_account$", client_cert="$add_client_certificate$", organisation="$add_organisation$", environment="$add_environment$", comment="$add_comment$", id=substr(sha1(_time+type+account_name+host+port),0,8)
+         | table id account_name, authentication_type, environment, type, host, port, uri, proxy_url, proxy_account, client_cert, organisation, comment]
 | sort 0 type account_name
 | outputlookup thehive_cortex_instances</query>
           <earliest>-24h@h</earliest>
