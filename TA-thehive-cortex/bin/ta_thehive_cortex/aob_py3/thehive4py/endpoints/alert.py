@@ -6,6 +6,7 @@ from thehive4py.query import QueryExpr
 from thehive4py.query.filters import FilterExpr
 from thehive4py.query.page import Paginate
 from thehive4py.query.sort import SortExpr
+from thehive4py.types.attachment import OutputAttachment
 from thehive4py.types.alert import (
     InputAlert,
     InputBulkUpdateAlert,
@@ -199,3 +200,14 @@ class AlertEndpoint(EndpointBase):
             params={"name": "alert-procedures"},
             json={"query": query},
         )
+
+    def add_attachment(
+        self, alert_id: str, attachment_paths: List[str]
+    ) -> List[OutputAttachment]:
+        files = [
+            ("attachments", self._fileinfo_from_filepath(attachment_path))
+            for attachment_path in attachment_paths
+        ]
+        return self._session.make_request(
+            "POST", f"/api/v1/alert/{alert_id}/attachments", files=files
+        )["attachments"]
