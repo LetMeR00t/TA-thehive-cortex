@@ -26,8 +26,8 @@
                 Alert action mode
             </label>
             <span class="help-block">
-                ES notable mode: 1 alert in thehive per row
-                Alert action mode: 1 or several grouped alerts (with optional field "Unique ID")
+                ES notable mode: 1 case in thehive per row
+                Alert action mode: 1 or several grouped cases (with optional field "Unique ID")
             </span>
         </div>
     </div>
@@ -47,7 +47,7 @@
             <input type="text" name="action.thehive_create_a_new_case.param.case_template"
                 id="thehive_create_a_new_case_case_template" />
             <span class="help-block">
-                The case template to use for imported alerts.
+                The case template to use for imported splunk alerts.
             </span>
         </div>
     </div>
@@ -57,7 +57,7 @@
             <input type="text" name="action.thehive_create_a_new_case.param.source"
                 id="thehive_create_a_new_case_source" />
             <span class="help-block">
-                The alert source. Defaults to "splunk".
+                The case source. Defaults to "splunk".
             </span>
         </div>
     </div>
@@ -78,8 +78,8 @@
             <input type="text" name="action.thehive_create_a_new_case.param.title"
                 id="thehive_create_a_new_case_title" />
             <span class="help-block">
-                The title to use for created alerts. IMPORTANT you can specify a field name that contains the title
-                text. Defaults to "&lt;inheritance&gt;" that will take the information from the alert/notable event
+                The title to use for created cases. IMPORTANT you can specify a field name that contains the title
+                text. Defaults to "&lt;inheritance&gt;" that will take the information from the case/notable event
             </span>
         </div>
     </div>
@@ -89,7 +89,7 @@
             <input type="text" name="action.thehive_create_a_new_case.param.description"
                 id="thehive_create_a_new_case_description" />
             <span class="help-block">
-                The description to send with the alert. IMPORTANT You can specify a field name that contains the
+                The description to send with the case. IMPORTANT You can specify a field name that contains the
                 description text.
             </span>
         </div>
@@ -127,7 +127,7 @@
                 <option value="1">Low</option>
             </select>
             <span class="help-block">
-                Select the severity of the created alert. Defaults is High
+                Select the severity of the created case. Defaults is High
             </span>
         </div>
     </div>
@@ -141,7 +141,7 @@
                 <option value="0">WHITE</option>
             </select>
             <span class="help-block">
-                Select the TLP level of the created alert. Default is TLP:AMBER
+                Select the TLP level of the created case. Default is TLP:AMBER
             </span>
         </div>
     </div>
@@ -182,6 +182,19 @@
             </select>
             <span class="help-block">
                 Set to yes if you want to keep observables in the description. Otherwise, they will be removed from the sanitized markdown table
+            </span>
+        </div>
+    </div>
+    <div class="control-group">
+        <label class="control-label" for="thehive_create_a_new_case_attach_results">Attach the search results to the case<span class="required">*</span>
+        </label>
+        <div class="controls">
+            <select name="action.thehive_create_a_new_case.param.attach_results" id="thehive_create_a_new_case_attach_results">
+                <option value="0">No</option>
+                <option value="1">Yes</option>
+            </select>
+            <span class="help-block">
+                Set to yes if you want to attach the splunk search results to the case
             </span>
         </div>
     </div>

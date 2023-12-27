@@ -155,6 +155,7 @@ def process_event(helper, *args, **kwargs):
     alert_args["splunk_es_alerts_index"] = helper.get_global_setting("splunk_es_alerts_index") if helper.get_global_setting("splunk_es_alerts_index") is not None else "summary"
     alert_args["description_results_enable"] = True if int(helper.get_param("description_results_enable")) == 1 else False
     alert_args["description_results_keep_observable"] = True if int(helper.get_param("description_results_keep_observable")) == 1 else False
+    alert_args["attach_results"] = True if int(helper.get_param("attach_results")) == 1 else False
     helper.log_debug("[CAA-THCC-55] Arguments recovered: " + str(alert_args))
 
     # Create the case
@@ -255,3 +256,33 @@ def create_case(helper, thehive: TheHive, alert_args):
                         "[CAA-THCC-135-ERROR] TheHive TTPs update on recent case creation has failed. "
                         "url={}, data={}, content={}, ttp={}"
                         .format(thehive.session.hive_url, str(case), str(response), str(cases[srcRef]["ttps"])))
+
+            # Attach the Splunk search results if needed
+            if alert_args["attach_results"]:
+                
+                helper.log_debug(
+                    "[CAA-THCC-140] Processing attachment of the Splunk search results to the case..."
+                )
+
+                attachment_result = None
+                try:
+                    attachment_result = thehive.case.add_attachment(new_case["_id"],[helper.results_file])
+                except TheHiveError as e:
+                    helper.log_error(
+                        "[CAA-THCC-150-ERROR] TheHive attachment creation has failed. "
+                        "url={}, data={}, content={}, error={}"
+                        .format(thehive.session.hive_url, str(case), str(new_case), str(e))
+                    )
+
+                if "_id" in attachment_result[0]:
+                    # log response status
+                    helper.log_info(
+                        "[CAA-THCC-155] TheHive case {} search results were successfully attached to the case on url={}".format(new_case["_id"],thehive.session.hive_url)
+                    )
+
+                else:
+                    # somehow we got a bad response code from thehive
+                    helper.log_error(
+                        "[CAA-THCC-160-ERROR] TheHive attachment creation on recent case creation has failed. "
+                        "url={}, data={}, content={}, attachment={}"
+                        .format(thehive.session.hive_url, str(case), str(response), str(helper.results_file)))
