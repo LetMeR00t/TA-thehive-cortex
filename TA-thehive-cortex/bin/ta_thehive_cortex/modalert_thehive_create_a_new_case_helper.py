@@ -10,6 +10,9 @@
 
 import re
 import time
+import gzip 
+import os
+import csv
 from  modalert_thehive_common import parse_events
 from thehive import TheHive, create_thehive_instance
 from thehive4py.types.case import InputCase
@@ -155,7 +158,7 @@ def process_event(helper, *args, **kwargs):
     alert_args["splunk_es_alerts_index"] = helper.get_global_setting("splunk_es_alerts_index") if helper.get_global_setting("splunk_es_alerts_index") is not None else "summary"
     alert_args["description_results_enable"] = True if int(helper.get_param("description_results_enable")) == 1 else False
     alert_args["description_results_keep_observable"] = True if int(helper.get_param("description_results_keep_observable")) == 1 else False
-    alert_args["attach_results"] = True if int(helper.get_param("attach_results")) == 1 else False
+    alert_args["attach_results"] = int(helper.get_param("attach_results"))
     helper.log_debug("[CAA-THCC-55] Arguments recovered: " + str(alert_args))
 
     # Create the case
@@ -258,21 +261,67 @@ def create_case(helper, thehive: TheHive, alert_args):
                         .format(thehive.session.hive_url, str(case), str(response), str(cases[srcRef]["ttps"])))
 
             # Attach the Splunk search results if needed
-            if alert_args["attach_results"]:
+            if alert_args["attach_results"] > 0:
+
+                # This means, yes
                 
                 helper.log_debug(
                     "[CAA-THCC-140] Processing attachment of the Splunk search results to the case..."
                 )
 
+                results_file = helper.results_file
+
+                # This means, yes but uncompressed
+                if alert_args["attach_results"] == 2:
+
+                    helper.log_debug(
+                        "[CAA-THCA-145] Uncompressing Splunk search results file located at {}...".format(results_file)
+                    )
+
+                    try:
+                        # uncompress file
+                        csvreader = None
+                        headers = None
+                        data = []
+                        with gzip.open(results_file, 'rt') as f:
+                            csvreader = csv.reader(f)
+                            headers = next(csvreader)
+                            for row in csvreader:
+                                data.append(row)
+                        directory = os.path.dirname(results_file) 
+                        
+                        raw_results_filepath = os.path.join(directory,"results.csv")
+
+                        with open(raw_results_filepath, "wt", newline="") as f:
+                            csvwriter = csv.writer(f)
+                            csvwriter.writerow(headers)
+                            csvwriter.writerows(data)
+
+                        results_file = raw_results_filepath
+
+                    except Exception as e:
+                        helper.log_error(
+                            "[CAA-THCA-148-ERROR] Error during uncompressing process: {}".format(e)
+                        )
+
                 attachment_result = None
                 try:
-                    attachment_result = thehive.case.add_attachment(new_case["_id"],[helper.results_file])
+                    attachment_result = thehive.case.add_attachment(new_case["_id"],[results_file])
                 except TheHiveError as e:
                     helper.log_error(
                         "[CAA-THCC-150-ERROR] TheHive attachment creation has failed. "
                         "url={}, data={}, content={}, error={}"
                         .format(thehive.session.hive_url, str(case), str(new_case), str(e))
                     )
+
+                # This means, yes but uncompressed
+                if alert_args["attach_results"] == 2:
+
+                    helper.log_debug(
+                        "[CAA-THCC-152] Deleting uncompressed file at {}...".format(results_file)
+                    )
+
+                    os.remove(results_file)
 
                 if "_id" in attachment_result[0]:
                     # log response status

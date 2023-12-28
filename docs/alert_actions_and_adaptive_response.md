@@ -37,6 +37,7 @@
       - [Here some precisions](#here-some-precisions)
       - [Use fields to provide values for the alert](#use-fields-to-provide-values-for-the-alert)
       - [Composite fields (used for observables information)](#composite-fields-used-for-observables-information)
+      - [Uncompressed attachments and Windows](#uncompressed-attachments-and-windows)
 
 # Introduction
 
@@ -365,3 +366,7 @@ In order to be explicit on the usage, here is an example of the composite fields
 | src_ip:sighted | 0 | src_ip | sighted | This field is used to define if the observable "1.2.3.4" was sighted, such as "0" (FALSE) |
 | src_ip:sighted_at | 1702940801 | src_ip | sighted_at | This field is used to define when the observable "1.2.3.4" was sighted, such as "1702940801" (Monday 18 December 2023 23:06:41) |
 | src_ip:ignore_similarity | 0 | src_ip | ignore_similarity | This field is used to define if the observable "1.2.3.4" need to be ignored with similarities in other alerts/cases, such as "0" (FALSE) |
+
+#### Uncompressed attachments and Windows
+
+You might notice that if you are attaching the Splunk search results to your alert/case that the content type of the uncompressed file is "application/vnd.ms-excel" instead of "text/csv". This is becoming from the fact that your Splunk instance is located on a Windows asset which have Excel installed and might lead to this behavior. Consequence of this change is that you'll not be able to preview the content of the file directly in TheHive.
