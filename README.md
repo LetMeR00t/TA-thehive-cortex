@@ -86,7 +86,7 @@ Before using the application, you need to set up your environment settings. Plea
 ### Accounts
 
 You have to set up your accounts/instances configuration.
-An account is used to authenticate to one instance. You have to add every account you need to use and store the API Key as the password (**username/password authentication is only supported for TheHive, not Cortex, we recommand you to use an API key**)
+An account is used to authenticate to one instance. You have to add every account you need to use and store the API Key as the password (**username/password authentication is only supported for TheHive, not Cortex, we recommend you to use an API key**)
 
 1. Go to the **TheHive/Cortex application > Settings > Configuration** (in the navigation bar)
 2. Under **Accounts**, you need to add any account you want to use with TheHive/Cortex
@@ -111,7 +111,7 @@ Once you've done that, you can configure all your instances. An instance is an e
 - **Organisation**: The name of the organisation against which api calls will be run. Default to "-" meaning None.
 - **Proxy URL**: A string that indicates what is the proxy URL to use for this instance if there is any. You can specify http/https if you want but the same value will be used for both protocols. Default to "-" meaning None
 - **Proxy account**: This is the name of the account to use for the proxy authentication (only basic) that you added under "Accounts". It will list you all available accounts you have previously set up. Default to "None".
-- **Client Certificate**: Filename of you client certificate if you need one. This certificate must be placed under "\$APP_FOLDER\$/local" and you just have to set the name of the file here. This certificate will be used during the proxy authentication. Default to "-" meaning None. In the case you would like to do mTLS (Mutual TLS), you can add the public AND private key into the same file and point this file with this field. This certificate can be provided as a base64 encoded certificate through the GUI and will be decoded and stored in a dedicated cert file in the local folder.
+- **Client Certificate**: Filename of your client certificate if you need one. This certificate must be placed under "\$APP_FOLDER\$/local" and you just have to set the name of the file here. This certificate will be used during the proxy authentication. Default to "-" meaning None. In the case you would like to do mTLS (Mutual TLS), you can add the public AND private key into the same file and point this file with this field. This certificate can be provided as a base64 encoded certificate through the GUI and will be decoded and stored in a dedicated cert file in the local folder.
 - **Host**: Host of your instance (hostname or IP).
 - **Port**: Port used by your instance (Default:9000 for TheHive, 9001 for Cortex).
 - **URI**: Indicates what is the URI based for your instance. By default, TheHive/Cortex is installed at the root of the server so the URI would be "/". If you are using a Cloud instance, you may have to specify the URI used by your cloud instance. For example, if your TheHive instance is accessible with this URL : "https://my-cloud-website.com:443/mythehiveinstance", then you should specify in the URI field "/mythehiveinstance".
@@ -156,7 +156,7 @@ Once the application is configured and the analyzers are loaded, you have severa
 ## "TheHive: Alerts" dashboard
 
 The application integrates a preconfigured dashboard with searches allowing you to easily interface with TheHive and manage TheHive alerts.  
-This dasboard is also related to alert action "TheHive - Create a new alert"
+This dashboard is also related to alert action "TheHive - Create a new alert"
 
 ![Alerts list](images/alerts_list.png)
 
@@ -207,7 +207,7 @@ You have to specify some inputs:
 - **Unique ID field**: the unique reference for this alert. If a field name is provided, it is used to group results rows in several alerts - default is SPK+now()
 - **Type**: type of alert (default is "alert")
 - **Case Template**: Case template to use by default when importing alert into a case
-- **Scope**: a swithc to include all fields from result set (as type "other") or only field names listed in lookup table "thehive_datatypes.csv"
+- **Scope**: a switch to include all fields from result set (as type "other") or only field names listed in lookup table "thehive_datatypes.csv"
 - **Description**: Description for this new alert
 
 The search will retrieve the results from SID and create the new alert. You can check the new alert in TheHive Alert History
