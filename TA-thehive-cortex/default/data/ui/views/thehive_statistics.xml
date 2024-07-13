@@ -1,0 +1,210 @@
+<form script="thehive_cases.js" version="1.1">
+  <label>TheHive: Statistics</label>
+  <init>
+    <set token="filter"></set>
+  </init>
+  <fieldset submitButton="false" autoRun="false">
+    <input type="multiselect" token="instance_id">
+      <label>Instance</label>
+      <fieldForLabel>instance_name</fieldForLabel>
+      <fieldForValue>id</fieldForValue>
+      <search>
+        <query>| inputlookup thehive_cortex_instances where type=TheHive*
+| eval instance_name = account_name+": "+host+":"+port+if(isnotnull(uri),uri,"/")</query>
+        <earliest>-24h@h</earliest>
+        <latest>now</latest>
+      </search>
+      <delimiter>,</delimiter>
+    </input>
+    <input type="dropdown" token="model">
+      <label>Model</label>
+      <choice value="Action">Action</choice>
+      <choice value="Alert">Alert</choice>
+      <choice value="Audit">Audit</choice>
+      <choice value="Case">Case</choice>
+      <choice value="CustomField">CustomField</choice>
+      <choice value="Observable">Observable</choice>
+      <choice value="Organisation">Organisation</choice>
+      <choice value="Page">Page</choice>
+      <choice value="Task">Task</choice>
+      <choice value="Procedure">TTP</choice>
+      <choice value="User">User</choice>
+      <default>Case</default>
+    </input>
+    <input type="text" token="field">
+      <label>Field</label>
+      <default>assignee</default>
+    </input>
+    <input type="dropdown" token="date_field">
+      <label>Date field</label>
+      <choice value="_createdAt">_createdAt</choice>
+      <choice value="_updatedAt">_updatedAt</choice>
+      <default>_createdAt</default>
+    </input>
+    <input type="time" token="filter_date" searchWhenChanged="true">
+      <label>Date</label>
+      <default>
+        <earliest>0</earliest>
+        <latest></latest>
+      </default>
+    </input>
+  </fieldset>
+  <row>
+    <panel>
+      <viz type="status_indicator_app.status_indicator">
+        <search>
+          <progress>
+            <set token="d1">$job.earliestTime$</set>
+            <set token="d2">$job.latestTime$</set>
+          </progress>
+          <query>| makeresults
+| eval text = "Statistics", icon = "database", color="#f1cf00"
+| table text, icon, color</query>
+          <earliest>$filter_date.earliest$</earliest>
+          <latest>$filter_date.latest$</latest>
+          <sampleRatio>1</sampleRatio>
+        </search>
+        <option name="drilldown">none</option>
+        <option name="height">48</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="status_indicator_app.status_indicator.colorBy">field_value</option>
+        <option name="status_indicator_app.status_indicator.fillTarget">background</option>
+        <option name="status_indicator_app.status_indicator.fixIcon">warning</option>
+        <option name="status_indicator_app.status_indicator.icon">field_value</option>
+        <option name="status_indicator_app.status_indicator.precision">0</option>
+        <option name="status_indicator_app.status_indicator.showOption">1</option>
+        <option name="status_indicator_app.status_indicator.staticColor">#006d9c</option>
+        <option name="status_indicator_app.status_indicator.useColors">true</option>
+        <option name="status_indicator_app.status_indicator.useThousandSeparator">true</option>
+      </viz>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <input type="text" token="filtered_field">
+        <label>[Filter] Field</label>
+        <change>
+          <condition>
+            <eval token="filter">", filtered_field = \""+$filtered_field$+"\", filtered_condition = \""+$filtered_condition$+"\", filtered_values =  \""+$filtered_values$+"\""</eval>
+          </condition>
+        </change>
+      </input>
+      <input type="dropdown" token="filtered_condition">
+        <label>[Filter] Condition</label>
+        <choice value="any">Any of</choice>
+        <choice value="all">All of</choice>
+        <choice value="none">None of</choice>
+        <choice value="is empty">Is empty</choice>
+        <choice value="is not empty">Is not empty</choice>
+        <change>
+          <condition value="is empty">
+            <unset token="show_filtered_values"></unset>
+            <unset token="filtered_values"></unset>
+            <unset token="form.filtered_values"></unset>
+            <eval token="filter">", filtered_field = \""+$filtered_field$+"\", filtered_condition = \""+$filtered_condition$+"\""</eval>
+          </condition>
+          <condition value="is not empty">
+            <unset token="show_filtered_values"></unset>
+            <unset token="filtered_values"></unset>
+            <unset token="form.filtered_values"></unset>
+            <eval token="filter">", filtered_field = \""+$filtered_field$+"\", filtered_condition = \""+$filtered_condition$+"\""</eval>
+          </condition>
+          <condition>
+            <set token="show_filtered_values">1</set>
+            <eval token="filter">", filtered_field = \""+$filtered_field$+"\", filtered_condition = \""+$filtered_condition$+"\", filtered_values =  \""+$filtered_values$+"\""</eval>
+          </condition>
+        </change>
+      </input>
+      <input type="text" token="filtered_values" depends="$show_filtered_values$">
+        <label>[Filter] Values*</label>
+        <change>
+          <condition>
+            <eval token="filter">", filtered_field = \""+$filtered_field$+"\", filtered_condition = \""+$filtered_condition$+"\", filtered_values =  \""+$filtered_values$+"\""</eval>
+          </condition>
+        </change>
+      </input>
+      <chart>
+        <title>*: You can specify several values separated by ";"</title>
+        <search>
+          <done>
+            <set token="job_thehive_search_cases">$job.sid$</set>
+          </done>
+          <query>| makeresults
+| eval model="$model$", field="$field$", $date_field$ = "$filter_date_d1$ TO $filter_date_d2$" $filter$
+| thehivegetstats "$instance_id$"
+| table thehive_*
+| fields - thehive_instance_id
+| rename thehive_* as *
+| table $field$ count
+| where $field$!="Total"
+| eventstats sum(count) as total
+| eval $field$ = $field$+" - "+count+" ("+tostring(round(count*100/total,2))+"%)"</query>
+          <earliest>$filter_date.earliest$</earliest>
+          <latest>$filter_date.latest$</latest>
+          <sampleRatio>1</sampleRatio>
+        </search>
+        <option name="charting.chart">pie</option>
+        <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+        <option name="charting.drilldown">all</option>
+        <option name="height">614</option>
+        <option name="refresh.display">progressbar</option>
+        <drilldown>
+          <condition field="Tasks">
+            <link target="_blank">https://$global_thehive_host$:$global_thehive_port$$global_thehive_uri|n$$global_thehive_case_uri$/$row.ID - Go to TheHive$/tasks</link>
+          </condition>
+          <condition field="Observables">
+            <link target="_blank">https://$global_thehive_host$:$global_thehive_port$$global_thehive_uri|n$$global_thehive_case_uri$/$row.ID - Go to TheHive$/observables</link>
+          </condition>
+          <condition field="ID - Go to TheHive">
+            <link target="_blank">https://$global_thehive_host$:$global_thehive_port$$global_thehive_uri|n$$global_thehive_case_uri$/$row.ID - Go to TheHive$/details</link>
+          </condition>
+          <condition></condition>
+        </drilldown>
+      </chart>
+    </panel>
+  </row>
+  <row>
+    <panel depends="$always_hidden$">
+      <title>[Instance] Get information</title>
+      <table>
+        <search>
+          <done>
+            <set token="global_thehive_host">$result.host$</set>
+            <set token="global_thehive_port">$result.port$</set>
+            <set token="global_thehive_uri">$result.uri$</set>
+            <set token="global_thehive_case_uri">$result.case_uri$</set>
+          </done>
+          <query>| inputlookup thehive_cortex_instances where id=$instance_id$ | eval case_uri = if(type=="TheHive5","cases","case") | eval case_uri = if(uri!="/","/"+case_uri,case_uri)</query>
+          <earliest>-24h@h</earliest>
+          <latest>now</latest>
+          <sampleRatio>1</sampleRatio>
+        </search>
+        <option name="count">20</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="refresh.display">progressbar</option>
+      </table>
+    </panel>
+  </row>
+  <row>
+    <panel depends="$always_hidden$">
+      <title>[Date] Format filters</title>
+      <table>
+        <search>
+          <done>
+            <set token="filter_date_d1">$result.filter_date_d1$</set>
+            <set token="filter_date_d2">$result.filter_date_d2$</set>
+          </done>
+          <query>| makeresults
+| eval filter_date_d1 = if("$d1$" != "1970-01-01T01:00:00.000+01:00",round(relative_time(strptime("$d1$","%F"),"@d")*1000),"*"), filter_date_d2 = if("$d1$" != "1970-01-01T01:00:00.000+01:00",round(relative_time(strptime("$d2$","%F"),"@d+1d")*1000),"*")
+| table filter_date_d1 ,filter_date_d2</query>
+          <earliest>-24h@h</earliest>
+          <latest>now</latest>
+          <sampleRatio>1</sampleRatio>
+        </search>
+        <option name="count">20</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="refresh.display">progressbar</option>
+      </table>
+    </panel>
+  </row>
+</form>
