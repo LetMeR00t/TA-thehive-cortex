@@ -38,9 +38,9 @@ This command is used to get cases from TheHive (\$..\$ are tokens examples but y
 > ![thehivegetcase example](../images/command_thehivegetcase_example.png)
 
 ```spl
-	| makeresults
-	| eval keyword = "$filter_keyword$", status = "$filter_status$", severity = "$filter_severity$", tags = "$filter_tags$", title = "$filter_title$", assignee = "$filter_assignee$", date = "$filter_date_d1$ TO $filter_date_d2$", max_cases="$max_cases$", sort_cases="$sort_cases$"
-	| thehivecases $$INSTANCE_ID$$
+| makeresults
+| eval keyword = "$filter_keyword$", status = "$filter_status$", severity = "$filter_severity$", tags = "$filter_tags$", title = "$filter_title$", assignee = "$filter_assignee$", date = "$filter_date_d1$ TO $filter_date_d2$", max_cases="$max_cases$", sort_cases="$sort_cases$"
+| thehivecases $$INSTANCE_ID$$
 ```
 
 
@@ -87,26 +87,26 @@ Every new field will start with "thehive_*". As an exemple, you can recover:
 
 ### Examples
 ```spl
-	| makeresults count=1
-	| thehivecases $$INSTANCE_ID$$
+| makeresults count=1
+| thehivecases $$INSTANCE_ID$$
 	# This will recover any case
 ```
 ```spl
-	| makeresults count=1
-	| eval keyword = "github.com" 
-	| thehivecases $$INSTANCE_ID$$
+| makeresults count=1
+| eval keyword = "github.com" 
+| thehivecases $$INSTANCE_ID$$
 	# This will recover any case concerning the keyword "github.com"
 ```
 ```spl
-	| makeresults count=1
-	| eval status = "Open"
-	| thehivecases $$INSTANCE_ID$$
+| makeresults count=1
+| eval status = "Open"
+| thehivecases $$INSTANCE_ID$$
 	# This will recover any "Open" case
 ```
 ```spl
-	| makeresults count=1
-	| eval status = "Open;Resolved"
-	| thehivecases $$INSTANCE_ID$$
+| makeresults count=1
+| eval status = "Open;Resolved"
+| thehivecases $$INSTANCE_ID$$
 	# This will recover any "Open" or "Resolved" case
 ```
 
@@ -117,9 +117,9 @@ This command is used to get alerts from TheHive (\$..\$ are tokens examples but 
 > 
 > ![thehivegetalert example](../images/command_thehivegetalert_example.png)
 
-	| makeresults
-	| eval type = "$filter_type$", severity = "$filter_severity$", tags = "$filter_tags$", title = "$filter_title$", read = "$filter_read$", source = "$filter_source$", date = "$filter_date_d1$ TO $filter_date_d2$", max_alerts="$max_alerts$", sort_alerts="$sort_alerts$"
-	| thehivealerts $$INSTANCE_ID$$
+| makeresults
+| eval type = "$filter_type$", severity = "$filter_severity$", tags = "$filter_tags$", title = "$filter_title$", read = "$filter_read$", source = "$filter_source$", date = "$filter_date_d1$ TO $filter_date_d2$", max_alerts="$max_alerts$", sort_alerts="$sort_alerts$"
+| thehivealerts $$INSTANCE_ID$$
 
 
 ### Parameters (input results)
@@ -169,26 +169,26 @@ Every new field will start with "thehive_*". As an exemple, you can recover:
 ### Examples
 
 ```spl
-	| makeresults count=1
-	| thehivealerts $$INSTANCE_ID$$
+| makeresults count=1
+| thehivealerts $$INSTANCE_ID$$
 	# This will recover any alert
 ```
 ```spl
-	| makeresults count=1
-	| eval source = "splunk" 
-	| thehivealerts $$INSTANCE_ID$$
+| makeresults count=1
+| eval source = "splunk" 
+| thehivealerts $$INSTANCE_ID$$
 	# This will recover any alert concerning with the source set to "splunk"
 ```
 ```spl
-	| makeresults count=1
-	| eval read = "1"
-	| thehivealerts $$INSTANCE_ID$$
+| makeresults count=1
+| eval read = "1"
+| thehivealerts $$INSTANCE_ID$$
 	# This will recover any already read alert
 ```
 ```spl
-	| makeresults count=1
-	| eval tags = "t1;t2"
-	| thehivealerts $$INSTANCE_ID$$
+| makeresults count=1
+| eval tags = "t1;t2"
+| thehivealerts $$INSTANCE_ID$$
 	# This will recover any alert with "t1" or "t2" tag
 ```
 
@@ -231,27 +231,27 @@ Every new field will start with "thehive_*". As an exemple, you can recover:
 ### Examples
 
 ```spl
-	| makeresults
-	| eval model="Case", field="assignee", _createdAt = "* TO *"
-	| thehivegetstats $$INSTANCE_ID$$
+| makeresults
+| eval model="Case", field="assignee", _createdAt = "* TO *"
+| thehivegetstats $$INSTANCE_ID$$
 	# This will recover statistics for all cases on the field assignee (no filter)
 ```
 ```spl
-	| makeresults
-	| eval model="Case", field="assignee", _createdAt = "* TO *" , filtered_field = "tlp", filtered_condition = "any", filtered_values =  "1;2"
-	| thehivegetstats $$INSTANCE_ID$$
+| makeresults
+| eval model="Case", field="assignee", _createdAt = "* TO *" , filtered_field = "tlp", filtered_condition = "any", filtered_values =  "1;2"
+| thehivegetstats $$INSTANCE_ID$$
 	# This will recover statistics for all cases on the field assignee by filtering on the cases having a TLP set to GREEN or AMBER
 ```
 ```spl
-	| makeresults
-	| eval model="Observable", field="tlp"
-	| thehivegetstats $$INSTANCE_ID$$
+| makeresults
+| eval model="Observable", field="tlp"
+| thehivegetstats $$INSTANCE_ID$$
 	# This will recover statistics for all observables on the field tlp
 ```
 ```spl
-	| makeresults
-	| eval model="Procedure", field="tactic", _createdAt = "1672527600000 TO 1704150000000" 
-	| thehivegetstats $$INSTANCE_ID$$
+| makeresults
+| eval model="Procedure", field="tactic", _createdAt = "1672527600000 TO 1704150000000" 
+| thehivegetstats $$INSTANCE_ID$$
 	# This will recover statistics for all TTPs on the field tactic that were identified in 2023
 ```
 
@@ -262,9 +262,9 @@ Every new field will start with "thehive_*". As an exemple, you can recover:
 This command is used to get jobs from Cortex (\$..\$ are tokens examples but you can use it directly in your searches).
 
 
-	| makeresults
-	| eval data = "$filter_data$", datatypes = "$filter_datatypes$", analyzers = "$filter_analyzers$", max_jobs="$max_jobs$", sort_jobs="$sort_jobs$"
-	| cortexjobs $$INSTANCE_ID$$
+| makeresults
+| eval data = "$filter_data$", datatypes = "$filter_datatypes$", analyzers = "$filter_analyzers$", max_jobs="$max_jobs$", sort_jobs="$sort_jobs$"
+| cortexjobs $$INSTANCE_ID$$
 
 ### Parameters (input results)
 One row will result in executing the script one time. So if you specify 5 rows, the script will be executed 5 times and all results will be appended.
@@ -305,36 +305,36 @@ Every new field will start with "cortex_*". As an exemple, you can recover:
 
 ### Examples
 
-	| makeresults count=1
-	| cortexjobs $$INSTANCE_ID$$
+| makeresults count=1
+| cortexjobs $$INSTANCE_ID$$
 	# This will recover any job
 	
-	| makeresults count=1
-	| eval data = "github.com" 
-	| cortexjobs $$INSTANCE_ID$$
+| makeresults count=1
+| eval data = "github.com" 
+| cortexjobs $$INSTANCE_ID$$
 	# This will recover any job concerning the exact match "github.com" as data
 	
-	| makeresults count=1
-	| eval datatypes = "ip"
-	| cortexjobs $$INSTANCE_ID$$
+| makeresults count=1
+| eval datatypes = "ip"
+| cortexjobs $$INSTANCE_ID$$
 	# This will recover any job based on an "ip" data type
 		 
-	| makeresults count=1
-	| eval datatypes = "ip;domain"
-	| cortexjobs $$INSTANCE_ID$$
+| makeresults count=1
+| eval datatypes = "ip;domain"
+| cortexjobs $$INSTANCE_ID$$
 	# This will recover any job based on an "ip" or "domain" data type
 		
-	| makeresults count=1
-	| eval analyzers = "Abuse_Finder_3_0 ;GoogleDNS_resolve_1_0_0" 
-	| cortexjobs $$INSTANCE_ID$$
+| makeresults count=1
+| eval analyzers = "Abuse_Finder_3_0 ;GoogleDNS_resolve_1_0_0" 
+| cortexjobs $$INSTANCE_ID$$
 	# This will recover any job based on the "Abuse_Finder_3_0" or "GoogleDNS_resolve_1_0_0" analyzers
 
 ## cortexrun
 This command is used to run new jobs to Cortex (\$..\$ are tokens examples but you can use it directly in your searches).
 
-	| makeresults
-	| eval data = "$data$", dataType = "$dataType$", tlp = "$tlp$", pap = "$pap$", analyzers = "$analyzers$"
-	| cortexjobs $$INSTANCE_ID$$
+| makeresults
+| eval data = "$data$", dataType = "$dataType$", tlp = "$tlp$", pap = "$pap$", analyzers = "$analyzers$"
+| cortexjobs $$INSTANCE_ID$$
 
 ### Parameters (input results)
 
@@ -378,18 +378,18 @@ Every new field will start with "cortex_*". As an exemple, you can recover:
 ### Examples
 
 
-	| makeresults
-	| eval data = "8.8.8.8", dataType = "ip"
-	| cortexrun $$INSTANCE_ID$$
+| makeresults
+| eval data = "8.8.8.8", dataType = "ip"
+| cortexrun $$INSTANCE_ID$$
 	# This will start as many jobs as there is available analyzers for the data type "ip" with TLP and PAP level set to AMBER (default)
 
-	| makeresults
-	| eval data = "8.8.8.8;8.8.4.4", dataType = "ip", analyzers = "GoogleDNS_resolve_1_0_0;Abuse_Finder_3_0"
-	| cortexrun $$INSTANCE_ID$$
+| makeresults
+| eval data = "8.8.8.8;8.8.4.4", dataType = "ip", analyzers = "GoogleDNS_resolve_1_0_0;Abuse_Finder_3_0"
+| cortexrun $$INSTANCE_ID$$
 	# This will start four jobs (two data and two analyzers) with TLP and PAP level set to AMBER (default)
 	 
-	| makeresults
-	| eval data = "8.8.8.8;8.8.4.4", dataType = "ip", tlp = "GREEN", pap = "WHITE", analyzers = "GoogleDNS_resolve_1_0_0 ;Abuse_Finder_3_0"
-	| cortexrun $$INSTANCE_ID$$
+| makeresults
+| eval data = "8.8.8.8;8.8.4.4", dataType = "ip", tlp = "GREEN", pap = "WHITE", analyzers = "GoogleDNS_resolve_1_0_0 ;Abuse_Finder_3_0"
+| cortexrun $$INSTANCE_ID$$
 	# This will start four jobs (two data and two analyzers) with TLP and PAP level set respectively to GREEN and WHITE
 
