@@ -1,204 +1,108 @@
 <form class="form-horizontal form-complex">
-    <div class="control-group">
-        <label class="control-label" for="thehive_create_a_new_alert_thehive_instance_id">TheHive instance ID <span
-                class="required">*</span> </label>
-        <div class="controls">
-            <input type="text" name="action.thehive_create_a_new_alert.param.thehive_instance_id"
-                id="thehive_create_a_new_alert_thehive_instance_id" />
-            <span class="help-block">
-                Indicate which instance to use (Set the "id" provided under "Instances"). You can use "&lt;default&gt;"
-                to set
-                automatically the ID to the default set parameter in the configuration page.
-            </span>
-        </div>
-    </div>
-    <div class="control-group">
-        <label class="control-label">Alert mode</label>
-        <div class="controls">
-            <label class="radio" for="thehive_create_a_new_alert_alert_mode_es_mode">
-                <input type="radio" name="action.thehive_create_a_new_alert.param.alert_mode"
-                    id="thehive_create_a_new_alert_alert_mode_es_mode" value="es_mode" />
-                ES notable mode
-            </label>
-            <label class="radio" for="thehive_create_a_new_alert_alert_mode_regular_mode">
-                <input type="radio" name="action.thehive_create_a_new_alert.param.alert_mode"
-                    id="thehive_create_a_new_alert_alert_mode_regular_mode" value="regular_mode" />
-                Alert action mode
-            </label>
-            <span class="help-block">
-                ES notable mode: 1 alert in thehive per row
-                Alert action mode: 1 or several grouped alerts (with optional field "Unique ID")
-            </span>
-        </div>
-    </div>
-    <div class="control-group">
-        <label class="control-label" for="thehive_create_a_new_alert_unique_id_field">Unique ID field </label>
-        <div class="controls">
-            <input type="text" name="action.thehive_create_a_new_alert.param.unique_id_field"
-                id="thehive_create_a_new_alert_unique_id_field" />
-            <span class="help-block">
-                A field name that contains a unique identifier specific to the source event.
-            </span>
-        </div>
-    </div>
-    <div class="control-group">
-        <label class="control-label" for="thehive_create_a_new_alert_case_template">Case Template </label>
-        <div class="controls">
-            <input type="text" name="action.thehive_create_a_new_alert.param.case_template"
-                id="thehive_create_a_new_alert_case_template" />
-            <span class="help-block">
-                The case template to use for imported alerts.
-            </span>
-        </div>
-    </div>
-    <div class="control-group">
-        <label class="control-label" for="thehive_create_a_new_alert_type">Type </label>
-        <div class="controls">
-            <input type="text" name="action.thehive_create_a_new_alert.param.type"
-                id="thehive_create_a_new_alert_type" />
-            <span class="help-block">
-                The alert type. Defaults to "alert".
-            </span>
-        </div>
-    </div>
-    <div class="control-group">
-        <label class="control-label" for="thehive_create_a_new_alert_source">Source </label>
-        <div class="controls">
-            <input type="text" name="action.thehive_create_a_new_alert.param.source"
-                id="thehive_create_a_new_alert_source" />
-            <span class="help-block">
-                The alert source. Defaults to "splunk".
-            </span>
-        </div>
-    </div>
-    <div class="control-group">
-        <label class="control-label" for="thehive_create_a_new_alert_timestamp_field">Timestamp field </label>
-        <div class="controls">
-            <input type="text" name="action.thehive_create_a_new_alert.param.timestamp_field"
-                id="thehive_create_a_new_alert_timestamp_field" />
-            <span class="help-block">
-                A field name that contains a valid timestamp. if not provided, default to now()
-            </span>
-        </div>
-    </div>
-    <div class="control-group">
-        <label class="control-label" for="thehive_create_a_new_alert_title">Title
-        </label>
-        <div class="controls">
-            <input type="text" name="action.thehive_create_a_new_alert.param.title"
-                id="thehive_create_a_new_alert_title" />
-            <span class="help-block">
-                The title to use for created alerts. IMPORTANT you can specify a field name that contains the title
-                text. Defaults to "&lt;inheritance&gt;" that will take the information from the alert/notable event
-            </span>
-        </div>
-    </div>
-    <div class="control-group">
-        <label class="control-label" for="thehive_create_a_new_alert_description">Description </label>
-        <div class="controls">
-            <input type="text" name="action.thehive_create_a_new_alert.param.description"
-                id="thehive_create_a_new_alert_description" />
-            <span class="help-block">
-                The description to send with the alert. IMPORTANT You can specify a field name that contains the
-                description text.
-            </span>
-        </div>
-    </div>
-    <div class="control-group">
-        <label class="control-label" for="thehive_create_a_new_alert_tags">Tags </label>
-        <div class="controls">
-            <input type="text" name="action.thehive_create_a_new_alert.param.tags"
-                id="thehive_create_a_new_alert_tags" />
-            <span class="help-block">
-                Use single comma-separated string without quotes for multiple tags (ex. "badIP,spam").
-            </span>
-        </div>
-    </div>
-    <div class="control-group">
-        <label class="control-label" for="thehive_create_a_new_alert_scope">Scope <span class="required">*</span>
-        </label>
-        <div class="controls">
-            <select name="action.thehive_create_a_new_alert.param.scope" id="thehive_create_a_new_alert_scope">
-                <option value="0">Include only listed fields in thehive_datatypes.csv</option>
-                <option value="1">Include all fields (default datatype is 'other')</option>
-            </select>
-            <span class="help-block">
-                Select the scope for result fields. Default is all fields.
-            </span>
-        </div>
-    </div>
-    <div class="control-group">
-        <label class="control-label" for="thehive_create_a_new_alert_severity">Severity <span class="required">*</span>
-        </label>
-        <div class="controls">
-            <select name="action.thehive_create_a_new_alert.param.severity" id="thehive_create_a_new_alert_severity">
-                <option value="4">Critical</option>
-                <option value="3">High</option>
-                <option value="2">Medium</option>
-                <option value="1">Low</option>
+
+    <splunk-control-group label="Instance" help="Indicate which instance to use (Set the 'id' provided under 'Instances'). You can use '&lt;default&gt;' to set automatically the ID to the default set parameter in the configuration page.">
+        <span class="required">*</span>
+        <splunk-search-dropdown name="action.thehive_create_a_new_alert.param.thehive_instance_id" allow-custom-value=true search="| inputlookup thehive_cortex_instances | search type=&quot;TheHive*&quot;" label-field="organisation" value-field="id">
+    </splunk-control-group>
+
+    <splunk-control-group label="Alert mode" help="ES notable mode: 1 alert in thehive per row / Alert action mode: 1 or several grouped alerts (with optional field &quot;Unique ID&quot;)">
+        <splunk-radio-input name="action.thehive_create_a_new_alert.param.alert_mode">
+          <option value="es_mode">ES notable</option>
+          <option value="regular_mode">Alert action</option>
+         </splunk-radio-input>
+    </splunk-control-group>
+
+    <splunk-control-group label="Unique ID field" help="A field name that contains a unique identifier specific to the source event">
+        <splunk-text-input name="action.thehive_create_a_new_alert.param.unique_id_field"/>
+    </splunk-control-group>
+
+    <splunk-control-group label="Case Template" help="The case template to use for imported alerts">
+        <splunk-text-input name="action.thehive_create_a_new_alert.param.case_template"/>
+    </splunk-control-group>
+
+    <splunk-control-group label="Type" help="The alert type. Defaults to 'alert'."><span class="required">*</span>
+        <splunk-text-input name="action.thehive_create_a_new_alert.param.type"/>
+    </splunk-control-group>
+
+    <splunk-control-group label="Source" help="The alert source. Defaults 'splunk'">
+        <splunk-text-input name="action.thehive_create_a_new_alert.param.source"/>
+    </splunk-control-group>
+
+    <splunk-control-group label="Timestamp field" help="A field name that contains a valid timestamp. if not provided, default to now()">
+        <splunk-text-input name="action.thehive_create_a_new_alert.param.timestamp_field"/>
+    </splunk-control-group>
+
+    <splunk-control-group label="Title" help="The title to use for created alerts. IMPORTANT you can specify a field name that contains the title text. Defaults to '&lt;inheritance&gt;'' that will take the information from the alert/notable event"><span class="required">*</span>
+        <splunk-text-input name="action.thehive_create_a_new_alert.param.title"/>
+    </splunk-control-group>
+
+    <splunk-control-group label="Description" help="The description to send with the alert. IMPORTANT You can specify a field name that contains the description text.">
+        <splunk-text-area name="action.thehive_create_a_new_alert.param.description"/>
+    </splunk-control-group>
+
+    <splunk-control-group label="Dashboard" help="Dashboard to which a user is redirected from the TheHive 'Reference' field. You can specify a dashboard name to drilldown on it. If no value is set, the results link will be used. Defaults to the results link.">
+        <splunk-search-dropdown name="action.thehive_create_a_new_alert.param.dashboard" search="| rest /servicesNS/-/-/data/ui/views/ | table title, eai:acl.app | dedup title, eai:acl.app | rename eai:acl.app as app_name | eval dashboard_path=app_name.&quot;/&quot;.title" label-field="dashboard_path" value-field="dashboard_path">
+    </splunk-control-group>
+
+    <splunk-control-group label="Tags" help="Use single comma-separated string without quotes for multiple tags (ex. &quot;badIP,spam&quot;).">
+        <splunk-text-input name="action.thehive_create_a_new_alert.param.tags"/>
+    </splunk-control-group>
+
+    <splunk-control-group label="Scope" help="Select the scope for result fields. Default is all fields."><span class="required">*</span>
+        <splunk-select name="action.thehive_create_a_new_alert.param.scope">
+         <option value="0">Include only listed fields in thehive_datatypes.csv</option>
+         <option value="1">Include all fields (default datatype is 'other')</option>
+        </splunk-select>
+    </splunk-control-group>
+
+    <splunk-control-group label="Severity" help="Select the severity of the created alert. Default is High."><span class="required">*</span>
+        <splunk-select name="action.thehive_create_a_new_alert.param.severity">
+         <option value="4">Critical</option>
+         <option value="3">High</option>
+         <option value="2">Medium</option>
+         <option value="1">Low</option>
+        </splunk-select>
+    </splunk-control-group>
+
+    <splunk-control-group label="TLP" help="Select the TLP level of the created alert. Default is TLP:AMBER"><span class="required">*</span>
+        <splunk-select name="action.thehive_create_a_new_alert.param.tlp">
          <option value="4">RED</option>
          <option value="3">AMBER+STRICT</option>
-                <option value="2">AMBER</option>
-                <option value="1">GREEN</option>
-                <option value="0">WHITE</option>
-            </select>
-            <span class="help-block">
-                Select the TLP level of the created alert. Default is TLP:AMBER
-            </span>
-        </div>
-    </div>
-    <div class="control-group">
-        <label class="control-label" for="thehive_create_a_new_alert_pap">PAP: <span class="required">*</span> </label>
-        <div class="controls">
-            <select name="action.thehive_create_a_new_alert.param.pap" id="thehive_create_a_new_alert_pap">
-                <option value="3">RED</option>
-                <option value="2">AMBER</option>
-                <option value="1">GREEN</option>
-                <option value="0">WHITE</option>
-            </select>
-            <span class="help-block">
-                Permissible Action Protocol. Default to PAP:AMBER
-            </span>
-        </div>
-    </div>
-    <div class="control-group">
-        <label class="control-label" for="thehive_create_a_new_alert_description_results_enable">[Description] Append sanitized results<span class="required">*</span>
-        </label>
-        <div class="controls">
-            <select name="action.thehive_create_a_new_alert.param.description_results_enable" id="thehive_create_a_new_alert_description_results_enable">
-                <option value="0">No</option>
-                <option value="1">Yes</option>
-            </select>
-            <span class="help-block">
-                Set to yes if you want to append a sanitized markdown table with the results to the description
-            </span>
-        </div>
-    </div>
-    <div class="control-group">
-        <label class="control-label" for="thehive_create_a_new_alert_description_results_keep_observable">[Description] Keep observables in the results<span class="required">*</span>
-        </label>
-        <div class="controls">
-            <select name="action.thehive_create_a_new_alert.param.description_results_keep_observable" id="thehive_create_a_new_alert_description_results_keep_observable">
-                <option value="0">No</option>
-                <option value="1">Yes</option>
-            </select>
-            <span class="help-block">
-                Set to yes if you want to keep observables in the description. Otherwise, they will be removed from the sanitized markdown table
-            </span>
-        </div>
-    </div>
-    <div class="control-group">
-        <label class="control-label" for="thehive_create_a_new_alert_attach_results">Attach the search results to the alert<span class="required">*</span>
-        </label>
-        <div class="controls">
-            <select name="action.thehive_create_a_new_alert.param.attach_results" id="thehive_create_a_new_alert_attach_results">
-                <option value="0">No</option>
-                <option value="1">Yes, compressed (gz)</option>
-                <option value="2">Yes, uncompressed (csv)</option>
-            </select>
-            <span class="help-block">
-                Set to yes if you want to attach the splunk search results to the alert
-            </span>
-        </div>
-    </div>
+         <option value="2">AMBER</option>
+         <option value="1">GREEN</option>
+         <option value="0">WHITE</option>
+        </splunk-select>
+    </splunk-control-group>
+
+    <splunk-control-group label="PAP" help="Permissible Action Protocol. Default is PAP:AMBER"><span class="required">* </span>
+        <splunk-select name="action.thehive_create_a_new_alert.param.pap">
+         <option value="3">RED</option>
+         <option value="2">AMBER</option>
+         <option value="1">GREEN</option>
+         <option value="0">WHITE</option>
+        </splunk-select>
+    </splunk-control-group>
+
+    <splunk-control-group label="[Description] Append sanitized results" help="Set to yes if you want to append a sanitized markdown table with the results to the description"><span class="required">* </span>
+        <splunk-select name="action.thehive_create_a_new_alert.param.description_results_enable">
+            <option value="0">No</option>
+            <option value="1">Yes</option>
+        </splunk-select>
+    </splunk-control-group>
+
+    <splunk-control-group label="[Description] Keep observables in the results" help="Set to yes if you want to keep observables in the description. Otherwise, they will be removed from the sanitized markdown table"><span class="required">* </span>
+        <splunk-select name="action.thehive_create_a_new_alert.param.description_results_keep_observable">
+            <option value="0">No</option>
+            <option value="1">Yes</option>
+        </splunk-select>
+    </splunk-control-group>
+
+    <splunk-control-group label="Attach the search results to the alert" help="Set to yes if you want to attach the splunk search results to the alert"><span class="required">* </span>
+        <splunk-select name="action.thehive_create_a_new_alert.param.attach_results">
+            <option value="0">No</option>
+            <option value="1">Yes, compressed (gz)</option>
+            <option value="2">Yes, uncompressed (csv)</option>
+        </splunk-select>
+    </splunk-control-group>
+
 </form>
