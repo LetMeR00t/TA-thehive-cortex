@@ -2,22 +2,46 @@
 This application allows you to use new commands related to TheHive/Cortex.
 Every command requires an "Instance ID" parameter which is used to specify which instance needs to be used by the script.
 
-# Table of content
-* [ thehivecases ](#thehivecases)  
-* [ thehivealerts ](#thehivealerts)
-* [ cortexjobs ](#cortexjobs)
-* [ cortexrun ](#cortexrun)
+- [Commands](#commands)
+- [TheHive](#thehive)
+	- [thehivecases and thehivegetcase](#thehivecases-and-thehivegetcase)
+		- [Parameters (input results)](#parameters-input-results)
+		- [Return](#return)
+		- [Examples](#examples)
+	- [thehivealerts and thehivegetalert](#thehivealerts-and-thehivegetalert)
+		- [Parameters (input results)](#parameters-input-results-1)
+		- [Return](#return-1)
+		- [Examples](#examples-1)
+	- [thehivegetstats](#thehivegetstats)
+		- [Parameters (input results)](#parameters-input-results-2)
+		- [Return](#return-2)
+		- [Examples](#examples-2)
+- [Cortex](#cortex)
+	- [cortexjobs](#cortexjobs)
+		- [Parameters (input results)](#parameters-input-results-3)
+		- [Return](#return-3)
+		- [Examples](#examples-3)
+	- [cortexrun](#cortexrun)
+		- [Parameters (input results)](#parameters-input-results-4)
+		- [Return](#return-4)
+		- [Examples](#examples-4)
 
 
-## thehivecases
+
+# TheHive
+
+## thehivecases and thehivegetcase
 
 This command is used to get cases from TheHive (\$..\$ are tokens examples but you can use it directly in your searches).
+> Note: `thehivegetcase` has the same behavior as `thehivecases` but only for one specific case (the case number must be specified using the field `case_number`).
+> 
+> ![thehivegetcase example](../images/command_thehivegetcase_example.png)
 
-
+```spl
 	| makeresults
 	| eval keyword = "$filter_keyword$", status = "$filter_status$", severity = "$filter_severity$", tags = "$filter_tags$", title = "$filter_title$", assignee = "$filter_assignee$", date = "$filter_date_d1$ TO $filter_date_d2$", max_cases="$max_cases$", sort_cases="$sort_cases$"
 	| thehivecases $$INSTANCE_ID$$
-
+```
 
 
 ### Parameters (input results)
@@ -62,30 +86,36 @@ Every new field will start with "thehive_*". As an exemple, you can recover:
  - thehive_case_tasks
 
 ### Examples
-
+```spl
 	| makeresults count=1
 	| thehivecases $$INSTANCE_ID$$
 	# This will recover any case
-	
+```
+```spl
 	| makeresults count=1
 	| eval keyword = "github.com" 
 	| thehivecases $$INSTANCE_ID$$
 	# This will recover any case concerning the keyword "github.com"
-	
+```
+```spl
 	| makeresults count=1
 	| eval status = "Open"
 	| thehivecases $$INSTANCE_ID$$
 	# This will recover any "Open" case
-		 
+```
+```spl
 	| makeresults count=1
 	| eval status = "Open;Resolved"
 	| thehivecases $$INSTANCE_ID$$
 	# This will recover any "Open" or "Resolved" case
+```
 
-## thehivealerts
+## thehivealerts and thehivegetalert
 
 This command is used to get alerts from TheHive (\$..\$ are tokens examples but you can use it directly in your searches).
-
+> Note: `thehivegetalert` has the same behavior as `thehivealerts` but only for one specific alert (the alert ID must be specified using the field `alert_id`).
+> 
+> ![thehivegetalert example](../images/command_thehivegetalert_example.png)
 
 	| makeresults
 	| eval type = "$filter_type$", severity = "$filter_severity$", tags = "$filter_tags$", title = "$filter_title$", read = "$filter_read$", source = "$filter_source$", date = "$filter_date_d1$ TO $filter_date_d2$", max_alerts="$max_alerts$", sort_alerts="$sort_alerts$"
@@ -138,24 +168,94 @@ Every new field will start with "thehive_*". As an exemple, you can recover:
 
 ### Examples
 
+```spl
 	| makeresults count=1
 	| thehivealerts $$INSTANCE_ID$$
 	# This will recover any alert
-	
+```
+```spl
 	| makeresults count=1
 	| eval source = "splunk" 
 	| thehivealerts $$INSTANCE_ID$$
 	# This will recover any alert concerning with the source set to "splunk"
-	
+```
+```spl
 	| makeresults count=1
 	| eval read = "1"
 	| thehivealerts $$INSTANCE_ID$$
 	# This will recover any already read alert
-		 
+```
+```spl
 	| makeresults count=1
 	| eval tags = "t1;t2"
 	| thehivealerts $$INSTANCE_ID$$
 	# This will recover any alert with "t1" or "t2" tag
+```
+
+## thehivegetstats
+
+This command is used to get statistics from TheHive generally used in dashboards (\$..\$ are tokens examples but you can use it directly in your searches).
+
+```spl
+| makeresults
+| eval model="$model$", field="$field$"(, _createdAt = "$date$") (, _updatedAt = "$date$") (, filtered_field = "$filtered_field$", filtered_condition = "$filtered_condition$", filtered_values =  "$filtered_values$")
+| thehivegetstats $$INSTANCE_ID$$
+```
+
+### Parameters (input results)
+One row will result in executing the script one time. So if you specify 5 rows, the script will be executed 5 times and all results will be appended.
+If not set, no filter will be applied.
+
+Those parameters are based on what can be set on TheHive dashboards:
+![TheHive dashboards example](../images/thehive_dashboard_example.png)
+
+* **model**: Indicates which "Entity" shall be used
+* **field**: Indicates which "Category Field" shall be used
+* (Optional) **_createdAt**: Indicates which period of time shall be considered to filter on the created date (which is the "Period Field" on TheHive)
+* (Optional) **_updatedAt**: Indicates which period of time shall be considered to filter on the updated date (which is the "Period Field" on TheHive)
+* (Optional) **filtered_field**: Indicates the field to filter on
+* (Optional) **filtered_condition**: Indicates the condition to filter on
+* (Optional) **filtered_values**: Indicates the values to filter on
+
+> Note: Only one filter is allowed for the Splunk command
+
+**Note**: These parameters are the **expected fields name**.
+
+### Return
+This command append new fields per row to previous results.
+Every new field will start with "thehive_*". As an exemple, you can recover:
+
+ - &lt;field&gt; (the name of the field you selected with the list of values (one per raw))
+ - count
+
+### Examples
+
+```spl
+	| makeresults
+	| eval model="Case", field="assignee", _createdAt = "* TO *"
+	| thehivegetstats $$INSTANCE_ID$$
+	# This will recover statistics for all cases on the field assignee (no filter)
+```
+```spl
+	| makeresults
+	| eval model="Case", field="assignee", _createdAt = "* TO *" , filtered_field = "tlp", filtered_condition = "any", filtered_values =  "1;2"
+	| thehivegetstats $$INSTANCE_ID$$
+	# This will recover statistics for all cases on the field assignee by filtering on the cases having a TLP set to GREEN or AMBER
+```
+```spl
+	| makeresults
+	| eval model="Observable", field="tlp"
+	| thehivegetstats $$INSTANCE_ID$$
+	# This will recover statistics for all observables on the field tlp
+```
+```spl
+	| makeresults
+	| eval model="Procedure", field="tactic", _createdAt = "1672527600000 TO 1704150000000" 
+	| thehivegetstats $$INSTANCE_ID$$
+	# This will recover statistics for all TTPs on the field tactic that were identified in 2023
+```
+
+# Cortex
 
 ## cortexjobs
 
