@@ -57,7 +57,7 @@ Once the application is configured and the analyzers are loaded, you have severa
 
 ![Custom alert actions overview](./images/alert_actions.png)
 
-See the [Alert actions adaptative responses guide](https://github.com/LetMeR00t/TA-cortex/tree/main/docs/alert_actions_and_adaptive_responses.md).
+See the [Alert actions adaptative responses guide](./docs/alert_actions_and_adaptive_responses.md).
 
 ### Fields and datatypes
 
@@ -83,7 +83,7 @@ As mentionned, you can add custom field names linked to datatypes within TheHive
 
 ![Commands overview](./images/commands_overview.png)
 
-See the [Commands guide](https://github.com/LetMeR00t/TA-cortex/tree/main/docs/commands.md).
+See the [Commands guide](./docs/commands.md).
 
 ## Dashboards
 
