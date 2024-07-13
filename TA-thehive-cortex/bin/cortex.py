@@ -6,7 +6,7 @@ import cortex4py.exceptions
 from ta_logging import setup_logging
 import traceback
 import splunklib.client as client
-from common import Settings
+from common import LoggerFile, Settings
 
 # All available data types
 dataTypeList = [
@@ -34,27 +34,28 @@ colorCode = {
         "RED": 3
 }
 
-def initialize_cortex_instance(keywords, settings, logger_name="script"):
+def initialize_cortex_instance(keywords, settings, acronym, logger_name="script"):
     """ This function is used to initialize a Cortex instance """
-    logger = setup_logging(logger_name)
+    logger_file = LoggerFile(setup_logging(logger_name), acronym)
 
     # Check the existence of the instance_id
     if len(keywords) == 1:
         instance_id = keywords[0]
     else:
-        logger.error("[C1-ERROR] No instance ID was given to the script")
+        logger_file.error("[C1-ERROR] No instance ID was given to the script")
         exit(4)
 
-    return create_cortex_instance(instance_id, settings, logger)
+    return create_cortex_instance(instance_id, settings, logger_file)
 
-def create_cortex_instance(instance_id, settings, logger):
+def create_cortex_instance(instance_id, settings, logger, acronym):
+    logger_file = LoggerFile(logger, acronym)
     """ This function is used to create an instance of TheHive """
     # Initialize settings
     token = settings["sessionKey"] if "sessionKey" in settings else settings["session_key"]
     spl = client.connect(app="TA-thehive-cortex",owner="nobody",token=token)
-    logger.debug("[C5] Connection to Splunk done")
-    configuration = Settings(spl, settings, logger)
-    logger.debug("[C6] Settings recovered")
+    logger_file.debug(id="C5",message="Connection to Splunk done")
+    configuration = Settings(spl, settings, logger_file=logger_file)
+    logger_file.debug(id="C6",message="Settings recovered")
 
     defaults = {
         "MAX_JOBS_DEFAULT": configuration.getCortexJobsMax(),
@@ -73,44 +74,44 @@ def create_cortex_instance(instance_id, settings, logger):
     cortex = None
 
     if (cortex_authentication_type == "password"):
-        logger.error("[C7-ERROR] Cortex instance will be initialized with a password (not an API key) - This is not supported for Cortex")
+        logger_file.error(id="C7",message="Cortex instance will be initialized with a password (not an API key) - This is not supported for Cortex")
         sys.exit(7)
     elif (cortex_authentication_type == "api_key"):
-        logger.debug("[C8] Cortex instance will be initialized with an API Key (not a password)")
-        cortex = Cortex(url=cortex_url, apiKey=cortex_secret, sid=settings["sid"], proxies=cortex_proxies, verify=True, cert=cortex_cert, logger=logger)
+        logger_file.debug(id="C8",message="Cortex instance will be initialized with an API Key (not a password)")
+        cortex = Cortex(url=cortex_url, apiKey=cortex_secret, sid=settings["sid"], proxies=cortex_proxies, verify=True, cert=cortex_cert, logger=logger_file)
     else:
-        logger.error("[C9-ERROR] WRONG_AUTHENTICATION_TYPE - Authentication type is not one of the expected values (password or api_key), given value: "+cortex_authentication_type)
+        logger_file.error(id="C9",message="WRONG_AUTHENTICATION_TYPE - Authentication type is not one of the expected values (password or api_key), given value: "+cortex_authentication_type)
         sys.exit(20)
 
-    return (cortex, configuration, defaults, logger) 
+    return (cortex, configuration, defaults, logger_file) 
 
 
 class Cortex(Api):
     """ This class is used to represent a Cortex instance"""
 
-    def __init__(self, url = None, apiKey = None, sid = "", proxies = {}, cert = None , verify = True, logger = None):
-        self.logger = logger
+    def __init__(self, url = None, apiKey = None, sid = "", proxies = {}, cert = None , verify = True, logger_file = None):
+        self.logger_file = logger_file
         try :
             if apiKey is None:
-                self.logger.error("[C15-ERROR] API Key is null, this is the only way to connect to a Cortex instance")
+                self.logger_file.error(id="C15",message="API Key is null, this is the only way to connect to a Cortex instance")
                 sys.exit(15)
 
-            logger.debug('[C19] Cortex object will be instanciated with url "{0}"'.format(url))
+            self.logger_file.debug(id="C19",message=f"Cortex object will be instanciated with url '{url}'")
             super().__init__(str(url),str(apiKey),proxies=proxies,verify_cert=verify,cert=cert)
-            logger.debug("[C20] Cortex object instanciated")
+            self.logger_file.debug(id="C20",message="Cortex object instanciated")
 
             # Try to connect to the API by recovering all enabled analyzers
             self.analyzers.find_all({}, range='all')
 
-            self.logger.debug("[C21] Cortex API connection to (URL=\""+url+"\") is successful")
+            self.logger_file.debug(id="C21",message="Cortex API connection to (URL=\""+url+"\") is successful")
         except cortex4py.exceptions.NotFoundError as e:
-            self.logger.error("[C25-ERROR] RESOURCE NOT FOUND - Cortex service is unavailable, is the configuration correct ?")
+            self.logger_file.error(id="C25",message="RESOURCE NOT FOUND - Cortex service is unavailable, is the configuration correct ?")
             sys.exit(25)
         except cortex4py.exceptions.ServiceUnavailableError as e:
-            self.logger.error("[C26-ERROR] SERVICE UNAVAILABLE - Cortex service is unavailable, is the configuration correct ?")
+            self.logger_file.error(id="C26",message="SERVICE UNAVAILABLE - Cortex service is unavailable, is the configuration correct ?")
             sys.exit(26)
         except cortex4py.exceptions.AuthenticationError as e:
-            self.logger.error("[C27-ERROR] AUTHENTICATION ERROR - Credentials are invalid")
+            self.logger_file.error(id="C27",message="AUTHENTICATION ERROR - Credentials are invalid")
             sys.exit(27)
 
         self.__sid = sid
@@ -118,7 +119,7 @@ class Cortex(Api):
 
     def getJobs(self):
         """ This function returns all jobs to perform """
-        self.logger.debug("[C30] Getting jobs: "+str(self.__jobs))
+        self.logger_file.debug(id="C30",message="Getting jobs: "+str(self.__jobs))
         return self.__jobs
     
     def addJob(self, data, dataType, tlp=2, pap=2, analyzers="all"):
@@ -128,7 +129,7 @@ class Cortex(Api):
         if (dataType.lower() in dataTypeList):
             dataType = dataType.lower()
         else:
-            self.logger.error("[C35-ERROR] WRONG DATA TYPE - This data type ("+dataType+") is not allowed")
+            self.logger_file.error(id="C35",message="WRONG DATA TYPE - This data type ("+dataType+") is not allowed")
             sys.exit(35)
 
         analyzersObj = []
@@ -141,12 +142,12 @@ class Cortex(Api):
                 if a is not None:
                     analyzersObj.append(a)
                 else:
-                    self.logger.error("[C40-ERROR] ANALYZER NOT FOUND - This analyzer ("+analyzer+") doesn't exist")
+                    self.logger_file.error(id="C40",message="ANALYZER NOT FOUND - This analyzer ("+analyzer+") doesn't exist")
                     sys.exit(40)
-        self.logger.debug("[C41] Analyzers recovered: "+str(analyzersObj))
+        self.logger_file.debug(id="C41",message="Analyzers recovered: "+str(analyzersObj))
 
         job = CortexJob(data, dataType, tlp, pap, analyzersObj, self.logger)
-        self.logger.debug("[C42] Job instance created")
+        self.logger_file.debug(id="C42",message="Job instance created")
 
         self.__jobs.append(job)
 
@@ -158,11 +159,11 @@ class Cortex(Api):
                 job_json = job.jsonify()
                 job_json["message"] = "sid:"+self.__sid
                 for a in job.analyzers:
-                    self.logger.debug("[C45] JOB sent: "+str(job_json))
+                    self.logger_file.debug(id="C45",message="JOB sent: "+str(job_json))
                     results.append(self.analyzers.run_by_id(a.id, job_json, force=1))
             except Exception as e:
                 tb = traceback.format_exc()
-                self.logger.error("[C46-GENERIC-ERROR] "+str(e)+" - "+str(tb))
+                self.logger_file.error(id="C46",message=str(e)+" - "+str(tb))
                 sys.exit(46)
 
         self.__jobs = []
@@ -177,7 +178,7 @@ class CortexJob(object):
         if (dataType.lower() in dataTypeList):
             self.dataType = dataType.lower()
         else:
-            self.logger.error("[CJ-1] WRONG DATA TYPE - This data type ("+dataType+") is not allowed")
+            self.logger_file.error(id="CJ1",message="WRONG DATA TYPE - This data type ("+dataType+") is not allowed")
             sys.exit(1)
 
         self.tlp = tlp
@@ -185,10 +186,10 @@ class CortexJob(object):
 
         self.analyzers = analyzers
 
-        self.logger.debug('[CJ-5] ['+self.data+'] DataType: "'+self.dataType+'"')
-        self.logger.debug('[CJ-6] ['+self.data+'] TLP: "'+str(self.tlp)+'"')
-        self.logger.debug('[CJ-7] ['+self.data+'] PAP: "'+str(self.pap)+'"')
-        self.logger.debug("[CJ-8] ["+self.data+"] Analyzers "+str([a.name for a in self.analyzers]))
+        self.logger_file.debug(id="CJ5",message='['+self.data+'] DataType: '+self.dataType+'"')
+        self.logger_file.debug(id="CJ6",message='['+self.data+'] TLP: '+str(self.tlp)+'"')
+        self.logger_file.debug(id="CJ7",message='['+self.data+'] PAP: '+str(self.pap)+'"')
+        self.logger_file.debug(id="CJ8",message='['+self.data+'] Analyzers '+str([a.name for a in self.analyzers]))
 
     def jsonify(self):
         """ This function returns a JSONified version of the object (used by the Cortex API) """

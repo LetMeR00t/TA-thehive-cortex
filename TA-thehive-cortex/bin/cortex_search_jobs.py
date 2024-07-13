@@ -1,10 +1,10 @@
 # encoding = utf-8
 import ta_thehive_cortex_declare
-import splunklib.client as client
 from cortex import initialize_cortex_instance
 from cortex4py.query import And, Eq, In
 from copy import deepcopy
 import splunk.Intersplunk
+import globals
 
 # Global parameters
 FILTER_DATA_DEFAULT = ""
@@ -15,6 +15,8 @@ SORT_JOBS = None
 
 if __name__ == '__main__':
     
+    globals.initialize_globals()
+
     # First, parse the arguments
     # get the keywords and options passed to this command
     keywords, options = splunk.Intersplunk.getKeywordsAndOptions()
@@ -23,10 +25,10 @@ if __name__ == '__main__':
     results,dummyresults,settings = splunk.Intersplunk.getOrganizedResults()
 
     # Initialize this script and return a cortex instance object, a configuration object and defaults values
-    (cortex, configuration, defaults, logger) = initialize_cortex_instance(keywords, settings ,logger_name="cortex_search_jobs")
+    (cortex, configuration, defaults, logger_file) = initialize_cortex_instance(keywords, settings, acronym="CSJ", logger_name="cortex_search_jobs")
 
-    logger.debug("[CSJ-1] Input keywords: "+str(keywords))
-    logger.debug("[CSJ-2] Input results: "+str(results))
+    logger_file.debug(id="1",message="Input keywords: "+str(keywords))
+    logger_file.debug(id="2",message="Input results: "+str(results))
 
     outputResults = []
     # Prepare and get all jobs queries 
@@ -56,24 +58,24 @@ if __name__ == '__main__':
             query = And(*elements)
         elif len(elements)==1:
             query = elements[0]
-        logger.info("[CSJ-10] Query is: "+str(query))
+        logger_file.info(id="10",message="Query is: "+str(query))
     
         ## JOBS ##
         jobs = cortex.jobs.find_all(query ,range='0-'+maxJobs, sort=sortJobs)
 
         for job in jobs:
              result_copy = deepcopy(result)
-             logger.debug("[CSJ-15] Job details: "+str(job))
+             logger_file.debug(id="15",message="Job details: "+str(job))
 
              report = cortex.jobs.get_report(job.id)
 
-             logger.debug("[CSJ-16] Report details: \""+str(job.id)+"\": "+str(report))
+             logger_file.debug(id="16",message="Report details: \""+str(job.id)+"\": "+str(report))
     
              job_report = { "cortex_job_"+k:v for k,v in vars(report).items() if not k.startswith('_') }
 
              event = { "cortex_job_"+k:v for k,v in vars(job).items() if not k.startswith('_') }
 
-             logger.debug("[CSJ-20] Event before post processing: "+str(event))
+             logger_file.debug(id="20",message="Event before post processing: "+str(event))
              
              # Post processing for Splunk
              ## REPORT ##
@@ -90,7 +92,7 @@ if __name__ == '__main__':
              event["cortex_job_createdAt"] = event["cortex_job_createdAt"]/1000
              event["cortex_job_updatedAt"] = event["cortex_job_updatedAt"]/1000
 
-             logger.debug("[CSJ-25] Event after post processing: "+str(event))
+             logger_file.debug(id="25",message="Event after post processing: "+str(event))
 
              result_copy.update(event)
              outputResults.append(deepcopy(result_copy))

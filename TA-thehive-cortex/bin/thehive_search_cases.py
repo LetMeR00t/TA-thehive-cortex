@@ -6,6 +6,7 @@ from thehive4py.query.sort import Asc, Desc
 from thehive4py.query.page import Paginate
 from copy import deepcopy
 import time
+import globals
 
 # Global variables
 FILTER_KEYWORD_DEFAULT = "*"
@@ -18,6 +19,8 @@ FILTER_DATE_DEFAULT = "* TO *"
 
 if __name__ == '__main__':
     
+    globals.initialize_globals()
+
     # First, parse the arguments
     # get the keywords and options passed to this command
     keywords, options = splunk.Intersplunk.getKeywordsAndOptions()
@@ -26,15 +29,15 @@ if __name__ == '__main__':
     results,dummyresults,settings = splunk.Intersplunk.getOrganizedResults()
 
     # Initialize this script and return a thehive instance object, a configuration object and defaults values
-    instances = initialize_thehive_instances(keywords, settings ,logger_name="thehive_search_cases")
+    instances = initialize_thehive_instances(keywords, settings, acronym="THSC", logger_name="thehive_search_cases")
 
     outputResults = []
 
-    for (thehive, configuration, defaults, logger, instance_id) in instances:
+    for (thehive, configuration, defaults, logger_file, instance_id) in instances:
 
-        logger.debug("[THSC-1] Input keywords: "+str(keywords))
-        logger.debug("[THSC-2] Input results: "+str(results))
-        logger.info("[THSC-3] Start processing with the instance: "+str(instance_id))
+        logger_file.debug(id="1",message="Input keywords: "+str(keywords))
+        logger_file.debug(id="2",message="Input results: "+str(results))
+        logger_file.info(id="3",message="Start processing with the instance: "+str(instance_id))
 
         # Prepare and get all cases queries 
         for result in results:
@@ -54,7 +57,7 @@ if __name__ == '__main__':
             if type(sortCases) not in [Asc,Desc]:
                 sortCases = Desc(sortCases[1:]) if sortCases[0] == "-" else Asc(sortCases)
 
-            logger.debug("[THSC-5] Filters are: filterKeyword: "+filterKeyword+", filterStatus: "+filterStatus+", filterSeverity: "+filterSeverity+", filterTags: "+filterTags+", filterTitle: "+filterTitle+", filterAssignee: "+filterAssignee+", filterDate: "+filterDate+", max_cases: "+str(paginate)+", sort_cases: "+str(sortCases))
+            logger_file.debug(id="5",message="Filters are: filterKeyword: "+filterKeyword+", filterStatus: "+filterStatus+", filterSeverity: "+filterSeverity+", filterTags: "+filterTags+", filterTitle: "+filterTitle+", filterAssignee: "+filterAssignee+", filterDate: "+filterDate+", max_cases: "+str(paginate)+", sort_cases: "+str(sortCases))
 
             # Format the query
             filters = {}
@@ -96,28 +99,28 @@ if __name__ == '__main__':
                 f = Between("startDate",d1,d2)
                 filters = f if filters == {} else f&filters
 
-            logger.info("[THSC-15] Query is: "+str(filters))
+            logger_file.debug(id="15",message="Query is: "+str(filters))
         
             ## CASES ##
             # Get cases using the query
             cases = thehive.case.find(filters=filters, sortby=sortCases, paginate=paginate)
 
             for case in cases:
-                logger.debug("[THSC-25] Getting this case: "+str(case))
+                logger_file.debug(id="25",message="Getting this case: "+str(case))
                 result_copy = deepcopy(result)
 
-                logger.debug("[THSC-26] Get case ID \""+str(case["_id"])+"\"")
+                logger_file.debug(id="26",message="Get case ID \""+str(case["_id"])+"\"")
 
                 # Remove double underscore due to private data in the response
                 event = {("thehive_case_"+k).replace("__","_"):v for k,v in case.items()}
 
-                logger.debug("[THSC-30] Event before post processing: "+str(event))
+                logger_file.debug(id="30",message="Event before post processing: "+str(event))
                 
                 # Post processing for Splunk
                 ## CUSTOM FIELDS ##
                 if "thehive_case_customFields" in event and event["thehive_case_customFields"] != []:
                     customFields = []
-                    logger.debug("[THSC-31] Found custom fields: "+str(event["thehive_case_customFields"]))
+                    logger_file.debug(id="31",message="Found custom fields: "+str(event["thehive_case_customFields"]))
                     for cf in event["thehive_case_customFields"]:
                         cftype = cf["type"]
                         if cftype=="date":
@@ -127,7 +130,7 @@ if __name__ == '__main__':
                                 cf["value"] = "None"
                         customFields.append(cf["name"]+"::"+str(cf["value"]))
                     event["thehive_case_customFields"] = customFields
-                    logger.debug("[THSC-35] TheHive - Custom fields: "+str(customFields))
+                    logger_file.debug(id="35",message="TheHive - Custom fields: "+str(customFields))
 
                 ## DATES ##
                 event["thehive_case_startDate"] = event["thehive_case_startDate"]/1000
@@ -146,21 +149,22 @@ if __name__ == '__main__':
                     else:
                         tasks_statuses[task["status"]] = 1
                 event["thehive_case_tasks"] = [k+":"+str(v) for k,v in tasks_statuses.items()]
-                logger.debug("[THSC-40] TheHive - Tasks: "+str(event["thehive_case_tasks"]))
+                logger_file.debug(id="40",message="TheHive - Tasks: "+str(event["thehive_case_tasks"]))
 
                 ## OBSERVABLES ##
                 observables = thehive.case.find_observables(case["_id"])
                 event["thehive_case_observables"] = [str(o) for o in observables]
-                logger.debug("[THSC-45] thehive - observables: "+str(len(event["thehive_case_observables"]))) 
+                logger_file.debug(id="45",message="thehive - observables: "+str(len(event["thehive_case_observables"]))) 
 
                 ## TTPS ##
                 ttps = thehive.case.find_procedures(case["_id"])
                 event["thehive_case_ttps"] = [str(ttp) for ttp in ttps]
-                logger.debug("[THSC-46] thehive - ttps: "+str(len(event["thehive_case_ttps"]))) 
+                logger_file.debug(id="46",message="thehive - ttps: "+str(len(event["thehive_case_ttps"]))) 
 
-                logger.debug("[THSC-47] Event after post processing: "+str(event))
+                logger_file.debug(id="47",message="Event after post processing: "+str(event))
             
                 result_copy.update(event)
+                result_copy["thehive_instance_id"] = instance_id
                 outputResults.append(deepcopy(result_copy))
 
     splunk.Intersplunk.outputResults(outputResults)

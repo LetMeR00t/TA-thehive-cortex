@@ -5,7 +5,7 @@ from thehive4py.query.sort import Asc, Desc
 from thehive4py.query import Eq, Like, Between
 from thehive4py.query.page import Paginate
 from copy import deepcopy
-import json
+import globals
 import time
 
 # Global variables
@@ -19,6 +19,8 @@ FILTER_DATE_DEFAULT = "* TO *"
 
 if __name__ == '__main__':
     
+    globals.initialize_globals()
+
     # First, parse the arguments
     # get the keywords and options passed to this command
     keywords, options = splunk.Intersplunk.getKeywordsAndOptions()
@@ -27,15 +29,15 @@ if __name__ == '__main__':
     results,dummyresults,settings = splunk.Intersplunk.getOrganizedResults()
 
     # Initialize this script and return a thehive instance object, a configuration object and defaults values
-    instances = initialize_thehive_instances(keywords, settings ,logger_name="thehive_search_alerts")
+    instances = initialize_thehive_instances(keywords, settings, acronym="THSA", logger_name="thehive_search_alerts")
 
     outputResults = []
 
-    for (thehive, configuration, defaults, logger, instance_id) in instances:
+    for (thehive, configuration, defaults, logger_file, instance_id) in instances:
 
-        logger.debug("[THSA-1] Input keywords: "+str(keywords))
-        logger.debug("[THSA-2] Input results: "+str(results))
-        logger.info("[THSA-3] Start processing with the instance: "+str(instance_id))
+        logger_file.debug(id="1",message="Input keywords: "+str(keywords))
+        logger_file.debug(id="2",message="Input results: "+str(results))
+        logger_file.info(id="3",message="Start processing with the instance: "+str(instance_id))
 
         # Prepare and get all alerts queries 
         for result in results:
@@ -55,7 +57,7 @@ if __name__ == '__main__':
             if type(sortAlerts) not in [Asc,Desc]:
                 sortAlerts = Desc(sortAlerts[1:]) if sortAlerts[0] == "-" else Asc(sortAlerts)
 
-            logger.debug("[THSA-5] Filters are: filterType: "+filterType+", filterSeverity: "+filterSeverity+", filterTags: "+filterTags+", filterTitle: "+filterTitle+", filterRead: "+filterRead+", filterSource: "+filterSource+", filterDate: "+filterDate+", max_alerts: "+str(maxAlerts)+", sort_alerts: "+str(sortAlerts))
+            logger_file.debug(id="5",message="Filters are: filterType: "+filterType+", filterSeverity: "+filterSeverity+", filterTags: "+filterTags+", filterTitle: "+filterTitle+", filterRead: "+filterRead+", filterSource: "+filterSource+", filterDate: "+filterDate+", max_alerts: "+str(maxAlerts)+", sort_alerts: "+str(sortAlerts))
 
             # Format the query
             filters = {}
@@ -98,27 +100,27 @@ if __name__ == '__main__':
                 f = Between("date",d1,d2)
                 filters = f if filters == {} else f&filters
 
-            logger.info("[THSA-15] Query is: "+str(filters))
+            logger_file.debug(id="15",message="Query is: "+str(filters))
         
             ## ALERTS ##
             # Get alerts using the query
             alerts = thehive.alert.find(filters=filters, sortby=sortAlerts, paginate=paginate)
 
             for alert in alerts:
-                logger.debug("[THSA-25] Getting this alert: "+str(alert))
+                logger_file.debug(id="25",message="Getting this alert: "+str(alert))
                 result_copy = deepcopy(result)
 
-                logger.debug("[THSA-26] Get alert ID \""+str(alert["_id"])+"\"")
+                logger_file.debug(id="26",message="Get alert ID \""+str(alert["_id"])+"\"")
 
                 # Remove double underscore due to private data in the response
                 event = {("thehive_alert_"+k).replace("__","_"):v for k,v in alert.items()}
 
-                logger.debug("[THSA-30] Event before post processing: "+str(event))
+                logger_file.debug(id="30",message="Event before post processing: "+str(event))
                 
                 ## CUSTOM FIELDS ##
                 if "thehive_alert_customFields" in event and event["thehive_alert_customFields"] != []:
                     customFields = []
-                    logger.debug("[THSA-31] Found custom fields: "+str(event["thehive_alert_customFields"]))
+                    logger_file.debug(id="31",message="Found custom fields: "+str(event["thehive_alert_customFields"]))
                     for cf in event["thehive_alert_customFields"]:
                         cftype = cf["type"]
                         if cftype=="date":
@@ -128,7 +130,7 @@ if __name__ == '__main__':
                                 cf["value"] = "None"
                         customFields.append(cf["name"]+"::"+str(cf["value"]))
                     event["thehive_alert_customFields"] = customFields
-                    logger.debug("[THSA-35] TheHive - Custom fields: "+str(customFields))
+                    logger_file.debug(id="35",message="TheHive - Custom fields: "+str(customFields))
 
                 ## DATES ##
                 event["thehive_alert_date"] = event["thehive_alert_date"]/1000
@@ -141,17 +143,18 @@ if __name__ == '__main__':
                 ## OBSERVABLES ##
                 observables = thehive.alert.find_observables(alert["_id"])
                 event["thehive_alert_observables"] = [str(o) for o in observables]
-                logger.debug("[THSC-45] thehive - observables: "+str(len(event["thehive_alert_observables"]))) 
+                logger_file.debug(id="45",message="thehive - observables: "+str(len(event["thehive_alert_observables"]))) 
 
                 ## TTPS ##
                 ttps = thehive.alert.find_procedures(alert["_id"])
                 event["thehive_alert_ttps"] = [str(ttp) for ttp in ttps]
-                logger.debug("[THSC-46] thehive - ttps: "+str(len(event["thehive_alert_ttps"]))) 
+                logger_file.debug(id="46",message="thehive - ttps: "+str(len(event["thehive_alert_ttps"]))) 
 
 
-                logger.debug("[THSA-46] Event after post processing: "+str(event))
+                logger_file.debug(id="50",message="Event after post processing: "+str(event))
             
                 result_copy.update(event)
+                result_copy["thehive_instance_id"] = instance_id
                 outputResults.append(deepcopy(result_copy))
 
     splunk.Intersplunk.outputResults(outputResults)

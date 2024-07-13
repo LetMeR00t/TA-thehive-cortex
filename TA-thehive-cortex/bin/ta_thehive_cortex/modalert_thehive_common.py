@@ -19,7 +19,6 @@ from thehive import TheHive
 from thehive4py.types.observable import InputObservable
 from thehive4py.types.custom_field import InputCustomField
 from thehive4py.types.procedure import InputProcedure
-from common import Settings
 
 __author__ = "Alexandre Demeyer"
 __maintainer__ = "Alexandre Demeyer"
@@ -90,7 +89,7 @@ dataTypeList = [
 ]
 
 
-def create_datatype_lookup(helper, thehive):
+def create_datatype_lookup(thehive: TheHive):
     """ This function is used to create a datatype lookup if it doesn't exist """
 
     dataType_dict = dict()
@@ -106,7 +105,7 @@ def create_datatype_lookup(helper, thehive):
 
         # Get the list of datatypes from TheHive itself
         th_datatypes = thehive.observable_type.list()
-        helper.log_debug("[CAA-THC-2] Datatypes recovered from TheHive: " + str(th_datatypes))
+        thehive.logger_file.debug(id="THC-2",message="Datatypes recovered from TheHive: " + str(th_datatypes))
 
         # Parse the response
         for dt in th_datatypes:
@@ -122,18 +121,18 @@ def create_datatype_lookup(helper, thehive):
                 for observable in observables:
                     csv_writer.writerow(observable)
         except IOError:
-            helper.log_error("[CAA-THC-5-ERROR] FATAL {} could not be opened in write mode".format(th_dt_filename))
+            thehive.logger_file.error(id="THC-5",message="FATAL {} could not be opened in write mode".format(th_dt_filename))
 
     return dataType_dict    
 
-def get_datatype_dict(helper, thehive):
+def get_datatype_dict(thehive: TheHive):
     """ This function is used to recover information from a lookup that contain datatypes """
 
     dataType_dict = dict()
     _SPLUNK_PATH = os.environ['SPLUNK_HOME']
     directory = os.path.join(_SPLUNK_PATH, 'etc', 'apps', "TA-thehive-cortex", 'lookups')
     th_dt_filename = os.path.join(directory, 'thehive_datatypes.csv')
-    helper.log_debug("[CAA-THC-10] Directory found: " + str(directory))
+    thehive.logger_file.debug(id="THC-10",message="Directory found: " + str(directory))
 
     if os.path.exists(th_dt_filename):
         try:
@@ -150,11 +149,11 @@ def get_datatype_dict(helper, thehive):
                     if 'field_name' in row and 'field_type' in row:
                         if row['field_type'] == 'observable':
                             dataType_dict[row['field_name']] = row['datatype']
-                helper.log_debug("[CAA-THC-15] dataType_dict built from thehive_datatypes.csv")
+                thehive.logger_file.debug(id="THC-15",message="dataType_dict built from thehive_datatypes.csv")
             except IOError:  # file thehive_datatypes.csv not readable
-                helper.log_error('[CAA-THC-16-ERROR] file {} empty, malformed or not readable'.format(th_dt_filename))
+                thehive.logger_file.error(id="THC-16",message=f"file {th_dt_filename} empty, malformed or not readable")
     else:
-        dataType_dict = create_datatype_lookup(helper, thehive)
+        dataType_dict = create_datatype_lookup(thehive)
     return dataType_dict
 
 def extract_field(row, field):
@@ -173,7 +172,7 @@ def parse_events(helper, thehive: TheHive, alert_args):
     # iterate through each row, cleaning multivalue fields
     # and then adding the attributes under same alert key
     # this builds the dict parsed_events
-    data_type = get_datatype_dict(helper, thehive)
+    data_type = get_datatype_dict(thehive)
     custom_fields = {cf["name"]:cf for cf in thehive.custom_field.list()}
     alert_reference_time = str(int(time.time()))
     parsed_events = dict()
@@ -183,21 +182,20 @@ def parse_events(helper, thehive: TheHive, alert_args):
         # Initialize values
         observables = []
         ttps = []
-        observableMessage = ''
         customFields = []
         events = []
         alert = dict()
 
         # Splunk makes a bunch of dumb empty multivalue fields
         # replace value by multivalue if required
-        helper.log_debug("[CAA-THC-61] Row before pre-processing: " + str(row))
+        thehive.logger_file.debug(id="THC-61",message="Row before pre-processing: " + str(row))
         for key, value in row.items():
             if not key.startswith("__mv_") and "__mv_" + key in row and row["__mv_" + key] not in [None, '']:
                 row[key] = [e[1:len(e) - 1] for e in row["__mv_" + key].split(";")]
         # we filter those out here
         row = {key: value for key, value in row.items() if not key.startswith("__mv_") and key not in ["rid"]}
         row_sanitized = row.copy()
-        helper.log_debug("[CAA-THC-62] Row after pre-processing: " + str(row))
+        thehive.logger_file.debug(id="THC-62",message="Row after pre-processing: " + str(row))
 
         sourceRef = ""
         # Define thehive alert unique ID (if duplicated, alert creations fails)
@@ -220,10 +218,10 @@ def parse_events(helper, thehive: TheHive, alert_args):
 
         # Check if sourceRef is not too long, otherwise cut to 127 characters
         if len(sourceRef)>128:
-            helper.log_debug("[CAA-THC-63] original sourceRef: {} was cut as it was a string too long (max 128 char).".format(sourceRef))
+            thehive.logger_file.debug(id="THC-63",message="original sourceRef: {} was cut as it was a string too long (max 128 char).".format(sourceRef))
             sourceRef = sourceRef[0:127]
 
-        helper.log_debug("[CAA-THC-64] sourceRef: {} ".format(sourceRef))
+        thehive.logger_file.debug(id="THC-64",message="sourceRef: {} ".format(sourceRef))
 
         # check if observables have been stored for this sourceRef.
         # If yes, retrieve them to add new ones from this row
@@ -305,14 +303,14 @@ def parse_events(helper, thehive: TheHive, alert_args):
         if alert_args['timestamp'] in row:
             del row_sanitized[alert_args['timestamp']]
             newTimestamp = str(int(float(row.pop(alert_args['timestamp']))))
-            helper.log_debug("[CAA-THC-80] new Timestamp from row: {} ".format(newTimestamp))
+            thehive.logger_file.debug(id="THC-80",message="new Timestamp from row: {} ".format(newTimestamp))
             epoch10 = re.match("^[0-9]{10}$", newTimestamp)
             epoch13 = re.match("^[0-9]{13}$", newTimestamp)
             if epoch13 is not None:
                 alert['timestamp'] = int(float(newTimestamp))
             elif epoch10 is not None:
                 alert['timestamp'] = int(float(newTimestamp)) * 1000
-            helper.log_debug("[CAA-THC-85] alert timestamp: {} ".format(alert['timestamp']))
+            thehive.logger_file.debug(id="THC-85",message="alert timestamp: {} ".format(alert['timestamp']))
         else:
             alert['timestamp'] = alert_args['timestamp']
 
@@ -320,9 +318,9 @@ def parse_events(helper, thehive: TheHive, alert_args):
         # now we take those KV pairs to add to dict
         for key, value in row.items():
             if value != "":
-                helper.log_debug('[CAA-THC-90] field to process: {}'.format(key))
+                thehive.logger_file.debug(id="THC-90",message=f"field to process: {key}")
                 if ':' in key:
-                    helper.log_debug('[CAA-THC-91] composite fieldvalue detected: {}'.format(key))
+                    thehive.logger_file.debug(id="THC-91",message=f"composite fieldvalue detected: {key}")
                     del row_sanitized[key]
                     # Extract information
                     compositekey = key.split(':', 1)
@@ -337,12 +335,12 @@ def parse_events(helper, thehive: TheHive, alert_args):
                         else:
                             observables_data[mainkey][subkey] = value
                             observables_data[mainkey]["datatype"] = observable_datatype
-                        helper.log_debug('[CAA-THC-92] field: {} enriched with the information {} set to '.format(mainkey,subkey,value))
+                        thehive.logger_file.debug(id="THC-92",message="field: {} enriched with the information {} set to ".format(mainkey,subkey,value))
                 elif key in data_type:
                     # Check if observables must be kept in the sanitized results or not
                     if not alert_args["description_results_keep_observable"]:
                         del row_sanitized[key]
-                    helper.log_debug('[CAA-THC-95] key is an observable: {} '.format(key))
+                    thehive.logger_file.debug(id="THC-95",message="key is an observable: {} ".format(key))
                     # Given value of the row is the value of the datatype
                     observable_datatype = data_type[key]
                     if key not in observables_data:
@@ -353,7 +351,7 @@ def parse_events(helper, thehive: TheHive, alert_args):
                 elif key in custom_fields:
                     del row_sanitized[key]
                     custom_type = custom_fields[key]["type"]
-                    helper.log_debug('[CAA-THC-96] key is a custom field: {}, with type {} '.format(key,custom_type))
+                    thehive.logger_file.debug(id="THC-96",message="key is a custom field: {}, with type {} ".format(key,custom_type))
                     custom_field_check = False
                     custom_field = {"name": key}
                     if custom_type == 'string':
@@ -407,15 +405,15 @@ def parse_events(helper, thehive: TheHive, alert_args):
                         new_ttp = {"tactic": values[0], "patternId": values[1], "occurDate": values[2]}
                         if new_ttp not in ttps:
                             ttps.append(new_ttp)
-                            helper.log_debug('[CAA-THC-108] ttp was parsed correctly and added to the alert: {}'.format(value))
+                            thehive.logger_file.debug(id="THC-108",message="ttp was parsed correctly and added to the alert: {}".format(value))
                         else:
-                            helper.log_debug('[CAA-THC-109] ttp already exist, ignoring duplicates: {}'.format(value))
+                            thehive.logger_file.debug(id="THC-109",message="ttp already exist, ignoring duplicates: {}".format(value))
                     else:
                         helper.error('[CAA-THC-110-ERROR] ttp field was detected but malformed, expected one value with the pattern \"tactic::patternId::occurDate\" with occurDate as \"YYYY-mm-dd\", got: {}'.format(value))
                 elif alert_args['scope'] is False:
                     # If the key wasn't removed, consider this as an other observable
                     if key in row_sanitized:
-                        helper.log_debug('[CAA-THC-105] key is added as another observable (scope is False): {}'.format(key))
+                        thehive.logger_file.debug(id="THC-105",message="key is added as another observable (scope is False): {}".format(key))
                         # As we are taking a field as an "other" datatype, we build the value differently
                         if key not in observables_data:
                             observables_data[key] = {"value": key+":"+value, "datatype": "other", "tags": "value:"+value}
@@ -424,12 +422,12 @@ def parse_events(helper, thehive: TheHive, alert_args):
                             observables_data[key]["datatype"] = "other"
                             observables_data[key]["tags"] = "value:"+value
                     else:
-                        helper.log_warn('[CAA-THC-106] key is used by TheHive as an internal field (scope is False): {}. Key ignored to be added as an \"other\" observable.'.format(key))
+                        thehive.logger_file.warning(id="THC-106",message="key is used by TheHive as an internal field (scope is False): {}. Key ignored to be added as an \"other\" observable.".format(key))
 
         # Process all observables
         if len(observables_data) > 0:
             for field, data in observables_data.items():
-                helper.log_debug("[CAA-THC-111] Processing observable data: {} ({})".format(field, observables_data[field]))
+                thehive.logger_file.debug(id="THC-111",message="Processing observable data: {} ({})".format(field, observables_data[field]))
                 obs_datatype = data["datatype"] if "datatype" in data else "other"
                 # Test if the observable has at least its value
                 if "value" in data:
@@ -461,14 +459,14 @@ def parse_events(helper, thehive: TheHive, alert_args):
                         observables.append(observable)
                 
                 else:
-                    helper.log_warn("[CAA-THC-113] Observable '{0}' doesn't have any value set (no field '{0}' or '{0}:value' was detected), ignored.".format(field))
+                    thehive.logger_file.warning(id="THC-113",message="Observable '{0}' doesn't have any value set (no field '{0}' or '{0}:value' was detected), ignored.".format(field))
 
         if observables:
             alert['observables'] = [InputObservable(o) for o in observables]
-            helper.log_debug("[CAA-THC-115] observables found for an alert: " + str(observables))
+            thehive.logger_file.debug(id="THC-115",message="observables found for an alert: " + str(observables))
         else:
             alert['observables'] = []
-            helper.log_debug("[CAA-THC-116] No observable found for an alert: " + str(alert))
+            thehive.logger_file.debug(id="THC-116",message="No observable found for an alert: " + str(alert))
 
         # Process customFields
         alert['customFields'] = [InputCustomField(cf) for cf in customFields]
@@ -516,7 +514,7 @@ def parse_events(helper, thehive: TheHive, alert_args):
                         if k in event:
                             del event[k]
 
-            helper.log_debug("[CAA-THC-77] Append results to description as markdown table")
+            thehive.logger_file.debug(id="THC-77",message="Append results to description as markdown table")
             parsed_events[sourceRef]['description'] += "\r\n\r\n-----\r\nRaw events:\r\n\r\n"+Tomark.table(parsed_events[sourceRef]["events"])
 
         # Remove events
