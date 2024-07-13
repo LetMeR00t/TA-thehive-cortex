@@ -20,6 +20,7 @@ param.source = <string> Source.  It's default value is splunk.
 param.timestamp_field = <string> Timestamp field.
 param.title = <string> Title. It's a required parameter. It's default value is $name$.
 param.description = <string> Description.  It's default value is Create an alert entry in TheHive with all fields attached as observable.
+param.dashboard = <string> Dashboard after drilldown from TheHive. You can specify a dashboard name to drilldown on it.
 param.tags = <string> Tags.
 param.scope = <list> Scope. It's a required parameter. It's default value is 0.
 param.severity = <list> Severity. It's a required parameter. It's default value is 3.

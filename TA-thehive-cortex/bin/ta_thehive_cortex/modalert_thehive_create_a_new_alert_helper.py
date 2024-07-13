@@ -148,20 +148,7 @@ def process_event(helper, *args, **kwargs):
         if epoch10 is not None:
             alert_args['timestamp'] = int(alert_args['timestamp']) * 1000
 
-    alert_args["title"] = helper.get_param("title") if helper.get_param("title") else None
-    alert_args["description"] = helper.get_param("description") if helper.get_param("description") else "No description provided"
-    alert_args["tags"] = list(dict.fromkeys(helper.get_param("tags").split(","))) if helper.get_param("tags") else []
-    helper.log_debug("[CAA-THCA-50] scope: {} ".format(helper.get_param("scope")))
-    alert_args["scope"] = True if int(helper.get_param("scope")) == 0 else False
-    # Get numeric values from alert form
-    alert_args["severity"] = int(helper.get_param("severity")) if helper.get_param("severity") is not None else 2
-    alert_args["tlp"] = int(helper.get_param("tlp")) if helper.get_param("tlp") is not None else 2
-    alert_args["pap"] = int(helper.get_param("pap")) if helper.get_param("pap") is not None else 2
-    alert_args["splunk_es_alerts_index"] = helper.get_global_setting("splunk_es_alerts_index") if helper.get_global_setting("splunk_es_alerts_index") is not None else "summary"
-    alert_args["description_results_enable"] = True if int(helper.get_param("description_results_enable")) == 1 else False
-    alert_args["description_results_keep_observable"] = True if int(helper.get_param("description_results_keep_observable")) == 1 else False
-    alert_args["attach_results"] = int(helper.get_param("attach_results"))
-    helper.log_debug("[CAA-THCA-55] Arguments recovered: " + str(alert_args))
+        alert_args["dashboard"] = helper.get_param("dashboard") if helper.get_param("dashboard") else None
 
     # Create the alert
     helper.log_info("[CAA-THCA-56] Configuration is ready. Creating the alert...")
@@ -178,6 +165,17 @@ def create_alert(helper, thehive: TheHive, alert_args):
  
     # Parse events
     alerts = parse_events(helper, thehive, alert_args)
+
+    # Build the external link
+    external_link = helper.settings["results_link"]
+    if alert_args["dashboard"] is not None:
+        results = re.match(r'^(http[s]+:\/\/[^:]+(?::\d+)\/[^\/]+)', external_link)
+        if results:
+            external_link = f"{results.group(1)}/{alert_args['dashboard']}"
+        else:
+             thehive.logger_file.warning(id="1",message="Cannot determine external link url={}, results_link={}"
+                .format(thehive.session.hive_url, str(external_link))
+            )
 
     # actually send the request to create the alert; fail gracefully
     for srcRef in alerts.keys():
@@ -196,7 +194,7 @@ def create_alert(helper, thehive: TheHive, alert_args):
             source=alert_args['source'],
             caseTemplate=alert_args['caseTemplate'],
             sourceRef=srcRef,
-            externalLink=helper.settings["results_link"]
+            externalLink=external_link
         )
 
         helper.log_debug("[CAA-THCA-120] Processing alert: " + str(alert))
