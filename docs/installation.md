@@ -57,7 +57,7 @@ Once you've done that, you can configure all your instances. An instance is an e
 
 > **Note**: Protocol used by default is HTTPS and can't be modified. Moreover, the certificate verification is mandatory and set to True (below screenshot is not up to date). If you use an HTTPS connection with a self-signed certificate of a custom certificate authority, you must add your trusted certificate to the "certifi" library. To do so, append your certificate under "\$APP_FOLDER\$/bin/ta_thehive_cortex/aob_py3/certifi/cacert.pem"
 
-![Instances add](images/instances_add.png)
+![Instances add](../images/instances_add.png)
 *This image shows the addition of a new instance (partially filled fields) by specifying an account name defined beforehand.*
 
 On the above example, you can see a list of defined instances:
@@ -74,7 +74,7 @@ By default, all logging files are created under `$SPLUNK_HOME/var/log/splunk/`
 
 You will be able to have these logs in your search.log too.
 
-![Audit logs](images/audit_logs.png)
+![Audit logs](../images/audit_logs.png)
 
 ## Refreshing the available analyzers
 
@@ -82,7 +82,7 @@ Once you've configured your Cortex instance, the list of analyzers will be loade
 Analyzers must be refreshed using the related dashboard by using the "REFRESH" mode.
 Once you've refreshed your analyzers, they will be available in the Cortex dashboard in order to create new jobs.
 
-![Analyzers](images/analyzers.png)
+![Analyzers](../images/analyzers.png)
 
 **Note**: Only enabled analyzers will be loaded
 
