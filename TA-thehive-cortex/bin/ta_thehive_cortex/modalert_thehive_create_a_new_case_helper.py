@@ -57,7 +57,7 @@ def process_event(helper, *args, **kwargs):
                 alert_args['timestamp'] = int(alert_args['timestamp']) * 1000
 
         alert_args["title"] = helper.get_param("title") if helper.get_param("title") else None
-        alert_args["description"] = helper.get_param("description") if helper.get_param("description") else "No description provided"
+        alert_args["description"] = helper.get_param("description").replace("\\n","\n").replace("\\r","\r") if helper.get_param("description") else "No description provided"
         alert_args["tags"] = list(dict.fromkeys(helper.get_param("tags").split(","))) if helper.get_param("tags") else []
         logger_file.debug(id="50",message="scope: {} ".format(helper.get_param("scope")))
         alert_args["scope"] = True if int(helper.get_param("scope")) == 0 else False
