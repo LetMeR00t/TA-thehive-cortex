@@ -49,9 +49,9 @@
           <query>(index=_* OR index=cim_*) sourcetype="modular_alerts:thehive_*"
 | rex field=_raw " (?&lt;type&gt;\w+) pid\=.*\| (?&lt;signature2&gt;.*)"
 | eval signature = coalesce(signature,signature2)
-| table _time, sourcetype, sid, type, signature
+| table _time, sourcetype, pid, type, signature
 | sort 0 -_time
-| rename sid as SID, type as "Type", signature as "Message"</query>
+| rename pid as PID, type as "Type", signature as "Message"</query>
           <earliest>$time.earliest$</earliest>
           <latest>$time.latest$</latest>
           <sampleRatio>1</sampleRatio>
@@ -60,6 +60,7 @@
         <option name="dataOverlayMode">none</option>
         <option name="drilldown">none</option>
         <option name="percentagesRow">false</option>
+        <option name="refresh.display">progressbar</option>
         <option name="rowNumbers">false</option>
         <option name="totalsRow">false</option>
         <option name="wrap">true</option>
@@ -67,6 +68,14 @@
           <colorPalette type="map">{"DEBUG":#602CA1,"INFO":#0099E0,"WARNING":#CBA700,"ERROR":#D41F1F}</colorPalette>
         </format>
         <format type="color" field="SID">
+          <colorPalette type="sharedList"></colorPalette>
+          <scale type="sharedCategory"></scale>
+        </format>
+        <format type="color" field="sourcetype">
+          <colorPalette type="sharedList"></colorPalette>
+          <scale type="sharedCategory"></scale>
+        </format>
+        <format type="color" field="PID">
           <colorPalette type="sharedList"></colorPalette>
           <scale type="sharedCategory"></scale>
         </format>
@@ -80,10 +89,10 @@
         <search>
           <query>(index=_* OR index=cim_*) (source="*command_thehive_*.log" OR source="*command_cortex_*.log")
 | rex field=_raw " (?&lt;type&gt;\w+)\t(?&lt;location&gt;[^\-]+) \- (?&lt;signature&gt;.*)"
-| eval signature = coalesce(signature,_raw)
-| table _time, type, location, signature
+| eval signature = coalesce(signature,_raw), source = mvindex(split(source,"\\"),-1)
+| table _time, source, type, location, signature
 | sort 0 -_time
-| rename type as "Type", location as "Location", signature as "Message"</query>
+| rename source as "Source", type as "Type", location as "Location", signature as "Message"</query>
           <earliest>$time.earliest$</earliest>
           <latest>$time.latest$</latest>
           <sampleRatio>1</sampleRatio>
@@ -92,6 +101,7 @@
         <option name="dataOverlayMode">none</option>
         <option name="drilldown">none</option>
         <option name="percentagesRow">false</option>
+        <option name="refresh.display">progressbar</option>
         <option name="rowNumbers">false</option>
         <option name="totalsRow">false</option>
         <option name="wrap">true</option>
@@ -99,6 +109,10 @@
           <colorPalette type="map">{"DEBUG":#602CA1,"INFO":#0099E0,"WARNING":#CBA700,"ERROR":#D41F1F}</colorPalette>
         </format>
         <format type="color" field="SID">
+          <colorPalette type="sharedList"></colorPalette>
+          <scale type="sharedCategory"></scale>
+        </format>
+        <format type="color" field="Source">
           <colorPalette type="sharedList"></colorPalette>
           <scale type="sharedCategory"></scale>
         </format>

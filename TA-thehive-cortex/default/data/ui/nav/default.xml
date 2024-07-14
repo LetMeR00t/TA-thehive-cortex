@@ -2,6 +2,7 @@
   <collection label="TheHive">
     <view name="cases" default='true'/>
     <view name="thehive_alerts" />
+    <view name="thehive_statistics" />
   </collection>
   <collection label="Cortex">
     <view name="analyzers" />

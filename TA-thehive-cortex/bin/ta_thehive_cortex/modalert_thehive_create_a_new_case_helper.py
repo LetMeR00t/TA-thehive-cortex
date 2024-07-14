@@ -17,6 +17,7 @@ from  modalert_thehive_common import parse_events
 from thehive import TheHive, create_thehive_instance
 from thehive4py.types.case import InputCase
 from thehive4py.errors import TheHiveError
+import globals
 
 __author__ = "Alexandre Demeyer"
 __maintainer__ = "Alexandre Demeyer"
@@ -24,101 +25,9 @@ __email__ = "letmer00t@gmail.com"
 
 
 def process_event(helper, *args, **kwargs):
-    """
-    # IMPORTANT
-    # Do not remove the anchor macro:start and macro:end lines.
-    # These lines are used to generate sample code. If they are
-    # removed, the sample code will not be updated when configurations
-    # are updated.
 
-    [sample_code_macro:start]
+    globals.initialize_globals()
 
-    # The following example gets and sets the log level
-    helper.set_log_level(helper.log_level)
-
-    # The following example gets account information
-    user_account = helper.get_user_credential("<account_name>")
-
-    # The following example gets the setup parameters and prints them to the log
-    cortex_max_jobs = helper.get_global_setting("cortex_max_jobs")
-    helper.log_info("cortex_max_jobs={}".format(cortex_max_jobs))
-    cortex_sort_jobs = helper.get_global_setting("cortex_sort_jobs")
-    helper.log_info("cortex_sort_jobs={}".format(cortex_sort_jobs))
-    thehive_default_instance = helper.get_global_setting("thehive_default_instance")
-    helper.log_info("thehive_default_instance={}".format(thehive_default_instance))
-    thehive_max_cases = helper.get_global_setting("thehive_max_cases")
-    helper.log_info("thehive_max_cases={}".format(thehive_max_cases))
-    thehive_sort_cases = helper.get_global_setting("thehive_sort_cases")
-    helper.log_info("thehive_sort_cases={}".format(thehive_sort_cases))
-    thehive_max_alerts = helper.get_global_setting("thehive_max_alerts")
-    helper.log_info("thehive_max_alerts={}".format(thehive_max_alerts))
-    thehive_sort_alerts = helper.get_global_setting("thehive_sort_alerts")
-    helper.log_info("thehive_sort_alerts={}".format(thehive_sort_alerts))
-    splunk_es_alerts_index = helper.get_global_setting("splunk_es_alerts_index")
-    helper.log_info("splunk_es_alerts_index={}".format(splunk_es_alerts_index))
-
-    # The following example gets the alert action parameters and prints them to the log
-    thehive_instance_id = helper.get_param("thehive_instance_id")
-    helper.log_info("thehive_instance_id={}".format(thehive_instance_id))
-
-    alert_mode = helper.get_param("alert_mode")
-    helper.log_info("alert_mode={}".format(alert_mode))
-
-    unique_id_field = helper.get_param("unique_id_field")
-    helper.log_info("unique_id_field={}".format(unique_id_field))
-
-    case_template = helper.get_param("case_template")
-    helper.log_info("case_template={}".format(case_template))
-
-    type = helper.get_param("type")
-    helper.log_info("type={}".format(type))
-
-    source = helper.get_param("source")
-    helper.log_info("source={}".format(source))
-
-    timestamp_field = helper.get_param("timestamp_field")
-    helper.log_info("timestamp_field={}".format(timestamp_field))
-
-    title = helper.get_param("title")
-    helper.log_info("title={}".format(title))
-
-    description = helper.get_param("description")
-    helper.log_info("description={}".format(description))
-
-    tags = helper.get_param("tags")
-    helper.log_info("tags={}".format(tags))
-
-    scope = helper.get_param("scope")
-    helper.log_info("scope={}".format(scope))
-
-    severity = helper.get_param("severity")
-    helper.log_info("severity={}".format(severity))
-
-    tlp_ = helper.get_param("tlp_")
-    helper.log_info("tlp_={}".format(tlp_))
-
-    pap_ = helper.get_param("pap_")
-    helper.log_info("pap_={}".format(pap_))
-
-
-    # The following example adds two sample events ("hello", "world")
-    # and writes them to Splunk
-    # NOTE: Call helper.writeevents() only once after all events
-    # have been added
-    helper.addevent("hello", sourcetype="sample_sourcetype")
-    helper.addevent("world", sourcetype="sample_sourcetype")
-    helper.writeevents(index="summary", host="localhost", source="localhost")
-
-    # The following example gets the events that trigger the alert
-    events = helper.get_events()
-    for event in events:
-        helper.log_info("event={}".format(event))
-
-    # helper.settings is a dict that includes environment configuration
-    # Example usage: helper.settings["server_uri"]
-    helper.log_info("server_uri={}".format(helper.settings["server_uri"]))
-    [sample_code_macro:end]
-    """
     # Set the current LOG level
     helper.log_info("[CAA-THCC-35] LOG level to: " + helper.log_level)
     helper.set_log_level(helper.log_level)
@@ -129,43 +38,43 @@ def process_event(helper, *args, **kwargs):
 
     instances = []
     for instance_id in instances_id:
-        instances.append(create_thehive_instance(instance_id=instance_id, settings=helper.settings, logger=helper._logger))
+        instances.append(create_thehive_instance(instance_id=instance_id, settings=helper.settings, logger=helper._logger,  acronym="THCC"))
 
-    # Get alert arguments
-    alert_args = {}
-    # Get string values from alert form
-    alert_args["case_mode"] = helper.get_param("case_mode") if helper.get_param("case_mode") else "es_mode" 
-    alert_args["unique_id_field"] = helper.get_param("unique_id_field") if helper.get_param("unique_id_field") else "oneEvent" 
-    alert_args["caseTemplate"] = helper.get_param("case_template") if helper.get_param("case_template") else None
-    alert_args["source"] = helper.get_param("source") if helper.get_param("source") else "splunk"
-    if not helper.get_param("timestamp_field"):
-        alert_args['timestamp'] = int(time.time() * 1000)
-    else:
-        alert_args['timestamp'] = helper.get_param("timestamp_field")
-        epoch10 = re.match("^[0-9]{10}$", alert_args['timestamp'])
-        if epoch10 is not None:
-            alert_args['timestamp'] = int(alert_args['timestamp']) * 1000
+    for (thehive, configuration, defaults, logger_file, instance_id) in instances:
+        # Get alert arguments
+        alert_args = {}
+        # Get string values from alert form
+        alert_args["case_mode"] = helper.get_param("case_mode") if helper.get_param("case_mode") else "es_mode" 
+        alert_args["unique_id_field"] = helper.get_param("unique_id_field") if helper.get_param("unique_id_field") else "oneEvent" 
+        alert_args["caseTemplate"] = helper.get_param("case_template") if helper.get_param("case_template") else None
+        alert_args["source"] = helper.get_param("source") if helper.get_param("source") else "splunk"
+        if not helper.get_param("timestamp_field"):
+            alert_args['timestamp'] = int(time.time() * 1000)
+        else:
+            alert_args['timestamp'] = helper.get_param("timestamp_field")
+            epoch10 = re.match("^[0-9]{10}$", alert_args['timestamp'])
+            if epoch10 is not None:
+                alert_args['timestamp'] = int(alert_args['timestamp']) * 1000
 
-    alert_args["title"] = helper.get_param("title") if helper.get_param("title") else None
-    alert_args["description"] = helper.get_param("description") if helper.get_param("description") else "No description provided"
-    alert_args["tags"] = list(dict.fromkeys(helper.get_param("tags").split(","))) if helper.get_param("tags") else []
-    helper.log_debug("[CAA-THCC-50] scope: {} ".format(helper.get_param("scope")))
-    alert_args["scope"] = True if int(helper.get_param("scope")) == 0 else False
-    # Get numeric values from alert form
-    alert_args["severity"] = int(helper.get_param("severity")) if helper.get_param("severity") is not None else 2
-    alert_args["tlp"] = int(helper.get_param("tlp")) if helper.get_param("tlp") is not None else 2
-    alert_args["pap"] = int(helper.get_param("pap")) if helper.get_param("pap") is not None else 2
-    alert_args["splunk_es_alerts_index"] = helper.get_global_setting("splunk_es_alerts_index") if helper.get_global_setting("splunk_es_alerts_index") is not None else "summary"
-    alert_args["description_results_enable"] = True if int(helper.get_param("description_results_enable")) == 1 else False
-    alert_args["description_results_keep_observable"] = True if int(helper.get_param("description_results_keep_observable")) == 1 else False
-    alert_args["attach_results"] = int(helper.get_param("attach_results"))
-    helper.log_debug("[CAA-THCC-55] Arguments recovered: " + str(alert_args))
+        alert_args["title"] = helper.get_param("title") if helper.get_param("title") else None
+        alert_args["description"] = helper.get_param("description").replace("\\n","\n").replace("\\r","\r") if helper.get_param("description") else "No description provided"
+        alert_args["tags"] = list(dict.fromkeys(helper.get_param("tags").split(","))) if helper.get_param("tags") else []
+        logger_file.debug(id="50",message="scope: {} ".format(helper.get_param("scope")))
+        alert_args["scope"] = True if int(helper.get_param("scope")) == 0 else False
+        # Get numeric values from alert form
+        alert_args["severity"] = int(helper.get_param("severity")) if helper.get_param("severity") is not None else 2
+        alert_args["tlp"] = int(helper.get_param("tlp")) if helper.get_param("tlp") is not None else 2
+        alert_args["pap"] = int(helper.get_param("pap")) if helper.get_param("pap") is not None else 2
+        alert_args["splunk_es_alerts_index"] = helper.get_global_setting("splunk_es_alerts_index") if helper.get_global_setting("splunk_es_alerts_index") is not None else "summary"
+        alert_args["description_results_enable"] = True if int(helper.get_param("description_results_enable")) == 1 else False
+        alert_args["description_results_keep_observable"] = True if int(helper.get_param("description_results_keep_observable")) == 1 else False
+        alert_args["attach_results"] = int(helper.get_param("attach_results"))
+        logger_file.debug(id="55",message="Arguments recovered: " + str(alert_args))
 
-    # Create the case
-    helper.log_info("[CAA-THCC-56] Configuration is ready. Creating the case...")
-    for (thehive, configuration, defaults, logger, instance_id) in instances:
-        helper.log_debug("[CAA-THCC-57] TheHive URL instance used after retrieving the configuration: " + str(thehive.session.hive_url))
-        helper.log_debug("[CAA-THCC-58] Processing following instance ID: " + str(instance_id))
+        # Create the case
+        logger_file.info(id="56",message="Configuration is ready. Creating the case...")
+        logger_file.debug(id="57",message="TheHive URL instance used after retrieving the configuration: " + str(thehive.session.hive_url))
+        logger_file.debug(id="58",message="Processing following instance ID: " + str(instance_id))
         create_case(helper, thehive, alert_args)
     return 0
 
@@ -195,14 +104,13 @@ def create_case(helper, thehive: TheHive, alert_args):
             externalLink=helper.settings["results_link"]
         )
 
-        helper.log_debug("[CAA-THCC-120] Processing case: " + str(case))
+        thehive.logger_file.debug(id="120",message="Processing case: " + str(case))
         # Get API and create the case
         new_case = None
         try:
             new_case = thehive.case.create(case)
         except TheHiveError as e:
-            helper.log_error(
-                "[CAA-THCC-126-ERROR] TheHive case creation has failed. "
+            thehive.logger_file.error(id="126",message="TheHive case creation has failed. "
                 "url={}, data={}, content={}, error={}"
                 .format(thehive.session.hive_url, str(case), str(new_case), str(e))
             )
@@ -210,14 +118,12 @@ def create_case(helper, thehive: TheHive, alert_args):
         if new_case is not None:
             if "_id" in new_case:
                 # log response status
-                helper.log_info(
-                    "[CAA-THCC-125] TheHive case #{} is successfully created on url={}".format(new_case["number"],thehive.session.hive_url)
+                thehive.logger_file.info(id="130",message="TheHive case #{} is successfully created on url={}".format(new_case["number"],thehive.session.hive_url)
                 )
 
             else:
                 # somehow we got a bad response code from thehive
-                helper.log_error(
-                    "[CAA-THCC-126-ERROR] TheHive case creation has failed. "
+                thehive.logger_file.error(id="135",message="TheHive case creation has failed. "
                     "url={}, data={}, content={}"
                     .format(thehive.session.hive_url, str(case), str(new_case))
                 )
@@ -229,16 +135,14 @@ def create_case(helper, thehive: TheHive, alert_args):
                     
                     if "failure" in response:
                         # somehow we got a bad response code from thehive
-                        helper.log_error(
-                            "[CAA-THCC-135-ERROR] TheHive observable update on recent case creation has failed. "
+                        thehive.logger_file.error(id="135",message="TheHive observable update on recent case creation has failed. "
                             "url={}, data={}, content={}, observable={}, error={}"
                             .format(thehive.session.hive_url, str(case), str(response), str(observable), str(response["failure"]))
                         ) 
                     else:
                         response = response[0]
                         # log response status
-                        helper.log_info(
-                            "[CAA-THCC-130] TheHive case {} was successfully updated with the observable {} on url={}".format(new_case["_id"],response["data"].replace(".","[.]"),thehive.session.hive_url)
+                        thehive.logger_file.info(id="130",message="TheHive case {} was successfully updated with the observable {} on url={}".format(new_case["_id"],response["data"].replace(".","[.]"),thehive.session.hive_url)
                         )
 
             
@@ -249,14 +153,12 @@ def create_case(helper, thehive: TheHive, alert_args):
 
                 if "_id" in response:
                     # log response status
-                    helper.log_info(
-                        "[CAA-THCC-130] TheHive case {} was successfully updated with the TTPs on url={}".format(new_case["_id"],thehive.session.hive_url)
+                    thehive.logger_file.info(id="135",message="TheHive case {} was successfully updated with the TTPs on url={}".format(new_case["_id"],thehive.session.hive_url)
                     )
 
                 else:
                     # somehow we got a bad response code from thehive
-                    helper.log_error(
-                        "[CAA-THCC-135-ERROR] TheHive TTPs update on recent case creation has failed. "
+                    thehive.logger_file.error(id="140",message="TheHive TTPs update on recent case creation has failed. "
                         "url={}, data={}, content={}, ttp={}"
                         .format(thehive.session.hive_url, str(case), str(response), str(cases[srcRef]["ttps"])))
 
@@ -265,8 +167,7 @@ def create_case(helper, thehive: TheHive, alert_args):
 
                 # This means, yes
                 
-                helper.log_debug(
-                    "[CAA-THCC-140] Processing attachment of the Splunk search results to the case..."
+                thehive.logger_file.debug(id="145",message="Processing attachment of the Splunk search results to the case..."
                 )
 
                 results_file = helper.results_file
@@ -274,8 +175,7 @@ def create_case(helper, thehive: TheHive, alert_args):
                 # This means, yes but uncompressed
                 if alert_args["attach_results"] == 2:
 
-                    helper.log_debug(
-                        "[CAA-THCA-145] Uncompressing Splunk search results file located at {}...".format(results_file)
+                    thehive.logger_file.debug(id="150",message="Uncompressing Splunk search results file located at {}...".format(results_file)
                     )
 
                     try:
@@ -300,16 +200,14 @@ def create_case(helper, thehive: TheHive, alert_args):
                         results_file = raw_results_filepath
 
                     except Exception as e:
-                        helper.log_error(
-                            "[CAA-THCA-148-ERROR] Error during uncompressing process: {}".format(e)
+                        thehive.logger_file.error(id="155",message="Error during uncompressing process: {}".format(e)
                         )
 
                 attachment_result = None
                 try:
                     attachment_result = thehive.case.add_attachment(new_case["_id"],[results_file])
                 except TheHiveError as e:
-                    helper.log_error(
-                        "[CAA-THCC-150-ERROR] TheHive attachment creation has failed. "
+                    thehive.logger_file.error(id="160",message="TheHive attachment creation has failed. "
                         "url={}, data={}, content={}, error={}"
                         .format(thehive.session.hive_url, str(case), str(new_case), str(e))
                     )
@@ -317,21 +215,18 @@ def create_case(helper, thehive: TheHive, alert_args):
                 # This means, yes but uncompressed
                 if alert_args["attach_results"] == 2:
 
-                    helper.log_debug(
-                        "[CAA-THCC-152] Deleting uncompressed file at {}...".format(results_file)
+                    thehive.logger_file.debug(id="165",message="Deleting uncompressed file at {}...".format(results_file)
                     )
 
                     os.remove(results_file)
 
                 if "_id" in attachment_result[0]:
                     # log response status
-                    helper.log_info(
-                        "[CAA-THCC-155] TheHive case {} search results were successfully attached to the case on url={}".format(new_case["_id"],thehive.session.hive_url)
+                    thehive.logger_file.info(id="170",message="TheHive case {} search results were successfully attached to the case on url={}".format(new_case["_id"],thehive.session.hive_url)
                     )
 
                 else:
                     # somehow we got a bad response code from thehive
-                    helper.log_error(
-                        "[CAA-THCC-160-ERROR] TheHive attachment creation on recent case creation has failed. "
+                    thehive.logger_file.error(id="180",message="TheHive attachment creation on recent case creation has failed. "
                         "url={}, data={}, content={}, attachment={}"
                         .format(thehive.session.hive_url, str(case), str(response), str(helper.results_file)))
