@@ -1,4 +1,5 @@
 # encoding = utf-8
+import sys
 import splunk.Intersplunk
 from thehive import initialize_thehive_instances
 from thehive4py.query.filters import Eq
@@ -35,10 +36,7 @@ if __name__ == '__main__':
             case_number = configuration.checkAndValidate(result, "case_number", is_mandatory=True)
             logger_file.debug(id="10",message="Getting this case number: " + str(case_number))
 
-            cases = thehive.case.find(Eq("number", int(case_number.replace("#",""))))
-            logger_file.debug(id="11",message="Found cases: " + str(cases))
-            
-            case = cases[0]
+            case = thehive.case.get(int(case_number.replace("#","")))
 
             result_copy = deepcopy(result)
             event = {("thehive_case_"+k).replace("__","_"):v for k,v in case.items()}
