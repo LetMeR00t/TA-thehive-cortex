@@ -12,27 +12,31 @@ Every command requires an "Instance ID" parameter which is used to specify which
 		- [Parameters (input results)](#parameters-input-results-1)
 		- [Return](#return-1)
 		- [Examples](#examples-1)
-	- [thehivealerts](#thehivealerts)
+	- [thehivegetalertsfromcase](#thehivegetalertsfromcase)
 		- [Parameters (input results)](#parameters-input-results-2)
 		- [Return](#return-2)
 		- [Examples](#examples-2)
-	- [thehivegetalert](#thehivegetalert)
+	- [thehivealerts](#thehivealerts)
 		- [Parameters (input results)](#parameters-input-results-3)
 		- [Return](#return-3)
 		- [Examples](#examples-3)
-	- [thehivegetstats](#thehivegetstats)
+	- [thehivegetalert](#thehivegetalert)
 		- [Parameters (input results)](#parameters-input-results-4)
 		- [Return](#return-4)
 		- [Examples](#examples-4)
-- [Cortex](#cortex)
-	- [cortexjobs](#cortexjobs)
+	- [thehivegetstats](#thehivegetstats)
 		- [Parameters (input results)](#parameters-input-results-5)
 		- [Return](#return-5)
 		- [Examples](#examples-5)
-	- [cortexrun](#cortexrun)
+- [Cortex](#cortex)
+	- [cortexjobs](#cortexjobs)
 		- [Parameters (input results)](#parameters-input-results-6)
 		- [Return](#return-6)
 		- [Examples](#examples-6)
+	- [cortexrun](#cortexrun)
+		- [Parameters (input results)](#parameters-input-results-7)
+		- [Return](#return-7)
+		- [Examples](#examples-7)
 
 
 
@@ -111,7 +115,7 @@ Every new field will start with "thehive_*". As an exemple, you can recover:
 
 ## thehivegetcase
 
-This command is used to get a specific from TheHive (\$..\$ are tokens examples but you can use it directly in your searches).
+This command is used to get a specific case from TheHive (\$..\$ are tokens examples but you can use it directly in your searches).
 
 ```spl
 | makeresults
@@ -153,6 +157,55 @@ Every new field will start with "thehive_*". As an exemple, you can recover:
 | makeresults
 | eval case_number = "#63"
 | thehivegetcase $$INSTANCE_ID$$
+```
+
+## thehivegetalertsfromcase
+
+This command is used to get alerts from a specific case from TheHive (\$..\$ are tokens examples but you can use it directly in your searches).
+
+```spl
+| makeresults
+| eval case_number = "$case_number$"
+| thehivegetalertsfromcase $$INSTANCE_ID$$
+```
+
+### Parameters (input results)
+
+* **case_number**: Case number to recover (with or without the "#")
+
+### Return
+This command append new fields per row to previous results.
+Every new field will start with "thehive_*". As an exemple, you can recover:
+
+- thehive_alert_artifacts
+- thehive_alert_case
+- thehive_alert_caseTemplate
+- thehive_alert_createdAt
+- thehive_alert_createdBy
+- thehive_alert_customFields
+- thehive_alert_date
+- thehive_alert_description
+- thehive_alert_externalLink
+- thehive_alert_follow
+- thehive_alert_id
+- thehive_alert_pap
+- thehive_alert_severity
+- thehive_alert_similarCases
+- thehive_alert_source
+- thehive_alert_sourceRef
+- thehive_alert_status
+- thehive_alert_tags
+- thehive_alert_title
+- thehive_alert_tlp
+- thehive_alert_type
+- thehive_alert_updatedAt
+- thehive_alert_updatedBy
+
+### Examples
+```spl
+| makeresults
+| eval case_number = "#63"
+| thehivegetalertsfromcase $$INSTANCE_ID$$
 ```
 
 ## thehivealerts
