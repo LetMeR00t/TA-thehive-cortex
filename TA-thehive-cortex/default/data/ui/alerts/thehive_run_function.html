@@ -1,26 +1,13 @@
 <form class="form-horizontal form-complex">
-    <div class="control-group">
-        <label class="control-label" for="thehive_run_function_thehive_instance_id">TheHive instance ID <span
-                class="required">*</span> </label>
-        <div class="controls">
-            <input type="text" name="action.thehive_run_function.param.thehive_instance_id"
-                id="thehive_run_function_thehive_instance_id" />
-            <span class="help-block">
-                Indicate which instance to use (Set the "id" provided under "Instances"). You can use "&lt;default&gt;"
-                to set
-                automatically the ID to the default set parameter in the configuration page.
-            </span>
-        </div>
-    </div>
-    <div class="control-group">
-        <label class="control-label" for="thehive_run_function_name">Function name <span class="required">*</span>
-        </label>
-        <div class="controls">
-            <input type="text" name="action.thehive_run_function.param.name" id="thehive_run_function_name" />
-            <span class="help-block">
-                The name of the function you want to call. Please note that a specific licence in TheHive is required to
-                use this action
-            </span>
-        </div>
-    </div>
+
+    <splunk-control-group label="Instance" help="Indicate which instance to use (Set the 'id' provided under 'Instances'). You can use '&lt;default&gt;' to set automatically the ID to the default set parameter in the configuration page.">
+        <span class="required">*</span>
+        <splunk-search-dropdown name="action.thehive_run_function.param.thehive_instance_id" allow-custom-value=true search="| inputlookup thehive_cortex_instances | search type=&quot;TheHive*&quot;" label-field="organisation" value-field="id">
+    </splunk-control-group>
+
+    <splunk-control-group label="Function name" help="The name of the function you want to call. Please note that a specific licence in TheHive is required to use this action">
+        <span class="required">*</span>
+        <splunk-text-input name="action.thehive_run_function.param.name"/>
+    </splunk-control-group>
+
 </form>
