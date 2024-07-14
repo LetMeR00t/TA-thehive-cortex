@@ -4,44 +4,43 @@ Every command requires an "Instance ID" parameter which is used to specify which
 
 - [Commands](#commands)
 - [TheHive](#thehive)
-	- [thehivecases and thehivegetcase](#thehivecases-and-thehivegetcase)
+	- [thehivecases](#thehivecases)
 		- [Parameters (input results)](#parameters-input-results)
 		- [Return](#return)
 		- [Examples](#examples)
-	- [thehivealerts and thehivegetalert](#thehivealerts-and-thehivegetalert)
+	- [thehivegetcase](#thehivegetcase)
 		- [Parameters (input results)](#parameters-input-results-1)
 		- [Return](#return-1)
 		- [Examples](#examples-1)
-	- [thehivegetstats](#thehivegetstats)
+	- [thehivealerts](#thehivealerts)
 		- [Parameters (input results)](#parameters-input-results-2)
 		- [Return](#return-2)
 		- [Examples](#examples-2)
-- [Cortex](#cortex)
-	- [cortexjobs](#cortexjobs)
+	- [thehivegetalert](#thehivegetalert)
 		- [Parameters (input results)](#parameters-input-results-3)
 		- [Return](#return-3)
 		- [Examples](#examples-3)
-	- [cortexrun](#cortexrun)
+	- [thehivegetstats](#thehivegetstats)
 		- [Parameters (input results)](#parameters-input-results-4)
 		- [Return](#return-4)
 		- [Examples](#examples-4)
+- [Cortex](#cortex)
+	- [cortexjobs](#cortexjobs)
+		- [Parameters (input results)](#parameters-input-results-5)
+		- [Return](#return-5)
+		- [Examples](#examples-5)
+	- [cortexrun](#cortexrun)
+		- [Parameters (input results)](#parameters-input-results-6)
+		- [Return](#return-6)
+		- [Examples](#examples-6)
 
 
 
 # TheHive
 
-## thehivecases and thehivegetcase
+## thehivecases
 
 This command is used to get cases from TheHive (\$..\$ are tokens examples but you can use it directly in your searches).
-> Note: `thehivegetcase` has the same behavior as `thehivecases` but only for one specific case (the case number must be specified using the field `case_number`).
-> 
-> ![thehivegetcase example](../images/command_thehivegetcase_example.png)
-
-```spl
-| makeresults
-| eval keyword = "$filter_keyword$", status = "$filter_status$", severity = "$filter_severity$", tags = "$filter_tags$", title = "$filter_title$", assignee = "$filter_assignee$", date = "$filter_date_d1$ TO $filter_date_d2$", max_cases="$max_cases$", sort_cases="$sort_cases$"
-| thehivecases $$INSTANCE_ID$$
-```
 
 
 ### Parameters (input results)
@@ -110,17 +109,61 @@ Every new field will start with "thehive_*". As an exemple, you can recover:
 	# This will recover any "Open" or "Resolved" case
 ```
 
-## thehivealerts and thehivegetalert
+## thehivegetcase
+
+This command is used to get a specific from TheHive (\$..\$ are tokens examples but you can use it directly in your searches).
+
+```spl
+| makeresults
+| eval case_number = "$case_number$"
+| thehivegetcase $$INSTANCE_ID$$
+```
+
+### Parameters (input results)
+
+* **case_number**: Case number to recover (with or without the "#")
+
+### Return
+This command append new fields per row to previous results.
+Every new field will start with "thehive_*". As an exemple, you can recover:
+
+ - thehive_case_caseId
+ - thehive_case_createdAt
+ - thehive_case_createdBy
+ - thehive_case_customFields
+ - thehive_case_description
+ - thehive_case_endDate
+ - thehive_case_flag
+ - thehive_case_id
+ - thehive_case_impactStatus
+ - thehive_case_metrics
+ - thehive_case_observables
+ - thehive_case_owner
+ - thehive_case_pap
+ - thehive_case_resolutionStatus
+ - thehive_case_severity
+ - thehive_case_startDate
+ - thehive_case_status
+ - thehive_case_summary
+ - thehive_case_tags
+ - thehive_case_tasks
+
+### Examples
+```spl
+| makeresults
+| eval case_number = "#63"
+| thehivegetcase $$INSTANCE_ID$$
+```
+
+## thehivealerts
 
 This command is used to get alerts from TheHive (\$..\$ are tokens examples but you can use it directly in your searches).
-> Note: `thehivegetalert` has the same behavior as `thehivealerts` but only for one specific alert (the alert ID must be specified using the field `alert_id`).
-> 
-> ![thehivegetalert example](../images/command_thehivegetalert_example.png)
 
+```spl
 | makeresults
 | eval type = "$filter_type$", severity = "$filter_severity$", tags = "$filter_tags$", title = "$filter_title$", read = "$filter_read$", source = "$filter_source$", date = "$filter_date_d1$ TO $filter_date_d2$", max_alerts="$max_alerts$", sort_alerts="$sort_alerts$"
 | thehivealerts $$INSTANCE_ID$$
-
+```
 
 ### Parameters (input results)
 One row will result in executing the script one time. So if you specify 5 rows, the script will be executed 5 times and all results will be appended.
@@ -190,6 +233,56 @@ Every new field will start with "thehive_*". As an exemple, you can recover:
 | eval tags = "t1;t2"
 | thehivealerts $$INSTANCE_ID$$
 	# This will recover any alert with "t1" or "t2" tag
+```
+
+## thehivegetalert
+
+This command is used to get one specific alert from TheHive (\$..\$ are tokens examples but you can use it directly in your searches).
+
+```spl
+| makeresults
+| eval alert_id = "$alert_id$"
+| thehivealerts $$INSTANCE_ID$$
+```
+
+### Parameters (input results)
+
+* **alert_id**: Alert ID to recover (with or without the "~")
+
+### Return
+This command append new fields per row to previous results.
+Every new field will start with "thehive_*". As an exemple, you can recover:
+
+- thehive_alert_artifacts
+- thehive_alert_case
+- thehive_alert_caseTemplate
+- thehive_alert_createdAt
+- thehive_alert_createdBy
+- thehive_alert_customFields
+- thehive_alert_date
+- thehive_alert_description
+- thehive_alert_externalLink
+- thehive_alert_follow
+- thehive_alert_id
+- thehive_alert_pap
+- thehive_alert_severity
+- thehive_alert_similarCases
+- thehive_alert_source
+- thehive_alert_sourceRef
+- thehive_alert_status
+- thehive_alert_tags
+- thehive_alert_title
+- thehive_alert_tlp
+- thehive_alert_type
+- thehive_alert_updatedAt
+- thehive_alert_updatedBy
+
+### Examples
+
+```spl
+| makeresults
+| eval alert_id = "~573685784"
+| thehivegetalert $$INSTANCE_ID$$
 ```
 
 ## thehivegetstats
