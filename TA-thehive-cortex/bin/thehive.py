@@ -151,16 +151,16 @@ class TheHive(TheHiveApi):
 
         except Exception as e:
             if "CERTIFICATE_VERIFY_FAILED" in str(e):
-                self.logger_file.warning(id="TH85",message="THE_HIVE_CERTIFICATE_FAILED - It seems that the certificate verification failed. Please check that the certificate authority is added to \""+str(certifi.where())+"\". Complete error: "+str(e))
+                self.logger_file.warn(id="TH85",message="THE_HIVE_CERTIFICATE_FAILED - It seems that the certificate verification failed. Please check that the certificate authority is added to \""+str(certifi.where())+"\". Complete error: "+str(e))
                 sys.exit(85)
             elif "HANDSHAKE_FAILURE" in str(e):
-                self.logger_file.warning(id="TH90",message="THE_HIVE_HANDHSHAKE_FAILURE - It seems that the SSL handshake failed. A possible solution is to check if the remote server/proxy is not expecting a client certificate. Complete error: "+str(e))
+                self.logger_file.warn(id="TH90",message="THE_HIVE_HANDHSHAKE_FAILURE - It seems that the SSL handshake failed. A possible solution is to check if the remote server/proxy is not expecting a client certificate. Complete error: "+str(e))
                 sys.exit(90)
             elif "Proxy Authentication Required" in str(e):
-                self.logger_file.warning(id="TH95",message="THE_HIVE_PROXY_AUTHENTICATION_ERROR - It seems that the connection to the proxy has failed as it's required an authentication (none was provided or the username/password is not working). Proxy information are: "+str(proxies)+". Complete error: "+str(e))
+                self.logger_file.warn(id="TH95",message="THE_HIVE_PROXY_AUTHENTICATION_ERROR - It seems that the connection to the proxy has failed as it's required an authentication (none was provided or the username/password is not working). Proxy information are: "+str(proxies)+". Complete error: "+str(e))
                 sys.exit(95)
             elif "ProxyError" in str(e):
-                self.logger_file.warning(id="TH100",message="THE_HIVE_PROXY_ERROR - It seems that the connection to the proxy has failed. Proxy information are: "+str(proxies)+". Complete error: "+str(e))
+                self.logger_file.warn(id="TH100",message="THE_HIVE_PROXY_ERROR - It seems that the connection to the proxy has failed. Proxy information are: "+str(proxies)+". Complete error: "+str(e))
                 sys.exit(100)
             else:
                 self.logger_file.error(id="TH110",message="THEHIVE_CONNECTION_ERROR - Error: "+str(e)+". Check any error in the TheHive instance logs following this API REST call. If the error is persisting after several tries, please raise an issue to the application maintainer.")

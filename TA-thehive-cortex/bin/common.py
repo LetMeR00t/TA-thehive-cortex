@@ -134,16 +134,16 @@ class Settings(object):
 
                         row["client_cert"] = client_certificate
                     except ValueError:
-                        self.logger_file.warning(id="S11",message="Client certificate base 64 decoding has failed")
+                        self.logger_file.warn(id="S11",message="Client certificate base 64 decoding has failed")
                     except PermissionError as error:
-                        self.logger_file.warning(id="S12",message=f"Client certificate permission error for: {error.filename}")
+                        self.logger_file.warn(id="S12",message=f"Client certificate permission error for: {error.filename}")
 
                 elif row["client_cert"] != "-" and ".." not in row["client_cert"]:
                     client_certificate = os.path.join(os.environ['SPLUNK_HOME'], 'etc', 'apps', 'TA-thehive-cortex','local', row["client_cert"])
                     if os.path.exists(client_certificate):
                         row["client_cert"] = client_certificate
                     else:
-                        self.logger_file.warning(id="S13",message="Be aware that a client certificate for instance \""+str(row_id)+"\" was provided but the file doesn't exist: "+client_certificate)
+                        self.logger_file.warn(id="S13",message="Be aware that a client certificate for instance \""+str(row_id)+"\" was provided but the file doesn't exist: "+client_certificate)
 
                 # get proxy parameters if any
                 if row["proxy_url"] != "-":
@@ -303,7 +303,7 @@ class Settings(object):
             instance = self.__instances[instance_id][setting]
             self.logger_file.debug(id="S40",message="this instance id ("+str(instance_id)+") returns: "+str(setting)+"="+str(instance))
         else:
-            self.logger_file.warning(id="S41",message="Can't recover the setting \""+str(setting)+"\" for the instance \""+str(instance_id)+"\"")
+            self.logger_file.warn(id="S41",message="Can't recover the setting \""+str(setting)+"\" for the instance \""+str(instance_id)+"\"")
         return instance
 
     def getTheHiveDefaultInstance(self):

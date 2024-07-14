@@ -422,7 +422,7 @@ def parse_events(helper, thehive: TheHive, alert_args):
                             observables_data[key]["datatype"] = "other"
                             observables_data[key]["tags"] = "value:"+value
                     else:
-                        thehive.logger_file.warning(id="THC-106",message="key is used by TheHive as an internal field (scope is False): {}. Key ignored to be added as an \"other\" observable.".format(key))
+                        thehive.logger_file.warn(id="THC-106",message="key is used by TheHive as an internal field (scope is False): {}. Key ignored to be added as an \"other\" observable.".format(key))
 
         # Process all observables
         if len(observables_data) > 0:
@@ -459,7 +459,7 @@ def parse_events(helper, thehive: TheHive, alert_args):
                         observables.append(observable)
                 
                 else:
-                    thehive.logger_file.warning(id="THC-113",message="Observable '{0}' doesn't have any value set (no field '{0}' or '{0}:value' was detected), ignored.".format(field))
+                    thehive.logger_file.warn(id="THC-113",message="Observable '{0}' doesn't have any value set (no field '{0}' or '{0}:value' was detected), ignored.".format(field))
 
         if observables:
             alert['observables'] = [InputObservable(o) for o in observables]

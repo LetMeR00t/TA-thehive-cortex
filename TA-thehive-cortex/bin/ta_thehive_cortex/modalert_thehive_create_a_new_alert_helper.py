@@ -95,7 +95,7 @@ def create_alert(helper, thehive: TheHive, alert_args):
         if results:
             external_link = f"{results.group(1)}/{alert_args['dashboard']}"
         else:
-             thehive.logger_file.warning(id="1",message="Cannot determine external link url={}, results_link={}"
+             thehive.logger_file.warn(id="1",message="Cannot determine external link url={}, results_link={}"
                 .format(thehive.session.hive_url, str(external_link))
             )
 
@@ -155,7 +155,7 @@ def create_alert(helper, thehive: TheHive, alert_args):
 
                 else:
                     # somehow we got a bad response code from thehive
-                    thehive.logger_file.warning(id="135",message="TheHive TTPs update on recent alert creation has failed. "
+                    thehive.logger_file.warn(id="135",message="TheHive TTPs update on recent alert creation has failed. "
                         "url={}, data={}, content={}, ttp={}"
                         .format(thehive.session.hive_url, str(alert), str(response), str(alerts[srcRef]["ttps"])))
                     
@@ -164,7 +164,7 @@ def create_alert(helper, thehive: TheHive, alert_args):
 
                 # This means, yes
                 
-                thehive.logger_file.warning(id="140",message="Processing attachment of the Splunk search results to the alert..."
+                thehive.logger_file.warn(id="140",message="Processing attachment of the Splunk search results to the alert..."
                 )
 
                 results_file = helper.results_file
@@ -172,7 +172,7 @@ def create_alert(helper, thehive: TheHive, alert_args):
                 # This means, yes but uncompressed
                 if alert_args["attach_results"] == 2:
 
-                    thehive.logger_file.warning(id="145",message="Uncompressing Splunk search results file located at {}...".format(results_file)
+                    thehive.logger_file.warn(id="145",message="Uncompressing Splunk search results file located at {}...".format(results_file)
                     )
 
                     try:
