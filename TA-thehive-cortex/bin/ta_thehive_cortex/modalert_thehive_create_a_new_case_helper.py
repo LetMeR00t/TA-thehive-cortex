@@ -13,6 +13,7 @@ import time
 import gzip 
 import os
 import csv
+import json
 from  modalert_thehive_common import parse_events
 from thehive import TheHive, create_thehive_instance
 from thehive4py.types.case import InputCase
@@ -75,12 +76,12 @@ def process_event(helper, *args, **kwargs):
         logger_file.info(id="56",message="Configuration is ready. Creating the case...")
         logger_file.debug(id="57",message="TheHive URL instance used after retrieving the configuration: " + str(thehive.session.hive_url))
         logger_file.debug(id="58",message="Processing following instance ID: " + str(instance_id))
-        create_case(helper, thehive, alert_args)
+        create_case(helper, thehive, alert_args, max_retry = int(defaults["MAX_CREATION_RETRY"]))
     return 0
 
 
 
-def create_case(helper, thehive: TheHive, alert_args):
+def create_case(helper, thehive: TheHive, alert_args, max_retry: int = 2):
     """ This function is used to create the alert using the API, settings and search results """
  
     # Parse events
@@ -107,13 +108,23 @@ def create_case(helper, thehive: TheHive, alert_args):
         thehive.logger_file.debug(id="120",message="Processing case: " + str(case))
         # Get API and create the case
         new_case = None
-        try:
-            new_case = thehive.case.create(case)
-        except TheHiveError as e:
-            thehive.logger_file.error(id="126",message="TheHive case creation has failed. "
-                "url={}, data={}, content={}, error={}"
-                .format(thehive.session.hive_url, str(case), str(new_case), str(e))
-            )
+        alert_created = False
+        retry_count = 0
+        while retry_count <= max_retry and not alert_created:
+            try:
+                new_case = thehive.case.create(case)
+                alert_created = True
+            except TheHiveError as e:
+                thehive.logger_file.warning(id="126",message="TheHive case creation has failed. Will retry... "
+                    "url={}, data={}, content={}, error={}"
+                    .format(thehive.session.hive_url, str(case), str(new_case), str(e))
+                )
+            retry_count += 1
+        if retry_count == max_retry:
+            thehive.logger_file.error(id="127",message="TheHive case creation has failed, after {max_retry} retries. "
+                    "url={}, data={}, content={}, error={}"
+                    .format(thehive.session.hive_url, str(case), str(new_case), str(e))
+                )
 
         if new_case is not None:
             if "_id" in new_case:
@@ -171,9 +182,12 @@ def create_case(helper, thehive: TheHive, alert_args):
                 )
 
                 results_file = helper.results_file
+                directory = None
+                headers = None
+                results_file_name = "events"+new_case["_id"]
 
                 # This means, yes but uncompressed
-                if alert_args["attach_results"] == 2:
+                if alert_args["attach_results"] >= 2:
 
                     thehive.logger_file.debug(id="150",message="Uncompressing Splunk search results file located at {}...".format(results_file)
                     )
@@ -202,6 +216,28 @@ def create_case(helper, thehive: TheHive, alert_args):
                     except Exception as e:
                         thehive.logger_file.error(id="155",message="Error during uncompressing process: {}".format(e)
                         )
+
+                    # This means, yes but uncompressed in JSON format
+                    if alert_args["attach_results"] == 3:
+                        raw_json_results_filepath = os.path.join(directory,results_file_name+".json")
+                        # Convert it
+                        with open(raw_results_filepath, 'r') as csvfile:
+                            reader = csv.DictReader(csvfile, headers)
+                            # Skip first row
+                            next(reader)
+                            data = []
+                            for row in reader:
+                                data.append(row)
+                                
+                        with open(raw_json_results_filepath, 'w') as jsonfile:
+                            if len(data)>1:
+                                jsonfile.write(json.dumps(data, indent=2))
+                            else:
+                                jsonfile.write(json.dumps(data[0], indent=2))
+                        
+                        # Use the good one
+                        os.remove(results_file)
+                        results_file = raw_json_results_filepath
 
                 attachment_result = None
                 try:

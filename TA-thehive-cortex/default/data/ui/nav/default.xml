@@ -1,4 +1,4 @@
-<nav search_view="search" color="#f2d130">
+<nav search_view="search" color="#0049D4">
   <collection label="TheHive">
     <view name="cases" default='true'/>
     <view name="thehive_alerts" />

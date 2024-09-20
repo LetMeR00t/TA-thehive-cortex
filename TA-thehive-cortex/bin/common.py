@@ -343,17 +343,23 @@ class Settings(object):
         param = self.__additional_parameters["thehive_ttp_catalog_name"] if "thehive_ttp_catalog_name" in self.__additional_parameters else "Enterprise Attack"
         self.logger_file.debug(id="S53",message="Getting this parameter: thehive_ttp_catalog_name="+str(param))
         return param
+    
+    def getTheHiveCreationMaxRetry(self):
+        """ This function returns the maximum creation retry of a TheHive instance """
+        param = self.__additional_parameters["thehive_creation_max_retry"] if "thehive_creation_max_retry" in self.__additional_parameters else "5"
+        self.logger_file.debug(id="S54",message="Getting this parameter: thehive_creation_max_retry="+str(param))
+        return param
 
     def getCortexJobsMax(self):
         """ This function returns the maximum number of jobs to return of a Cortex instance """
         param = self.__additional_parameters["cortex_max_jobs"] if "cortex_max_jobs" in self.__additional_parameters else 100
-        self.logger_file.debug(id="S54",message="Getting this parameter: "+str(param))
+        self.logger_file.debug(id="S55",message="Getting this parameter: "+str(param))
         return param
 
     def getCortexJobsSort(self):
         """ This function returns the sort key to use for jobs of a Cortex instance """
         param = self.__additional_parameters["cortex_sort_jobs"] if "cortex_sort_jobs" in self.__additional_parameters else "-createdAt"
-        self.logger_file.debug(id="S55",message="Getting this parameter: "+str(param))
+        self.logger_file.debug(id="S56",message="Getting this parameter: "+str(param))
         return param
 
     def checkAndValidate(self, d, name, default="", is_mandatory=False):
