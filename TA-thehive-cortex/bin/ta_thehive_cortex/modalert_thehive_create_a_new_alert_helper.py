@@ -77,12 +77,12 @@ def process_event(helper, *args, **kwargs):
         logger_file.info(id="56",message="Configuration is ready. Creating the alert...")
         logger_file.debug(id="57",message="TheHive URL instance used after retrieving the configuration: " + str(thehive.session.hive_url))
         logger_file.debug(id="58",message="Processing following instance ID: " + str(instance_id))
-        create_alert(helper, thehive, alert_args)
+        create_alert(helper, thehive, alert_args, max_retry = int(defaults["MAX_CREATION_RETRY"]))
     return 0
 
 
 
-def create_alert(helper, thehive: TheHive, alert_args):
+def create_alert(helper, thehive: TheHive, alert_args, max_retry: int = 2):
     """ This function is used to create the alert using the API, settings and search results """
  
     # Parse events
@@ -122,13 +122,23 @@ def create_alert(helper, thehive: TheHive, alert_args):
         thehive.logger_file.debug(id="120",message="Processing alert: " + str(alert))
         # Get API and create the alert
         new_alert = None
-        try:
-            new_alert = thehive.alert.create(alert)
-        except TheHiveError as e:
-            thehive.logger_file.error(id="122",message="TheHive alert creation has failed. "
-                "url={}, data={}, content={}, error={}"
-                .format(thehive.session.hive_url, str(alert), str(new_alert), str(e))
-            )
+        alert_created = False
+        retry_count = 0
+        while retry_count <= max_retry and not alert_created:
+            try:
+                new_alert = thehive.alert.create(alert)
+                alert_created = True
+            except TheHiveError as e:
+                thehive.logger_file.warning(id="122",message="TheHive alert creation has failed. Will retry... "
+                    "url={}, data={}, content={}, error={}"
+                    .format(thehive.session.hive_url, str(alert), str(new_alert), str(e))
+                )
+            retry_count += 1
+        if retry_count == max_retry:
+            thehive.logger_file.error(id="125",message="TheHive alert creation has failed, after {max_retry} retries. "
+                    "url={}, data={}, content={}, error={}"
+                    .format(thehive.session.hive_url, str(alert), str(new_alert), str(e))
+                )
 
         if new_alert is not None:
             if "_id" in new_alert:

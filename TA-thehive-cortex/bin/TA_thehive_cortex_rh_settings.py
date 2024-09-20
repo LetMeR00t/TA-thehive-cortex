@@ -107,6 +107,16 @@ fields_additional_parameters = [
         )
     ), 
     field.RestField(
+        'thehive_creation_max_retry',
+        required=True,
+        encrypted=False,
+        default='2',
+        validator=validator.String(
+            min_len=0, 
+            max_len=8192, 
+        )
+    ), 
+    field.RestField(
         'splunk_es_alerts_index',
         required=False,
         encrypted=False,

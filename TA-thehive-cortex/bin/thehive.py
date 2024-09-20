@@ -40,7 +40,8 @@ def create_thehive_instance(instance_id, settings, logger, acronym):
         "SORT_CASES_DEFAULT": configuration.getTheHiveCasesSort(),
         "MAX_ALERTS_DEFAULT": configuration.getTheHiveAlertsMax(),
         "SORT_ALERTS_DEFAULT": configuration.getTheHiveAlertsSort(),
-        "TTP_CATALOG_NAME": configuration.getTheHiveTTPCatalogName()
+        "TTP_CATALOG_NAME": configuration.getTheHiveTTPCatalogName(),
+        "MAX_CREATION_RETRY": configuration.getTheHiveCreationMaxRetry()
     }
 
     # Get default instance if any is set
