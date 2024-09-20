@@ -13,6 +13,7 @@ import time
 import gzip
 import csv
 import os
+import json
 from  modalert_thehive_common import parse_events
 from thehive import TheHive, create_thehive_instance
 from thehive4py.types.alert import InputAlert
@@ -174,13 +175,16 @@ def create_alert(helper, thehive: TheHive, alert_args, max_retry: int = 2):
 
                 # This means, yes
                 
-                thehive.logger_file.warn(id="140",message="Processing attachment of the Splunk search results to the alert..."
+                thehive.logger_file.info(id="140",message="Processing attachment of the Splunk search results to the alert..."
                 )
 
                 results_file = helper.results_file
+                directory = None
+                headers = None
+                results_file_name = "events"+new_alert["_id"]
 
                 # This means, yes but uncompressed
-                if alert_args["attach_results"] == 2:
+                if alert_args["attach_results"] >= 2:
 
                     thehive.logger_file.warn(id="145",message="Uncompressing Splunk search results file located at {}...".format(results_file)
                     )
@@ -188,7 +192,6 @@ def create_alert(helper, thehive: TheHive, alert_args, max_retry: int = 2):
                     try:
                         # uncompress file
                         csvreader = None
-                        headers = None
                         data = []
                         with gzip.open(results_file, 'rt') as f:
                             csvreader = csv.reader(f)
@@ -197,7 +200,7 @@ def create_alert(helper, thehive: TheHive, alert_args, max_retry: int = 2):
                                 data.append(row)
                         directory = os.path.dirname(results_file) 
                         
-                        raw_results_filepath = os.path.join(directory,"results.csv")
+                        raw_results_filepath = os.path.join(directory,results_file_name+".csv")
 
                         with open(raw_results_filepath, "wt", newline="") as f:
                             csvwriter = csv.writer(f)
@@ -209,6 +212,28 @@ def create_alert(helper, thehive: TheHive, alert_args, max_retry: int = 2):
                     except Exception as e:
                         thehive.logger_file.error(id="148",message="Error during uncompressing process: {}".format(e)
                         )
+
+                    # This means, yes but uncompressed in JSON format
+                    if alert_args["attach_results"] == 3:
+                        raw_json_results_filepath = os.path.join(directory,results_file_name+".json")
+                        # Convert it
+                        with open(raw_results_filepath, 'r') as csvfile:
+                            reader = csv.DictReader(csvfile, headers)
+                            # Skip first row
+                            next(reader)
+                            data = []
+                            for row in reader:
+                                data.append(row)
+                                
+                        with open(raw_json_results_filepath, 'w') as jsonfile:
+                            if len(data)>1:
+                                jsonfile.write(json.dumps(data, indent=2))
+                            else:
+                                jsonfile.write(json.dumps(data[0], indent=2))
+                        
+                        # Use the good one
+                        os.remove(results_file)
+                        results_file = raw_json_results_filepath
 
                 attachment_result = None
                 try:
