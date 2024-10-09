@@ -1,18 +1,7 @@
+import platform
 import sys
 
-
-__all__ = ['install', 'NullFinder', 'PyPy_repr', 'Protocol']
-
-
-try:
-    from typing import Protocol
-except ImportError:  # pragma: no cover
-    """
-    pytest-mypy complains here because:
-    error: Incompatible import of "Protocol" (imported name has type
-    "typing_extensions._SpecialForm", local name has type "typing._SpecialForm")
-    """
-    from typing_extensions import Protocol  # type: ignore
+__all__ = ['install', 'NullFinder']
 
 
 def install(cls):
@@ -48,7 +37,7 @@ def disable_stdlib_finder():
 
 class NullFinder:
     """
-    A "Finder" (aka "MetaClassFinder") that never finds any modules,
+    A "Finder" (aka "MetaPathFinder") that never finds any modules,
     but may find distributions.
     """
 
@@ -56,31 +45,12 @@ class NullFinder:
     def find_spec(*args, **kwargs):
         return None
 
-    # In Python 2, the import system requires finders
-    # to have a find_module() method, but this usage
-    # is deprecated in Python 3 in favor of find_spec().
-    # For the purposes of this finder (i.e. being present
-    # on sys.meta_path but having no other import
-    # system functionality), the two methods are identical.
-    find_module = find_spec
 
-
-class PyPy_repr:
+def pypy_partial(val):
     """
-    Override repr for EntryPoint objects on PyPy to avoid __iter__ access.
-    Ref #97, #102.
+    Adjust for variable stacklevel on partial under PyPy.
+
+    Workaround for #327.
     """
-
-    affected = hasattr(sys, 'pypy_version_info')
-
-    def __compat_repr__(self):  # pragma: nocover
-        def make_param(name):
-            value = getattr(self, name)
-            return f'{name}={value!r}'
-
-        params = ', '.join(map(make_param, self._fields))
-        return f'EntryPoint({params})'
-
-    if affected:  # pragma: nocover
-        __repr__ = __compat_repr__
-    del affected
+    is_pypy = platform.python_implementation() == 'PyPy'
+    return val + is_pypy
