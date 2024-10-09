@@ -416,9 +416,9 @@ def parse_events(helper, thehive: TheHive, alert_args):
                         thehive.logger_file.debug(id="THC-105",message="key is added as another observable (scope is False): {}".format(key))
                         # As we are taking a field as an "other" datatype, we build the value differently
                         if key not in observables_data:
-                            observables_data[key] = {"value": key+":"+value, "datatype": "other", "tags": "value:"+value}
+                            observables_data[key] = {"value": key+": "+value, "datatype": "other", "tags": "value:"+value}
                         else:
-                            observables_data[key]["value"] = key+":"+value
+                            observables_data[key]["value"] = key+": "+value
                             observables_data[key]["datatype"] = "other"
                             observables_data[key]["tags"] = "value:"+value
                     else:

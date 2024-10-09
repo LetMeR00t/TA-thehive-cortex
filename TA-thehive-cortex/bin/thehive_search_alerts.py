@@ -1,4 +1,5 @@
 # encoding = utf-8
+import json
 import splunk.Intersplunk
 from thehive import initialize_thehive_instances
 from thehive4py.query.sort import Asc, Desc
@@ -95,8 +96,8 @@ if __name__ == '__main__':
                 filters = f if filters == {} else f&filters
             if filterDate != FILTER_DATE_DEFAULT:
                 filterDate = filterDate.split(" TO ")
-                d1 = filterDate[0] if filterDate[0] != "*" else "*"
-                d2 = filterDate[1] if filterDate[1] != "*" else "*"
+                d1 = int(filterDate[0]) if filterDate[0] != "*" else "*"
+                d2 = int(filterDate[1]) if filterDate[1] != "*" else "*"
                 f = Between("date",d1,d2)
                 filters = f if filters == {} else f&filters
 
