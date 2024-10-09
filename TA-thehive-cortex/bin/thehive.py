@@ -41,6 +41,7 @@ def create_thehive_instance(instance_id, settings, logger, acronym):
         "MAX_ALERTS_DEFAULT": configuration.getTheHiveAlertsMax(),
         "SORT_ALERTS_DEFAULT": configuration.getTheHiveAlertsSort(),
         "TTP_CATALOG_NAME": configuration.getTheHiveTTPCatalogName(),
+        "ATTACHMENT_PREFIX": configuration.getTheHiveCreationAttachmentPrefix(),
         "MAX_CREATION_RETRY": configuration.getTheHiveCreationMaxRetry()
     }
 
@@ -48,7 +49,7 @@ def create_thehive_instance(instance_id, settings, logger, acronym):
     thehive_default_instance = configuration.getTheHiveDefaultInstance()
     instance_id_final = thehive_default_instance if instance_id == "<default>" else instance_id
 
-    if instance_id_final == "" and instance_id == "<default>":
+    if instance_id_final is None or (instance_id_final == "" and instance_id == "<default>"):
         logger_file.error(id="TH10",message="Your alert is using the <default> instance ID setting which is empty in your configuration page. Please update the parameter accordingly")
         sys.exit(10)
 
@@ -146,7 +147,7 @@ class TheHive(TheHiveApi):
                 self.logger_file.debug(id="TH46",message="Payload content - Headers: "+str(self.session.headers))
                 self.logger_file.debug(id="TH47",message="Payload content - URL: "+str(self.session.hive_url))
             elif apiKey is not None:
-                self.logger_file.debug(id="TH50",message="TheHive API connection to (URL=\""+url+"\" is successful")
+                self.logger_file.debug(id="TH50",message="TheHive API connection to (URL=\""+url+"\") is successful")
             elif password is not None:
                 self.logger_file.debug(id="TH60",message="TheHive API connection to (URL=\""+url+"\",Username=\""+username+"\") is successful")
 

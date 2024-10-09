@@ -107,6 +107,16 @@ fields_additional_parameters = [
         )
     ), 
     field.RestField(
+        'thehive_creation_attachment_prefix',
+        required=True,
+        encrypted=False,
+        default='events_',
+        validator=validator.String(
+            min_len=0, 
+            max_len=8192, 
+        )
+    ), 
+    field.RestField(
         'thehive_creation_max_retry',
         required=True,
         encrypted=False,

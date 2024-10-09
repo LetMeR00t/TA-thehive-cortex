@@ -258,8 +258,24 @@
                             ]
                         },
                         {
+                            "field": "thehive_creation_attachment_prefix",
+                            "label": "TheHive: Attachment prefix",
+                            "type": "text",
+                            "help": "Please indicates a prefix used for the attachment added to the alert/case.",
+                            "required": true,
+                            "defaultValue": "events_",
+                            "validators": [
+                                {
+                                    "type": "string",
+                                    "minLength": 0,
+                                    "maxLength": 8192,
+                                    "errorMsg": "Max length of text input is 8192"
+                                }
+                            ]
+                        },
+                        {
                             "field": "thehive_creation_max_retry",
-                            "label": "TheHive: Creation max retry",
+                            "label": "TheHive: Max retry",
                             "type": "text",
                             "help": "Please indicates how many times maximum the creation of alert or case shall be performed in case of error.",
                             "required": true,
@@ -341,6 +357,10 @@
                         "label": "Type"
                     },
                     {
+                        "field": "additional_information",
+                        "label": "Additional information"
+                    },
+                    {
                         "field": "date",
                         "label": "Date"
                     }
@@ -354,8 +374,8 @@
             },
             "services": [
                 {
-                    "name": "thehive_data",
-                    "title": "TheHive data",
+                    "name": "thehive_alerts_cases",
+                    "title": "TheHive: Alerts & Cases",
                     "entity": [
                         {
                             "field": "name",
@@ -430,7 +450,7 @@
                         {
                             "field": "type",
                             "label": "Type",
-                            "help": "Indicates which kind of data you want to recover",
+                            "help": "Indicates which kind of logs data you want to recover",
                             "required": true,
                             "type": "radio",
                             "defaultValue": "cases",
@@ -443,6 +463,38 @@
                                     {
                                         "value": "cases",
                                         "label": "Cases"
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            "field": "additional_information",
+                            "label": "Additional information",
+                            "help": "Indicates if you want to recover additional data from the standard logs",
+                            "required": false,
+                            "type": "multipleSelect",
+                            "options": {
+                                "delimiter": ",",
+                                "items": [
+                                    {
+                                        "value": "tasks",
+                                        "label": "Tasks"
+                                    },
+                                    {
+                                        "value": "observables",
+                                        "label": "Observables"
+                                    },
+                                    {
+                                        "value": "attachments",
+                                        "label": "Attachments"
+                                    },
+                                    {
+                                        "value": "pages",
+                                        "label": "Pages"
+                                    },
+                                    {
+                                        "value": "ttps",
+                                        "label": "TTPs"
                                     }
                                 ]
                             }
@@ -466,6 +518,178 @@
                                     }
                                 ]
                             }
+                        }
+                    ]
+                },
+                {
+                    "name": "thehive_observables",
+                    "title": "TheHive: Observables",
+                    "entity": [
+                        {
+                            "field": "name",
+                            "label": "Name",
+                            "type": "text",
+                            "help": "Enter a unique name for the data input",
+                            "required": true,
+                            "validators": [
+                                {
+                                    "type": "regex",
+                                    "pattern": "^[a-zA-Z]\\w*$",
+                                    "errorMsg": "Input Name must start with a letter and followed by alphabetic letters, digits or underscores."
+                                },
+                                {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 100,
+                                    "errorMsg": "Length of input name should be between 1 and 100"
+                                }
+                            ]
+                        },
+                        {
+                            "field": "interval",
+                            "label": "Interval",
+                            "type": "text",
+                            "required": true,
+                            "help": "Time interval of input in seconds.",
+                            "validators": [
+                                {
+                                    "type": "regex",
+                                    "pattern": "^\\-[1-9]\\d*$|^\\d*$",
+                                    "errorMsg": "Interval must be an integer."
+                                }
+                            ]
+                        },
+                        {
+                            "field": "index",
+                            "label": "Index",
+                            "type": "singleSelect",
+                            "defaultValue": "default",
+                            "options": {
+                                "endpointUrl": "data/indexes",
+                                "createSearchChoice": true,
+                                "denyList": "^_.*$"
+                            },
+                            "required": true,
+                            "validators": [
+                                {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 80,
+                                    "errorMsg": "Length of index name should be between 1 and 80."
+                                }
+                            ]
+                        },
+                        {
+                            "field": "instance_id",
+                            "label": "Instance ID",
+                            "help": "Indicate which instance to use (Set the \"id\" provided under \"Instances\"). You can use \"<default>\" to set automatically the ID to the default set parameter in the configuration page.",
+                            "required": true,
+                            "type": "text",
+                            "defaultValue": "<default>",
+                            "validators": [
+                                {
+                                    "type": "string",
+                                    "minLength": 0,
+                                    "maxLength": 8192,
+                                    "errorMsg": "Max length of text input is 8192"
+                                }
+                            ]
+                        },
+                        {
+                            "field": "date",
+                            "label": "Date",
+                            "help": "Indicates if you want to recover your logs based on the last created or updated date",
+                            "required": true,
+                            "type": "radio",
+                            "defaultValue": "_updatedAt",
+                            "options": {
+                                "items": [
+                                    {
+                                        "value": "_createdAt",
+                                        "label": "Last created"
+                                    },
+                                    {
+                                        "value": "_updatedAt",
+                                        "label": "Last updated"
+                                    }
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "thehive_audit",
+                    "title": "TheHive: Audit",
+                    "entity": [
+                        {
+                            "field": "name",
+                            "label": "Name",
+                            "type": "text",
+                            "help": "Enter a unique name for the data input",
+                            "required": true,
+                            "validators": [
+                                {
+                                    "type": "regex",
+                                    "pattern": "^[a-zA-Z]\\w*$",
+                                    "errorMsg": "Input Name must start with a letter and followed by alphabetic letters, digits or underscores."
+                                },
+                                {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 100,
+                                    "errorMsg": "Length of input name should be between 1 and 100"
+                                }
+                            ]
+                        },
+                        {
+                            "field": "interval",
+                            "label": "Interval",
+                            "type": "text",
+                            "required": true,
+                            "help": "Time interval of input in seconds.",
+                            "validators": [
+                                {
+                                    "type": "regex",
+                                    "pattern": "^\\-[1-9]\\d*$|^\\d*$",
+                                    "errorMsg": "Interval must be an integer."
+                                }
+                            ]
+                        },
+                        {
+                            "field": "index",
+                            "label": "Index",
+                            "type": "singleSelect",
+                            "defaultValue": "default",
+                            "options": {
+                                "endpointUrl": "data/indexes",
+                                "createSearchChoice": true,
+                                "denyList": "^_.*$"
+                            },
+                            "required": true,
+                            "validators": [
+                                {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 80,
+                                    "errorMsg": "Length of index name should be between 1 and 80."
+                                }
+                            ]
+                        },
+                        {
+                            "field": "instance_id",
+                            "label": "Instance ID",
+                            "help": "Indicate which instance to use (Set the \"id\" provided under \"Instances\"). You can use \"<default>\" to set automatically the ID to the default set parameter in the configuration page.",
+                            "required": true,
+                            "type": "text",
+                            "defaultValue": "<default>",
+                            "validators": [
+                                {
+                                    "type": "string",
+                                    "minLength": 0,
+                                    "maxLength": 8192,
+                                    "errorMsg": "Max length of text input is 8192"
+                                }
+                            ]
                         }
                     ]
                 }

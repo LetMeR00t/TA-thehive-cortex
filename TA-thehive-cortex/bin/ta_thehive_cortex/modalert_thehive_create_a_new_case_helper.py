@@ -76,12 +76,12 @@ def process_event(helper, *args, **kwargs):
         logger_file.info(id="56",message="Configuration is ready. Creating the case...")
         logger_file.debug(id="57",message="TheHive URL instance used after retrieving the configuration: " + str(thehive.session.hive_url))
         logger_file.debug(id="58",message="Processing following instance ID: " + str(instance_id))
-        create_case(helper, thehive, alert_args, max_retry = int(defaults["MAX_CREATION_RETRY"]))
+        create_case(helper, thehive, alert_args, max_retry = int(defaults["MAX_CREATION_RETRY"]), attachment_prefix = defaults["ATTACHMENT_PREFIX"])
     return 0
 
 
 
-def create_case(helper, thehive: TheHive, alert_args, max_retry: int = 2):
+def create_case(helper, thehive: TheHive, alert_args, max_retry: int = 2, attachment_prefix: str = "events_"):
     """ This function is used to create the alert using the API, settings and search results """
  
     # Parse events
@@ -184,7 +184,7 @@ def create_case(helper, thehive: TheHive, alert_args, max_retry: int = 2):
                 results_file = helper.results_file
                 directory = None
                 headers = None
-                results_file_name = "events"+new_case["_id"]
+                results_file_name = attachment_prefix+new_case["_id"].replace("~","")
 
                 # This means, yes but uncompressed
                 if alert_args["attach_results"] >= 2:

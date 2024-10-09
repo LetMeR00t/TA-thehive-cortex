@@ -344,6 +344,12 @@ class Settings(object):
         self.logger_file.debug(id="S53",message="Getting this parameter: thehive_ttp_catalog_name="+str(param))
         return param
     
+    def getTheHiveCreationAttachmentPrefix(self):
+        """ This function returns the maximum creation retry of a TheHive instance """
+        param = self.__additional_parameters["thehive_creation_attachment_prefix"] if "thehive_creation_attachment_prefix" in self.__additional_parameters else "events_"
+        self.logger_file.debug(id="S54",message="Getting this parameter: thehive_creation_attachment_prefix="+str(param))
+        return param
+
     def getTheHiveCreationMaxRetry(self):
         """ This function returns the maximum creation retry of a TheHive instance """
         param = self.__additional_parameters["thehive_creation_max_retry"] if "thehive_creation_max_retry" in self.__additional_parameters else "5"
