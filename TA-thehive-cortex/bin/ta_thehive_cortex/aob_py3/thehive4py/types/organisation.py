@@ -47,7 +47,6 @@ class OutputOrganisationRequired(Dict):
 
 
 class OutputOrganisation(OutputOrganisationRequired):
-
     _updatedBy: str
     _updatedAt: int
     links: List[InputOrganisationLink]

@@ -5,9 +5,21 @@ from typing import Any, Optional, Union
 
 import requests
 import requests.auth
+from urllib3 import Retry
 
 from thehive4py.__version__ import __version__
 from thehive4py.errors import TheHiveError
+
+DEFAULT_RETRY = Retry(
+    total=5,
+    backoff_factor=1,
+    status_forcelist=[500, 502, 503, 504],
+    allowed_methods=["GET", "POST", "PUT", "PATCH", "DELETE"],
+    raise_on_status=False,
+)
+
+
+RetryValue = Union[Retry, int, None]
 
 class SessionJSONEncoder(jsonlib.JSONEncoder):
     """Custom JSON encoder class for TheHive session."""
@@ -27,7 +39,8 @@ class TheHiveSession(requests.Session):
         password: Optional[str] = None,
         proxies={},
         verify=None,
-        cert=None
+        cert=None,
+        max_retries: RetryValue = DEFAULT_RETRY,
     ):
         super().__init__()
         self.hive_url = self._sanitize_hive_url(url)
@@ -35,6 +48,7 @@ class TheHiveSession(requests.Session):
         self.verify = verify
         self.cert = cert
         self.headers["User-Agent"] = f"thehive4py/{__version__}"
+        self._set_retries(max_retries=max_retries)
 
         if username and password:
             self.headers["Authorization"] = requests.auth._basic_auth_str(
@@ -46,6 +60,12 @@ class TheHiveSession(requests.Session):
             raise TheHiveError(
                 "Either apikey or the username/password combination must be provided!"
             )
+
+    def _set_retries(self, max_retries: RetryValue):
+        """Configure the session to retry."""
+        retry_adapter = requests.adapters.HTTPAdapter(max_retries=max_retries)
+        self.mount("http://", retry_adapter)
+        self.mount("https://", retry_adapter)
 
     def _sanitize_hive_url(self, hive_url: str) -> str:
         """Sanitize the base url for the client."""

@@ -4,7 +4,6 @@ from thehive4py.endpoints import (
     AlertEndpoint,
     CaseEndpoint,
     CommentEndpoint,
-    FunctionEndpoint,
     ObservableEndpoint,
     OrganisationEndpoint,
     ProcedureEndpoint,
@@ -17,7 +16,8 @@ from thehive4py.endpoints import (
 from thehive4py.endpoints.cortex import CortexEndpoint
 from thehive4py.endpoints.custom_field import CustomFieldEndpoint
 from thehive4py.endpoints.observable_type import ObservableTypeEndpoint
-from thehive4py.session import TheHiveSession
+from thehive4py.endpoints.query import QueryEndpoint
+from thehive4py.session import DEFAULT_RETRY, RetryValue, TheHiveSession
 
 
 class TheHiveApi:
@@ -30,7 +30,8 @@ class TheHiveApi:
         organisation: Optional[str] = None,
         proxies={},
         verify=None,
-        cert=None
+        cert=None,
+        max_retries: RetryValue = DEFAULT_RETRY
     ):
         self.session = TheHiveSession(
             url=url,
@@ -39,7 +40,8 @@ class TheHiveApi:
             password=password,
             proxies=proxies,
             verify=verify,
-            cert=cert
+            cert=cert,
+            max_retries=max_retries
         )
         self.session_organisation = organisation
 
@@ -64,7 +66,9 @@ class TheHiveApi:
 
         # connector endpoints
         self.cortex = CortexEndpoint(self.session)
-        self.function = FunctionEndpoint(self.session)
+
+        # standard endpoints
+        self.query = QueryEndpoint(self.session)
 
     @property
     def session_organisation(self) -> Optional[str]:

@@ -2,6 +2,7 @@ from typing import List, Dict
 
 from thehive4py.types.custom_field import InputCustomFieldValue, OutputCustomFieldValue
 from thehive4py.types.observable import InputObservable
+from thehive4py.types.procedure import InputProcedure
 from thehive4py.types.share import InputShare
 from thehive4py.types.task import InputTask
 
@@ -27,6 +28,7 @@ class InputAlert(InputAlertRequired):
     status: str
     caseTemplate: str
     observables: List[InputObservable]
+    procedures: List[InputProcedure]
 
 
 class OutputAlertRequired(Dict):

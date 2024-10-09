@@ -3,11 +3,11 @@ from typing import Dict
 
 class InputProcedureRequired(Dict):
     occurDate: int
-    tactic: str
     patternId: str
 
 
 class InputProcedure(InputProcedureRequired):
+    tactic: str
     description: str
 
 

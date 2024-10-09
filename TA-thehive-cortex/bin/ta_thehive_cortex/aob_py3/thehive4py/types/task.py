@@ -15,6 +15,7 @@ class InputTask(InputTaskRequired):
     order: int
     dueDate: int
     assignee: str
+    mandatory: bool
 
 
 class OutputTaskRequired(Dict):
@@ -27,6 +28,7 @@ class OutputTaskRequired(Dict):
     status: str
     flag: bool
     order: int
+    mandatory: bool
     extraData: dict
 
 
@@ -51,6 +53,7 @@ class InputUpdateTask(Dict):
     order: int
     dueDate: int
     assignee: str
+    mandatory: bool
 
 
 class InputBulkUpdateTask(InputUpdateTask):

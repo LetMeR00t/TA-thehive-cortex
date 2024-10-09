@@ -88,3 +88,21 @@ class OrganisationEndpoint(EndpointBase):
             params={"name": "organisations.count"},
             json={"query": query},
         )
+    
+    def get_audit_logs(
+        self,
+        filters: Optional[FilterExpr] = None,
+        sortby: Optional[SortExpr] = None,
+        paginate: Optional[Paginate] = None,
+    ) -> List[OutputOrganisation]:
+        query: QueryExpr = [
+            {"_name": "listAudit"},
+            *self._build_subquery(filters=filters, sortby=sortby, paginate=paginate),
+        ]
+
+        return self._session.make_request(
+            "POST",
+            path="/api/v1/query",
+            params={"name": "get-audit-logs"},
+            json={"query": query},
+        )

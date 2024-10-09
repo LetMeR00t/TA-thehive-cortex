@@ -3,7 +3,6 @@ from .case import CaseEndpoint
 from .comment import CommentEndpoint
 from .cortex import CortexEndpoint
 from .custom_field import CustomFieldEndpoint
-from .function import FunctionEndpoint
 from .observable import ObservableEndpoint
 from .organisation import OrganisationEndpoint
 from .procedure import ProcedureEndpoint
