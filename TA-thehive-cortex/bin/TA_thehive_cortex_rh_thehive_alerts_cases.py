@@ -51,6 +51,13 @@ fields = [
         validator=None
     ), 
     field.RestField(
+        'additional_information',
+        required=False,
+        encrypted=False,
+        default=None,
+        validator=None
+    ), 
+    field.RestField(
         'date',
         required=True,
         encrypted=False,
@@ -70,7 +77,7 @@ model = RestModel(fields, name=None)
 
 
 endpoint = DataInputModel(
-    'thehive_data',
+    'thehive_alerts_cases',
     model,
 )
 

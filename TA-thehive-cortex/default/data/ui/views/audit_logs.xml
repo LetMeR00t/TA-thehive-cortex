@@ -15,7 +15,7 @@
       <title>Audit logs : Modular input regarding TheHive Cortex API (Inputs)</title>
       <table>
         <search>
-          <query>index=_internal source="*ta_thehive_cortex_thehive_data.log"
+          <query>index=_internal source="*ta_thehive_cortex_thehive_*.log"
 | rex field="_raw" "^\d+\-\d+\-\d+ \d+:\d+:\d+,\d+ (?&lt;level&gt;[^ ]+) pid=(?&lt;pid&gt;[^ ]+) tid=[^ ]+ file=[^ ]+ \| (?&lt;signature&gt;.*)"
 | eval signature = coalesce(signature,_raw)
 | sort 0 -_time
