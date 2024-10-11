@@ -97,12 +97,21 @@
         </splunk-select>
     </splunk-control-group>
 
-    <splunk-control-group label="Attach the search results to the alert" help="Set to yes if you want to attach the splunk search results to the alert"><span class="required">* </span>
+    <splunk-control-group label="[Attachment] Attach the search results to the alert" help="Set to yes if you want to attach the splunk search results to the alert"><span class="required">* </span>
         <splunk-select name="action.thehive_create_a_new_alert.param.attach_results">
             <option value="0">No</option>
-            <option value="1">Yes, compressed (gz)</option>
+            <option value="1">Yes, compressed (tgz)</option>
             <option value="2">Yes, uncompressed (csv)</option>
             <option value="3">Yes, uncompressed (json)</option>
+        </splunk-select>
+    </splunk-control-group>
+
+    <splunk-control-group label="[Attachment] Name format" help="Indicates how the attachment should be named when added (ignored if the previous parameter is set to 'No')">
+        <splunk-select name="action.thehive_create_a_new_alert.param.attach_format">
+            <option value="0">Prefix + Alert ID</option>
+            <option value="1">Alert ID</option>
+            <option value="2">Prefix + SHA256 (of the file content)</option>
+            <option value="3">SHA256 (of the file content)</option>
         </splunk-select>
     </splunk-control-group>
 

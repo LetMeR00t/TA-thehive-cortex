@@ -9,6 +9,7 @@
 # Feel free to use the code, but please share the changes you've made
 
 import re
+import tempfile
 import time
 import gzip
 import csv
@@ -19,6 +20,8 @@ from thehive import TheHive, create_thehive_instance
 from thehive4py.types.alert import InputAlert
 from thehive4py.errors import TheHiveError
 import globals
+import hashlib
+import shutil
 
 __author__ = "Alexandre Demeyer, Remi Seguy"
 __maintainer__ = "Alexandre Demeyer"
@@ -72,6 +75,7 @@ def process_event(helper, *args, **kwargs):
         alert_args["description_results_enable"] = True if int(helper.get_param("description_results_enable")) == 1 else False
         alert_args["description_results_keep_observable"] = True if int(helper.get_param("description_results_keep_observable")) == 1 else False
         alert_args["attach_results"] = int(helper.get_param("attach_results"))
+        alert_args["attach_format"] = int(helper.get_param("attach_format"))
         logger_file.debug(id="55",message="Arguments recovered: " + str(alert_args))
 
         # Create the alert
@@ -175,22 +179,33 @@ def create_alert(helper, thehive: TheHive, alert_args, max_retry: int = 2, attac
 
                 # This means, yes
                 
-                thehive.logger_file.info(id="140",message="Processing attachment of the Splunk search results to the alert..."
-                )
+                thehive.logger_file.info(id="140",message="Processing attachment of the Splunk search results to the alert...")
 
                 results_file = helper.results_file
-                directory = None
-                headers = None
-                results_file_name = attachment_prefix+new_alert["_id"].replace("~","")
+                thehive.logger_file.debug(id="141",message=f"Processing results file: {results_file}")
+                results_file_name = os.path.basename(results_file).split(".")[0]
+                tmp_directory = tempfile.gettempdir()
+                file_ext = ".csv.gz"
+                raw_results_filepath_before_rename = None
+
+                # This means, yes but compressed in GZ format
+                if alert_args["attach_results"] == 1:
+                    # Just copy the file without any change
+                    raw_results_filepath_before_rename = os.path.join(tmp_directory,results_file_name+file_ext)
+                    shutil.copyfile(results_file, raw_results_filepath_before_rename)
 
                 # This means, yes but uncompressed
-                if alert_args["attach_results"] >= 2:
+                elif alert_args["attach_results"] >= 2:
 
-                    thehive.logger_file.warn(id="145",message="Uncompressing Splunk search results file located at {}...".format(results_file)
-                    )
+                    thehive.logger_file.warn(id="145",message="Uncompressing Splunk search results file located at {}...".format(results_file))
 
+                    # uncompress file
+                    headers = None
+                    data = None
+                    sha256 = None
+
+                    # Headers and rows
                     try:
-                        # uncompress file
                         csvreader = None
                         data = []
                         with gzip.open(results_file, 'rt') as f:
@@ -198,59 +213,90 @@ def create_alert(helper, thehive: TheHive, alert_args, max_retry: int = 2, attac
                             headers = next(csvreader)
                             for row in csvreader:
                                 data.append(row)
-                        directory = os.path.dirname(results_file) 
-                        
-                        raw_results_filepath = os.path.join(directory,results_file_name+".csv")
 
-                        with open(raw_results_filepath, "wt", newline="") as f:
+                    except Exception as e:
+                        thehive.logger_file.error(id="148",message="Error during uncompressing process: {}".format(e))
+
+                    # Headers are in 'headers' and rows in 'data'
+
+                    # This means, yes but uncompressed in CSV format
+                    if alert_args["attach_results"] == 2:
+                        # CSV file, no change
+                        file_ext = ".csv"
+                        raw_results_filepath_before_rename = os.path.join(tmp_directory,results_file_name+file_ext)
+
+                        with open(raw_results_filepath_before_rename, "wt", newline="") as f:
                             csvwriter = csv.writer(f)
                             csvwriter.writerow(headers)
                             csvwriter.writerows(data)
-
-                        results_file = raw_results_filepath
-
-                    except Exception as e:
-                        thehive.logger_file.error(id="148",message="Error during uncompressing process: {}".format(e)
-                        )
+                        
+                        # Calculate SHA256
+                        with open(raw_results_filepath_before_rename,"rb") as f:
+                            bytes = f.read() # read entire file as bytes
+                            sha256 = hashlib.sha256(bytes)
 
                     # This means, yes but uncompressed in JSON format
-                    if alert_args["attach_results"] == 3:
-                        raw_json_results_filepath = os.path.join(directory,results_file_name+".json")
-                        # Convert it
-                        with open(raw_results_filepath, 'r') as csvfile:
-                            reader = csv.DictReader(csvfile, headers)
+                    elif alert_args["attach_results"] == 3:
+                        file_ext = ".json"
+                        # JSON file, convert it
+                        with gzip.open(results_file, 'rt') as f:
+                            reader = csv.DictReader(f, headers)
                             # Skip first row
                             next(reader)
                             data = []
                             for row in reader:
                                 data.append(row)
-                                
-                        with open(raw_json_results_filepath, 'w') as jsonfile:
-                            if len(data)>1:
-                                jsonfile.write(json.dumps(data, indent=2))
-                            else:
-                                jsonfile.write(json.dumps(data[0], indent=2))
-                        
-                        # Use the good one
-                        os.remove(results_file)
-                        results_file = raw_json_results_filepath
+
+                        # Convert
+                        json_data = None
+                        if len(data)>1:
+                            json_data = json.dumps(data, indent=2)
+                        else:
+                            json_data = json.dumps(data[0], indent=2)
+
+                        raw_results_filepath_before_rename = os.path.join(tmp_directory,results_file_name+file_ext)
+
+                        with open(raw_results_filepath_before_rename, 'w') as jsonfile:
+                            jsonfile.write(json_data)
+
+
+                # Calculate SHA256
+                with open(raw_results_filepath_before_rename,"rb") as f:
+                    bytes = f.read() # read entire file as bytes
+                    sha256 = hashlib.sha256(bytes)
+
+                # Evaluate the file name
+                if alert_args["attach_format"] == 0:
+                    # Prefix + Alert ID
+                    raw_results_filepath_after_rename = os.path.join(tmp_directory,attachment_prefix+new_alert["_id"].replace("~","")+file_ext)
+                elif alert_args["attach_format"] == 1:
+                    # Alert ID
+                    raw_results_filepath_after_rename = os.path.join(tmp_directory,new_alert["_id"].replace("~","")+file_ext)
+                elif alert_args["attach_format"] == 2:
+                    # Prefix + SHA256
+                    raw_results_filepath_after_rename = os.path.join(tmp_directory,attachment_prefix+sha256.hexdigest()+file_ext)
+                elif alert_args["attach_format"] == 3:
+                    # SHA256
+                    raw_results_filepath_after_rename = os.path.join(tmp_directory,sha256.hexdigest()+file_ext)
+                else:
+                    attach_format = alert_args["attach_format"]
+                    thehive.logger_file.error(id="141",message=f"Attachment format isn't supported, given: {attach_format}")
+
+                os.rename(raw_results_filepath_before_rename, raw_results_filepath_after_rename)
 
                 attachment_result = None
                 try:
-                    attachment_result = thehive.alert.add_attachment(new_alert["_id"],[results_file])
+                    thehive.logger_file.info(id="149",message=f"Processing name for the attachment from the options, result is: {raw_results_filepath_after_rename}")
+                    attachment_result = thehive.alert.add_attachment(new_alert["_id"],[raw_results_filepath_after_rename])
                 except TheHiveError as e:
                     thehive.logger_file.error(id="150",message="TheHive attachment creation has failed. "
                         "url={}, data={}, content={}, error={}"
                         .format(thehive.session.hive_url, str(alert), str(new_alert), str(e))
                     )
 
-                # This means, yes but uncompressed
-                if alert_args["attach_results"] == 2:
 
-                    thehive.logger_file.debug(id="152",message="Deleting uncompressed file at {}...".format(results_file)
-                    )
-
-                    os.remove(results_file)
+                # Remove tmp file
+                os.remove(raw_results_filepath_after_rename)
 
                 if "_id" in attachment_result[0]:
                     # log response status

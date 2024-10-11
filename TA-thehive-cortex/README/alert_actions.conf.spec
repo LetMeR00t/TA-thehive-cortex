@@ -29,6 +29,7 @@ param.pap = <list> PAP:. It's a required parameter. It's default value is 3.
 param.description_results_enable = <int> Indicates if you want to append a sanitized markdown table with the results to the description
 param.description_results_keep_observable = <int> Indicates if you want to keep observables in the description. Otherwise, they will be removed from the sanitized markdown table
 param.attach_results = <string> Indicates if you want to attach the splunk search results to the alert
+param.attach_format = <string> Indicates how the attachment should be named when added (ignored if the previous parameter is set to 'No') 
 param._cam = <json> Active response parameters.
 
 [thehive_create_a_new_case]
@@ -49,6 +50,7 @@ param.pap = <list> PAP:. It's a required parameter. It's default value is 3.
 param.description_results_enable = <int> Indicates if you want to append a sanitized markdown table with the results to the description
 param.description_results_keep_observable = <int> Indicates if you want to keep observables in the description. Otherwise, they will be removed from the sanitized markdown table
 param.attach_results = <string> Indicates if you want to attach the splunk search results to the case
+param.attach_format = <string> Indicates how the attachment should be named when added (ignored if the previous parameter is set to 'No') 
 param._cam = <json> Active response parameters.
 
 [thehive_run_function]
