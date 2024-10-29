@@ -290,14 +290,6 @@ def parse_events(helper, thehive: TheHive, alert_args):
         else:
             alert["pap"] = alert_args['pap']
 
-        # check if there are some tags and remove them from the markdown table
-        if alert_args["tags"] and len(alert_args["tags"])>0:
-            # Check if sanitization is required. For tags, we build again the string as it's given as a list^
-            orig_tags = ",".join(alert_args["tags"])
-            for field in row:
-                if orig_tags in row[field]:
-                    del row_sanitized[field]
-
         # find the field name used for a valid timestamp
         # and strip it from the row
         if alert_args['timestamp'] in row:
