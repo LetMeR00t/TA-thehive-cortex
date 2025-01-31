@@ -61,6 +61,8 @@ def collect_events(helper, ew):
     modular_input_args = {}
     # Get string values from the input form
     modular_input_args["date"] = helper.get_arg('date')
+    modular_input_args["max_size_value"] = helper.get_arg('max_size_value') if helper.get_arg('max_size_value') is not None and helper.get_arg('max_size_value') != "" else 1000
+    modular_input_args["fields_removal"] = helper.get_arg('fields_removal') if helper.get_arg('fields_removal') is not None and helper.get_arg('fields_removal') != "" else ""
     logger_file.debug(id="30",message="Arguments recovered: " + str(modular_input_args))
 
     date_mode = None
@@ -116,6 +118,11 @@ def collect_events(helper, ew):
         if "source" in event:
             event["orig_source"] = event["source"]
             del event["source"]
+
+        # Sanitize the event from the configuration
+        event = configuration.utils.remove_unwanted_keys_from_dict(d=event, l=modular_input_args["fields_removal"].split(","))
+        event = configuration.utils.check_and_reduce_values_size(d=event, max_size=int(modular_input_args["max_size_value"]))
+        logger_file.debug(id="45",message=f"Event after processing (check_and_reduce_values_size): {event}")
 
         # Index the event
         e = helper.new_event(source="thehive:"+stanza, host=thehive.session.hive_url[8:], index=helper.get_output_index(), sourcetype="thehive:"+date_mode+":observables", data=json.dumps(event))

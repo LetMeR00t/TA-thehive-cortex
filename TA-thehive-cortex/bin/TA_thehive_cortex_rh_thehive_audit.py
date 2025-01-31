@@ -43,7 +43,27 @@ fields = [
             max_len=8192, 
         )
     ), 
-
+    field.RestField(
+        'max_size_value',
+        required=False,
+        encrypted=False,
+        default='1000',
+        validator=validator.String(
+            min_len=0, 
+            max_len=8192, 
+        )
+    ), 
+    field.RestField(
+        'fields_removal',
+        required=False,
+        encrypted=False,
+        default=None,
+        validator=validator.String(
+            min_len=0, 
+            max_len=8192, 
+        )
+    ),  
+    
     field.RestField(
         'disabled',
         required=False,

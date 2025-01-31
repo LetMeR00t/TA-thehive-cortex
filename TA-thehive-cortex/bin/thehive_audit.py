@@ -50,6 +50,14 @@ class ModInputthehive_audit(modinput_wrapper.base_modinput.BaseModInput):
                                          description="Indicate which instance to use (Set the \"id\" provided under \"Instances\"). You can use \"<default>\" to set automatically the ID to the default set parameter in the configuration page.",
                                          required_on_create=True,
                                          required_on_edit=False))
+        scheme.add_argument(smi.Argument("max_size_value", title="Max size for values",
+                                         description="Indicates what is the maximum size/length for the values (will be truncated after this value)",
+                                         required_on_create=False,
+                                         required_on_edit=False))
+        scheme.add_argument(smi.Argument("fields_removal", title="Fields removal",
+                                         description="Indicates a list of fields, separated by a comma, representing the path in the dictionnary (such as \'field1.subfield1\') that should be removed from the original event",
+                                         required_on_create=False,
+                                         required_on_edit=False))
         return scheme
 
     def get_app_name(self):

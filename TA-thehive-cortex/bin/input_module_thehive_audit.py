@@ -51,8 +51,13 @@ def collect_events(helper, ew):
     instance_id = helper.get_arg("instance_id")
     helper.log_debug("[MI-THA-15] TheHive instance found: " + str(instance_id))
 
+    modular_input_args = {}
+    modular_input_args["max_size_value"] = helper.get_arg('max_size_value') if helper.get_arg('max_size_value') is not None and helper.get_arg('max_size_value') != "" else 1000
+    modular_input_args["fields_removal"] = helper.get_arg('fields_removal') if helper.get_arg('fields_removal') is not None and helper.get_arg('fields_removal') != "" else ""
+
     # get the previous search results
     (thehive, configuration, logger_file) = create_thehive_instance_modular_input(instance_id=instance_id, helper=helper, acronym="MI-THA")
+    logger_file.debug(id="17",message="Arguments recovered: " + str(modular_input_args))
 
     logger_file.debug(id="20",message="TheHive URL instance used after retrieving the configuration: " + str(thehive.session.hive_url))
     logger_file.debug(id="25",message="TheHive connection is ready. Processing modular input parameters...")
@@ -99,6 +104,11 @@ def collect_events(helper, ew):
         if "source" in event:
             event["orig_source"] = event["source"]
             del event["source"]
+
+        # Sanitize the event from the configuration
+        event = configuration.utils.remove_unwanted_keys_from_dict(d=event, l=modular_input_args["fields_removal"].split(","))
+        event = configuration.utils.check_and_reduce_values_size(d=event, max_size=int(modular_input_args["max_size_value"]))
+        logger_file.debug(id="45",message=f"Event after processing (check_and_reduce_values_size): {event}")
 
         # Index the event
         e = helper.new_event(source="thehive:"+stanza, host=thehive.session.hive_url[8:], index=helper.get_output_index(), sourcetype="thehive:last_created:audit", data=json.dumps(event))
