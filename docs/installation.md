@@ -4,8 +4,6 @@
 
 This application contains all the python libraries to work autonomously.
 
-**However**, predefined dashboards of the application requires the installation of this application : [Status Indicator - Custom Visualization](https://splunkbase.splunk.com/app/3119/)
-
 You should create a specific user and organization in your TheHive/Cortex instances to interact with Splunk.
 
 > ⚠️ If you were using an old application (such as v2.3.1) and wants to migrate to the last major version (v3.x.x), there is a change with the way how instances are stored into Splunk. It's not using anymore a KVStore but a CSV lookup to do so. Please, follow the below procedure
