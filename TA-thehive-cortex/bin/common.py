@@ -33,16 +33,20 @@ class LoggerFile(object):
             getattr(self.logger, type)(log_context+"["+globals.next_log_id()+"]["+self.command_id+"-"+str(id)+"] "+str(message))
 
     def info(self, id = "?", message = ""):
-            self._log("info", id=id, message=message)
+        self._log("info", id=id, message=message)
 
     def warn(self, id = "?", message = ""):
-            self._log("warn", id=str(id)+"-WARNING", message=message)
+        self._log("warn", id=str(id)+"-WARNING", message=message)
+    
+    # Support potential issues
+    def warning(self, id = "?", message = ""):
+        self.warn(id=id, message=message)
 
     def error(self, id = "?", message = ""):
-            self._log("error", id=str(id)+"-ERROR", message=message)
+        self._log("error", id=str(id)+"-ERROR", message=message)
 
     def debug(self, id = "?", message = ""):
-            self._log("debug", id=id, message=message)
+        self._log("debug", id=id, message=message)
 
 class Settings(object):
 
