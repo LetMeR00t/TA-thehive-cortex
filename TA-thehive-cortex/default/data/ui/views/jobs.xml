@@ -89,35 +89,8 @@
     </input>
   </fieldset>
   <row>
-    <panel depends="$show_dashboards_run$">
-      <viz type="status_indicator_app.status_indicator">
-        <search>
-          <query>| makeresults
-| eval text = "New Analysis", icon = "plus-square", color="#f1813f"
-| table text, icon, color</query>
-          <earliest>-24h@h</earliest>
-          <latest>now</latest>
-          <sampleRatio>1</sampleRatio>
-        </search>
-        <option name="drilldown">none</option>
-        <option name="height">48</option>
-        <option name="status_indicator_app.status_indicator.colorBy">field_value</option>
-        <option name="status_indicator_app.status_indicator.fillTarget">background</option>
-        <option name="status_indicator_app.status_indicator.fixIcon">warning</option>
-        <option name="status_indicator_app.status_indicator.icon">field_value</option>
-        <option name="status_indicator_app.status_indicator.precision">0</option>
-        <option name="status_indicator_app.status_indicator.showOption">1</option>
-        <option name="status_indicator_app.status_indicator.staticColor">#f1813f</option>
-        <option name="status_indicator_app.status_indicator.useColors">true</option>
-        <option name="status_indicator_app.status_indicator.useThousandSeparator">true</option>
-        <option name="trellis.enabled">0</option>
-        <option name="trellis.scales.shared">1</option>
-        <option name="trellis.size">medium</option>
-      </viz>
-    </panel>
-  </row>
-  <row>
-    <panel depends="$show_dashboards_run$">
+    <panel id="panel_title1" depends="$show_dashboards_run$">
+      <title>New Analysis</title>
       <table>
         <search>
           <query>| makeresults
@@ -154,36 +127,8 @@
     </panel>
   </row>
   <row>
-    <panel>
-      <viz type="status_indicator_app.status_indicator">
-        <search>
-          <query>| makeresults
-| eval text = "Jobs History", icon = "history", color="#54c4c3"
-| table text, icon, color</query>
-          <earliest>-24h@h</earliest>
-          <latest>now</latest>
-          <sampleRatio>1</sampleRatio>
-        </search>
-        <option name="drilldown">none</option>
-        <option name="height">48</option>
-        <option name="refresh.display">progressbar</option>
-        <option name="status_indicator_app.status_indicator.colorBy">field_value</option>
-        <option name="status_indicator_app.status_indicator.fillTarget">background</option>
-        <option name="status_indicator_app.status_indicator.fixIcon">warning</option>
-        <option name="status_indicator_app.status_indicator.icon">field_value</option>
-        <option name="status_indicator_app.status_indicator.precision">0</option>
-        <option name="status_indicator_app.status_indicator.showOption">1</option>
-        <option name="status_indicator_app.status_indicator.staticColor">#006d9c</option>
-        <option name="status_indicator_app.status_indicator.useColors">true</option>
-        <option name="status_indicator_app.status_indicator.useThousandSeparator">true</option>
-        <option name="trellis.enabled">0</option>
-        <option name="trellis.scales.shared">1</option>
-        <option name="trellis.size">medium</option>
-      </viz>
-    </panel>
-  </row>
-  <row>
-    <panel>
+    <panel id="panel_title2">
+      <title>Jobs History</title>
       <input type="text" token="filter_data" searchWhenChanged="true">
         <label>Data</label>
         <default></default>
@@ -275,6 +220,29 @@
         <option name="dataOverlayMode">none</option>
         <option name="refresh.display">progressbar</option>
       </table>
+    </panel>
+  </row>
+  <row depends="$alwaysHideCSSPanel$">
+    <panel>
+      <html>
+        <style>
+          #panel_title1 .dashboard-panel .panel-title {
+            background:#f1813f !important;
+            color:white !important;
+            font-size: 2em !important;
+            text-align: center !important;
+            font-weight: bold !important;
+          }
+          
+          #panel_title2 .dashboard-panel .panel-title {
+            background:#54C4C3 !important;
+            color:white !important;
+            font-size: 2em !important;
+            text-align: center !important;
+            font-weight: bold !important;
+          }
+        </style>
+      </html>
     </panel>
   </row>
 </form>

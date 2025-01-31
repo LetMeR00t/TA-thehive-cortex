@@ -50,37 +50,8 @@
     </input>
   </fieldset>
   <row>
-    <panel>
-      <viz type="status_indicator_app.status_indicator">
-        <search>
-          <progress>
-            <set token="d1">$job.earliestTime$</set>
-            <set token="d2">$job.latestTime$</set>
-          </progress>
-          <query>| makeresults
-| eval text = "Statistics", icon = "database", color="#f1cf00"
-| table text, icon, color</query>
-          <earliest>$filter_date.earliest$</earliest>
-          <latest>$filter_date.latest$</latest>
-          <sampleRatio>1</sampleRatio>
-        </search>
-        <option name="drilldown">none</option>
-        <option name="height">48</option>
-        <option name="refresh.display">progressbar</option>
-        <option name="status_indicator_app.status_indicator.colorBy">field_value</option>
-        <option name="status_indicator_app.status_indicator.fillTarget">background</option>
-        <option name="status_indicator_app.status_indicator.fixIcon">warning</option>
-        <option name="status_indicator_app.status_indicator.icon">field_value</option>
-        <option name="status_indicator_app.status_indicator.precision">0</option>
-        <option name="status_indicator_app.status_indicator.showOption">1</option>
-        <option name="status_indicator_app.status_indicator.staticColor">#006d9c</option>
-        <option name="status_indicator_app.status_indicator.useColors">true</option>
-        <option name="status_indicator_app.status_indicator.useThousandSeparator">true</option>
-      </viz>
-    </panel>
-  </row>
-  <row>
-    <panel>
+    <panel id="panel_title1">
+      <title>Statistics</title>
       <input type="text" token="filtered_field">
         <label>[Filter] Field</label>
         <change>
@@ -205,6 +176,21 @@
         <option name="dataOverlayMode">none</option>
         <option name="refresh.display">progressbar</option>
       </table>
+    </panel>
+  </row>
+  <row depends="$alwaysHideCSSPanel$">
+    <panel>
+      <html>
+        <style>
+          #panel_title1 .dashboard-panel .panel-title {
+            background:#f1813f !important;
+            color:white !important;
+            font-size: 2em !important;
+            text-align: center !important;
+            font-weight: bold !important;
+          }
+        </style>
+      </html>
     </panel>
   </row>
 </form>

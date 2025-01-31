@@ -61,40 +61,8 @@
     </input>
   </fieldset>
   <row>
-    <panel depends="$show_dashboards_create$">
-      <viz type="status_indicator_app.status_indicator">
-        <search>
-          <progress>
-            <set token="d1">$job.earliestTime$</set>
-            <set token="d2">$job.latestTime$</set>
-          </progress>
-          <query>| makeresults
-| eval text = "Create a new case", icon = "plus-square", color="#f1813f"
-| table text, icon, color</query>
-          <earliest>$filter_date.earliest$</earliest>
-          <latest>$filter_date.latest$</latest>
-          <sampleRatio>1</sampleRatio>
-        </search>
-        <option name="drilldown">none</option>
-        <option name="height">48</option>
-        <option name="refresh.display">progressbar</option>
-        <option name="status_indicator_app.status_indicator.colorBy">field_value</option>
-        <option name="status_indicator_app.status_indicator.fillTarget">background</option>
-        <option name="status_indicator_app.status_indicator.fixIcon">warning</option>
-        <option name="status_indicator_app.status_indicator.icon">field_value</option>
-        <option name="status_indicator_app.status_indicator.precision">0</option>
-        <option name="status_indicator_app.status_indicator.showOption">1</option>
-        <option name="status_indicator_app.status_indicator.staticColor">#f1813f</option>
-        <option name="status_indicator_app.status_indicator.useColors">true</option>
-        <option name="status_indicator_app.status_indicator.useThousandSeparator">true</option>
-        <option name="trellis.enabled">0</option>
-        <option name="trellis.scales.shared">1</option>
-        <option name="trellis.size">medium</option>
-      </viz>
-    </panel>
-  </row>
-  <row>
-    <panel depends="$show_dashboards_create$">
+    <panel id="panel_title1" depends="$show_dashboards_create$">
+      <title>Create a new case</title>
       <input type="radio" token="launch_alert" searchWhenChanged="true">
         <label>Launch case action</label>
         <choice value="True">Run</choice>
@@ -237,33 +205,8 @@ param.severity=$create_severity$ param.tlp=$create_tlp$ param.pap=$create_pap$</
     </panel>
   </row>
   <row>
-    <panel>
-      <viz type="status_indicator_app.status_indicator">
-        <search>
-          <query>| makeresults
-| eval text = "Cases", icon = "history", color="#f1cf00"
-| table text, icon, color</query>
-          <earliest>-24h@h</earliest>
-          <latest>now</latest>
-          <sampleRatio>1</sampleRatio>
-        </search>
-        <option name="drilldown">none</option>
-        <option name="height">48</option>
-        <option name="refresh.display">progressbar</option>
-        <option name="status_indicator_app.status_indicator.colorBy">field_value</option>
-        <option name="status_indicator_app.status_indicator.fillTarget">background</option>
-        <option name="status_indicator_app.status_indicator.fixIcon">warning</option>
-        <option name="status_indicator_app.status_indicator.icon">field_value</option>
-        <option name="status_indicator_app.status_indicator.precision">0</option>
-        <option name="status_indicator_app.status_indicator.showOption">1</option>
-        <option name="status_indicator_app.status_indicator.staticColor">#006d9c</option>
-        <option name="status_indicator_app.status_indicator.useColors">true</option>
-        <option name="status_indicator_app.status_indicator.useThousandSeparator">true</option>
-      </viz>
-    </panel>
-  </row>
-  <row>
-    <panel>
+    <panel id="panel_title2">
+      <title>Cases</title>
       <input type="text" token="filter_keyword" searchWhenChanged="true">
         <label>Keyword</label>
         <default>*</default>
@@ -429,6 +372,29 @@ param.severity=$create_severity$ param.tlp=$create_tlp$ param.pap=$create_pap$</
         <option name="dataOverlayMode">none</option>
         <option name="refresh.display">progressbar</option>
       </table>
+    </panel>
+  </row>
+  <row depends="$alwaysHideCSSPanel$">
+    <panel>
+      <html>
+        <style>
+          #panel_title1 .dashboard-panel .panel-title {
+            background:#f1813f !important;
+            color:white !important;
+            font-size: 2em !important;
+            text-align: center !important;
+            font-weight: bold !important;
+          }
+          
+          #panel_title2 .dashboard-panel .panel-title {
+            background:#f1cf00 !important;
+            color:white !important;
+            font-size: 2em !important;
+            text-align: center !important;
+            font-weight: bold !important;
+          }
+        </style>
+      </html>
     </panel>
   </row>
 </form>
