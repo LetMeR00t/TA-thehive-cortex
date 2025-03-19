@@ -15,10 +15,10 @@
       <title>Audit logs : Modular input regarding TheHive Cortex API (Inputs)</title>
       <table>
         <search>
-          <query>index=_internal source="*ta_thehive_cortex_thehive_*.log"
+          <query>index=_internal source IN ("*ta_thehive_cortex_thehive_*.log","*ta_thehive_cortex_backfill_*.log")
 | rex field="_raw" "^\d+\-\d+\-\d+ \d+:\d+:\d+,\d+ (?&lt;level&gt;[^ ]+) pid=(?&lt;pid&gt;[^ ]+) tid=[^ ]+ file=[^ ]+ \| (?&lt;signature&gt;.*)"
 | eval signature = coalesce(signature,_raw)
-| sort 0 -_time
+| sort 0 -_time -signature
 | table _time host pid level signature
 | rename host as "Host", pid as PID, level as Level, signature as "Signature"</query>
           <earliest>$time.earliest$</earliest>
@@ -27,6 +27,7 @@
         </search>
         <option name="count">25</option>
         <option name="drilldown">none</option>
+        <option name="refresh.display">progressbar</option>
         <format type="color" field="Level">
           <colorPalette type="map">{"ERROR":#DC4E41,"WARNING":#F1813F,"INFO":#62B3B2,"DEBUG":#708794}</colorPalette>
         </format>
