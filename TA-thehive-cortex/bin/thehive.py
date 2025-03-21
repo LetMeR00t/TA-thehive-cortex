@@ -389,7 +389,10 @@ class TheHive4Splunk(TheHiveApi):
         """
         self.logger_file.info(id="TH120", message="Retrieving alerts count...")
         count_events = self.alert.count(filters=filters)
-        self.logger_file.info(id="TH121", message=f"Got {count_events} alerts.")
+        self.logger_file.info(
+            id="TH121",
+            message=f"Got {count_events} alerts. Estimated time for processing all events: {((int(count_events/100))+1)*8} seconds",
+        )
         processed_events = []
 
         final_sortby = sortby if sortby is not None else Asc(field="_createdAt")
@@ -497,7 +500,10 @@ class TheHive4Splunk(TheHiveApi):
         """
         self.logger_file.info(id="TH130", message="Retrieving cases count...")
         count_events = self.case.count(filters=filters)
-        self.logger_file.info(id="TH131", message=f"Got {count_events} cases.")
+        self.logger_file.info(
+            id="TH131",
+            message=f"Got {count_events} cases. Estimated time for processing all events: {((int(count_events/100))+1)*8} seconds",
+        )
         processed_events = []
 
         final_sortby = sortby if sortby is not None else Asc(field="_createdAt")
@@ -641,7 +647,10 @@ class TheHive4Splunk(TheHiveApi):
         """
         self.logger_file.info(id="TH140", message="Retrieving observables count...")
         count_events = self.observable.count(filters=filters)
-        self.logger_file.info(id="TH141", message=f"Got {count_events} observables.")
+        self.logger_file.info(
+            id="TH141",
+            message=f"Got {count_events} observables. Estimated time for processing all events: {((int(count_events/100))+1)*8} seconds",
+        )
         processed_events = []
 
         final_sortby = sortby if sortby is not None else Asc(field="_createdAt")
@@ -720,7 +729,10 @@ class TheHive4Splunk(TheHiveApi):
         """
         self.logger_file.info(id="TH170", message="Retrieving audit logs count...")
         count_events = self.organisation.count_audit_logs(filters=filters)
-        self.logger_file.info(id="TH171", message=f"Got {count_events} audit logs.")
+        self.logger_file.info(
+            id="TH171",
+            message=f"Got {count_events} audit logs. Estimated time for processing all events: {((int(count_events/100))+1)*8} seconds",
+        )
         processed_events = []
 
         final_sortby = sortby if sortby is not None else Asc(field="_createdAt")
