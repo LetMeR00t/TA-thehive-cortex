@@ -73,6 +73,12 @@ When your instances are configured, you can set up inputs to collect data from S
 
 > Note: Each input has its sibling "Backfill" which is used to perform the same thing but in the past and in a oneshot way (interval set to '-1'). If you want to collector regurlaly data (every 5 minutes for instance), you shouldn't use the "Backfill" but the regular inputs instead. If you wish to recover data between a start and end date only once, then backfills are used for this purpose.
 
+> For Backfill inputs, once they have been run, don't forget to disable or delete them. Otherwise, the next time your forwarder is restarting, it might retrieve the data again.
+
+You can monitor the executions of your inputs directly in the "Audit Logs" dashboard:
+
+![Inputs](../images/inputs_audit_logs.png)
+
 Three types of inputs are available: Alerts & Cases, Observables and Audit
 
 #### Alerts & Cases
