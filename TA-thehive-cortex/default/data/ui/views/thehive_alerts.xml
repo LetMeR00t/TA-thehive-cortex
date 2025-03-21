@@ -310,7 +310,6 @@ param.severity=$create_severity$ param.tlp=$create_tlp$ param.pap=$create_pap$</
         <option name="dataOverlayMode">none</option>
         <option name="drilldown">cell</option>
         <option name="percentagesRow">false</option>
-        <option name="refresh.display">progressbar</option>
         <option name="rowNumbers">false</option>
         <option name="totalsRow">false</option>
         <option name="wrap">true</option>
@@ -321,7 +320,7 @@ param.severity=$create_severity$ param.tlp=$create_tlp$ param.pap=$create_pap$</
           <colorPalette type="map">{"Low":#10A554,"Medium":#00C0EF,"High":#F39C12,"Critical":#DD4B39}</colorPalette>
         </format>
         <format type="color" field="Read">
-          <colorPalette type="map">{"Unread":#D2D6DE,"Read":#FFFFFF}</colorPalette>
+          <colorPalette type="map">{"Unread":#D2D6DE,"Read":#FFFFFF,"InProgress":#CBA700}</colorPalette>
         </format>
         <format type="color" field="Source">
           <colorPalette type="sharedList"></colorPalette>
@@ -335,14 +334,18 @@ param.severity=$create_severity$ param.tlp=$create_tlp$ param.pap=$create_pap$</
       <title>[Instance] Get information</title>
       <table>
         <search>
+          <progress>
+            <set token="d1">$job.earliestTime$</set>
+            <set token="d2">$job.latestTime$</set>
+          </progress>
           <done>
             <set token="global_thehive_protocol">$result.protocol$</set>
             <set token="global_thehive_host">$result.host$</set>
             <set token="global_thehive_port">$result.port$</set>
           </done>
           <query>| inputlookup thehive_cortex_instances where id=$instance_id$</query>
-          <earliest>-24h@h</earliest>
-          <latest>now</latest>
+          <earliest>$filter_date.earliest$</earliest>
+          <latest>$filter_date.latest$</latest>
           <sampleRatio>1</sampleRatio>
         </search>
         <option name="count">20</option>

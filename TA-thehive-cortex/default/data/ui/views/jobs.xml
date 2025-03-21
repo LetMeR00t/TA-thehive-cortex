@@ -207,13 +207,17 @@
       <title>[Instance] Get information</title>
       <table>
         <search>
+          <progress>
+            <set token="d1">$job.earliestTime$</set>
+            <set token="d2">$job.latestTime$</set>
+          </progress>
           <done>
             <set token="global_cortex_host">$result.host$</set>
             <set token="global_cortex_port">$result.port$</set>
           </done>
           <query>| inputlookup thehive_cortex_instances where id=$instance_id$</query>
-          <earliest>-24h@h</earliest>
-          <latest>now</latest>
+          <earliest>$filter_date.earliest$</earliest>
+          <latest>$filter_date.latest$</latest>
           <sampleRatio>1</sampleRatio>
         </search>
         <option name="count">20</option>

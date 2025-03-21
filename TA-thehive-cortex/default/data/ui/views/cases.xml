@@ -335,6 +335,10 @@ param.severity=$create_severity$ param.tlp=$create_tlp$ param.pap=$create_pap$</
       <title>[Instance] Get information</title>
       <table>
         <search>
+          <progress>
+            <set token="d1">$job.earliestTime$</set>
+            <set token="d2">$job.latestTime$</set>
+          </progress>
           <done>
             <set token="global_thehive_host">$result.host$</set>
             <set token="global_thehive_port">$result.port$</set>
@@ -342,8 +346,8 @@ param.severity=$create_severity$ param.tlp=$create_tlp$ param.pap=$create_pap$</
             <set token="global_thehive_case_uri">$result.case_uri$</set>
           </done>
           <query>| inputlookup thehive_cortex_instances where id=$instance_id$ | eval case_uri = if(type=="TheHive5","cases","case") | eval case_uri = if(uri!="/","/"+case_uri,case_uri)</query>
-          <earliest>-24h@h</earliest>
-          <latest>now</latest>
+          <earliest>$filter_date.earliest$</earliest>
+          <latest>$filter_date.latest$</latest>
           <sampleRatio>1</sampleRatio>
         </search>
         <option name="count">20</option>

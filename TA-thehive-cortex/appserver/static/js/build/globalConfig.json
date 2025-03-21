@@ -371,6 +371,14 @@
                     {
                         "field": "fields_removal",
                         "label": "Fields removal"
+                    },
+                    {
+                        "field": "backfill_start",
+                        "label": "Backfill: Start date"
+                    },
+                    {
+                        "field": "backfill_end",
+                        "label": "Backfill: End date"
                     }
                 ],
                 "actions": [
@@ -410,6 +418,7 @@
                             "label": "Interval",
                             "type": "text",
                             "required": true,
+                            "defaultValue": "300",
                             "help": "Time interval of input in seconds.",
                             "validators": [
                                 {
@@ -561,6 +570,214 @@
                     ]
                 },
                 {
+                    "name": "backfill_alerts_cases",
+                    "title": "Backfill: Old Alerts & Cases",
+                    "entity": [
+                        {
+                            "field": "name",
+                            "label": "Name",
+                            "type": "text",
+                            "help": "Enter a unique name for the data input",
+                            "required": true,
+                            "validators": [
+                                {
+                                    "type": "regex",
+                                    "pattern": "^[a-zA-Z]\\w*$",
+                                    "errorMsg": "Input Name must start with a letter and followed by alphabetic letters, digits or underscores."
+                                },
+                                {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 100,
+                                    "errorMsg": "Length of input name should be between 1 and 100"
+                                }
+                            ]
+                        },
+                        {
+                            "field": "interval",
+                            "label": "Interval",
+                            "type": "text",
+                            "required": true,
+                            "defaultValue": "-1",
+                            "help": "Time interval of input in seconds.",
+                            "validators": [
+                                {
+                                    "type": "regex",
+                                    "pattern": "^\\-[1-9]\\d*$|^\\d*$",
+                                    "errorMsg": "Interval must be an integer."
+                                }
+                            ]
+                        },
+                        {
+                            "field": "index",
+                            "label": "Index",
+                            "type": "singleSelect",
+                            "defaultValue": "default",
+                            "options": {
+                                "endpointUrl": "data/indexes",
+                                "createSearchChoice": true,
+                                "denyList": "^_.*$"
+                            },
+                            "required": true,
+                            "validators": [
+                                {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 80,
+                                    "errorMsg": "Length of index name should be between 1 and 80."
+                                }
+                            ]
+                        },
+                        {
+                            "field": "instance_id",
+                            "label": "Instance ID",
+                            "help": "Indicate which instance to use (Set the \"id\" provided under \"Instances\"). You can use \"<default>\" to set automatically the ID to the default set parameter in the configuration page.",
+                            "required": true,
+                            "type": "text",
+                            "defaultValue": "<default>",
+                            "validators": [
+                                {
+                                    "type": "string",
+                                    "minLength": 0,
+                                    "maxLength": 8192,
+                                    "errorMsg": "Max length of text input is 8192"
+                                }
+                            ]
+                        },
+                        {
+                            "field": "type",
+                            "label": "Type",
+                            "help": "Indicates which kind of logs data you want to recover",
+                            "required": true,
+                            "type": "radio",
+                            "defaultValue": "cases",
+                            "options": {
+                                "items": [
+                                    {
+                                        "value": "alerts",
+                                        "label": "Alerts"
+                                    },
+                                    {
+                                        "value": "cases",
+                                        "label": "Cases"
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            "field": "additional_information",
+                            "label": "Additional information",
+                            "help": "Indicates if you want to recover additional data from the standard logs",
+                            "required": false,
+                            "type": "multipleSelect",
+                            "options": {
+                                "delimiter": ",",
+                                "items": [
+                                    {
+                                        "value": "tasks",
+                                        "label": "Tasks"
+                                    },
+                                    {
+                                        "value": "observables",
+                                        "label": "Observables"
+                                    },
+                                    {
+                                        "value": "attachments",
+                                        "label": "Attachments"
+                                    },
+                                    {
+                                        "value": "pages",
+                                        "label": "Pages"
+                                    },
+                                    {
+                                        "value": "ttps",
+                                        "label": "TTPs"
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            "field": "date",
+                            "label": "Date",
+                            "help": "Indicates if you want to recover your logs based on the last created or updated date",
+                            "required": true,
+                            "type": "radio",
+                            "defaultValue": "_updatedAt",
+                            "options": {
+                                "items": [
+                                    {
+                                        "value": "_createdAt",
+                                        "label": "Last created"
+                                    },
+                                    {
+                                        "value": "_updatedAt",
+                                        "label": "Last updated"
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            "field": "max_size_value",
+                            "label": "Max size for values",
+                            "help": "Indicates what is the maximum size/length for the values (will be truncated after this value)",
+                            "required": false,
+                            "type": "text",
+                            "defaultValue": "1000",
+                            "validators": [
+                                {
+                                    "type": "string",
+                                    "minLength": 0,
+                                    "maxLength": 8192,
+                                    "errorMsg": "Max length of text input is 8192"
+                                }
+                            ]
+                        },
+                        {
+                            "field": "fields_removal",
+                            "label": "Fields removal",
+                            "help": "Indicates a list of fields, separated by a comma, representing the path in the dictionnary (such as 'field1.subfield1') that should be removed from the original event",
+                            "required": false,
+                            "type": "text",
+                            "validators": [
+                                {
+                                    "type": "string",
+                                    "minLength": 0,
+                                    "maxLength": 8192,
+                                    "errorMsg": "Max length of text input is 8192"
+                                }
+                            ]
+                        },
+                        {
+                            "field": "backfill_start",
+                            "label": "Backfill: Start date",
+                            "help": "Indicates which timestamp in seconds should be used as the start date for the first call",
+                            "type": "text",
+                            "required": true,
+                            "validators": [
+                                {
+                                    "type": "regex",
+                                    "pattern": "^\\-[1-9]\\d*$|^\\d*$",
+                                    "errorMsg": "Interval must be an integer."
+                                }
+                            ]
+                        },
+                        {
+                            "field": "backfill_end",
+                            "label": "Backfill: End date",
+                            "help": "Indicates which timestamp in seconds should be used as the end date (no more log collection will be performed after this date is reached)",
+                            "type": "text",
+                            "required": true,
+                            "validators": [
+                                {
+                                    "type": "regex",
+                                    "pattern": "^\\-[1-9]\\d*$|^\\d*$",
+                                    "errorMsg": "Interval must be an integer."
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
                     "name": "thehive_observables",
                     "title": "TheHive: Observables",
                     "entity": [
@@ -589,6 +806,7 @@
                             "label": "Interval",
                             "type": "text",
                             "required": true,
+                            "defaultValue": "300",
                             "help": "Time interval of input in seconds.",
                             "validators": [
                                 {
@@ -653,7 +871,6 @@
                                     }
                                 ]
                             }
-
                         },
                         {
                             "field": "max_size_value",
@@ -689,6 +906,162 @@
                     ]
                 },
                 {
+                    "name": "backfill_observables",
+                    "title": "Backfill: Old Observables",
+                    "entity": [
+                        {
+                            "field": "name",
+                            "label": "Name",
+                            "type": "text",
+                            "help": "Enter a unique name for the data input",
+                            "required": true,
+                            "validators": [
+                                {
+                                    "type": "regex",
+                                    "pattern": "^[a-zA-Z]\\w*$",
+                                    "errorMsg": "Input Name must start with a letter and followed by alphabetic letters, digits or underscores."
+                                },
+                                {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 100,
+                                    "errorMsg": "Length of input name should be between 1 and 100"
+                                }
+                            ]
+                        },
+                        {
+                            "field": "interval",
+                            "label": "Interval",
+                            "type": "text",
+                            "required": true,
+                            "defaultValue": "-1",
+                            "help": "Time interval of input in seconds.",
+                            "validators": [
+                                {
+                                    "type": "regex",
+                                    "pattern": "^\\-[1-9]\\d*$|^\\d*$",
+                                    "errorMsg": "Interval must be an integer."
+                                }
+                            ]
+                        },
+                        {
+                            "field": "index",
+                            "label": "Index",
+                            "type": "singleSelect",
+                            "defaultValue": "default",
+                            "options": {
+                                "endpointUrl": "data/indexes",
+                                "createSearchChoice": true,
+                                "denyList": "^_.*$"
+                            },
+                            "required": true,
+                            "validators": [
+                                {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 80,
+                                    "errorMsg": "Length of index name should be between 1 and 80."
+                                }
+                            ]
+                        },
+                        {
+                            "field": "instance_id",
+                            "label": "Instance ID",
+                            "help": "Indicate which instance to use (Set the \"id\" provided under \"Instances\"). You can use \"<default>\" to set automatically the ID to the default set parameter in the configuration page.",
+                            "required": true,
+                            "type": "text",
+                            "defaultValue": "<default>",
+                            "validators": [
+                                {
+                                    "type": "string",
+                                    "minLength": 0,
+                                    "maxLength": 8192,
+                                    "errorMsg": "Max length of text input is 8192"
+                                }
+                            ]
+                        },
+                        {
+                            "field": "date",
+                            "label": "Date",
+                            "help": "Indicates if you want to recover your logs based on the last created or updated date",
+                            "required": true,
+                            "type": "radio",
+                            "defaultValue": "_updatedAt",
+                            "options": {
+                                "items": [
+                                    {
+                                        "value": "_createdAt",
+                                        "label": "Last created"
+                                    },
+                                    {
+                                        "value": "_updatedAt",
+                                        "label": "Last updated"
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            "field": "max_size_value",
+                            "label": "Max size for values",
+                            "help": "Indicates what is the maximum size/length for the values (will be truncated after this value)",
+                            "required": false,
+                            "type": "text",
+                            "defaultValue": "1000",
+                            "validators": [
+                                {
+                                    "type": "string",
+                                    "minLength": 0,
+                                    "maxLength": 8192,
+                                    "errorMsg": "Max length of text input is 8192"
+                                }
+                            ]
+                        },
+                        {
+                            "field": "fields_removal",
+                            "label": "Fields removal",
+                            "help": "Indicates a list of fields, separated by a comma, representing the path in the dictionnary (such as 'field1.subfield1') that should be removed from the original event",
+                            "required": false,
+                            "type": "text",
+                            "validators": [
+                                {
+                                    "type": "string",
+                                    "minLength": 0,
+                                    "maxLength": 8192,
+                                    "errorMsg": "Max length of text input is 8192"
+                                }
+                            ]
+                        },
+                        {
+                            "field": "backfill_start",
+                            "label": "Backfill: Start date",
+                            "help": "Indicates which timestamp in seconds should be used as the start date for the first call",
+                            "type": "text",
+                            "required": true,
+                            "validators": [
+                                {
+                                    "type": "regex",
+                                    "pattern": "^\\-[1-9]\\d*$|^\\d*$",
+                                    "errorMsg": "Interval must be an integer."
+                                }
+                            ]
+                        },
+                        {
+                            "field": "backfill_end",
+                            "label": "Backfill: End date",
+                            "help": "Indicates which timestamp in seconds should be used as the end date (no more log collection will be performed after this date is reached)",
+                            "type": "text",
+                            "required": true,
+                            "validators": [
+                                {
+                                    "type": "regex",
+                                    "pattern": "^\\-[1-9]\\d*$|^\\d*$",
+                                    "errorMsg": "Interval must be an integer."
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
                     "name": "thehive_audit",
                     "title": "TheHive: Audit",
                     "entity": [
@@ -717,6 +1090,7 @@
                             "label": "Interval",
                             "type": "text",
                             "required": true,
+                            "defaultValue": "300",
                             "help": "Time interval of input in seconds.",
                             "validators": [
                                 {
@@ -790,6 +1164,142 @@
                                     "minLength": 0,
                                     "maxLength": 8192,
                                     "errorMsg": "Max length of text input is 8192"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "name": "backfill_audit",
+                    "title": "Backfill: Old Audit",
+                    "entity": [
+                        {
+                            "field": "name",
+                            "label": "Name",
+                            "type": "text",
+                            "help": "Enter a unique name for the data input",
+                            "required": true,
+                            "validators": [
+                                {
+                                    "type": "regex",
+                                    "pattern": "^[a-zA-Z]\\w*$",
+                                    "errorMsg": "Input Name must start with a letter and followed by alphabetic letters, digits or underscores."
+                                },
+                                {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 100,
+                                    "errorMsg": "Length of input name should be between 1 and 100"
+                                }
+                            ]
+                        },
+                        {
+                            "field": "interval",
+                            "label": "Interval",
+                            "type": "text",
+                            "required": true,
+                            "defaultValue": "-1",
+                            "help": "Time interval of input in seconds.",
+                            "validators": [
+                                {
+                                    "type": "regex",
+                                    "pattern": "^\\-[1-9]\\d*$|^\\d*$",
+                                    "errorMsg": "Interval must be an integer."
+                                }
+                            ]
+                        },
+                        {
+                            "field": "index",
+                            "label": "Index",
+                            "type": "singleSelect",
+                            "defaultValue": "default",
+                            "options": {
+                                "endpointUrl": "data/indexes",
+                                "createSearchChoice": true,
+                                "denyList": "^_.*$"
+                            },
+                            "required": true,
+                            "validators": [
+                                {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 80,
+                                    "errorMsg": "Length of index name should be between 1 and 80."
+                                }
+                            ]
+                        },
+                        {
+                            "field": "instance_id",
+                            "label": "Instance ID",
+                            "help": "Indicate which instance to use (Set the \"id\" provided under \"Instances\"). You can use \"<default>\" to set automatically the ID to the default set parameter in the configuration page.",
+                            "required": true,
+                            "type": "text",
+                            "defaultValue": "<default>",
+                            "validators": [
+                                {
+                                    "type": "string",
+                                    "minLength": 0,
+                                    "maxLength": 8192,
+                                    "errorMsg": "Max length of text input is 8192"
+                                }
+                            ]
+                        },
+                        {
+                            "field": "max_size_value",
+                            "label": "Max size for values",
+                            "help": "Indicates what is the maximum size/length for the values (will be truncated after this value)",
+                            "required": false,
+                            "type": "text",
+                            "defaultValue": "1000",
+                            "validators": [
+                                {
+                                    "type": "string",
+                                    "minLength": 0,
+                                    "maxLength": 8192,
+                                    "errorMsg": "Max length of text input is 8192"
+                                }
+                            ]
+                        },
+                        {
+                            "field": "fields_removal",
+                            "label": "Fields removal",
+                            "help": "Indicates a list of fields, separated by a comma, representing the path in the dictionnary (such as 'field1.subfield1') that should be removed from the original event",
+                            "required": false,
+                            "type": "text",
+                            "validators": [
+                                {
+                                    "type": "string",
+                                    "minLength": 0,
+                                    "maxLength": 8192,
+                                    "errorMsg": "Max length of text input is 8192"
+                                }
+                            ]
+                        },
+                        {
+                            "field": "backfill_start",
+                            "label": "Backfill: Start date",
+                            "help": "Indicates which timestamp in seconds should be used as the start date for the first call",
+                            "type": "text",
+                            "required": true,
+                            "validators": [
+                                {
+                                    "type": "regex",
+                                    "pattern": "^\\-[1-9]\\d*$|^\\d*$",
+                                    "errorMsg": "Interval must be an integer."
+                                }
+                            ]
+                        },
+                        {
+                            "field": "backfill_end",
+                            "label": "Backfill: End date",
+                            "help": "Indicates which timestamp in seconds should be used as the end date (no more log collection will be performed after this date is reached)",
+                            "type": "text",
+                            "required": true,
+                            "validators": [
+                                {
+                                    "type": "regex",
+                                    "pattern": "^\\-[1-9]\\d*$|^\\d*$",
+                                    "errorMsg": "Interval must be an integer."
                                 }
                             ]
                         }

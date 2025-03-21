@@ -1,4 +1,3 @@
-
 import ta_thehive_cortex_declare
 
 from splunktaucclib.rest_handler.endpoint import (
@@ -15,94 +14,79 @@ util.remove_http_proxy_env_vars()
 
 fields = [
     field.RestField(
-        'interval',
+        "interval",
         required=True,
         encrypted=False,
         default=None,
         validator=validator.Pattern(
-            regex=r"""^\-[1-9]\d*$|^\d*$""", 
-        )
-    ), 
+            regex=r"""^\-[1-9]\d*$|^\d*$""",
+        ),
+    ),
     field.RestField(
-        'index',
+        "index",
         required=True,
         encrypted=False,
-        default='default',
+        default="default",
         validator=validator.String(
-            min_len=1, 
-            max_len=80, 
-        )
-    ), 
+            min_len=1,
+            max_len=80,
+        ),
+    ),
     field.RestField(
-        'instance_id',
+        "instance_id",
         required=True,
         encrypted=False,
-        default='<default>',
+        default="<default>",
         validator=validator.String(
-            min_len=0, 
-            max_len=8192, 
-        )
-    ), 
+            min_len=0,
+            max_len=8192,
+        ),
+    ),
     field.RestField(
-        'type',
-        required=True,
-        encrypted=False,
-        default='cases',
-        validator=None
-    ), 
+        "type", required=True, encrypted=False, default="cases", validator=None
+    ),
     field.RestField(
-        'additional_information',
+        "additional_information",
         required=False,
         encrypted=False,
         default=None,
-        validator=None
-    ), 
+        validator=None,
+    ),
     field.RestField(
-        'date',
-        required=True,
-        encrypted=False,
-        default='updated',
-        validator=None
-    ), 
+        "date", required=True, encrypted=False, default="updated", validator=None
+    ),
     field.RestField(
-        'max_size_value',
+        "max_size_value",
         required=False,
         encrypted=False,
-        default='1000',
+        default="1000",
         validator=validator.String(
-            min_len=0, 
-            max_len=8192, 
-        )
-    ), 
+            min_len=0,
+            max_len=8192,
+        ),
+    ),
     field.RestField(
-        'fields_removal',
+        "fields_removal",
         required=False,
         encrypted=False,
         default=None,
         validator=validator.String(
-            min_len=0, 
-            max_len=8192, 
-        )
-    ), 
-
-    field.RestField(
-        'disabled',
-        required=False,
-        validator=None
-    )
-
+            min_len=0,
+            max_len=8192,
+        ),
+    ),
+    field.RestField("disabled", required=False, validator=None),
 ]
 model = RestModel(fields, name=None)
 
 
-
 endpoint = DataInputModel(
-    'thehive_alerts_cases',
+    "thehive_alerts_cases",
     model,
 )
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     admin_external.handle(
         endpoint,
         handler=ConfigMigrationHandler,

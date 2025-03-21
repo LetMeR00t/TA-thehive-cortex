@@ -65,6 +65,68 @@ On the above example, you can see a list of defined instances:
 - The 3rd example could be a Cloud instance with a custom URI to access the TheHive application but without any certificate check
 - The 4th example could be a Cloud instance with a custom URI to access the TheHive application, to a certain organisation and ensuring the certificate check
 
+### Inputs
+
+When your instances are configured, you can set up inputs to collect data from Splunk into TheHive.
+
+![Inputs](../images/inputs_list.png)
+
+> Note: Each input has its sibling "Backfill" which is used to perform the same thing but in the past and in a oneshot way (interval set to '-1'). If you want to collector regurlaly data (every 5 minutes for instance), you shouldn't use the "Backfill" but the regular inputs instead. If you wish to recover data between a start and end date only once, then backfills are used for this purpose.
+
+> For Backfill inputs, once they have been run, don't forget to disable or delete them. Otherwise, the next time your forwarder is restarting, it might retrieve the data again.
+
+You can monitor the executions of your inputs directly in the "Audit Logs" dashboard:
+
+![Inputs](../images/inputs_audit_logs.png)
+
+Three types of inputs are available: Alerts & Cases, Observables and Audit
+
+#### Alerts & Cases
+
+![Inputs](../images/input_alerts_cases.png)
+
+This input is used to collect regular data from Alerts or Cases
+You can configure those parameters:
+
+- **Name**: Provide a unique name for your input
+- **Interval**: Define the periodicity of the log collection in seconds. Default set to '300' (5 minutes)
+- **Index**: Indicates in which index the data will be saved to. Default set to 'default'
+- **Instance ID**: Indicates the instance ID to be used to contact TheHive. Default set to '&lt;default&gt;' (be sure to set a default instance ID in the configuration)
+- **Type**: Select which kind of objects you want to collect. If you want to collect both, you will have to create two dedicated inputs. Default set to 'Cases'
+- **Additional information**: Indicates which kind of data you want to collect on top of the basic data. You can collect 'Tasks', 'Observables', 'Attachments', 'Pages' or 'TTPs'. **Be careful** that adding all the data might end up to have large JSON logs that could be truncated/malformed depending on your Splunk settings.
+- **Date**: Indicates if you want to collect those data based on the created or updated date. Default set to 'Last updated'
+- **Max size for values**: Indicates the maximum size for each value of the JSON log. This setting can be used to truncate large values (such as the description) to avoid having large values. When applied, a '[trunc]' string will be applied at the limit of the value size. Default set to '1000' (characters)
+- **Fields removal**: Indicates if you want to get rid of several keys within the JSON logs. Let's imagine that you have one field that you want to get rid within your logs because it's too large, then you can specify the path in the JSON in this field. The path will be interpreted depending on '.' and '\*' characters. Use '.' to go deeper in the JSON structure and the '\*' if you want to process all elements from a list. Several values can be provided separated by a comma. Example: "description,object.case,context.customFields.*.order" (it will remove the field 'description', the field 'case' within the filed 'object' and the field 'order' in all elements from the list 'customFields' within the 'context' field)
+
+#### Observables
+
+![Inputs](../images/input_observables.png)
+
+This input is used to collect regular data from Observables
+You can configure those parameters:
+
+- **Name**: Provide a unique name for your input
+- **Interval**: Define the periodicity of the log collection in seconds. Default set to '300' (5 minutes)
+- **Index**: Indicates in which index the data will be saved to. Default set to 'default'
+- **Instance ID**: Indicates the instance ID to be used to contact TheHive. Default set to '&lt;default&gt;' (be sure to set a default instance ID in the configuration)
+- **Date**: Indicates if you want to collect those data based on the created or updated date. Default set to 'Last updated'
+- **Max size for values**: Indicates the maximum size for each value of the JSON log. This setting can be used to truncate large values (such as the description) to avoid having large values. When applied, a '[trunc]' string will be applied at the limit of the value size. Default set to '1000' (characters)
+- **Fields removal**: Indicates if you want to get rid of several keys within the JSON logs. Let's imagine that you have one field that you want to get rid within your logs because it's too large, then you can specify the path in the JSON in this field. The path will be interpreted depending on '.' and '\*' characters. Use '.' to go deeper in the JSON structure and the '\*' if you want to process all elements from a list. Several values can be provided separated by a comma. Example: "description,object.case,context.customFields.*.order" (it will remove the field 'description', the field 'case' within the filed 'object' and the field 'order' in all elements from the list 'customFields' within the 'context' field)
+
+#### Audit
+
+![Inputs](../images/input_audit.png)
+
+This input is used to collect regular data from Audit logs
+You can configure those parameters:
+
+- **Name**: Provide a unique name for your input
+- **Interval**: Define the periodicity of the log collection in seconds. Default set to '300' (5 minutes)
+- **Index**: Indicates in which index the data will be saved to. Default set to 'default'
+- **Instance ID**: Indicates the instance ID to be used to contact TheHive. Default set to '&lt;default&gt;' (be sure to set a default instance ID in the configuration)
+- **Max size for values**: Indicates the maximum size for each value of the JSON log. This setting can be used to truncate large values (such as the description) to avoid having large values. When applied, a '[trunc]' string will be applied at the limit of the value size. Default set to '1000' (characters)
+- **Fields removal**: Indicates if you want to get rid of several keys within the JSON logs. Let's imagine that you have one field that you want to get rid within your logs because it's too large, then you can specify the path in the JSON in this field. The path will be interpreted depending on '.' and '\*' characters. Use '.' to go deeper in the JSON structure and the '\*' if you want to process all elements from a list. Several values can be provided separated by a comma. Example: "description,object.case,context.customFields.*.order" (it will remove the field 'description', the field 'case' within the filed 'object' and the field 'order' in all elements from the list 'customFields' within the 'context' field)
+
 ### Logging
 
 You can enable a "debug" logging mode (under **Configuration**) to have more information in searches/logs.
