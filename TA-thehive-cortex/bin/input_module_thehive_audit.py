@@ -46,8 +46,8 @@ def collect_events(helper, ew):
     stanza = list(input_stanza.keys())[0]
 
     helper.log_info(
-        '[MI-THA-10] Modular input "{}" for TheHive data started at {}'.format(
-            stanza, time.time()
+        '[MI-THA-10] Modular input "{}" for TheHive data started on {}'.format(
+            stanza, time.strftime("%D %T")
         )
     )
 
