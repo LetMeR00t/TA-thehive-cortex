@@ -26,7 +26,7 @@ def process_event(helper, *args, **kwargs):
     helper.set_log_level(helper.log_level)
 
     helper.log_info(
-        "[CAA-THRF-36] Alert action thehive_create_a_new_alert started at {}".format(
+        "[CAA-THRF-36] Alert action thehive_create_a_new_alert started on {}".format(
             time.time()
         )
     )
