@@ -53,6 +53,13 @@ fields = [
         validator=None,
     ),
     field.RestField(
+        "extra_data",
+        required=False,
+        encrypted=False,
+        default=None,
+        validator=None,
+    ),
+    field.RestField(
         "date", required=True, encrypted=False, default="updated", validator=None
     ),
     field.RestField(
