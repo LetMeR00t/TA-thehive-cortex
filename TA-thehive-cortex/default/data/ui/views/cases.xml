@@ -272,7 +272,7 @@ param.severity=$create_severity$ param.tlp=$create_tlp$ param.pap=$create_pap$</
       <input type="time" token="filter_date" searchWhenChanged="true">
         <label>Date (days only)</label>
         <default>
-          <earliest>-2y</earliest>
+          <earliest>-7d@h</earliest>
           <latest>now</latest>
         </default>
       </input>
