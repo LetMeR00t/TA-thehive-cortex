@@ -79,79 +79,80 @@ def collect_events(helper, ew):
         and modular_input_args["backfill_end"] is not None
     ):
         # Get string values from the input form
-        modular_input_args["date"] = helper.get_arg("date")
-        modular_input_args["max_size_value"] = (
-            helper.get_arg("max_size_value")
-            if helper.get_arg("max_size_value") is not None
-            and helper.get_arg("max_size_value") != ""
-            else 1000
-        )
-        modular_input_args["fields_removal"] = (
-            helper.get_arg("fields_removal")
-            if helper.get_arg("fields_removal") is not None
-            and helper.get_arg("fields_removal") != ""
-            else ""
-        )
-        logger_file.debug(
-            id="30", message="Arguments recovered: " + str(modular_input_args)
-        )
-
-        date_mode = None
-        if modular_input_args["date"] == "_updatedAt":
-            date_mode = "last_updated"
-        elif modular_input_args["date"] == "_createdAt":
-            date_mode = "last_created"
-        else:
-            date_mode = modular_input_args["date"]
-        # Retrieve the data
-        logger_file.debug(
-            id="35", message="Configuration is ready. Collecting the data..."
-        )
-
-        # Retrieve the data
-        logger_file.debug(id="36", message=f"Processing type 'observables'...")
-
-        # Prepare to store the new events
-        new_events = []
-
-        # Check the interval set
-        interval = int(input_stanza[stanza]["interval"])
-
-        if interval == -1:
-            # Set the start/end date from parameters
-            d1 = int(modular_input_args["backfill_start"])
-            d2 = int(modular_input_args["backfill_end"])
-
-            # Multiply by 1,000 for TheHive
-            filters = Between(modular_input_args["date"], d1 * 1000, d2 * 1000)
+        for date in helper.get_arg("date"):
+            modular_input_args["date"] = date
+            modular_input_args["max_size_value"] = (
+                helper.get_arg("max_size_value")
+                if helper.get_arg("max_size_value") is not None
+                and helper.get_arg("max_size_value") != ""
+                else 1000
+            )
+            modular_input_args["fields_removal"] = (
+                helper.get_arg("fields_removal")
+                if helper.get_arg("fields_removal") is not None
+                and helper.get_arg("fields_removal") != ""
+                else ""
+            )
             logger_file.debug(
-                id="40", message="This filter will be used: " + str(filters)
+                id="30", message="Arguments recovered: " + str(modular_input_args)
             )
 
-            new_events = thehive.get_observables_events(
-                filters=filters, **modular_input_args
+            date_mode = None
+            if modular_input_args["date"] == "_updatedAt":
+                date_mode = "last_updated"
+            elif modular_input_args["date"] == "_createdAt":
+                date_mode = "last_created"
+            else:
+                date_mode = modular_input_args["date"]
+            # Retrieve the data
+            logger_file.debug(
+                id="35", message="Configuration is ready. Collecting the data..."
             )
 
-            # Store the events accordingly
-            for event in new_events:
-                # Index the event
-                e = helper.new_event(
-                    source="thehive:" + stanza,
-                    host=thehive.session.hive_url[8:],
-                    index=helper.get_output_index(),
-                    sourcetype="thehive:" + date_mode + ":observables",
-                    data=json.dumps(event),
+            # Retrieve the data
+            logger_file.debug(id="36", message=f"Processing type 'observables'...")
+
+            # Prepare to store the new events
+            new_events = []
+
+            # Check the interval set
+            interval = int(input_stanza[stanza]["interval"])
+
+            if interval == -1:
+                # Set the start/end date from parameters
+                d1 = int(modular_input_args["backfill_start"])
+                d2 = int(modular_input_args["backfill_end"])
+
+                # Multiply by 1,000 for TheHive
+                filters = Between(modular_input_args["date"], d1 * 1000, d2 * 1000)
+                logger_file.debug(
+                    id="40", message="This filter will be used: " + str(filters)
                 )
-                ew.write_event(e)
 
-            logger_file.info(
-                id="70", message=str(len(new_events)) + " events were recovered."
-            )
-        else:
-            logger_file.error(
-                id="75",
-                message="Interval must be set to -1 (run only once at startup) for backfills",
-            )
+                new_events = thehive.get_observables_events(
+                    filters=filters, **modular_input_args
+                )
+
+                # Store the events accordingly
+                for event in new_events:
+                    # Index the event
+                    e = helper.new_event(
+                        source="thehive:" + stanza,
+                        host=thehive.session.hive_url[8:],
+                        index=helper.get_output_index(),
+                        sourcetype="thehive:" + date_mode + ":observables",
+                        data=json.dumps(event),
+                    )
+                    ew.write_event(e)
+
+                logger_file.info(
+                    id="70", message=str(len(new_events)) + " events were recovered."
+                )
+            else:
+                logger_file.error(
+                    id="75",
+                    message="Interval must be set to -1 (run only once at startup) for backfills",
+                )
     else:
         logger_file.error(
             id="80", message="Mandatory parameters for backfill aren't provided"

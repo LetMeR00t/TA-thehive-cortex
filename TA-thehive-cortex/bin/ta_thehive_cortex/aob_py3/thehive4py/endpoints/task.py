@@ -4,7 +4,7 @@ from thehive4py.endpoints._base import EndpointBase
 from thehive4py.query import QueryExpr
 from thehive4py.query.filters import FilterExpr
 from thehive4py.query.page import Paginate
-from thehive4py.query.sort import SortExpr
+from thehive4py.query.sort import Asc, SortExpr
 from thehive4py.types.task import (
     InputBulkUpdateTask,
     InputTask,
@@ -116,3 +116,103 @@ class TaskEndpoint(EndpointBase):
             params={"name": "case-task-logs"},
             json={"query": query},
         )
+
+    def get_tasks(self, filters: Optional[FilterExpr] = None) -> List[OutputTask]:
+        # Count first
+        count = self.count(filters=filters)
+        tasks = []
+
+        sortby = Asc(field="_createdAt")
+        step = 100
+        for i in range(0, count, step):
+            if i + step < count:
+                paginate = Paginate(
+                    start=i,
+                    end=i + step,
+                    extra_data=[
+                        "caseId",
+                        "isOwner",
+                        "shareCount",
+                        "actionRequired",
+                        "actionRequiredMap",
+                    ],
+                )
+            else:
+                paginate = Paginate(
+                    start=i,
+                    end=count,
+                    extra_data=[
+                        "caseId",
+                        "isOwner",
+                        "shareCount",
+                        "actionRequired",
+                        "actionRequiredMap",
+                    ],
+                )
+
+            # Get objects using the query
+            tasks += self.find(filters=filters, sortby=sortby, paginate=paginate)
+
+        return tasks
+
+    def count_case_tasks(
+        self,
+        case_id: str,
+    ) -> int:
+        """Find tasks related to a case.
+
+        Args:
+            case_id: The id of the case.
+        Returns:
+            The number of tasks
+        """
+        query: QueryExpr = [
+            {"_name": "getCase", "idOrName": case_id},
+            {"_name": "tasks"},
+            {"_name": "count"},
+        ]
+
+        return self._session.make_request(
+            "POST",
+            path="/api/v1/query",
+            params={"name": "case-tasks"},
+            json={"query": query},
+        )
+
+    def get_case_tasks(self, case_id: int) -> List[OutputTask]:
+        # Count first
+        count = self.count_case_tasks(case_id=case_id)
+        tasks = []
+
+        sortby = Asc(field="_createdAt")
+        step = 100
+        for i in range(0, count, step):
+            if i + step < count:
+                paginate = Paginate(
+                    start=i,
+                    end=i + step,
+                    extra_data=[
+                        "caseId",
+                        "isOwner",
+                        "shareCount",
+                        "actionRequired",
+                        "actionRequiredMap",
+                    ],
+                )
+            else:
+                paginate = Paginate(
+                    start=i,
+                    end=count,
+                    extra_data=[
+                        "caseId",
+                        "isOwner",
+                        "shareCount",
+                        "actionRequired",
+                        "actionRequiredMap",
+                    ],
+                )
+
+            # Get objects using the query
+            tasks += self.find_tasks(case_id=case_id, sortby=sortby, paginate=paginate)
+
+        return tasks

@@ -5,7 +5,7 @@ from thehive4py.endpoints._base import EndpointBase
 from thehive4py.query import QueryExpr
 from thehive4py.query.filters import FilterExpr
 from thehive4py.query.page import Paginate
-from thehive4py.query.sort import SortExpr
+from thehive4py.query.sort import Asc, SortExpr
 from thehive4py.types.alert import (
     InputAlert,
     InputBulkUpdateAlert,
@@ -197,12 +197,14 @@ class AlertEndpoint(EndpointBase):
         return self._session.make_request(
             "POST", path=f"/api/v1/alert/{alert_id}/procedure", json=procedure
         )
-    
+
     def create_procedures(
         self, alert_id: str, procedures: List[InputProcedure]
     ) -> List[OutputProcedure]:
         return self._session.make_request(
-            "POST", path=f"/api/v1/alert/{alert_id}/procedures", json={"procedures": procedures}
+            "POST",
+            path=f"/api/v1/alert/{alert_id}/procedures",
+            json={"procedures": procedures},
         )
 
     def find_procedures(
@@ -243,3 +245,91 @@ class AlertEndpoint(EndpointBase):
             params={"name": "alert-attachments"},
             json={"query": query},
         )
+
+    def count_observables(
+        self,
+        alert_id: str,
+    ) -> int:
+        """Find observables related to a alert.
+
+        Args:
+            alert_id: The id of the alert.
+        Returns:
+            The number of observables
+        """
+        query: QueryExpr = [
+            {"_name": "getAlert", "idOrName": alert_id},
+            {"_name": "observables"},
+            {"_name": "count"},
+        ]
+
+        return self._session.make_request(
+            "POST",
+            path="/api/v1/query",
+            params={"name": "alert-observables"},
+            json={"query": query},
+        )
+
+    def get_alert_observables(self, alert_id: int) -> List[OutputObservable]:
+        # Count first
+        count = self.count_observables(alert_id=alert_id)
+        observables = []
+
+        sortby = Asc(field="_createdAt")
+        step = 100
+        for i in range(0, count, step):
+            if i + step < count:
+                paginate = Paginate(start=i, end=i + step)
+            else:
+                paginate = Paginate(start=i, end=count)
+
+            # Get objects using the query
+            observables += self.find_observables(
+                alert_id=alert_id, sortby=sortby, paginate=paginate
+            )
+
+        return observables
+
+    def count_attachments(
+        self,
+        alert_id: str,
+    ) -> int:
+        """Find attachments related to a alert.
+
+        Args:
+            alert_id: The id of the alert.
+        Returns:
+            The number of attachments
+        """
+        query: QueryExpr = [
+            {"_name": "getAlert", "idOrName": alert_id},
+            {"_name": "attachments"},
+            {"_name": "count"},
+        ]
+
+        return self._session.make_request(
+            "POST",
+            path="/api/v1/query",
+            params={"name": "alert-attachments"},
+            json={"query": query},
+        )
+
+    def get_alert_attachments(self, alert_id: int) -> List[OutputObservable]:
+        # Count first
+        count = self.count_attachments(alert_id=alert_id)
+        attachments = []
+
+        sortby = Asc(field="_createdAt")
+        step = 100
+        for i in range(0, count, step):
+            if i + step < count:
+                paginate = Paginate(start=i, end=i + step)
+            else:
+                paginate = Paginate(start=i, end=count)
+
+            # Get objects using the query
+            attachments += self.find_attachments(
+                alert_id=alert_id, sortby=sortby, paginate=paginate
+            )
+
+        return attachments
