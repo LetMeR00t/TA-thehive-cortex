@@ -365,6 +365,10 @@
                         "label": "Date"
                     },
                     {
+                        "field": "extra_data",
+                        "label": "Extra data"
+                    },
+                    {
                         "field": "max_size_value",
                         "label": "Max size for values"
                     },
@@ -469,9 +473,9 @@
                             "label": "Type",
                             "help": "Indicates which kind of logs data you want to recover",
                             "required": true,
-                            "type": "radio",
-                            "defaultValue": "cases",
+                            "type": "multipleSelect",
                             "options": {
+                                "delimiter": ",",
                                 "items": [
                                     {
                                         "value": "alerts",
@@ -517,21 +521,125 @@
                             }
                         },
                         {
+                            "field": "extra_data",
+                            "label": "Extra data",
+                            "help": "Indicates which extra data you want to get from alerts or cases",
+                            "required": false,
+                            "type": "multipleSelect",
+                            "options": {
+                                "delimiter": ",",
+                                "items": [
+                                    {
+                                        "value": "caseNumber",
+                                        "label": "(Alert) caseNumber"
+                                    },
+                                    {
+                                        "value": "importDate",
+                                        "label": "(Alert) importDate"
+                                    },
+                                    {
+                                        "value": "procedureCount",
+                                        "label": "(Alert) procedureCount"
+                                    },
+                                    {
+                                        "value": "status",
+                                        "label": "(Alert/Case) status"
+                                    },
+                                    {
+                                        "value": "owningOrganisation",
+                                        "label": "(Case) owningOrganisation"
+                                    },
+                                    {
+                                        "value": "procedureCount",
+                                        "label": "(Case) procedureCount"
+                                    },
+                                    {
+                                        "value": "actionRequired",
+                                        "label": "(Case) actionRequired"
+                                    },
+                                    {
+                                        "value": "observableStats",
+                                        "label": "(Case) observableStats"
+                                    },
+                                    {
+                                        "value": "taskStats",
+                                        "label": "(Case) taskStats"
+                                    },
+                                    {
+                                        "value": "alerts",
+                                        "label": "(Case) alerts"
+                                    },
+                                    {
+                                        "value": "isOwner",
+                                        "label": "(Case) isOwner"
+                                    },
+                                    {
+                                        "value": "shareCount",
+                                        "label": "(Case) shareCount"
+                                    },
+                                    {
+                                        "value": "contributors",
+                                        "label": "(Case) contributors"
+                                    },
+                                    {
+                                        "value": "permissions",
+                                        "label": "(Case) permissions"
+                                    },
+                                    {
+                                        "value": "computed.handlingDuration",
+                                        "label": "(Case) computed.handlingDuration"
+                                    },
+                                    {
+                                        "value": "computed.handlingDurationInSeconds",
+                                        "label": "(Case) computed.handlingDurationInSeconds"
+                                    },
+                                    {
+                                        "value": "computed.handlingDurationInMinutes",
+                                        "label": "(Case) computed.handlingDurationInMinutes"
+                                    },
+                                    {
+                                        "value": "computed.handlingDurationInHours",
+                                        "label": "(Case) computed.handlingDurationInHours"
+                                    },
+                                    {
+                                        "value": "computed.handlingDurationInDays",
+                                        "label": "(Case) computed.handlingDurationInDays"
+                                    },
+                                    {
+                                        "value": "alertCount",
+                                        "label": "(Case) alertCount"
+                                    },
+                                    {
+                                        "value": "attachmentCount",
+                                        "label": "(Case) attachmentCount"
+                                    },
+                                    {
+                                        "value": "contributors",
+                                        "label": "(Case) contributors"
+                                    }
+                                ]
+                            }
+                        },
+                        {
                             "field": "date",
                             "label": "Date",
-                            "help": "Indicates if you want to recover your logs based on the last created or updated date",
+                            "help": "Indicates if you want to recover your logs based on the last created or updated date. If you select both, it will process first the last created and then the last updated",
                             "required": true,
-                            "type": "radio",
-                            "defaultValue": "_updatedAt",
+                            "type": "multipleSelect",
                             "options": {
+                                "delimiter": ",",
                                 "items": [
                                     {
                                         "value": "_createdAt",
-                                        "label": "Last created"
+                                        "label": "Created time (Last created)"
                                     },
                                     {
                                         "value": "_updatedAt",
-                                        "label": "Last updated"
+                                        "label": "Updated time (Last updated)"
+                                    },
+                                    {
+                                        "value": "startDate",
+                                        "label": "Started time (Last started)"
                                     }
                                 ]
                             }
@@ -649,9 +757,9 @@
                             "label": "Type",
                             "help": "Indicates which kind of logs data you want to recover",
                             "required": true,
-                            "type": "radio",
-                            "defaultValue": "cases",
+                            "type": "multipleSelect",
                             "options": {
+                                "delimiter": ",",
                                 "items": [
                                     {
                                         "value": "alerts",
@@ -697,21 +805,125 @@
                             }
                         },
                         {
+                            "field": "extra_data",
+                            "label": "Extra data",
+                            "help": "Indicates which extra data you want to get from alerts or cases",
+                            "required": false,
+                            "type": "multipleSelect",
+                            "options": {
+                                "delimiter": ",",
+                                "items": [
+                                    {
+                                        "value": "caseNumber",
+                                        "label": "(Alert) caseNumber"
+                                    },
+                                    {
+                                        "value": "importDate",
+                                        "label": "(Alert) importDate"
+                                    },
+                                    {
+                                        "value": "procedureCount",
+                                        "label": "(Alert) procedureCount"
+                                    },
+                                    {
+                                        "value": "status",
+                                        "label": "(Alert/Case) status"
+                                    },
+                                    {
+                                        "value": "owningOrganisation",
+                                        "label": "(Case) owningOrganisation"
+                                    },
+                                    {
+                                        "value": "procedureCount",
+                                        "label": "(Case) procedureCount"
+                                    },
+                                    {
+                                        "value": "actionRequired",
+                                        "label": "(Case) actionRequired"
+                                    },
+                                    {
+                                        "value": "observableStats",
+                                        "label": "(Case) observableStats"
+                                    },
+                                    {
+                                        "value": "taskStats",
+                                        "label": "(Case) taskStats"
+                                    },
+                                    {
+                                        "value": "alerts",
+                                        "label": "(Case) alerts"
+                                    },
+                                    {
+                                        "value": "isOwner",
+                                        "label": "(Case) isOwner"
+                                    },
+                                    {
+                                        "value": "shareCount",
+                                        "label": "(Case) shareCount"
+                                    },
+                                    {
+                                        "value": "contributors",
+                                        "label": "(Case) contributors"
+                                    },
+                                    {
+                                        "value": "permissions",
+                                        "label": "(Case) permissions"
+                                    },
+                                    {
+                                        "value": "computed.handlingDuration",
+                                        "label": "(Case) computed.handlingDuration"
+                                    },
+                                    {
+                                        "value": "computed.handlingDurationInSeconds",
+                                        "label": "(Case) computed.handlingDurationInSeconds"
+                                    },
+                                    {
+                                        "value": "computed.handlingDurationInMinutes",
+                                        "label": "(Case) computed.handlingDurationInMinutes"
+                                    },
+                                    {
+                                        "value": "computed.handlingDurationInHours",
+                                        "label": "(Case) computed.handlingDurationInHours"
+                                    },
+                                    {
+                                        "value": "computed.handlingDurationInDays",
+                                        "label": "(Case) computed.handlingDurationInDays"
+                                    },
+                                    {
+                                        "value": "alertCount",
+                                        "label": "(Case) alertCount"
+                                    },
+                                    {
+                                        "value": "attachmentCount",
+                                        "label": "(Case) attachmentCount"
+                                    },
+                                    {
+                                        "value": "contributors",
+                                        "label": "(Case) contributors"
+                                    }
+                                ]
+                            }
+                        },
+                        {
                             "field": "date",
                             "label": "Date",
-                            "help": "Indicates if you want to recover your logs based on the last created or updated date",
+                            "help": "Indicates if you want to recover your logs based on the last created or updated date. If you select both, it will process first the last created and then the last updated",
                             "required": true,
-                            "type": "radio",
-                            "defaultValue": "_updatedAt",
+                            "type": "multipleSelect",
                             "options": {
+                                "delimiter": ",",
                                 "items": [
                                     {
                                         "value": "_createdAt",
-                                        "label": "Last created"
+                                        "label": "Created time (Last created)"
                                     },
                                     {
                                         "value": "_updatedAt",
-                                        "label": "Last updated"
+                                        "label": "Updated time (Last updated)"
+                                    },
+                                    {
+                                        "value": "startDate",
+                                        "label": "Started time (Last started)"
                                     }
                                 ]
                             }
@@ -855,11 +1067,11 @@
                         {
                             "field": "date",
                             "label": "Date",
-                            "help": "Indicates if you want to recover your logs based on the last created or updated date",
+                            "help": "Indicates if you want to recover your logs based on the last created or updated date. If you select both, it will process first the last created and then the last updated",
                             "required": true,
-                            "type": "radio",
-                            "defaultValue": "_updatedAt",
+                            "type": "multipleSelect",
                             "options": {
+                                "delimiter": ",",
                                 "items": [
                                     {
                                         "value": "_createdAt",
@@ -983,11 +1195,11 @@
                         {
                             "field": "date",
                             "label": "Date",
-                            "help": "Indicates if you want to recover your logs based on the last created or updated date",
+                            "help": "Indicates if you want to recover your logs based on the last created or updated date. If you select both, it will process first the last created and then the last updated",
                             "required": true,
-                            "type": "radio",
-                            "defaultValue": "_updatedAt",
+                            "type": "multipleSelect",
                             "options": {
+                                "delimiter": ",",
                                 "items": [
                                     {
                                         "value": "_createdAt",

@@ -1,5 +1,5 @@
 <form version="1.1">
-  <label>Audit logs</label>
+  <label>📃 Audit logs</label>
   <description>This dashboard is used to monitor audit logs from scripts</description>
   <fieldset submitButton="false">
     <input type="time" token="time">
@@ -13,9 +13,13 @@
   <row>
     <panel>
       <title>Audit logs : Modular input regarding TheHive Cortex API (Inputs)</title>
+      <input type="text" token="pid">
+        <label>PID</label>
+        <default>*</default>
+      </input>
       <table>
         <search>
-          <query>index=_internal source IN ("*ta_thehive_cortex_thehive_*.log","*ta_thehive_cortex_backfill_*.log")
+          <query>index=_internal source IN ("*ta_thehive_cortex_thehive_*.log","*ta_thehive_cortex_backfill_*.log") pid=$pid$
 | rex field="_raw" "^\d+\-\d+\-\d+ \d+:\d+:\d+,\d+ (?&lt;level&gt;[^ ]+) pid=(?&lt;pid&gt;[^ ]+) tid=[^ ]+ file=[^ ]+ \| (?&lt;signature&gt;.*)"
 | eval signature = coalesce(signature,_raw)
 | sort 0 -_time -signature

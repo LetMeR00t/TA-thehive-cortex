@@ -1,4 +1,7 @@
 <nav search_view="search" color="#0049D4">
+  <view name="instances"/>
+  <view name="configuration"/>
+  <view name="inputs"/>
   <collection label="TheHive">
     <view name="cases" default='true'/>
     <view name="thehive_alerts" />
@@ -9,14 +12,9 @@
     <view name="jobs" />
   </collection>
   <view name="audit_logs"/>
-  <collection label="Settings">
-    <view name="inputs"/>
-    <view name="configuration"/>
-    <view name="instances"/>
   <collection label="Splunk App">
     <view name="search"/>
     <view name="alerts"/>
     <view name="dashboards"/>
   </collection>
-</collection>
 </nav>

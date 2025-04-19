@@ -5,7 +5,7 @@
     <eval token="last_refresh">now()</eval>
     <set token="action_remove_instance">❌ Remove this instance</set>
   </init>
-  <fieldset submitButton="false">
+  <fieldset submitButton="true" autoRun="false">
     <input type="dropdown" token="global_action">
       <label>Action</label>
       <choice value="add">Add a new instance</choice>

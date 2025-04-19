@@ -7,7 +7,7 @@ from thehive4py.errors import TheHiveError
 from thehive4py.query import QueryExpr
 from thehive4py.query.filters import FilterExpr
 from thehive4py.query.page import Paginate
-from thehive4py.query.sort import SortExpr
+from thehive4py.query.sort import Asc, SortExpr
 from thehive4py.types.attachment import OutputAttachment
 from thehive4py.types.case import (
     CaseStatus,
@@ -264,12 +264,14 @@ class CaseEndpoint(EndpointBase):
         return self._session.make_request(
             "POST", path=f"/api/v1/case/{case_id}/procedure", json=procedure
         )
-    
+
     def create_procedures(
         self, case_id: str, procedures: List[InputProcedure]
     ) -> List[OutputProcedure]:
         return self._session.make_request(
-            "POST", path=f"/api/v1/case/{case_id}/procedures", json={"procedures": procedures}
+            "POST",
+            path=f"/api/v1/case/{case_id}/procedures",
+            json={"procedures": procedures},
         )
 
     def find_procedures(
@@ -389,3 +391,133 @@ class CaseEndpoint(EndpointBase):
     ) -> None:
         case: InputUpdateCase = {"status": status}
         return self.update(case_id, case)
+
+    def count_pages(
+        self,
+        case_id: str,
+    ) -> int:
+        """Find pages related to a case.
+
+        Args:
+            case_id: The id of the case.
+        Returns:
+            The number of pages
+        """
+        query: QueryExpr = [
+            {"_name": "getCase", "idOrName": case_id},
+            {"_name": "pages"},
+            {"_name": "count"},
+        ]
+
+        return self._session.make_request(
+            "POST",
+            path="/api/v1/query",
+            params={"name": "case-pages"},
+            json={"query": query},
+        )
+
+    def get_case_pages(self, case_id: int) -> List[OutputCasePage]:
+        # Count first
+        count = self.count_pages(case_id=case_id)
+        pages = []
+
+        sortby = Asc(field="_createdAt")
+        step = 100
+        for i in range(0, count, step):
+            if i + step < count:
+                paginate = Paginate(start=i, end=i + step)
+            else:
+                paginate = Paginate(start=i, end=count)
+
+            # Get objects using the query
+            pages += self.find_pages(case_id=case_id, sortby=sortby, paginate=paginate)
+
+        return pages
+
+    def count_observables(
+        self,
+        case_id: str,
+    ) -> int:
+        """Find observables related to a case.
+
+        Args:
+            case_id: The id of the case.
+        Returns:
+            The number of observables
+        """
+        query: QueryExpr = [
+            {"_name": "getCase", "idOrName": case_id},
+            {"_name": "observables"},
+            {"_name": "count"},
+        ]
+
+        return self._session.make_request(
+            "POST",
+            path="/api/v1/query",
+            params={"name": "case-observables"},
+            json={"query": query},
+        )
+
+    def get_case_observables(self, case_id: int) -> List[OutputObservable]:
+        # Count first
+        count = self.count_observables(case_id=case_id)
+        observables = []
+
+        sortby = Asc(field="_createdAt")
+        step = 100
+        for i in range(0, count, step):
+            if i + step < count:
+                paginate = Paginate(start=i, end=i + step)
+            else:
+                paginate = Paginate(start=i, end=count)
+
+            # Get objects using the query
+            observables += self.find_observables(
+                case_id=case_id, sortby=sortby, paginate=paginate
+            )
+
+        return observables
+
+    def count_attachments(
+        self,
+        case_id: str,
+    ) -> int:
+        """Find attachments related to a case.
+
+        Args:
+            case_id: The id of the case.
+        Returns:
+            The number of attachments
+        """
+        query: QueryExpr = [
+            {"_name": "getCase", "idOrName": case_id},
+            {"_name": "attachments"},
+            {"_name": "count"},
+        ]
+
+        return self._session.make_request(
+            "POST",
+            path="/api/v1/query",
+            params={"name": "case-attachments"},
+            json={"query": query},
+        )
+
+    def get_case_attachments(self, case_id: int) -> List[OutputObservable]:
+        # Count first
+        count = self.count_attachments(case_id=case_id)
+        attachments = []
+
+        sortby = Asc(field="_createdAt")
+        step = 100
+        for i in range(0, count, step):
+            if i + step < count:
+                paginate = Paginate(start=i, end=i + step)
+            else:
+                paginate = Paginate(start=i, end=count)
+
+            # Get objects using the query
+            attachments += self.find_attachments(
+                case_id=case_id, sortby=sortby, paginate=paginate
+            )
+
+        return attachments

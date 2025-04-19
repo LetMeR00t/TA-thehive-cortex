@@ -73,72 +73,77 @@ def collect_events(helper, ew):
     # Get alert arguments
     modular_input_args = {}
     # Get string values from the input form
-    modular_input_args["date"] = helper.get_arg("date")
-    modular_input_args["max_size_value"] = (
-        helper.get_arg("max_size_value")
-        if helper.get_arg("max_size_value") is not None
-        and helper.get_arg("max_size_value") != ""
-        else 1000
-    )
-    modular_input_args["fields_removal"] = (
-        helper.get_arg("fields_removal")
-        if helper.get_arg("fields_removal") is not None
-        and helper.get_arg("fields_removal") != ""
-        else ""
-    )
-    logger_file.debug(
-        id="30", message="Arguments recovered: " + str(modular_input_args)
-    )
-
-    date_mode = None
-    if modular_input_args["date"] == "_updatedAt":
-        date_mode = "last_updated"
-    elif modular_input_args["date"] == "_createdAt":
-        date_mode = "last_created"
-    else:
-        date_mode = modular_input_args["date"]
-    # Retrieve the data
-    logger_file.debug(id="35", message="Configuration is ready. Collecting the data...")
-
-    # Retrieve the data
-    logger_file.debug(id="36", message=f"Processing type 'observables'...")
-
-    # Prepare to store the new events
-    new_events = []
-    sortby = Desc(modular_input_args["date"])
-
-    # Check the interval set
-    interval = int(input_stanza[stanza]["interval"])
-
-    # Calculate d2 which is the latest date
-    now = datetime.datetime.timestamp(datetime.datetime.now())
-
-    ## Round it to the minute
-    d2 = now - now % 60
-
-    # Calculate d1 which is the earliest date
-    d1 = d2 - interval
-
-    # Multiply by 1,000 for TheHive
-    filters = Between(modular_input_args["date"], d1 * 1000, d2 * 1000)
-    logger_file.debug(id="40", message="This filter will be used: " + str(filters))
-
-    new_events = thehive.get_observables_events(
-        filters=filters, sortby=sortby, **modular_input_args
-    )
-
-    # Store the events accordingly
-    for event in new_events:
-        # Index the event
-        e = helper.new_event(
-            source="thehive:" + stanza,
-            host=thehive.session.hive_url[8:],
-            index=helper.get_output_index(),
-            sourcetype="thehive:" + date_mode + ":observables",
-            data=json.dumps(event),
+    for date in helper.get_arg("date"):
+        modular_input_args["date"] = date
+        modular_input_args["max_size_value"] = (
+            helper.get_arg("max_size_value")
+            if helper.get_arg("max_size_value") is not None
+            and helper.get_arg("max_size_value") != ""
+            else 1000
         )
-        ew.write_event(e)
+        modular_input_args["fields_removal"] = (
+            helper.get_arg("fields_removal")
+            if helper.get_arg("fields_removal") is not None
+            and helper.get_arg("fields_removal") != ""
+            else ""
+        )
+        logger_file.debug(
+            id="30", message="Arguments recovered: " + str(modular_input_args)
+        )
 
-    logger_file.info(id="70", message=str(len(new_events)) + " events were recovered.")
+        date_mode = None
+        if modular_input_args["date"] == "_updatedAt":
+            date_mode = "last_updated"
+        elif modular_input_args["date"] == "_createdAt":
+            date_mode = "last_created"
+        else:
+            date_mode = modular_input_args["date"]
+        # Retrieve the data
+        logger_file.debug(
+            id="35", message="Configuration is ready. Collecting the data..."
+        )
+
+        # Retrieve the data
+        logger_file.debug(id="36", message=f"Processing type 'observables'...")
+
+        # Prepare to store the new events
+        new_events = []
+        sortby = Desc(modular_input_args["date"])
+
+        # Check the interval set
+        interval = int(input_stanza[stanza]["interval"])
+
+        # Calculate d2 which is the latest date
+        now = datetime.datetime.timestamp(datetime.datetime.now())
+
+        ## Round it to the minute
+        d2 = now - now % 60
+
+        # Calculate d1 which is the earliest date
+        d1 = d2 - interval
+
+        # Multiply by 1,000 for TheHive
+        filters = Between(modular_input_args["date"], d1 * 1000, d2 * 1000)
+        logger_file.debug(id="40", message="This filter will be used: " + str(filters))
+
+        new_events = thehive.get_observables_events(
+            filters=filters, sortby=sortby, **modular_input_args
+        )
+
+        # Store the events accordingly
+        for event in new_events:
+            # Index the event
+            e = helper.new_event(
+                source="thehive:" + stanza,
+                host=thehive.session.hive_url[8:],
+                index=helper.get_output_index(),
+                sourcetype="thehive:" + date_mode + ":observables",
+                data=json.dumps(event),
+            )
+            ew.write_event(e)
+
+        logger_file.info(
+            id="70", message=str(len(new_events)) + " events were recovered."
+        )
 
     return 0

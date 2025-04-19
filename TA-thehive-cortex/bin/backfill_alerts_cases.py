@@ -78,6 +78,15 @@ class ModInputbackfill_alerts_cases(modinput_wrapper.base_modinput.BaseModInput)
         )
         scheme.add_argument(
             smi.Argument(
+                "extra_data",
+                title="Extra data",
+                description="Indicates which extra data you want to get from alerts or cases",
+                required_on_create=False,
+                required_on_edit=False,
+            )
+        )
+        scheme.add_argument(
+            smi.Argument(
                 "date",
                 title="Date",
                 description="Indicates if you want to recover your logs based on the last created or updated date",

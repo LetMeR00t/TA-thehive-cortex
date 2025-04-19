@@ -1,5 +1,6 @@
 # encoding = utf-8
 import sys
+from typing import Tuple
 import ta_thehive_cortex_declare
 from thehive4py.client import TheHiveApi
 from thehive4py.query.filters import _FilterBase
@@ -391,7 +392,7 @@ class TheHive4Splunk(TheHiveApi):
         count_events = self.alert.count(filters=filters)
         self.logger_file.info(
             id="TH121",
-            message=f"Got {count_events} alerts. Estimated time for processing all events: {((int(count_events/100))+1)*8} seconds",
+            message=f"Got {count_events} alerts. Estimated time for processing all events: less than {(count_events)*10} seconds",
         )
         processed_events = []
 
@@ -399,9 +400,13 @@ class TheHive4Splunk(TheHiveApi):
         step = 100
         for i in range(0, count_events, step):
             if i + step < count_events:
-                paginate = Paginate(start=i, end=i + step)
+                paginate = Paginate(
+                    start=i, end=i + step, extra_data=kwargs["extra_data"]
+                )
             else:
-                paginate = Paginate(start=i, end=count_events)
+                paginate = Paginate(
+                    start=i, end=count_events, extra_data=kwargs["extra_data"]
+                )
 
             # Get alerts using the query
             raw_events = self.alert.find(
@@ -423,8 +428,8 @@ class TheHive4Splunk(TheHiveApi):
                     ## OBSERVABLES ##
                     observables = []
                     ## ALERTS ##
-                    observables = self.alert.find_observables(
-                        event["_id"], paginate=paginate
+                    observables = self.alert.get_alert_observables(
+                        alert_id=event["_id"]
                     )
                     event["observables"] = observables
                     self.logger_file.debug(
@@ -432,18 +437,29 @@ class TheHive4Splunk(TheHiveApi):
                         message="thehive - observables: " + str(event["observables"]),
                     )
 
-                    ## ATTACHMENTS ##
-                    if "attachments" in kwargs["additional_information"]:
-                        ## ALERTS ##
-                        attachments = self.alert.find_attachments(
-                            event["_id"], paginate=paginate
-                        )
-                        event["attachments"] = attachments
-                        self.logger_file.debug(
-                            id="TH123",
-                            message="thehive - attachments: "
-                            + str(event["attachments"]),
-                        )
+                ## ATTACHMENTS ##
+                if "attachments" in kwargs["additional_information"]:
+                    ## ALERTS ##
+                    attachments = self.alert.get_alert_attachments(
+                        alert_id=event["_id"]
+                    )
+                    event["attachments"] = attachments
+                    self.logger_file.debug(
+                        id="TH123",
+                        message="thehive - attachments: " + str(event["attachments"]),
+                    )
+
+                # Rework of the custom fields
+                if "customFields" in event and len(event["customFields"]) > 0:
+                    custom_fields = [cf["_id"] for cf in event["customFields"]]
+                    new_custom_fields = []
+                    for cf in custom_fields:
+                        cf_split = cf.split(":", maxsplit=1)
+                        if len(cf_split) > 1:
+                            new_custom_fields.append({cf_split[0]: cf_split[1]})
+                        elif len(cf_split) > 0:
+                            new_custom_fields.append({cf_split[0]: None})
+                    event["customFields"] = new_custom_fields
 
                 # Remove underscore at the beginning
                 for field in [
@@ -488,7 +504,7 @@ class TheHive4Splunk(TheHiveApi):
 
     def get_cases_events(
         self, filters: _FilterBase = None, sortby: SortExpr = None, **kwargs
-    ) -> list:
+    ) -> Tuple[list, list]:
         """This is used to recover cases from TheHive
 
         Args:
@@ -502,17 +518,22 @@ class TheHive4Splunk(TheHiveApi):
         count_events = self.case.count(filters=filters)
         self.logger_file.info(
             id="TH131",
-            message=f"Got {count_events} cases. Estimated time for processing all events: {((int(count_events/100))+1)*8} seconds",
+            message=f"Got {count_events} cases. Estimated time for processing all events: less than {(count_events)*8} seconds",
         )
         processed_events = []
+        processed_tasks = []
 
         final_sortby = sortby if sortby is not None else Asc(field="_createdAt")
         step = 100
         for i in range(0, count_events, step):
             if i + step < count_events:
-                paginate = Paginate(start=i, end=i + step)
+                paginate = Paginate(
+                    start=i, end=i + step, extra_data=kwargs["extra_data"]
+                )
             else:
-                paginate = Paginate(start=i, end=count_events)
+                paginate = Paginate(
+                    start=i, end=count_events, extra_data=kwargs["extra_data"]
+                )
 
             # Get cases using the query
             raw_events = self.case.find(
@@ -536,61 +557,60 @@ class TheHive4Splunk(TheHiveApi):
                 # Set the _time of the event to the created/updated time
                 event["_time"] = int(event[kwargs["date"]])
 
-                if "tasks" in kwargs["additional_information"]:
-                    ## TASKS ##
-                    tasks = []
-                    tasks = self.case.find_tasks(event["_id"], paginate=paginate)
-                    event["tasks"] = tasks
-                    self.logger_file.debug(
-                        id="TH132", message="TheHive - Tasks: " + str(event["tasks"])
-                    )
-
                 if "observables" in kwargs["additional_information"]:
                     ## OBSERVABLES ##
                     observables = []
                     ## CASES ##
-                    observables = self.case.find_observables(
-                        event["_id"], paginate=paginate
-                    )
+                    observables = self.case.get_case_observables(case_id=event["_id"])
                     event["observables"] = observables
                     self.logger_file.debug(
                         id="TH133",
-                        message="thehive - observables: " + str(event["observables"]),
+                        message="thehive - observables: "
+                        + str(len(event["observables"])),
                     )
 
-                    ## ATTACHMENTS ##
-                    if "attachments" in kwargs["additional_information"]:
-                        ## CASES ##
-                        attachments = self.case.find_attachments(
-                            event["_id"], paginate=paginate
-                        )
-                        event["attachments"] = attachments
-                        self.logger_file.debug(
-                            id="TH134",
-                            message="thehive - attachments: "
-                            + str(event["attachments"]),
-                        )
+                ## ATTACHMENTS ##
+                if "attachments" in kwargs["additional_information"]:
+                    ## CASES ##
+                    attachments = self.case.get_case_attachments(case_id=event["_id"])
+                    event["attachments"] = attachments
+                    self.logger_file.debug(
+                        id="TH134",
+                        message="thehive - attachments: "
+                        + str(len(event["attachments"])),
+                    )
 
-                    ## PAGES ##
-                    if "pages" in kwargs["additional_information"]:
-                        ## CASES ##
-                        pages = self.case.find_pages(event["_id"], paginate=paginate)
-                        event["pages"] = pages
-                        self.logger_file.debug(
-                            id="TH135",
-                            message="thehive - pages: " + str(event["pages"]),
-                        )
+                ## PAGES ##
+                if "pages" in kwargs["additional_information"]:
+                    ## CASES ##
+                    pages = self.case.get_case_pages(case_id=event["_id"])
+                    event["pages"] = pages
+                    self.logger_file.debug(
+                        id="TH135",
+                        message="thehive - pages: " + str(len(event["pages"])),
+                    )
 
-                    ## TTPS ##
-                    if "ttps" in kwargs["additional_information"]:
-                        ## CASES ##
-                        ttps = self.case.find_procedures(
-                            event["_id"], paginate=paginate
-                        )
-                        event["ttps"] = ttps
-                        self.logger_file.debug(
-                            id="TH136", message="thehive - ttps: " + str(event["ttps"])
-                        )
+                ## TTPS ##
+                if "ttps" in kwargs["additional_information"]:
+                    ## CASES ##
+                    paginate = Paginate(start=0, end=100)
+                    ttps = self.case.find_procedures(event["_id"], paginate=paginate)
+                    event["ttps"] = ttps
+                    self.logger_file.debug(
+                        id="TH136", message="thehive - ttps: " + str(len(event["ttps"]))
+                    )
+
+                # Rework of the custom fields
+                if "customFields" in event and len(event["customFields"]) > 0:
+                    custom_fields = [cf["_id"] for cf in event["customFields"]]
+                    new_custom_fields = []
+                    for cf in custom_fields:
+                        cf_split = cf.split(":", maxsplit=1)
+                        if len(cf_split) > 1:
+                            new_custom_fields.append({cf_split[0]: cf_split[1]})
+                        elif len(cf_split) > 0:
+                            new_custom_fields.append({cf_split[0]: None})
+                    event["customFields"] = new_custom_fields
 
                 # Remove underscore at the beginning
                 for field in [
@@ -631,7 +651,45 @@ class TheHive4Splunk(TheHiveApi):
                 message=f"{len(processed_events)} events have been processed...",
             )
 
-        return processed_events
+        if "tasks" in kwargs["additional_information"]:
+            ## TASKS ##
+            tasks = []
+            tasks = self.task.get_tasks(filters=filters)
+            for task in tasks:
+                event = task
+                # Remove underscore at the beginning
+                for field in [
+                    "_createdAt",
+                    "_createdBy",
+                    "_id",
+                    "_time",
+                    "_type",
+                    "_updatedAt",
+                    "_updatedBy",
+                ]:
+                    if field in event:
+                        event[field.replace("_", "")] = event.pop(field)
+
+                # Sanitize the event from the configuration
+                if "fields_removal" in kwargs and kwargs["fields_removal"] is not None:
+                    event = self._utils.remove_unwanted_keys_from_dict(
+                        d=event, l=kwargs["fields_removal"].split(",")
+                    )
+                if "max_size_value" in kwargs and kwargs["max_size_value"] is not None:
+                    event = self._utils.check_and_reduce_values_size(
+                        d=event, max_size=kwargs["max_size_value"]
+                    )
+                self.logger_file.debug(
+                    id="TH139",
+                    message=f"Event after processing (check_and_reduce_values_size): {event}",
+                )
+
+                processed_tasks.append(event)
+            self.logger_file.debug(
+                id="TH140", message="TheHive - Tasks: " + str(len(processed_tasks))
+            )
+
+        return (processed_events, processed_tasks)
 
     def get_observables_events(
         self, filters: _FilterBase = None, sortby: SortExpr = None, **kwargs
@@ -649,7 +707,7 @@ class TheHive4Splunk(TheHiveApi):
         count_events = self.observable.count(filters=filters)
         self.logger_file.info(
             id="TH141",
-            message=f"Got {count_events} observables. Estimated time for processing all events: {((int(count_events/100))+1)*8} seconds",
+            message=f"Got {count_events} observables. Estimated time for processing all events: less than {((int(count_events/100))+1)*14} seconds",
         )
         processed_events = []
 
@@ -731,7 +789,7 @@ class TheHive4Splunk(TheHiveApi):
         count_events = self.organisation.count_audit_logs(filters=filters)
         self.logger_file.info(
             id="TH171",
-            message=f"Got {count_events} audit logs. Estimated time for processing all events: {((int(count_events/100))+1)*8} seconds",
+            message=f"Got {count_events} audit logs. Estimated time for processing all events: less than {((int(count_events/100))+1)*14} seconds",
         )
         processed_events = []
 

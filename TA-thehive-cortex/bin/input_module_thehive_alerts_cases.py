@@ -73,88 +73,153 @@ def collect_events(helper, ew):
     # Get alert arguments
     modular_input_args = {}
     # Get string values from the input form
-    modular_input_args["type"] = helper.get_arg("type")
-    modular_input_args["date"] = helper.get_arg("date")
-    modular_input_args["max_size_value"] = (
-        int(helper.get_arg("max_size_value"))
-        if helper.get_arg("max_size_value") is not None
-        and helper.get_arg("max_size_value") != ""
-        else 1000
-    )
-    modular_input_args["fields_removal"] = (
-        helper.get_arg("fields_removal")
-        if helper.get_arg("fields_removal") is not None
-        and helper.get_arg("fields_removal") != ""
-        else ""
-    )
-    modular_input_args["additional_information"] = helper.get_arg(
-        "additional_information"
-    )
-    input_type = modular_input_args["type"]
-    logger_file.debug(
-        id="30", message="Arguments recovered: " + str(modular_input_args)
-    )
+    for type_object in helper.get_arg("type"):
+        modular_input_args["type"] = type_object
+        for date in helper.get_arg("date"):
+            modular_input_args["date"] = date
+            modular_input_args["max_size_value"] = (
+                int(helper.get_arg("max_size_value"))
+                if helper.get_arg("max_size_value") is not None
+                and helper.get_arg("max_size_value") != ""
+                else 1000
+            )
+            modular_input_args["fields_removal"] = (
+                helper.get_arg("fields_removal")
+                if helper.get_arg("fields_removal") is not None
+                and helper.get_arg("fields_removal") != ""
+                else ""
+            )
+            modular_input_args["additional_information"] = helper.get_arg(
+                "additional_information"
+            )
+            modular_input_args["extra_data"] = (
+                helper.get_arg("extra_data")
+                if helper.get_arg("extra_data") is not None
+                and helper.get_arg("extra_data") != ""
+                else []
+            )
+            input_type = modular_input_args["type"]
+            logger_file.debug(
+                id="30", message="Arguments recovered: " + str(modular_input_args)
+            )
 
-    date_mode = None
-    if modular_input_args["date"] == "_updatedAt":
-        date_mode = "last_updated"
-    elif modular_input_args["date"] == "_createdAt":
-        date_mode = "last_created"
-    else:
-        date_mode = modular_input_args["date"]
-    # Retrieve the data
-    logger_file.debug(id="35", message="Configuration is ready. Collecting the data...")
+            date_mode = None
+            if modular_input_args["date"] == "_updatedAt":
+                date_mode = "last_updated"
+            elif modular_input_args["date"] == "_createdAt":
+                date_mode = "last_created"
+            elif modular_input_args["date"] == "startDate":
+                date_mode = "last_started"
+            else:
+                date_mode = modular_input_args["date"]
+            # Retrieve the data
+            logger_file.debug(
+                id="35", message="Configuration is ready. Collecting the data..."
+            )
 
-    # Retrieve the data
-    logger_file.debug(id="36", message=f"Processing type '{input_type}'...")
+            # Retrieve the data
+            logger_file.debug(id="36", message=f"Processing type '{input_type}'...")
 
-    # Prepare to store the new events
-    new_events = []
-    sortby = Desc(modular_input_args["date"])
+            # Prepare to store the new events
+            new_events = []
+            sortby = Desc(modular_input_args["date"])
 
-    # Check the interval set
-    interval = int(input_stanza[stanza]["interval"])
+            # Check the interval set
+            interval = int(input_stanza[stanza]["interval"])
 
-    # Calculate d2 which is the latest date
-    now = datetime.datetime.timestamp(datetime.datetime.now())
+            # Calculate d2 which is the latest date
+            now = datetime.datetime.timestamp(datetime.datetime.now())
 
-    ## Round it to the minute
-    d2 = now - now % 60
+            ## Round it to the minute
+            d2 = now - now % 60
 
-    # Calculate d1 which is the earliest date
-    d1 = d2 - interval
+            # Calculate d1 which is the earliest date
+            d1 = d2 - interval
 
-    # Multiply by 1,000 for TheHive
-    filters = Between(modular_input_args["date"], d1 * 1000, d2 * 1000)
-    logger_file.debug(id="40", message="This filter will be used: " + str(filters))
+            # Multiply by 1,000 for TheHive
+            filters = Between(modular_input_args["date"], d1 * 1000, d2 * 1000)
+            logger_file.debug(
+                id="40", message="This filter will be used: " + str(filters)
+            )
 
-    if modular_input_args["type"] == "cases":
-        ## CASES ##
-        new_events = thehive.get_cases_events(
-            filters=filters,
-            sortby=sortby,
-            **modular_input_args,
-        )
+            if modular_input_args["type"] == "cases":
+                ## CASES ##
+                # Filter extra data only for cases
+                modular_input_args["extra_data"] = [
+                    ed
+                    for ed in modular_input_args["extra_data"]
+                    if ed
+                    in [
+                        "owningOrganisation",
+                        "procedureCount",
+                        "actionRequired",
+                        "status",
+                        "observableStats",
+                        "taskStats",
+                        "alerts",
+                        "isOwner",
+                        "shareCount",
+                        "contributors",
+                        "permissions",
+                        "computed.handlingDurationInSeconds",
+                        "computed.handlingDuration",
+                        "computed.handlingDurationInMinutes",
+                        "computed.handlingDurationInHours",
+                        "computed.handlingDurationInDays",
+                        "alertCount",
+                        "attachmentCount",
+                        "contributors",
+                    ]
+                ]
+                (new_events, events_tasks) = thehive.get_cases_events(
+                    filters=filters,
+                    sortby=sortby,
+                    **modular_input_args,
+                )
 
-    elif modular_input_args["type"] == "alerts":
-        ## ALERTS ##
-        new_events = thehive.get_alerts_events(
-            filters=filters,
-            **modular_input_args,
-        )
+                # Store the events accordingly
+                for task in events_tasks:
+                    # Index the event
+                    e = helper.new_event(
+                        source="thehive:" + stanza,
+                        host=thehive.session.hive_url[8:],
+                        index=helper.get_output_index(),
+                        sourcetype="thehive:" + date_mode + ":tasks",
+                        data=json.dumps(task),
+                    )
+                    ew.write_event(e)
 
-    # Store the events accordingly
-    for event in new_events:
-        # Index the event
-        e = helper.new_event(
-            source="thehive:" + stanza,
-            host=thehive.session.hive_url[8:],
-            index=helper.get_output_index(),
-            sourcetype="thehive:" + date_mode + ":" + modular_input_args["type"],
-            data=json.dumps(event),
-        )
-        ew.write_event(e)
+            elif modular_input_args["type"] == "alerts":
+                ## ALERTS ##
+                # Filter extra data only for alerts
+                modular_input_args["extra_data"] = [
+                    ed
+                    for ed in modular_input_args["extra_data"]
+                    if ed in ["caseNumber", "importDate", "status", "procedureCount"]
+                ]
+                new_events = thehive.get_alerts_events(
+                    filters=filters,
+                    **modular_input_args,
+                )
 
-    logger_file.info(id="70", message=str(len(new_events)) + " events were recovered.")
+            # Store the events accordingly
+            for event in new_events:
+                # Index the event
+                e = helper.new_event(
+                    source="thehive:" + stanza,
+                    host=thehive.session.hive_url[8:],
+                    index=helper.get_output_index(),
+                    sourcetype="thehive:"
+                    + date_mode
+                    + ":"
+                    + modular_input_args["type"],
+                    data=json.dumps(event),
+                )
+                ew.write_event(e)
+
+            logger_file.info(
+                id="70",
+                message=f"{str(len(new_events))} events (type: {type_object}, date: {date_mode}) were recovered.",
+            )
 
     return 0
