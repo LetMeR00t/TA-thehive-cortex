@@ -539,7 +539,7 @@
                                     },
                                     {
                                         "value": "procedureCount",
-                                        "label": "(Alert) procedureCount"
+                                        "label": "(Alert/Case) procedureCount"
                                     },
                                     {
                                         "value": "status",
@@ -548,10 +548,6 @@
                                     {
                                         "value": "owningOrganisation",
                                         "label": "(Case) owningOrganisation"
-                                    },
-                                    {
-                                        "value": "procedureCount",
-                                        "label": "(Case) procedureCount"
                                     },
                                     {
                                         "value": "actionRequired",
@@ -578,8 +574,8 @@
                                         "label": "(Case) shareCount"
                                     },
                                     {
-                                        "value": "contributors",
-                                        "label": "(Case) contributors"
+                                        "value": "links",
+                                        "label": "(Case) links"
                                     },
                                     {
                                         "value": "permissions",
@@ -823,7 +819,7 @@
                                     },
                                     {
                                         "value": "procedureCount",
-                                        "label": "(Alert) procedureCount"
+                                        "label": "(Alert/Case) procedureCount"
                                     },
                                     {
                                         "value": "status",
@@ -832,10 +828,6 @@
                                     {
                                         "value": "owningOrganisation",
                                         "label": "(Case) owningOrganisation"
-                                    },
-                                    {
-                                        "value": "procedureCount",
-                                        "label": "(Case) procedureCount"
                                     },
                                     {
                                         "value": "actionRequired",
@@ -862,8 +854,8 @@
                                         "label": "(Case) shareCount"
                                     },
                                     {
-                                        "value": "contributors",
-                                        "label": "(Case) contributors"
+                                        "value": "links",
+                                        "label": "(Case) links"
                                     },
                                     {
                                         "value": "permissions",

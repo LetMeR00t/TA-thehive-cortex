@@ -161,6 +161,7 @@ def collect_events(helper, ew):
                                 "alerts",
                                 "isOwner",
                                 "shareCount",
+                                "links",
                                 "contributors",
                                 "permissions",
                                 "computed.handlingDurationInSeconds",
