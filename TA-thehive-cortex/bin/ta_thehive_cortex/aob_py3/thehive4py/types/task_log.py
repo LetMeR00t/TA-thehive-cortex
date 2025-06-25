@@ -1,5 +1,7 @@
 from typing import List, Dict
 
+from thehive4py.types.attachment import OutputAttachment
+
 
 class InputTaskLogRequired(Dict):
     message: str
@@ -8,6 +10,7 @@ class InputTaskLogRequired(Dict):
 class InputTaskLog(InputTaskLogRequired):
     startDate: int
     includeInTimeline: int
+    attachments: List[str]
 
 
 class OutputTaskLogRequired(Dict):
@@ -24,7 +27,7 @@ class OutputTaskLogRequired(Dict):
 class OutputTaskLog(OutputTaskLogRequired):
     _updatedBy: str
     _updatedAt: int
-    attachments: List[dict]  # TODO: typehint
+    attachments: List[OutputAttachment]
     includeInTimeline: int
 
 

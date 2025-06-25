@@ -61,7 +61,7 @@ class InvalidMetadata(ValueError):
 # serialization formats as possible. The idea is that as long as a serialization
 # formats offer some very basic primitives in *some* way then we can support
 # serializing to and from that format.
-class RawMetadata(TypedDict, total=False):
+class RawMetadata(TypedDict):
     """A dictionary of raw core metadata.
 
     Each field in core metadata maps to a key of this dictionary (when data is

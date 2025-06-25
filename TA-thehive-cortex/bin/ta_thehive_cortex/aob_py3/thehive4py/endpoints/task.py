@@ -213,6 +213,16 @@ class TaskEndpoint(EndpointBase):
                 )
 
             # Get objects using the query
-            tasks += self.find_tasks(case_id=case_id, sortby=sortby, paginate=paginate)
+            query: QueryExpr = [
+                {"_name": "getCase", "idOrName": case_id},
+                {"_name": "tasks"},
+                *self._build_subquery(sortby=sortby, paginate=paginate),
+            ]
+            tasks += self._session.make_request(
+                "POST",
+                path="/api/v1/query",
+                params={"name": "get-case-tasks"},
+                json={"query": query},
+            )
 
         return tasks

@@ -1,3 +1,1 @@
-# /!\ CUSTOM CHANGE TA-THEHIVE-CORTEX ONLY /!\
-# Manage the version statically
-__version__ = "2.0.0b6-revised"
+__version__ = "2.0.0b11-revised"
