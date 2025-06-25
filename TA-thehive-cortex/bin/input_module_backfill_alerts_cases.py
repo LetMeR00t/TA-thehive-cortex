@@ -129,6 +129,8 @@ def collect_events(helper, ew):
                 # Prepare to store the new events
                 new_events = []
 
+                sortby = Desc(modular_input_args["date"])
+
                 # Check the interval set
                 interval = int(input_stanza[stanza]["interval"])
 
@@ -174,9 +176,28 @@ def collect_events(helper, ew):
                                 "contributors",
                             ]
                         ]
-                        new_events = thehive.get_cases_events(
+
+                        (new_events, events_tasks) = thehive.get_cases_events(
                             filters=filters,
+                            sortby=sortby,
                             **modular_input_args,
+                        )
+
+                        # Store the events accordingly
+                        for task in events_tasks:
+                            # Index the event
+                            e = helper.new_event(
+                                source="thehive:" + stanza,
+                                host=thehive.session.hive_url[8:],
+                                index=helper.get_output_index(),
+                                sourcetype="thehive:" + date_mode + ":case_tasks",
+                                data=json.dumps(task),
+                            )
+                            ew.write_event(e)
+
+                        logger_file.info(
+                            id="65",
+                            message=f"{str(len(events_tasks))} events (type: task, date: {date_mode}) were recovered.",
                         )
 
                     elif modular_input_args["type"] == "alerts":
@@ -200,7 +221,10 @@ def collect_events(helper, ew):
                             source="thehive:" + stanza,
                             host=thehive.session.hive_url[8:],
                             index=helper.get_output_index(),
-                            sourcetype="thehive:" + date_mode + ":tasks",
+                            sourcetype="thehive:"
+                            + date_mode
+                            + ":"
+                            + modular_input_args["type"],
                             data=json.dumps(event),
                         )
                         ew.write_event(e)
