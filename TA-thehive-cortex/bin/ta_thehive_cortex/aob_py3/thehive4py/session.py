@@ -4,6 +4,7 @@ from os import PathLike
 from typing import Any, Optional, Union
 
 import requests
+import requests.adapters
 import requests.auth
 from urllib3 import Retry
 
@@ -20,8 +21,10 @@ DEFAULT_RETRY = Retry(
 
 
 RetryValue = Union[Retry, int, None]
+VerifyValue = Union[bool, str]
 
-class SessionJSONEncoder(jsonlib.JSONEncoder):
+
+class _SessionJSONEncoder(jsonlib.JSONEncoder):
     """Custom JSON encoder class for TheHive session."""
 
     def default(self, o: Any):
@@ -37,8 +40,8 @@ class TheHiveSession(requests.Session):
         apikey: Optional[str] = None,
         username: Optional[str] = None,
         password: Optional[str] = None,
+        verify: VerifyValue = True,
         proxies={},
-        verify=None,
         cert=None,
         max_retries: RetryValue = DEFAULT_RETRY,
     ):
@@ -83,12 +86,11 @@ class TheHiveSession(requests.Session):
         files=None,
         download_path: Union[str, PathLike, None] = None,
     ) -> Any:
-
         endpoint_url = f"{self.hive_url}{path}"
 
         headers = {**self.headers}
-        if json:
-            data = jsonlib.dumps(json, cls=SessionJSONEncoder)
+        if json is not None:
+            data = jsonlib.dumps(json, cls=_SessionJSONEncoder)
             headers = {**headers, "Content-Type": "application/json"}
 
         response = self.request(
@@ -111,7 +113,6 @@ class TheHiveSession(requests.Session):
         response: requests.Response,
         download_path: Union[str, PathLike, None] = None,
     ):
-
         if response.ok:
             if download_path is None:
                 return self._process_text_response(response)
@@ -146,8 +147,13 @@ class TheHiveSession(requests.Session):
         except requests.exceptions.JSONDecodeError:
             json_data = None
 
-        if json_data is None:
-            error_text = response.text
-        else:
+        if isinstance(json_data, dict) and all(
+            [
+                "type" in json_data,
+                "message" in json_data,
+            ]
+        ):
             error_text = f"{json_data['type']} - {json_data['message']}"
+        else:
+            error_text = response.text
         raise TheHiveError(message=error_text, response=response)

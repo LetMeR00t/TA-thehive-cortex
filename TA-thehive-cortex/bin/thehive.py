@@ -3,7 +3,7 @@ import sys
 from typing import Tuple
 import ta_thehive_cortex_declare
 from thehive4py.client import TheHiveApi
-from thehive4py.query.filters import _FilterBase
+from thehive4py.query.filters import _FilterBase, Eq
 from thehive4py.query.page import Paginate
 from thehive4py.query.sort import Asc, SortExpr
 from common import LoggerFile, Settings, Utils
@@ -612,6 +612,7 @@ class TheHive4Splunk(TheHiveApi):
                             new_custom_fields.append({cf_split[0]: None})
                     event["customFields"] = new_custom_fields
 
+                # POST-PROCESSING
                 # Remove underscore at the beginning
                 for field in [
                     "_createdAt",
@@ -651,43 +652,58 @@ class TheHive4Splunk(TheHiveApi):
                 message=f"{len(processed_events)} events have been processed...",
             )
 
-        if "tasks" in kwargs["additional_information"]:
-            ## TASKS ##
-            tasks = []
-            tasks = self.task.get_tasks(filters=filters)
-            for task in tasks:
-                event = task
-                # Remove underscore at the beginning
-                for field in [
-                    "_createdAt",
-                    "_createdBy",
-                    "_id",
-                    "_time",
-                    "_type",
-                    "_updatedAt",
-                    "_updatedBy",
-                ]:
-                    if field in event:
-                        event[field.replace("_", "")] = event.pop(field)
+            if "tasks" in kwargs["additional_information"]:
+                ## TASKS ##
+                tasks = []
 
-                # Sanitize the event from the configuration
-                if "fields_removal" in kwargs and kwargs["fields_removal"] is not None:
-                    event = self._utils.remove_unwanted_keys_from_dict(
-                        d=event, l=kwargs["fields_removal"].split(",")
+                # Check if the date mode is correct
+                if filters["_between"]["_field"] in ["_createdAt", "_updatedAt"]:
+                    tasks = self.task.get_tasks(filters=filters)
+                    self.logger_file.info(
+                        id="TH139",
+                        message=f"Tasks recovery detected. Got {len(tasks)} tasks with filters: {filters}.",
                     )
-                if "max_size_value" in kwargs and kwargs["max_size_value"] is not None:
-                    event = self._utils.check_and_reduce_values_size(
-                        d=event, max_size=kwargs["max_size_value"]
-                    )
+                    for task in tasks:
+                        event = task
+                        # Remove underscore at the beginning
+                        for field in [
+                            "_createdAt",
+                            "_createdBy",
+                            "_id",
+                            "_time",
+                            "_type",
+                            "_updatedAt",
+                            "_updatedBy",
+                        ]:
+                            if field in event:
+                                event[field.replace("_", "")] = event.pop(field)
+
+                        # Sanitize the event from the configuration
+                        if (
+                            "fields_removal" in kwargs
+                            and kwargs["fields_removal"] is not None
+                        ):
+                            event = self._utils.remove_unwanted_keys_from_dict(
+                                d=event, l=kwargs["fields_removal"].split(",")
+                            )
+                        if (
+                            "max_size_value" in kwargs
+                            and kwargs["max_size_value"] is not None
+                        ):
+                            event = self._utils.check_and_reduce_values_size(
+                                d=event, max_size=kwargs["max_size_value"]
+                            )
+                        self.logger_file.debug(
+                            id="TH140",
+                            message=f"Event after processing (check_and_reduce_values_size): {event}",
+                        )
+
+                        processed_tasks.append(event)
+
                 self.logger_file.debug(
                     id="TH139",
-                    message=f"Event after processing (check_and_reduce_values_size): {event}",
+                    message="TheHive - Tasks: " + str(len(processed_tasks)),
                 )
-
-                processed_tasks.append(event)
-            self.logger_file.debug(
-                id="TH140", message="TheHive - Tasks: " + str(len(processed_tasks))
-            )
 
         return (processed_events, processed_tasks)
 
@@ -706,7 +722,7 @@ class TheHive4Splunk(TheHiveApi):
         self.logger_file.info(id="TH140", message="Retrieving observables count...")
         count_events = self.observable.count(filters=filters)
         self.logger_file.info(
-            id="TH141",
+            id="TH143",
             message=f"Got {count_events} observables. Estimated time for processing all events: less than {((int(count_events/100))+1)*14} seconds",
         )
         processed_events = []

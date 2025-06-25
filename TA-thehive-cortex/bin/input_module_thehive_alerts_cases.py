@@ -122,6 +122,7 @@ def collect_events(helper, ew):
 
             # Prepare to store the new events
             new_events = []
+
             sortby = Desc(modular_input_args["date"])
 
             # Check the interval set
@@ -185,7 +186,7 @@ def collect_events(helper, ew):
                         source="thehive:" + stanza,
                         host=thehive.session.hive_url[8:],
                         index=helper.get_output_index(),
-                        sourcetype="thehive:" + date_mode + ":tasks",
+                        sourcetype="thehive:" + date_mode + ":case_tasks",
                         data=json.dumps(task),
                     )
                     ew.write_event(e)

@@ -1,5 +1,7 @@
-from typing import List, Dict
+from typing import Any, List, Dict, Union
 
+from thehive4py.types.observable import OutputObservable
+from thehive4py.types.page import InputCasePage
 from thehive4py.types.share import InputShare
 
 from .custom_field import InputCustomFieldValue, OutputCustomFieldValue
@@ -51,9 +53,11 @@ class InputCase(InputCaseRequired):
     status: CaseStatusValue
     summary: str
     assignee: str
-    customFields: List[InputCustomFieldValue]
+    access: dict
+    customFields: Union[List[InputCustomFieldValue], dict]
     caseTemplate: str
     tasks: List[InputTask]
+    pages: List[InputCasePage]
     sharingParameters: List[InputShare]
     taskRule: str
     observableRule: str
@@ -68,12 +72,16 @@ class OutputCaseRequired(Dict):
     title: str
     description: str
     severity: int
+    severityLabel: str
     startDate: int
     flag: bool
     tlp: int
+    tlpLabel: str
     pap: int
+    papLabel: str
     status: CaseStatusValue
     stage: str
+    access: dict
     extraData: dict
     newDate: int
     timeToDetect: int
@@ -116,9 +124,11 @@ class InputUpdateCase(Dict):
     summary: str
     assignee: str
     impactStatus: str
-    customFields: List[InputCustomFieldValue]
+    customFields: Union[List[InputCustomFieldValue], dict]
     taskRule: str
     observableRule: str
+    addTags: List[str]
+    removeTags: List[str]
 
 
 class InputBulkUpdateCase(InputUpdateCase):
@@ -133,3 +143,69 @@ class InputImportCase(InputImportCaseRequired):
     sharingParameters: List[InputShare]
     taskRule: str
     observableRule: str
+
+
+class InputApplyCaseTemplateRequired(Dict):
+    ids: List[str]
+    caseTemplate: str
+
+
+class InputApplyCaseTemplate(InputApplyCaseTemplateRequired):
+    updateTitlePrefix: bool
+    updateDescription: bool
+    updateTags: bool
+    updateSeverity: bool
+    updateFlag: bool
+    updateTlp: bool
+    updatePap: bool
+    updateCustomFields: bool
+    importTasks: List[str]
+    importPages: List[str]
+
+
+class OutputCaseObservableMerge(Dict):
+    untouched: int
+    updated: int
+    deleted: int
+
+
+class OutputCaseLinkRequired(Dict):
+    linksCount: int
+
+
+class OutputCaseLink(OutputCase, OutputCaseLinkRequired):
+    linkedWith: List[OutputObservable]
+
+
+class OutputImportCaseRequired(Dict):
+    case: OutputCase
+
+
+class OutputImportCase(OutputImportCaseRequired):
+    observables: List[OutputObservable]
+    procedures: List[OutputObservable]
+    errors: List[Any]
+
+
+class InputCaseOwnerOrganisationRequired(Dict):
+    organisation: str
+
+
+class InputCaseOwnerOrganisation(InputCaseOwnerOrganisationRequired):
+    keepProfile: str
+    taskRule: str
+    observableRule: str
+
+
+class InputCaseAccess(Dict):
+    access: dict  # TODO: refine type hint
+
+
+class InputCaseLink(Dict):
+    type: str
+    caseId: str
+
+
+class InputURLLink(Dict):
+    type: str
+    url: str
