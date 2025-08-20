@@ -13,3 +13,4 @@ splunk_es_alerts_index =
 thehive_ttp_catalog_name = 
 thehive_creation_attachment_prefix = 
 thehive_creation_max_retry = 
+splunk_sanitize_backslashes =

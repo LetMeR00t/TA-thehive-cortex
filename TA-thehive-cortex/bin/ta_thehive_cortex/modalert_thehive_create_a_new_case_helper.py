@@ -81,14 +81,24 @@ def process_event(helper, *args, **kwargs):
             if epoch10 is not None:
                 alert_args["timestamp"] = int(alert_args["timestamp"]) * 1000
 
+        alert_args["splunk_sanitize_backslashes"] = (
+            helper.get_global_setting("splunk_sanitize_backslashes")
+            if helper.get_global_setting("splunk_sanitize_backslashes") is not None
+            else "ENABLED"
+        )
         alert_args["title"] = (
             helper.get_param("title") if helper.get_param("title") else None
         )
         alert_args["description"] = (
-            helper.get_param("description").replace("\\n", "\n").replace("\\r", "\r")
+            helper.get_param("description")
             if helper.get_param("description")
             else "No description provided"
         )
+        # Check if we need to sanitize backslashes
+        if alert_args["splunk_sanitize_backslashes"] == "ENABLED":
+            alert_args["description"] = (
+                alert_args["description"].replace("\\n", "\n").replace("\\r", "\r")
+            )
         alert_args["tags"] = (
             list(dict.fromkeys(helper.get_param("tags").split(",")))
             if helper.get_param("tags")
