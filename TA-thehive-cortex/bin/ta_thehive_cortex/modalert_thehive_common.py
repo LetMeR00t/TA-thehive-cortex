@@ -224,6 +224,11 @@ def parse_events(helper, thehive: TheHive4Splunk, alert_args):
             for key, value in row.items()
             if not key.startswith("__mv_") and key not in ["rid"]
         }
+        # Normalize multi-value fields (lists) to comma-separated strings
+        # to prevent "can only concatenate str (not 'list') to str" errors
+        for key, value in row.items():
+            if isinstance(value, list):
+                row[key] = ", ".join(str(v) for v in value)
         row_sanitized = row.copy()
         thehive.logger_file.debug(
             id="THC-62", message="Row after pre-processing: " + str(row)
@@ -513,12 +518,12 @@ def parse_events(helper, thehive: TheHive4Splunk, alert_args):
                             observables_data[key] = {
                                 "value": key + ": " + value,
                                 "datatype": "other",
-                                "tags": "value:" + value,
+                                "tags": ["value:" + value[:120]],
                             }
                         else:
                             observables_data[key]["value"] = key + ": " + value
                             observables_data[key]["datatype"] = "other"
-                            observables_data[key]["tags"] = "value:" + value
+                            observables_data[key]["tags"] = ["value:" + value[:120]]
                     else:
                         thehive.logger_file.warn(
                             id="THC-106",
@@ -545,7 +550,12 @@ def parse_events(helper, thehive: TheHive4Splunk, alert_args):
                         if "description" in data
                         else "No description provided for this observable"
                     )
-                    obs_tags = data["tags"].split(",") if "tags" in data else []
+                    if "tags" in data:
+                        obs_tags = data["tags"] if isinstance(data["tags"], list) else data["tags"].split(",")
+                    else:
+                        obs_tags = []
+                    # Truncate each tag to 128 characters (TheHive maximum)
+                    obs_tags = [tag.strip()[:128] for tag in obs_tags]
                     obs_tlp = TLP[data["tlp"]] if "tlp" in data else TLP["AMBER"]
                     obs_pap = PAP[data["pap"]] if "pap" in data else PAP["AMBER"]
                     obs_is_ioc = bool(data["is_ioc"]) if "is_ioc" in data else False

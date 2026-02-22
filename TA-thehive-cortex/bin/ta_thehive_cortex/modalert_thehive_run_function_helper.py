@@ -93,6 +93,11 @@ def run_function(helper, thehive: TheHive4Splunk, alert_args):
             for key, value in row.items()
             if not key.startswith("__mv_") and key not in ["rid"]
         }
+        # Normalize multi-value fields (lists) to comma-separated strings
+        # to prevent "can only concatenate str (not 'list') to str" errors
+        for key, value in row.items():
+            if isinstance(value, list):
+                row[key] = ", ".join(str(v) for v in value)
         thehive.logger_file.debug(
             id="66", message="Row after pre-processing: " + str(row)
         )
