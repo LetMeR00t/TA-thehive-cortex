@@ -12,5 +12,7 @@ new_paths = [path for path in sys.path if not pattern.search(path) or ta_name in
 new_paths.insert(0, os.path.sep.join([os.path.dirname(os.path.dirname(__file__)), "lib"]))
 # Custom logic directory
 new_paths.insert(0, os.path.sep.join([os.path.dirname(__file__), "ta_thehive_cortex"]))
+# Legacy AOB libraries (thehive4py, cortex4py)
+new_paths.insert(0, os.path.sep.join([os.path.dirname(__file__), "ta_thehive_cortex", "libs"]))
 
 sys.path = new_paths
