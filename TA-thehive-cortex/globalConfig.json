@@ -104,12 +104,28 @@
                                 "field": "name"
                             },
                             {
+                                "label": "Account",
+                                "field": "account_name"
+                            },
+                            {
                                 "label": "Type",
                                 "field": "type"
                             },
                             {
+                                "label": "Environment",
+                                "field": "environment"
+                            },
+                            {
                                 "label": "Host",
                                 "field": "host"
+                            },
+                            {
+                                "label": "Port",
+                                "field": "port"
+                            },
+                            {
+                                "label": "Comment",
+                                "field": "comment"
                             }
                         ]
                     },
@@ -134,6 +150,7 @@
                             "label": "Account",
                             "type": "singleSelect",
                             "required": true,
+                            "help": "Select the account to use for authentication.",
                             "options": {
                                 "referenceName": "account"
                             }
@@ -143,6 +160,7 @@
                             "label": "Type",
                             "type": "singleSelect",
                             "required": true,
+                            "help": "Select the type of instance.",
                             "options": {
                                 "autoCompleteFields": [
                                     {
@@ -161,6 +179,7 @@
                             "label": "Environment",
                             "type": "singleSelect",
                             "required": true,
+                            "help": "Select the environment of the instance.",
                             "options": {
                                 "autoCompleteFields": [
                                     {
@@ -188,7 +207,7 @@
                             "label": "Host",
                             "type": "text",
                             "required": true,
-                            "help": "e.g. localhost",
+                            "help": "Instance host (e.g. 127.0.0.1 or thehive.example.com).",
                             "validators": [
                                 {
                                     "type": "string",
@@ -204,6 +223,7 @@
                             "type": "text",
                             "required": true,
                             "defaultValue": "9000",
+                            "help": "Port number (e.g. 9000).",
                             "validators": [
                                 {
                                     "type": "number",
@@ -221,6 +241,7 @@
                             "type": "text",
                             "required": false,
                             "defaultValue": "/",
+                            "help": "Base URI of the instance (default is '/').",
                             "validators": [
                                 {
                                     "type": "string",
@@ -236,6 +257,7 @@
                             "type": "text",
                             "required": false,
                             "defaultValue": "-",
+                            "help": "Organisation name (TheHive only). Set to '-' if not used.",
                             "validators": [
                                 {
                                     "type": "string",
@@ -251,6 +273,7 @@
                             "type": "text",
                             "required": false,
                             "defaultValue": "-",
+                            "help": "Proxy URL (e.g. proxy.example.com). Set to '-' if not used.",
                             "validators": [
                                 {
                                     "type": "string",
@@ -265,6 +288,7 @@
                             "label": "Proxy Account",
                             "type": "singleSelect",
                             "required": false,
+                            "help": "Select the account for proxy authentication if required.",
                             "options": {
                                 "referenceName": "account"
                             }
@@ -275,6 +299,7 @@
                             "type": "text",
                             "required": false,
                             "defaultValue": "-",
+                            "help": "Filename of the client certificate placed in the app's local/ folder. Set to '-' if not used.",
                             "validators": [
                                 {
                                     "type": "string",
@@ -285,10 +310,27 @@
                             ]
                         },
                         {
+                            "field": "ca_cert_path",
+                            "label": "CA Certificate Path",
+                            "type": "text",
+                            "required": false,
+                            "defaultValue": "-",
+                            "help": "Filename of the custom CA certificate bundle (PEM format) placed in the app's local/ folder. Set to '-' to use default Splunk/Python CA bundle.",
+                            "validators": [
+                                {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 255,
+                                    "errorMsg": "Length of CA cert path should be between 1 and 255"
+                                }
+                            ]
+                        },
+                        {
                             "field": "comment",
                             "label": "Comment",
                             "type": "text",
                             "required": false,
+                            "help": "Optional comment for this instance.",
                             "validators": [
                                 {
                                     "type": "string",
