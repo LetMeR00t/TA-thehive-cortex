@@ -165,6 +165,28 @@ class Settings(object):
                             + client_certificate,
                         )
 
+                # Handle CA certificate
+                if row.get("ca_cert_path") and row["ca_cert_path"] != "-" and not row["ca_cert_path"].startswith("/"):
+                    # Check if it's a relative path in local/
+                    ca_certificate = os.path.join(
+                        os.environ["SPLUNK_HOME"],
+                        "etc",
+                        "apps",
+                        "TA-thehive-cortex",
+                        "local",
+                        row["ca_cert_path"],
+                    )
+                    if os.path.exists(ca_certificate):
+                        row["ca_cert_path"] = ca_certificate
+                    else:
+                        self.logger_file.warn(
+                        id="S13b",
+                        message='Be aware that a CA certificate for instance "'
+                        + str(row_id)
+                        + "\" was provided but the file doesn't exist: "
+                        + ca_certificate,
+                        )
+
                 # get proxy parameters if any
                 proxy_url_val = row.get("proxy_url", "-")
                 if proxy_url_val != "-":
