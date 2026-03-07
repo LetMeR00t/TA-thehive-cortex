@@ -131,3 +131,7 @@ docsrc/_build/
 
 update.bat
 *.pyc
+GEMINI.md
+tasks/
+output/
+.gemini/
