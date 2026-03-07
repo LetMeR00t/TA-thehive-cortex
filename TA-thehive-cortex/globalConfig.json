@@ -1,0 +1,875 @@
+{
+    "meta": {
+        "name": "TA-thehive-cortex",
+        "displayName": "TheHive-Cortex",
+        "version": "4.0.0",
+        "restRoot": "ta_thehive_cortex",
+        "schemaVersion": "0.0.10",
+        "supportedThemes": [
+            "light",
+            "dark"
+        ]
+    },
+    "pages": {
+        "configuration": {
+            "title": "Configuration",
+            "description": "Set up the integration with TheHive and Cortex",
+            "tabs": [
+                {
+                    "name": "account",
+                    "title": "Accounts",
+                    "table": {
+                        "actions": [
+                            "edit",
+                            "delete",
+                            "clone"
+                        ],
+                        "header": [
+                            {
+                                "label": "Name",
+                                "field": "name"
+                            },
+                            {
+                                "label": "Username",
+                                "field": "username"
+                            }
+                        ]
+                    },
+                    "entity": [
+                        {
+                            "field": "name",
+                            "label": "Account name",
+                            "type": "text",
+                            "required": true,
+                            "help": "Enter a unique name for this account.",
+                            "validators": [
+                                {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 50,
+                                    "errorMsg": "Length of Account name should be between 1 and 50"
+                                },
+                                {
+                                    "type": "regex",
+                                    "pattern": "^[a-zA-Z]\\w*$",
+                                    "errorMsg": "Account name must start with a letter and followed by alphabetic letters, digits or underscores."
+                                }
+                            ]
+                        },
+                        {
+                            "field": "username",
+                            "label": "Username",
+                            "type": "text",
+                            "required": true,
+                            "help": "Enter the username for this account.",
+                            "validators": [
+                                {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 200,
+                                    "errorMsg": "Length of username should be between 1 and 200"
+                                }
+                            ]
+                        },
+                        {
+                            "field": "password",
+                            "label": "Password",
+                            "type": "text",
+                            "encrypted": true,
+                            "required": true,
+                            "help": "Enter the password for this account.",
+                            "validators": [
+                                {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 8192,
+                                    "errorMsg": "Length of password should be between 1 and 8192"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "name": "instances",
+                    "title": "Instances",
+                    "table": {
+                        "actions": [
+                            "edit",
+                            "delete",
+                            "clone"
+                        ],
+                        "header": [
+                            {
+                                "label": "Name",
+                                "field": "name"
+                            },
+                            {
+                                "label": "Type",
+                                "field": "type"
+                            },
+                            {
+                                "label": "Host",
+                                "field": "host"
+                            }
+                        ]
+                    },
+                    "entity": [
+                        {
+                            "field": "name",
+                            "label": "Name",
+                            "type": "text",
+                            "help": "A unique name for the instance.",
+                            "required": true,
+                            "validators": [
+                                {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 100,
+                                    "errorMsg": "Length of name should be between 1 and 100"
+                                }
+                            ]
+                        },
+                        {
+                            "field": "account_name",
+                            "label": "Account",
+                            "type": "singleSelect",
+                            "required": true,
+                            "options": {
+                                "referenceName": "account"
+                            }
+                        },
+                        {
+                            "field": "type",
+                            "label": "Type",
+                            "type": "singleSelect",
+                            "required": true,
+                            "options": {
+                                "autoCompleteFields": [
+                                    {
+                                        "label": "TheHive5",
+                                        "value": "TheHive5"
+                                    },
+                                    {
+                                        "label": "Cortex3",
+                                        "value": "Cortex3"
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            "field": "environment",
+                            "label": "Environment",
+                            "type": "singleSelect",
+                            "required": true,
+                            "options": {
+                                "autoCompleteFields": [
+                                    {
+                                        "label": "PRODUCTION",
+                                        "value": "PRODUCTION"
+                                    },
+                                    {
+                                        "label": "VALIDATION",
+                                        "value": "VALIDATION"
+                                    },
+                                    {
+                                        "label": "INTEGRATION",
+                                        "value": "INTEGRATION"
+                                    },
+                                    {
+                                        "label": "DEVELOPMENT",
+                                        "value": "DEVELOPMENT"
+                                    }
+                                ]
+                            },
+                            "defaultValue": "PRODUCTION"
+                        },
+                        {
+                            "field": "host",
+                            "label": "Host",
+                            "type": "text",
+                            "required": true,
+                            "help": "e.g. localhost",
+                            "validators": [
+                                {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 255,
+                                    "errorMsg": "Length of host should be between 1 and 255"
+                                }
+                            ]
+                        },
+                        {
+                            "field": "port",
+                            "label": "Port",
+                            "type": "text",
+                            "required": true,
+                            "defaultValue": "9000",
+                            "validators": [
+                                {
+                                    "type": "number",
+                                    "range": [
+                                        1,
+                                        65535
+                                    ],
+                                    "errorMsg": "Port must be a number between 1 and 65535"
+                                }
+                            ]
+                        },
+                        {
+                            "field": "uri",
+                            "label": "URI",
+                            "type": "text",
+                            "required": false,
+                            "defaultValue": "/",
+                            "validators": [
+                                {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 255,
+                                    "errorMsg": "Length of URI should be between 1 and 255"
+                                }
+                            ]
+                        },
+                        {
+                            "field": "organisation",
+                            "label": "Organisation",
+                            "type": "text",
+                            "required": false,
+                            "defaultValue": "-",
+                            "validators": [
+                                {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 100,
+                                    "errorMsg": "Length of organisation should be between 1 and 100"
+                                }
+                            ]
+                        },
+                        {
+                            "field": "proxy_url",
+                            "label": "Proxy URL",
+                            "type": "text",
+                            "required": false,
+                            "defaultValue": "-",
+                            "validators": [
+                                {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 255,
+                                    "errorMsg": "Length of proxy URL should be between 1 and 255"
+                                }
+                            ]
+                        },
+                        {
+                            "field": "proxy_account",
+                            "label": "Proxy Account",
+                            "type": "singleSelect",
+                            "required": false,
+                            "options": {
+                                "referenceName": "account"
+                            }
+                        },
+                        {
+                            "field": "client_cert",
+                            "label": "Client Certificate Path",
+                            "type": "text",
+                            "required": false,
+                            "defaultValue": "-",
+                            "validators": [
+                                {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 255,
+                                    "errorMsg": "Length of client cert path should be between 1 and 255"
+                                }
+                            ]
+                        },
+                        {
+                            "field": "comment",
+                            "label": "Comment",
+                            "type": "text",
+                            "required": false,
+                            "validators": [
+                                {
+                                    "type": "string",
+                                    "minLength": 0,
+                                    "maxLength": 255,
+                                    "errorMsg": "Length of comment should be max 255"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "name": "settings",
+                    "title": "Settings",
+                    "entity": [
+                        {
+                            "field": "cortex_max_jobs",
+                            "label": "Cortex Max Jobs",
+                            "type": "text",
+                            "defaultValue": "100",
+                            "validators": [
+                                {
+                                    "type": "number",
+                                    "range": [
+                                        1,
+                                        10000
+                                    ],
+                                    "errorMsg": "Must be between 1 and 10000"
+                                }
+                            ]
+                        },
+                        {
+                            "field": "cortex_sort_jobs",
+                            "label": "Cortex Sort Jobs",
+                            "type": "text",
+                            "defaultValue": "-createdAt"
+                        },
+                        {
+                            "field": "thehive_default_instance",
+                            "label": "TheHive Default Instance",
+                            "type": "text"
+                        },
+                        {
+                            "field": "thehive_max_cases",
+                            "label": "TheHive Max Cases",
+                            "type": "text",
+                            "defaultValue": "1000",
+                            "validators": [
+                                {
+                                    "type": "number",
+                                    "range": [
+                                        1,
+                                        10000
+                                    ],
+                                    "errorMsg": "Must be between 1 and 10000"
+                                }
+                            ]
+                        },
+                        {
+                            "field": "thehive_sort_cases",
+                            "label": "TheHive Sort Cases",
+                            "type": "text",
+                            "defaultValue": "-startDate"
+                        },
+                        {
+                            "field": "thehive_max_alerts",
+                            "label": "TheHive Max Alerts",
+                            "type": "text",
+                            "defaultValue": "1000",
+                            "validators": [
+                                {
+                                    "type": "number",
+                                    "range": [
+                                        1,
+                                        10000
+                                    ],
+                                    "errorMsg": "Must be between 1 and 10000"
+                                }
+                            ]
+                        },
+                        {
+                            "field": "thehive_sort_alerts",
+                            "label": "TheHive Sort Alerts",
+                            "type": "text",
+                            "defaultValue": "-date"
+                        },
+                        {
+                            "field": "splunk_es_alerts_index",
+                            "label": "Splunk ES Alerts Index",
+                            "type": "text"
+                        },
+                        {
+                            "field": "thehive_ttp_catalog_name",
+                            "label": "TheHive TTP Catalog Name",
+                            "type": "text",
+                            "defaultValue": "Enterprise Attack"
+                        },
+                        {
+                            "field": "thehive_creation_attachment_prefix",
+                            "label": "TheHive Creation Attachment Prefix",
+                            "type": "text",
+                            "defaultValue": "events_"
+                        },
+                        {
+                            "field": "thehive_creation_max_retry",
+                            "label": "TheHive Creation Max Retry",
+                            "type": "text",
+                            "defaultValue": "2",
+                            "validators": [
+                                {
+                                    "type": "number",
+                                    "range": [
+                                        0,
+                                        10
+                                    ],
+                                    "errorMsg": "Must be between 0 and 10"
+                                }
+                            ]
+                        },
+                        {
+                            "field": "splunk_sanitize_backslashes",
+                            "label": "Splunk Sanitize Backslashes",
+                            "type": "singleSelect",
+                            "options": {
+                                "disableSearch": true,
+                                "items": [
+                                    {
+                                        "label": "ENABLED",
+                                        "value": "ENABLED"
+                                    },
+                                    {
+                                        "label": "DISABLED",
+                                        "value": "DISABLED"
+                                    }
+                                ]
+                            },
+                            "defaultValue": "ENABLED"
+                        }
+                    ]
+                },
+                {
+                    "type": "loggingTab"
+                }
+            ]
+        },
+        "inputs": {
+            "title": "Inputs",
+            "description": "Manage your data inputs",
+            "table": {
+                "actions": [
+                    "edit",
+                    "delete",
+                    "clone"
+                ],
+                "header": [
+                    {
+                        "label": "Name",
+                        "field": "name"
+                    },
+                    {
+                        "label": "Interval",
+                        "field": "interval"
+                    },
+                    {
+                        "label": "Index",
+                        "field": "index"
+                    },
+                    {
+                        "label": "Status",
+                        "field": "disabled"
+                    }
+                ]
+            },
+            "services": [
+                {
+                    "name": "thehive_alerts_cases",
+                    "title": "TheHive: Alerts & Cases",
+                    "entity": [
+                        {
+                            "field": "name",
+                            "label": "Name",
+                            "type": "text",
+                            "help": "A unique name for the input.",
+                            "required": true,
+                            "validators": [
+                                {
+                                    "type": "regex",
+                                    "errorMsg": "Input Name must begin with a letter and consist exclusively of alphanumeric characters and underscores.",
+                                    "pattern": "^[a-zA-Z]\\w*$"
+                                }
+                            ]
+                        },
+                        {
+                            "field": "interval",
+                            "label": "Interval",
+                            "type": "text",
+                            "defaultValue": "60",
+                            "required": true,
+                            "validators": [
+                                {
+                                    "type": "regex",
+                                    "pattern": "^\\-[1-9]\\d*$|^\\d*$",
+                                    "errorMsg": "Interval must be an integer."
+                                }
+                            ]
+                        },
+                        {
+                            "field": "index",
+                            "label": "Index",
+                            "type": "singleSelect",
+                            "defaultValue": "default",
+                            "options": {
+                                "endpointUrl": "data/indexes",
+                                "createSearchChoice": true,
+                                "denyList": "^_.*$"
+                            },
+                            "required": true
+                        },
+                        {
+                            "field": "instance_id",
+                            "label": "Instance ID",
+                            "help": "Set the ID provided under Instances or '<default>'",
+                            "required": true,
+                            "type": "text",
+                            "defaultValue": "<default>"
+                        },
+                        {
+                            "field": "type",
+                            "label": "Type",
+                            "required": true,
+                            "type": "multipleSelect",
+                            "options": {
+                                "delimiter": ",",
+                                "items": [
+                                    {
+                                        "value": "alerts",
+                                        "label": "Alerts"
+                                    },
+                                    {
+                                        "value": "cases",
+                                        "label": "Cases"
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            "field": "additional_information",
+                            "label": "Additional information",
+                            "required": false,
+                            "type": "multipleSelect",
+                            "options": {
+                                "delimiter": ",",
+                                "items": [
+                                    {
+                                        "value": "tasks",
+                                        "label": "Tasks"
+                                    },
+                                    {
+                                        "value": "observables",
+                                        "label": "Observables"
+                                    },
+                                    {
+                                        "value": "attachments",
+                                        "label": "Attachments"
+                                    },
+                                    {
+                                        "value": "pages",
+                                        "label": "Pages"
+                                    },
+                                    {
+                                        "value": "ttps",
+                                        "label": "TTPs"
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            "field": "extra_data",
+                            "label": "Extra data",
+                            "required": false,
+                            "type": "multipleSelect",
+                            "options": {
+                                "delimiter": ",",
+                                "items": [
+                                    {
+                                        "value": "caseNumber",
+                                        "label": "(Alert) caseNumber"
+                                    },
+                                    {
+                                        "value": "status",
+                                        "label": "(Alert/Case) status"
+                                    },
+                                    {
+                                        "value": "alerts",
+                                        "label": "(Case) alerts"
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            "field": "date",
+                            "label": "Date",
+                            "required": true,
+                            "type": "multipleSelect",
+                            "options": {
+                                "delimiter": ",",
+                                "items": [
+                                    {
+                                        "value": "_createdAt",
+                                        "label": "Created time"
+                                    },
+                                    {
+                                        "value": "_updatedAt",
+                                        "label": "Updated time"
+                                    },
+                                    {
+                                        "value": "startDate",
+                                        "label": "Started time"
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            "field": "max_size_value",
+                            "label": "Max size for values",
+                            "type": "text",
+                            "defaultValue": "1000"
+                        },
+                        {
+                            "field": "fields_removal",
+                            "label": "Fields removal",
+                            "type": "text"
+                        }
+                    ]
+                },
+                {
+                    "name": "backfill_alerts_cases",
+                    "title": "Backfill: Alerts & Cases",
+                    "entity": [
+                        {
+                            "field": "name",
+                            "label": "Name",
+                            "type": "text",
+                            "required": true
+                        },
+                        {
+                            "field": "interval",
+                            "label": "Interval",
+                            "type": "text",
+                            "defaultValue": "-1"
+                        },
+                        {
+                            "field": "index",
+                            "label": "Index",
+                            "type": "singleSelect",
+                            "defaultValue": "default",
+                            "options": {
+                                "endpointUrl": "data/indexes"
+                            }
+                        },
+                        {
+                            "field": "instance_id",
+                            "label": "Instance ID",
+                            "type": "text",
+                            "defaultValue": "<default>"
+                        },
+                        {
+                            "field": "type",
+                            "label": "Type",
+                            "type": "multipleSelect",
+                            "options": {
+                                "delimiter": ",",
+                                "items": [
+                                    {
+                                        "value": "alerts",
+                                        "label": "Alerts"
+                                    },
+                                    {
+                                        "value": "cases",
+                                        "label": "Cases"
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            "field": "backfill_start",
+                            "label": "Backfill: Start date",
+                            "type": "text",
+                            "required": true
+                        },
+                        {
+                            "field": "backfill_end",
+                            "label": "Backfill: End date",
+                            "type": "text",
+                            "required": true
+                        }
+                    ]
+                },
+                {
+                    "name": "thehive_observables",
+                    "title": "TheHive: Observables",
+                    "entity": [
+                        {
+                            "field": "name",
+                            "label": "Name",
+                            "type": "text",
+                            "required": true
+                        },
+                        {
+                            "field": "interval",
+                            "label": "Interval",
+                            "type": "text",
+                            "defaultValue": "60"
+                        },
+                        {
+                            "field": "index",
+                            "label": "Index",
+                            "type": "singleSelect",
+                            "defaultValue": "default",
+                            "options": {
+                                "endpointUrl": "data/indexes"
+                            }
+                        },
+                        {
+                            "field": "instance_id",
+                            "label": "Instance ID",
+                            "type": "text",
+                            "defaultValue": "<default>"
+                        },
+                        {
+                            "field": "date",
+                            "label": "Date",
+                            "required": true,
+                            "type": "multipleSelect",
+                            "options": {
+                                "delimiter": ",",
+                                "items": [
+                                    {
+                                        "value": "_createdAt",
+                                        "label": "Last created"
+                                    },
+                                    {
+                                        "value": "_updatedAt",
+                                        "label": "Last updated"
+                                    }
+                                ]
+                            }
+                        }
+                    ]
+                },
+                {
+                    "name": "backfill_observables",
+                    "title": "Backfill: Observables",
+                    "entity": [
+                        {
+                            "field": "name",
+                            "label": "Name",
+                            "type": "text",
+                            "required": true
+                        },
+                        {
+                            "field": "interval",
+                            "label": "Interval",
+                            "type": "text",
+                            "defaultValue": "-1"
+                        },
+                        {
+                            "field": "index",
+                            "label": "Index",
+                            "type": "singleSelect",
+                            "defaultValue": "default",
+                            "options": {
+                                "endpointUrl": "data/indexes"
+                            }
+                        },
+                        {
+                            "field": "instance_id",
+                            "label": "Instance ID",
+                            "type": "text",
+                            "defaultValue": "<default>"
+                        },
+                        {
+                            "field": "backfill_start",
+                            "label": "Backfill: Start date",
+                            "type": "text",
+                            "required": true
+                        },
+                        {
+                            "field": "backfill_end",
+                            "label": "Backfill: End date",
+                            "type": "text",
+                            "required": true
+                        }
+                    ]
+                },
+                {
+                    "name": "thehive_audit",
+                    "title": "TheHive: Audit",
+                    "entity": [
+                        {
+                            "field": "name",
+                            "label": "Name",
+                            "type": "text",
+                            "required": true
+                        },
+                        {
+                            "field": "interval",
+                            "label": "Interval",
+                            "type": "text",
+                            "defaultValue": "60"
+                        },
+                        {
+                            "field": "index",
+                            "label": "Index",
+                            "type": "singleSelect",
+                            "defaultValue": "default",
+                            "options": {
+                                "endpointUrl": "data/indexes"
+                            }
+                        },
+                        {
+                            "field": "instance_id",
+                            "label": "Instance ID",
+                            "type": "text",
+                            "defaultValue": "<default>"
+                        }
+                    ]
+                },
+                {
+                    "name": "backfill_audit",
+                    "title": "Backfill: Audit",
+                    "entity": [
+                        {
+                            "field": "name",
+                            "label": "Name",
+                            "type": "text",
+                            "required": true
+                        },
+                        {
+                            "field": "interval",
+                            "label": "Interval",
+                            "type": "text",
+                            "defaultValue": "-1"
+                        },
+                        {
+                            "field": "index",
+                            "label": "Index",
+                            "type": "singleSelect",
+                            "defaultValue": "default",
+                            "options": {
+                                "endpointUrl": "data/indexes"
+                            }
+                        },
+                        {
+                            "field": "instance_id",
+                            "label": "Instance ID",
+                            "type": "text",
+                            "defaultValue": "<default>"
+                        },
+                        {
+                            "field": "backfill_start",
+                            "label": "Backfill: Start date",
+                            "type": "text",
+                            "required": true
+                        },
+                        {
+                            "field": "backfill_end",
+                            "label": "Backfill: End date",
+                            "type": "text",
+                            "required": true
+                        }
+                    ]
+                }
+            ]
+        },
+        "dashboard": {
+            "panels": [
+                {
+                    "name": "default"
+                }
+            ]
+        }
+    }
+}
