@@ -186,6 +186,10 @@ class Settings(object):
                         + "\" was provided but the file doesn't exist: "
                         + ca_certificate,
                         )
+                
+                # Set verify parameter securely (Issue #116)
+                # If ca_cert_path is provided, use it for verification. Otherwise use True.
+                row["verify"] = True if row.get("ca_cert_path", "-") == "-" else row["ca_cert_path"]
 
                 # get proxy parameters if any
                 proxy_url_val = row.get("proxy_url", "-")

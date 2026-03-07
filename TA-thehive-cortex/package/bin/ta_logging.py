@@ -13,10 +13,16 @@ def setup_logging(name):
     LOGGING_FILE_NAME = "command_"+name+".log"
     BASE_LOG_PATH = os.path.join('var', 'log', 'splunk')
     LOGGING_FORMAT = "%(asctime)s %(levelname)-s\t%(module)s:%(lineno)d - %(message)s"
-    splunk_log_handler = logging.handlers.RotatingFileHandler(os.path.join(SPLUNK_HOME, BASE_LOG_PATH, LOGGING_FILE_NAME), mode='a') 
-    splunk_log_handler.setFormatter(logging.Formatter(LOGGING_FORMAT))
-    logger.addHandler(splunk_log_handler)
+    
+    # Set the path to the log file
+    log_file_path = os.path.join(SPLUNK_HOME, BASE_LOG_PATH, LOGGING_FILE_NAME)
+    
+    # Check if handler already exists to prevent duplicate logs
+    if not any(isinstance(h, logging.handlers.RotatingFileHandler) and h.baseFilename == os.path.abspath(log_file_path) for h in logger.handlers):
+        splunk_log_handler = logging.handlers.RotatingFileHandler(log_file_path, mode='a', maxBytes=25000000, backupCount=5) 
+        splunk_log_handler.setFormatter(logging.Formatter(LOGGING_FORMAT))
+        logger.addHandler(splunk_log_handler)
+        
     splunk.setupSplunkLogger(logger, LOGGING_DEFAULT_CONFIG_FILE, LOGGING_LOCAL_CONFIG_FILE, LOGGING_STANZA_NAME)
     logger.setLevel(logging.INFO)
     return logger
-
