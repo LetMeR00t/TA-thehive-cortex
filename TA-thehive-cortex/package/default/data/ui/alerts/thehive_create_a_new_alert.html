@@ -9,8 +9,8 @@
             </span>
             <splunk-search-dropdown name="action.thehive_create_a_new_alert.param.thehive_instance_id" id="thehive_instance_id"
                 allow-custom-value=true
-                search="| inputlookup thehive_cortex_instances | search type=&quot;TheHive*&quot;"
-                label-field="organisation"
+                search="| rest /servicesNS/nobody/TA-thehive-cortex/ta_thehive_cortex_instances splunk_server=local | rename title as id | where type=&quot;TheHive5&quot; | eval instance_label = account_name+&quot;: &quot;+host+&quot;:&quot;+port+if(isnotnull(uri),uri,&quot;/&quot;)"
+                label-field="instance_label"
                 value-field="id" />
         </div>
     </div>
