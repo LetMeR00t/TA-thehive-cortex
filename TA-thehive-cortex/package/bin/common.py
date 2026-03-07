@@ -1,5 +1,6 @@
 # encoding = utf-8
 import logging
+from typing import Union
 import globals
 import os
 import base64
@@ -11,7 +12,7 @@ import re
 import csv
 import splunklib.client as client
 from solnlib import conf_manager
-from solnlib import log_handler
+from solnlib import log
 from solnlib.utils import is_true
 
 
