@@ -26,7 +26,9 @@
       <fieldForLabel>instance_name</fieldForLabel>
       <fieldForValue>id</fieldForValue>
       <search>
-        <query>| inputlookup thehive_cortex_instances where type=Cortex*
+        <query>| rest /servicesNS/nobody/TA-thehive-cortex/ta_thehive_cortex_instances splunk_server=local
+| rename title as id
+| where type="Cortex3"
 | eval instance_name = account_name+": "+host+":"+port</query>
         <earliest>-24h@h</earliest>
         <latest>now</latest>
