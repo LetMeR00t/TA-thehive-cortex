@@ -4,7 +4,7 @@
     <set token="filter"></set>
   </init>
   <fieldset submitButton="false" autoRun="false">
-    <input type="multiselect" token="instance_id">
+    <input type="dropdown" token="instance_id" searchWhenChanged="true">
       <label>Instance</label>
       <fieldForLabel>instance_name</fieldForLabel>
       <fieldForValue>id</fieldForValue>
@@ -15,8 +15,12 @@
 | eval instance_name = account_name+": "+host+":"+port+if(isnotnull(uri),uri,"/")</query>
         <earliest>-24h@h</earliest>
         <latest>now</latest>
+        <done>
+          <condition match="$job.resultCount$ &gt; 0">
+            <set token="form.instance_id">$result.id$</set>
+          </condition>
+        </done>
       </search>
-      <delimiter>,</delimiter>
     </input>
     <input type="dropdown" token="model">
       <label>Model</label>

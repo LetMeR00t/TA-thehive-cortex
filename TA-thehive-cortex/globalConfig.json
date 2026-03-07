@@ -455,8 +455,7 @@
                             "label": "Splunk Sanitize Backslashes",
                             "type": "singleSelect",
                             "options": {
-                                "disableSearch": true,
-                                "items": [
+                                "autoCompleteFields": [
                                     {
                                         "label": "ENABLED",
                                         "value": "ENABLED"
