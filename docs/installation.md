@@ -10,7 +10,7 @@ You should create a specific user and organization in your TheHive/Cortex instan
 
 Before the migration, you should backup your instances information using a:
 
-- `| inputlookup thehive_cortex_instances | outputlookup thehive_cortex_instances_bk.csv`
+- `| rest /servicesNS/nobody/TA-thehive-cortex/ta_thehive_cortex_instances | table title, host, port`
 
 in another application such as "search", then migrate and finally restore the backup using a:
 
