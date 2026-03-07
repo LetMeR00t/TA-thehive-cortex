@@ -6,7 +6,7 @@ import time
 import datetime
 import json
 
-import modinput_wrapper.base_modinput
+import splunktaucclib.modinput_wrapper.base_modinput
 from splunklib import modularinput as smi
 
 
@@ -21,7 +21,7 @@ bin_dir = os.path.basename(__file__)
 """
 
 
-class ModInputthehive_observables(modinput_wrapper.base_modinput.BaseModInput):
+class ModInputthehive_observables(splunktaucclib.modinput_wrapper.base_modinput.BaseModInput):
 
     def __init__(self):
         if "use_single_instance_mode" in dir(input_module):

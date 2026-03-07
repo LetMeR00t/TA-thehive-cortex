@@ -90,7 +90,7 @@
                     ]
                 },
                 {
-                    "name": "instances",
+                    "name": "ta_thehive_cortex_api_instances",
                     "title": "Instances",
                     "table": {
                         "actions": [
@@ -673,7 +673,14 @@
                             "field": "name",
                             "label": "Name",
                             "type": "text",
-                            "required": true
+                            "required": true,
+                            "validators": [
+                                {
+                                    "type": "regex",
+                                    "errorMsg": "Input Name must begin with a letter and consist exclusively of alphanumeric characters and underscores.",
+                                    "pattern": "^[a-zA-Z]\\w*$"
+                                }
+                            ]
                         },
                         {
                             "field": "interval",
@@ -736,7 +743,14 @@
                             "field": "name",
                             "label": "Name",
                             "type": "text",
-                            "required": true
+                            "required": true,
+                            "validators": [
+                                {
+                                    "type": "regex",
+                                    "errorMsg": "Input Name must begin with a letter and consist exclusively of alphanumeric characters and underscores.",
+                                    "pattern": "^[a-zA-Z]\\w*$"
+                                }
+                            ]
                         },
                         {
                             "field": "interval",
@@ -788,7 +802,14 @@
                             "field": "name",
                             "label": "Name",
                             "type": "text",
-                            "required": true
+                            "required": true,
+                            "validators": [
+                                {
+                                    "type": "regex",
+                                    "errorMsg": "Input Name must begin with a letter and consist exclusively of alphanumeric characters and underscores.",
+                                    "pattern": "^[a-zA-Z]\\w*$"
+                                }
+                            ]
                         },
                         {
                             "field": "interval",
@@ -833,7 +854,14 @@
                             "field": "name",
                             "label": "Name",
                             "type": "text",
-                            "required": true
+                            "required": true,
+                            "validators": [
+                                {
+                                    "type": "regex",
+                                    "errorMsg": "Input Name must begin with a letter and consist exclusively of alphanumeric characters and underscores.",
+                                    "pattern": "^[a-zA-Z]\\w*$"
+                                }
+                            ]
                         },
                         {
                             "field": "interval",
@@ -866,7 +894,14 @@
                             "field": "name",
                             "label": "Name",
                             "type": "text",
-                            "required": true
+                            "required": true,
+                            "validators": [
+                                {
+                                    "type": "regex",
+                                    "errorMsg": "Input Name must begin with a letter and consist exclusively of alphanumeric characters and underscores.",
+                                    "pattern": "^[a-zA-Z]\\w*$"
+                                }
+                            ]
                         },
                         {
                             "field": "interval",
