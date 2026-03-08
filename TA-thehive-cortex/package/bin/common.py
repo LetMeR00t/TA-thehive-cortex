@@ -27,17 +27,23 @@ class LoggerFile(object):
         return self._logger
 
     def _log(self, type="info", id="?", message=""):
-        if globals.log_context == "[]":
+        log_context_val = getattr(globals, "log_context", "[]")
+        if log_context_val == "[]":
             log_context = ""
         else:
-            log_context = globals.log_context
+            log_context = log_context_val
         if type == "debug" and self.logger.getEffectiveLevel() != logging.DEBUG:
             pass
         else:
+            try:
+                log_id_str = globals.next_log_id()
+            except AttributeError:
+                log_id_str = "000000"
+
             getattr(self.logger, type)(
                 log_context
                 + "["
-                + globals.next_log_id()
+                + log_id_str
                 + "]["
                 + self.command_id
                 + "-"
@@ -111,20 +117,58 @@ class Settings(object):
 
             # Get storage passwords
             self._passwords = {}
-            sp = self.client.storage_passwords
-            for credential in sp:
-                if credential.access["app"] == "TA-thehive-cortex":
-                    # UCC format for account is usually name
-                    username_raw = credential["username"]
-                    # If it's an UCC account, it might have a prefix or specific format
-                    # But here we just need to match it with the account name
-                    if "password" in credential["clear_password"]:
+            self._was_json = {}
+            try:
+                for credential in self.client.storage_passwords:
+                    realm = credential.realm
+                    username_ucc = credential.username
+                    # UCC format: account_name``splunk_cred_sep``field_name
+                    if "``splunk_cred_sep``" in username_ucc:
+                        account_name = username_ucc.split("``splunk_cred_sep``")[0]
+                    else:
+                        account_name = username_ucc
+
+                    if realm and "TA-thehive-cortex" in realm:
+                        clear_password = credential.clear_password
+                        was_json = False
+                        # Try to parse JSON first (new UCC format)
                         try:
-                            clear_password_json = json.loads(credential["clear_password"])
-                            self._passwords[username_raw] = clear_password_json["password"]
+                            cp_json = json.loads(clear_password)
+                            if isinstance(cp_json, dict):
+                                val = cp_json.get("password", clear_password)
+                                if val != clear_password:
+                                    was_json = True
+                            else:
+                                val = clear_password
                         except Exception:
-                            # Fallback if not JSON
-                            self._passwords[username_raw] = credential["clear_password"]
+                            val = clear_password
+
+                        # Only store if it's not the masked value and we don't have a better one yet
+                        if val != "******" and val != "********":
+                            # Avoid garbage values containing splunk_cred_sep (Splunk internal stuff)
+                            if "``splunk_cred_sep``" in val:
+                                self.logger_file.debug(id="S3_SKIP", message=f"Skipping potential garbage value for account {account_name}")
+                                continue
+
+                            # If we have multiple entries for same account, prioritize the one with actual key
+                            # Prioritize JSON-extracted values, or take longest if same status
+                            current_was_json = self._was_json.get(account_name, False)
+                            current_val = self._passwords.get(account_name, "")
+
+                            if (account_name not in self._passwords) or \
+                               (was_json and not current_was_json) or \
+                               (was_json == current_was_json and len(val) > len(current_val)):
+                                
+                                self._passwords[account_name] = val
+                                self._was_json[account_name] = was_json
+            except Exception as e:
+                self.logger_file.error(
+                    id="S3_ERROR", message=f"Failed to access storage_passwords: {e}"
+                )
+            self.logger_file.debug(
+                id="S4",
+                message=f"Passwords retrieved for accounts: {list(self._passwords.keys())}",
+            )
 
             # Get instances from thehive_cortex_instances.conf
             instance_cfm = conf_manager.ConfManager(

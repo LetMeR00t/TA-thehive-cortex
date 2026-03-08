@@ -77,6 +77,10 @@ def create_thehive_instance(instance_id, settings, logger, acronym):
     (thehive_username, thehive_secret) = configuration.getInstanceUsernameApiKey(
         instance_id_final
     )
+    logger_file.debug(
+        id="TH_DEBUG_SECRET",
+        message=f"Secret length: {len(thehive_secret) if thehive_secret else 0}, ends with: {str(thehive_secret)[-4:] if thehive_secret else 'N/A'}",
+    )
     thehive_url = configuration.getInstanceURL(instance_id_final)
     thehive_authentication_type = configuration.getInstanceSetting(
         instance_id_final, "authentication_type"
@@ -89,7 +93,11 @@ def create_thehive_instance(instance_id, settings, logger, acronym):
     thehive_organisation = configuration.getInstanceSetting(
         instance_id_final, "organisation"
     )
+    thehive_organisation = (
+        None if thehive_organisation in ["-", "", None] else thehive_organisation
+    )
     thehive_version = configuration.getInstanceSetting(instance_id_final, "type")
+    thehive_verify = configuration.getInstanceSetting(instance_id_final, "verify")
     thehive = None
 
     if thehive_authentication_type == "password":
@@ -102,7 +110,7 @@ def create_thehive_instance(instance_id, settings, logger, acronym):
             username=thehive_username,
             password=thehive_secret,
             proxies=thehive_proxies,
-            verify=True,
+            verify=thehive_verify,
             cert=thehive_cert,
             organisation=thehive_organisation,
             version=thehive_version,
@@ -118,7 +126,7 @@ def create_thehive_instance(instance_id, settings, logger, acronym):
             url=thehive_url,
             apiKey=thehive_secret,
             proxies=thehive_proxies,
-            verify=True,
+            verify=thehive_verify,
             cert=thehive_cert,
             organisation=thehive_organisation,
             version=thehive_version,
@@ -186,7 +194,11 @@ def create_thehive_instance_modular_input(instance_id, helper, acronym):
     thehive_organisation = configuration.getInstanceSetting(
         instance_id_final, "organisation"
     )
+    thehive_organisation = (
+        None if thehive_organisation in ["-", "", None] else thehive_organisation
+    )
     thehive_version = configuration.getInstanceSetting(instance_id_final, "type")
+    thehive_verify = configuration.getInstanceSetting(instance_id_final, "verify")
     thehive = None
 
     if thehive_authentication_type == "password":
@@ -260,6 +272,12 @@ class TheHive4Splunk(TheHiveApi):
         self._utils = Utils(logger_file=logger_file)
 
         try:
+            import os
+
+            self.logger_file.debug(
+                id="TH_DEBUG_VERIFY",
+                message=f"Verification of CA cert path: {verify}. Exists? {os.path.exists(verify) if isinstance(verify, str) else 'N/A'}",
+            )
             if apiKey is not None:
                 super().__init__(
                     url=str(url),
