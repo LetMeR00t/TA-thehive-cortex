@@ -3,7 +3,7 @@
         "name": "TA-thehive-cortex",
         "displayName": "TheHive-Cortex",
         "version": "4.0.0",
-        "restRoot": "ta_thehive_cortex_api",
+        "restRoot": "thehive_cortex",
         "schemaVersion": "0.0.10",
         "supportedThemes": [
             "light",
@@ -16,7 +16,7 @@
             "description": "Set up the integration with TheHive and Cortex",
             "tabs": [
                 {
-                    "name": "account",
+                    "name": "accounts",
                     "title": "Accounts",
                     "table": {
                         "actions": [
@@ -90,7 +90,7 @@
                     ]
                 },
                 {
-                    "name": "ta_thehive_cortex_api_instances",
+                    "name": "instances",
                     "title": "Instances",
                     "table": {
                         "actions": [
@@ -152,7 +152,7 @@
                             "required": true,
                             "help": "Select the account to use for authentication.",
                             "options": {
-                                "referenceName": "account"
+                                "referenceName": "accounts"
                             }
                         },
                         {

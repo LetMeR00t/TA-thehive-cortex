@@ -3,8 +3,11 @@
         <label class="control-label" for="cortex_run_a_new_job_cortex_instance_id">Cortex Instance ID <span
                 class="required">*</span> </label>
         <div class="controls">
-            <input type="text" name="action.cortex_run_a_new_job.param.cortex_instance_id"
-                id="cortex_run_a_new_job_cortex_instance_id" />
+            <splunk-search-dropdown name="action.cortex_run_a_new_job.param.cortex_instance_id" id="cortex_run_a_new_job_cortex_instance_id"
+                allow-custom-value=true
+                search="| rest /servicesNS/nobody/TA-thehive-cortex/thehive_cortex_instances splunk_server=local | rename title as id | where type=&quot;Cortex3&quot; | eval instance_label = id+&quot; (&quot;+environment+&quot;)&quot;"
+                label-field="instance_label"
+                value-field="id" />
             <span class="help-block">
                 Indicate which instance to use (Set the "id" provided under "Instances")
             </span>
