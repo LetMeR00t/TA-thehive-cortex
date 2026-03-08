@@ -512,7 +512,6 @@
                             "field": "name",
                             "label": "Name",
                             "type": "text",
-                            "help": "A unique name for the input.",
                             "required": true,
                             "validators": [
                                 {
@@ -526,15 +525,7 @@
                             "field": "interval",
                             "label": "Interval",
                             "type": "text",
-                            "defaultValue": "60",
-                            "required": true,
-                            "validators": [
-                                {
-                                    "type": "regex",
-                                    "pattern": "^\\-[1-9]\\d*$|^\\d*$",
-                                    "errorMsg": "Interval must be an integer."
-                                }
-                            ]
+                            "defaultValue": "60"
                         },
                         {
                             "field": "index",
@@ -542,24 +533,18 @@
                             "type": "singleSelect",
                             "defaultValue": "default",
                             "options": {
-                                "endpointUrl": "data/indexes",
-                                "createSearchChoice": true,
-                                "denyList": "^_.*$"
-                            },
-                            "required": true
+                                "endpointUrl": "data/indexes"
+                            }
                         },
                         {
                             "field": "instance_id",
                             "label": "Instance ID",
-                            "help": "Set the ID provided under Instances or '<default>'",
-                            "required": true,
                             "type": "text",
                             "defaultValue": "<default>"
                         },
                         {
                             "field": "type",
                             "label": "Type",
-                            "required": true,
                             "type": "multipleSelect",
                             "options": {
                                 "delimiter": ",",
@@ -578,7 +563,6 @@
                         {
                             "field": "additional_information",
                             "label": "Additional information",
-                            "required": false,
                             "type": "multipleSelect",
                             "options": {
                                 "delimiter": ",",
@@ -609,7 +593,6 @@
                         {
                             "field": "extra_data",
                             "label": "Extra data",
-                            "required": false,
                             "type": "multipleSelect",
                             "options": {
                                 "delimiter": ",",
@@ -632,7 +615,6 @@
                         {
                             "field": "date",
                             "label": "Date",
-                            "required": true,
                             "type": "multipleSelect",
                             "options": {
                                 "delimiter": ",",
@@ -732,6 +714,91 @@
                             "label": "Backfill: End date",
                             "type": "text",
                             "required": true
+                        },
+                        {
+                            "field": "date",
+                            "label": "Date",
+                            "type": "multipleSelect",
+                            "options": {
+                                "delimiter": ",",
+                                "items": [
+                                    {
+                                        "value": "_createdAt",
+                                        "label": "Created time"
+                                    },
+                                    {
+                                        "value": "_updatedAt",
+                                        "label": "Updated time"
+                                    },
+                                    {
+                                        "value": "startDate",
+                                        "label": "Started time"
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            "field": "max_size_value",
+                            "label": "Max size for values",
+                            "type": "text",
+                            "defaultValue": "1000"
+                        },
+                        {
+                            "field": "fields_removal",
+                            "label": "Fields removal",
+                            "type": "text"
+                        },
+                        {
+                            "field": "additional_information",
+                            "label": "Additional information",
+                            "type": "multipleSelect",
+                            "options": {
+                                "delimiter": ",",
+                                "items": [
+                                    {
+                                        "value": "tasks",
+                                        "label": "Tasks"
+                                    },
+                                    {
+                                        "value": "observables",
+                                        "label": "Observables"
+                                    },
+                                    {
+                                        "value": "attachments",
+                                        "label": "Attachments"
+                                    },
+                                    {
+                                        "value": "pages",
+                                        "label": "Pages"
+                                    },
+                                    {
+                                        "value": "ttps",
+                                        "label": "TTPs"
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            "field": "extra_data",
+                            "label": "Extra data",
+                            "type": "multipleSelect",
+                            "options": {
+                                "delimiter": ",",
+                                "items": [
+                                    {
+                                        "value": "caseNumber",
+                                        "label": "(Alert) caseNumber"
+                                    },
+                                    {
+                                        "value": "status",
+                                        "label": "(Alert/Case) status"
+                                    },
+                                    {
+                                        "value": "alerts",
+                                        "label": "(Case) alerts"
+                                    }
+                                ]
+                            }
                         }
                     ]
                 },
@@ -774,23 +841,15 @@
                             "defaultValue": "<default>"
                         },
                         {
-                            "field": "date",
-                            "label": "Date",
-                            "required": true,
-                            "type": "multipleSelect",
-                            "options": {
-                                "delimiter": ",",
-                                "items": [
-                                    {
-                                        "value": "_createdAt",
-                                        "label": "Last created"
-                                    },
-                                    {
-                                        "value": "_updatedAt",
-                                        "label": "Last updated"
-                                    }
-                                ]
-                            }
+                            "field": "max_size_value",
+                            "label": "Max size for values",
+                            "type": "text",
+                            "defaultValue": "1000"
+                        },
+                        {
+                            "field": "fields_removal",
+                            "label": "Fields removal",
+                            "type": "text"
                         }
                     ]
                 },
@@ -843,6 +902,35 @@
                             "label": "Backfill: End date",
                             "type": "text",
                             "required": true
+                        },
+                        {
+                            "field": "date",
+                            "label": "Date",
+                            "type": "multipleSelect",
+                            "options": {
+                                "delimiter": ",",
+                                "items": [
+                                    {
+                                        "value": "_createdAt",
+                                        "label": "Last created"
+                                    },
+                                    {
+                                        "value": "_updatedAt",
+                                        "label": "Last updated"
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            "field": "max_size_value",
+                            "label": "Max size for values",
+                            "type": "text",
+                            "defaultValue": "1000"
+                        },
+                        {
+                            "field": "fields_removal",
+                            "label": "Fields removal",
+                            "type": "text"
                         }
                     ]
                 },
@@ -883,6 +971,17 @@
                             "label": "Instance ID",
                             "type": "text",
                             "defaultValue": "<default>"
+                        },
+                        {
+                            "field": "max_size_value",
+                            "label": "Max size for values",
+                            "type": "text",
+                            "defaultValue": "1000"
+                        },
+                        {
+                            "field": "fields_removal",
+                            "label": "Fields removal",
+                            "type": "text"
                         }
                     ]
                 },
@@ -935,6 +1034,17 @@
                             "label": "Backfill: End date",
                             "type": "text",
                             "required": true
+                        },
+                        {
+                            "field": "max_size_value",
+                            "label": "Max size for values",
+                            "type": "text",
+                            "defaultValue": "1000"
+                        },
+                        {
+                            "field": "fields_removal",
+                            "label": "Fields removal",
+                            "type": "text"
                         }
                     ]
                 }

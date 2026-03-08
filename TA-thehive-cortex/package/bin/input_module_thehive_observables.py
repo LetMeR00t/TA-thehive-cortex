@@ -1,3 +1,4 @@
+
 # encoding = utf-8
 
 import time
@@ -6,31 +7,11 @@ import datetime
 import json
 from thehive import create_thehive_instance_modular_input
 from thehive4py.query.filters import Between
-from thehive4py.query.page import Paginate
-from thehive4py.query.sort import Desc
 import globals
-
-"""
-    IMPORTANT
-    Edit only the validate_input and collect_events functions.
-    Do not edit any other part in this file.
-    This file is generated only once when creating the modular input.
-"""
-"""
-# For advanced users, if you want to create single instance mod input, uncomment this method.
-def use_single_instance_mode():
-    return True
-"""
-
 
 def validate_input(helper, definition):
     """Implement your own validation logic to validate the input stanza configurations"""
-    # This example accesses the modular input variable
-    # instance_id = definition.parameters.get('instance_id', None)
-    # type = definition.parameters.get('type', None)
-    # date = definition.parameters.get('date', None)
     pass
-
 
 def collect_events(helper, ew):
     """Implement your data collection logic here"""
@@ -60,79 +41,30 @@ def collect_events(helper, ew):
         instance_id=instance_id, helper=helper, acronym="MI-THO"
     )
 
-    logger_file.debug(
-        id="20",
-        message="TheHive URL instance used after retrieving the configuration: "
-        + str(thehive.session.hive_url),
-    )
-    logger_file.debug(
-        id="25",
-        message="TheHive connection is ready. Processing modular input parameters...",
-    )
+    modular_input_args = {
+        "max_size_value": int(helper.get_arg("max_size_value")) if helper.get_arg("max_size_value") else 1000,
+        "fields_removal": helper.get_arg("fields_removal") or ""
+    }
 
-    # Get alert arguments
-    modular_input_args = {}
-    # Get string values from the input form
-    for date in helper.get_arg("date"):
-        modular_input_args["date"] = date
-        modular_input_args["max_size_value"] = (
-            helper.get_arg("max_size_value")
-            if helper.get_arg("max_size_value") is not None
-            and helper.get_arg("max_size_value") != ""
-            else 1000
-        )
-        modular_input_args["fields_removal"] = (
-            helper.get_arg("fields_removal")
-            if helper.get_arg("fields_removal") is not None
-            and helper.get_arg("fields_removal") != ""
-            else ""
-        )
-        logger_file.debug(
-            id="30", message="Arguments recovered: " + str(modular_input_args)
-        )
+    dates = ["_updatedAt", "_createdAt"]
 
-        date_mode = None
-        if modular_input_args["date"] == "_updatedAt":
-            date_mode = "last_updated"
-        elif modular_input_args["date"] == "_createdAt":
-            date_mode = "last_created"
-        else:
-            date_mode = modular_input_args["date"]
-        # Retrieve the data
-        logger_file.debug(
-            id="35", message="Configuration is ready. Collecting the data..."
-        )
+    for date_field in dates:
+        date_mode = ""
+        if date_field == "_updatedAt": date_mode = "last_updated"
+        elif date_field == "_createdAt": date_mode = "last_created"
+        else: date_mode = date_field
 
-        # Retrieve the data
-        logger_file.debug(id="36", message=f"Processing type 'observables'...")
-
-        # Prepare to store the new events
-        new_events = []
-        sortby = Desc(modular_input_args["date"])
-
-        # Check the interval set
-        interval = int(input_stanza[stanza]["interval"])
-
-        # Calculate d2 which is the latest date
+        interval = int(input_stanza[stanza].get("interval", 60))
         now = datetime.datetime.timestamp(datetime.datetime.now())
-
-        ## Round it to the minute
         d2 = now - now % 60
-
-        # Calculate d1 which is the earliest date
         d1 = d2 - interval
 
-        # Multiply by 1,000 for TheHive
-        filters = Between(modular_input_args["date"], d1 * 1000, d2 * 1000)
+        filters = Between(date_field, d1 * 1000, d2 * 1000)
         logger_file.debug(id="40", message="This filter will be used: " + str(filters))
 
-        new_events = thehive.get_observables_events(
-            filters=filters, sortby=sortby, **modular_input_args
-        )
+        new_events = thehive.get_observables_events(filters=filters, **modular_input_args)
 
-        # Store the events accordingly
         for event in new_events:
-            # Index the event
             e = helper.new_event(
                 source="thehive:" + stanza,
                 host=thehive.session.hive_url[8:],
@@ -142,8 +74,6 @@ def collect_events(helper, ew):
             )
             ew.write_event(e)
 
-        logger_file.info(
-            id="70", message=str(len(new_events)) + " events were recovered."
-        )
+        logger_file.info(id="70", message=f"{str(len(new_events))} events (date: {date_mode}) were recovered.")
 
     return 0
