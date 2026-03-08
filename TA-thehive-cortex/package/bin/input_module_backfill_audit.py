@@ -1,13 +1,29 @@
-
 # encoding = utf-8
+# Author: Alexandre Demeyer <letmer00t@gmail.com>
+#
+# Copyright: LGPLv3 (https://www.gnu.org/licenses/lgpl-3.0.txt)
+# Feel free to use the code, but please share the changes you've made
 
-import time
-import sys
+__author__ = "Alexandre Demeyer"
+__license__ = "LGPLv3"
+__version__ = "4.0.0"
+__maintainer__ = "Alexandre Demeyer"
+__email__ = "letmer00t@gmail.com"
+
+import ta_thehive_cortex_declare
+
+# Standard library imports
 import datetime
 import json
-from thehive import create_thehive_instance_modular_input
+import sys
+import time
+
+# Third-party imports
 from thehive4py.query.filters import Between
+
+# Local application/library specific imports
 import globals
+from thehive import create_thehive_instance_modular_input
 
 def validate_input(helper, definition):
     """Implement your own validation logic to validate the input stanza configurations"""

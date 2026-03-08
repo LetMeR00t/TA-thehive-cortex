@@ -1,13 +1,31 @@
 # encoding = utf-8
+# Author: Alexandre Demeyer <letmer00t@gmail.com>
+#
+# Copyright: LGPLv3 (https://www.gnu.org/licenses/lgpl-3.0.txt)
+# Feel free to use the code, but please share the changes you've made
+
+__author__ = "Alexandre Demeyer"
+__license__ = "LGPLv3"
+__version__ = "4.0.0"
+__maintainer__ = "Alexandre Demeyer"
+__email__ = "letmer00t@gmail.com"
+
+import ta_thehive_cortex_declare
+
+# Standard library imports
 import json
-import splunk.Intersplunk
-from thehive import initialize_thehive_instances
-from thehive4py.query.sort import Asc, Desc
-from thehive4py.query import Eq, Like, Between
-from thehive4py.query.page import Paginate
-from copy import deepcopy
-import globals
 import time
+from copy import deepcopy
+
+# Third-party imports
+import splunk.Intersplunk
+from thehive4py.query import Between, Eq, Like
+from thehive4py.query.page import Paginate
+from thehive4py.query.sort import Asc, Desc
+
+# Local application/library specific imports
+import globals
+from thehive import initialize_thehive_instances
 
 # Global variables
 FILTER_TYPE_DEFAULT = "*"

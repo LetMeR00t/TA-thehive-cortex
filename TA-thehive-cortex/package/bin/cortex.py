@@ -1,12 +1,29 @@
 # encoding = utf-8
-import sys
+# Author: Alexandre Demeyer <letmer00t@gmail.com>
+#
+# Copyright: LGPLv3 (https://www.gnu.org/licenses/lgpl-3.0.txt)
+# Feel free to use the code, but please share the changes you've made
+
+__author__ = "Alexandre Demeyer"
+__license__ = "LGPLv3"
+__version__ = "4.0.0"
+__maintainer__ = "Alexandre Demeyer"
+__email__ = "letmer00t@gmail.com"
+
 import ta_thehive_cortex_declare
-from cortex4py.api import Api
-import cortex4py.exceptions
-from ta_logging import setup_logging
+
+# Standard library imports
+import sys
 import traceback
+
+# Third-party imports
+import cortex4py.exceptions
 import splunklib.client as client
+from cortex4py.api import Api
+
+# Local application/library specific imports
 from common import LoggerFile, Settings
+from ta_logging import setup_logging
 
 # All available data types
 dataTypeList = [

@@ -1,9 +1,25 @@
 from __future__ import print_function
-from builtins import str
+# Author: Alexandre Demeyer <letmer00t@gmail.com>
+#
+# Copyright: LGPLv3 (https://www.gnu.org/licenses/lgpl-3.0.txt)
+# Feel free to use the code, but please share the changes you've made
+
+__author__ = "Alexandre Demeyer"
+__license__ = "LGPLv3"
+__version__ = "4.0.0"
+__maintainer__ = "Alexandre Demeyer"
+__email__ = "letmer00t@gmail.com"
+
+import ta_thehive_cortex_declare
+
+# Standard library imports
 import csv
 import gzip
+import logging
 import sys
+from builtins import str
 
+# Third-party imports
 try:
     from splunk.clilib.bundle_paths import make_splunkhome_path
 except ImportError:
@@ -14,7 +30,6 @@ sys.path.insert(0, make_splunkhome_path(["etc", "apps", "Splunk_SA_CIM", "lib"])
 
 from cim_actions import ModularAction
 from logging_helper import get_logger
-import logging
 from splunktaucclib.splunk_aoblib.rest_helper import TARestHelper
 from splunktaucclib.splunk_aoblib.setup_util import Setup_Util
 

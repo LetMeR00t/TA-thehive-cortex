@@ -1,27 +1,36 @@
 # encoding = utf-8
-#!/usr/bin/env python
-# Generate TheHive alerts
-#
-# Author: Alexandre Demeyer <letmer00t@gmail.com>
-# Inspired by: Remi Seguy <remg427@gmail.com>
+# Author: Alexandre Demeyer <letmer00t@gmail.com>, Remi Seguy <remg427@gmail.com>
 #
 # Copyright: LGPLv3 (https://www.gnu.org/licenses/lgpl-3.0.txt)
 # Feel free to use the code, but please share the changes you've made
 
+__author__ = "Alexandre Demeyer, Remi Seguy"
+__license__ = "LGPLv3"
+__version__ = "4.0.0"
+__maintainer__ = "Alexandre Demeyer"
+__email__ = "letmer00t@gmail.com"
+
+import ta_thehive_cortex_declare
+
+# Standard library imports
+import csv
+import gzip
+import hashlib
+import json
+import os
 import re
+import shutil
 import tempfile
 import time
-import gzip
-import csv
-import os
-import json
+
+# Third-party imports
+from thehive4py.errors import TheHiveError
+from thehive4py.types.alert import InputAlert
+
+# Local application/library specific imports
+import globals
 from modalert_thehive_common import parse_events
 from thehive import TheHive4Splunk, create_thehive_instance
-from thehive4py.types.alert import InputAlert
-from thehive4py.errors import TheHiveError
-import globals
-import hashlib
-import shutil
 
 __author__ = "Alexandre Demeyer, Remi Seguy"
 __maintainer__ = "Alexandre Demeyer"

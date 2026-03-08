@@ -1,3 +1,6 @@
+import ta_thehive_cortex_declare
+
+# Third-party imports
 from solnlib.log import Logs
 
 

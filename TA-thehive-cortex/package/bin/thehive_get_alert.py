@@ -1,9 +1,27 @@
 # encoding = utf-8
-import splunk.Intersplunk
-from thehive import initialize_thehive_instances
-from copy import deepcopy
-import globals
+# Author: Alexandre Demeyer <letmer00t@gmail.com>
+#
+# Copyright: LGPLv3 (https://www.gnu.org/licenses/lgpl-3.0.txt)
+# Feel free to use the code, but please share the changes you've made
+
+__author__ = "Alexandre Demeyer"
+__license__ = "LGPLv3"
+__version__ = "4.0.0"
+__maintainer__ = "Alexandre Demeyer"
+__email__ = "letmer00t@gmail.com"
+
+import ta_thehive_cortex_declare
+
+# Standard library imports
 import time
+from copy import deepcopy
+
+# Third-party imports
+import splunk.Intersplunk
+
+# Local application/library specific imports
+import globals
+from thehive import initialize_thehive_instances
 
 if __name__ == '__main__':
     

@@ -1,19 +1,36 @@
 # encoding = utf-8
-import logging
-from typing import Union
-import globals
-import os
+# Author: Alexandre Demeyer <letmer00t@gmail.com>
+#
+# Copyright: LGPLv3 (https://www.gnu.org/licenses/lgpl-3.0.txt)
+# Feel free to use the code, but please share the changes you've made
+
+__author__ = "Alexandre Demeyer"
+__license__ = "LGPLv3"
+__version__ = "4.0.0"
+__maintainer__ = "Alexandre Demeyer"
+__email__ = "letmer00t@gmail.com"
+
+import ta_thehive_cortex_declare
+
+# Standard library imports
 import base64
-import datetime
-import sys
-import json
-from thehive4py.query.sort import Asc, Desc
-import re
 import csv
+import datetime
+import json
+import logging
+import os
+import re
+import sys
+from typing import Union
+
+# Third-party imports
 import splunklib.client as client
-from solnlib import conf_manager
-from solnlib import log
+from solnlib import conf_manager, log
 from solnlib.utils import is_true
+from thehive4py.query.sort import Asc, Desc
+
+# Local application/library specific imports
+import globals
 
 
 class LoggerFile(object):
