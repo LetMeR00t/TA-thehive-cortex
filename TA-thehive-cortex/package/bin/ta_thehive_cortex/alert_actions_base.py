@@ -15,8 +15,8 @@ sys.path.insert(0, make_splunkhome_path(["etc", "apps", "Splunk_SA_CIM", "lib"])
 from cim_actions import ModularAction
 from logging_helper import get_logger
 import logging
-from splunk_aoblib.rest_helper import TARestHelper
-from splunk_aoblib.setup_util import Setup_Util
+from splunktaucclib.splunk_aoblib.rest_helper import TARestHelper
+from splunktaucclib.splunk_aoblib.setup_util import Setup_Util
 
 
 class ModularAlertBase(ModularAction):

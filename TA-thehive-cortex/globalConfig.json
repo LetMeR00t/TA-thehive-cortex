@@ -156,6 +156,26 @@
                             }
                         },
                         {
+                            "field": "authentication_type",
+                            "label": "Authentication Type",
+                            "type": "singleSelect",
+                            "required": true,
+                            "help": "Select the type of authentication to use.",
+                            "options": {
+                                "autoCompleteFields": [
+                                    {
+                                        "label": "Password",
+                                        "value": "password"
+                                    },
+                                    {
+                                        "label": "API Key",
+                                        "value": "api_key"
+                                    }
+                                ]
+                            },
+                            "defaultValue": "api_key"
+                        },
+                        {
                             "field": "type",
                             "label": "Type",
                             "type": "singleSelect",

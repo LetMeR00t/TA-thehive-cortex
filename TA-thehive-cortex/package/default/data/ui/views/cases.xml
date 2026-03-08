@@ -2,7 +2,7 @@
   <label>TheHive: Cases</label>
   
   <search id="get_instance_info">
-    <query>| rest /servicesNS/nobody/TA-thehive-cortex/ta_thehive_cortex_instances splunk_server=local | rename title as id | where id="$instance_id$" | eval case_uri = if(type=="TheHive5","cases","case") | eval case_uri = if(uri!="/","/"+case_uri,case_uri)</query>
+    <query>| rest /servicesNS/nobody/TA-thehive-cortex/thehive_cortex_instances splunk_server=local | rename title as id | where id="$instance_id$" | eval case_uri = if(type=="TheHive5","cases","case") | eval case_uri = if(uri!="/","/"+case_uri,case_uri)</query>
     <done>
       <condition match="$job.resultCount$ &gt; 0">
         <set token="global_thehive_host">$result.host$</set>
@@ -62,7 +62,7 @@
       <fieldForLabel>instance_name</fieldForLabel>
       <fieldForValue>id</fieldForValue>
       <search>
-        <query>| rest /servicesNS/nobody/TA-thehive-cortex/ta_thehive_cortex_instances splunk_server=local
+        <query>| rest /servicesNS/nobody/TA-thehive-cortex/thehive_cortex_instances splunk_server=local
 | rename title as id
 | where type="TheHive5"
 | eval instance_name = account_name+": "+host+":"+port+if(isnotnull(uri),uri,"/")</query>

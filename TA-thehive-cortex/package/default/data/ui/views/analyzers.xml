@@ -26,7 +26,7 @@
       <fieldForLabel>instance_name</fieldForLabel>
       <fieldForValue>id</fieldForValue>
       <search>
-        <query>| rest /servicesNS/nobody/TA-thehive-cortex/ta_thehive_cortex_instances splunk_server=local
+        <query>| rest /servicesNS/nobody/TA-thehive-cortex/thehive_cortex_instances splunk_server=local
 | rename title as id
 | where type="Cortex3"
 | eval instance_name = account_name+": "+host+":"+port</query>

@@ -86,7 +86,7 @@ class Settings(object):
             namespace = settings["namespace"]
             # Get logging
             logging_settings = self.readDefaultLocalConfiguration(
-                "ta_thehive_cortex_settings.conf"
+                "thehive_cortex_settings.conf"
             )["logging"]
             self.logger_file.logger.setLevel(logging_settings["loglevel"])
             self.logger_file.debug(
@@ -101,9 +101,11 @@ class Settings(object):
             session_key = client.token
             
             # Get accounts for usernames
-            account_cfm = conf_manager.get_conf_manager(
-                session_key, "TA-thehive-cortex"
-            ).get_conf("ta_thehive_cortex_account")
+            account_cfm = conf_manager.ConfManager(
+                session_key, 
+                "TA-thehive-cortex",
+                realm="__REST_CREDENTIAL__#TA-thehive-cortex#configs/conf-thehive_cortex_accounts"
+            ).get_conf("thehive_cortex_accounts")
             accounts = account_cfm.get_all()
             self.logger_file.debug(id="S3", message=f"Accounts retrieved: {list(accounts.keys())}")
 
@@ -124,10 +126,10 @@ class Settings(object):
                             # Fallback if not JSON
                             self._passwords[username_raw] = credential["clear_password"]
 
-            # Get instances from ta_thehive_cortex_instances.conf
-            instance_cfm = conf_manager.get_conf_manager(
+            # Get instances from thehive_cortex_instances.conf
+            instance_cfm = conf_manager.ConfManager(
                 session_key, "TA-thehive-cortex"
-            ).get_conf("ta_thehive_cortex_instances")
+            ).get_conf("thehive_cortex_instances")
             instances_conf = instance_cfm.get_all()
             
             for row_id, row in instances_conf.items():
@@ -243,7 +245,7 @@ class Settings(object):
 
         # Get additional parameters
         self.__additional_parameters = self.readDefaultLocalConfiguration(
-            "ta_thehive_cortex_settings.conf"
+            "thehive_cortex_settings.conf"
         ).get("additional_parameters", {})
         self.logger_file.debug(
             id="S15",

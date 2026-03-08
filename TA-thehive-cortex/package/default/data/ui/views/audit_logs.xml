@@ -52,11 +52,12 @@
       <table>
         <search>
           <query>(index=_* OR index=cim_*) sourcetype="modular_alerts:thehive_*"
-| rex field=_raw " (?&lt;type&gt;\w+) pid\=.*\| (?&lt;signature2&gt;.*)"
-| eval signature = coalesce(signature,signature2)
+| rex field=_raw "(?:log_level=)?(?&lt;type_extract&gt;\w+)\s+pid=(?&lt;pid_extract&gt;\d+)"
+| rex field=_raw "\| (?&lt;signature_extract&gt;.*)"
+| eval type = coalesce(type, type_extract, log_level), pid = coalesce(pid, pid_extract), signature = coalesce(signature, signature_extract, _raw)
 | table _time, sourcetype, pid, type, signature
 | sort 0 -_time
-| rename pid as PID, type as "Type", signature as "Message"</query>
+| rename sourcetype as "Action", pid as PID, type as "Level", signature as "Message"</query>
           <earliest>$time.earliest$</earliest>
           <latest>$time.latest$</latest>
           <sampleRatio>1</sampleRatio>
@@ -130,8 +131,9 @@
       <chart>
         <search>
           <query>(index=_* OR index=cim_*) sourcetype="modular_alerts:thehive_create_a_new_alert"
-| rex field=_raw " (?&lt;type&gt;\w+) pid\=.*\| (?&lt;signature2&gt;.*)"
-| eval signature = coalesce(signature,signature2)
+| rex field=_raw "(?:log_level=)?(?&lt;type_extract&gt;\w+)\s+pid=(?&lt;pid_extract&gt;\d+)"
+| rex field=_raw "\| (?&lt;signature_extract&gt;.*)"
+| eval type = coalesce(type, type_extract, log_level), signature = coalesce(signature, signature_extract, _raw)
 | search type=ERROR OR signature="[CAA-THCA-125]*"
 | eval information = if(like(signature,"%CAA-THCA-125%"),"Alert was created","An issue was found")
 | timechart count by information</query>

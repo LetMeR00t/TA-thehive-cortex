@@ -81,6 +81,8 @@ def create_thehive_instance(instance_id, settings, logger, acronym):
     thehive_authentication_type = configuration.getInstanceSetting(
         instance_id_final, "authentication_type"
     )
+    if thehive_authentication_type is None:
+        thehive_authentication_type = "api_key"
     thehive_proxies = configuration.getInstanceSetting(instance_id_final, "proxies")
     thehive_cert = configuration.getInstanceSetting(instance_id_final, "client_cert")
     thehive_cert = None if thehive_cert == "-" else thehive_cert
@@ -127,7 +129,7 @@ def create_thehive_instance(instance_id, settings, logger, acronym):
         logger_file.error(
             id="TH20",
             message="WRONG_AUTHENTICATION_TYPE - Authentication type is not one of the expected values (password or api_key), given value: "
-            + thehive_authentication_type,
+            + str(thehive_authentication_type),
         )
         exit(20)
 
@@ -176,6 +178,8 @@ def create_thehive_instance_modular_input(instance_id, helper, acronym):
     thehive_authentication_type = configuration.getInstanceSetting(
         instance_id_final, "authentication_type"
     )
+    if thehive_authentication_type is None:
+        thehive_authentication_type = "api_key"
     thehive_proxies = configuration.getInstanceSetting(instance_id_final, "proxies")
     thehive_cert = configuration.getInstanceSetting(instance_id_final, "client_cert")
     thehive_cert = None if thehive_cert == "-" else thehive_cert
@@ -222,7 +226,7 @@ def create_thehive_instance_modular_input(instance_id, helper, acronym):
         logger_file.error(
             id="TH50",
             message="WRONG_AUTHENTICATION_TYPE - Authentication type is not one of the expected values (password or api_key), given value: "
-            + thehive_authentication_type,
+            + str(thehive_authentication_type),
         )
         exit(20)
 

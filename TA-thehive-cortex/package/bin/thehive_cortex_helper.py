@@ -16,9 +16,9 @@ def get_account_api_key(session_key: str, account_name: str):
     cfm = conf_manager.ConfManager(
         session_key,
         ADDON_NAME,
-        realm=f"__REST_CREDENTIAL__#{ADDON_NAME}#configs/conf-ta_thehive_cortex_account",
+        realm=f"__REST_CREDENTIAL__#{ADDON_NAME}#configs/conf-thehive_cortex_accounts",
     )
-    account_conf_file = cfm.get_conf("ta_thehive_cortex_account")
+    account_conf_file = cfm.get_conf("thehive_cortex_accounts")
     return account_conf_file.get(account_name).get("api_key")
 
 
@@ -60,7 +60,7 @@ def stream_events(inputs: smi.InputDefinition, event_writer: smi.EventWriter):
                 logger=logger,
                 session_key=session_key,
                 app_name=ADDON_NAME,
-                conf_name="ta_thehive_cortex_settings",
+                conf_name="thehive_cortex_settings",
             )
             logger.setLevel(log_level)
             log.modular_input_start(logger, normalized_input_name)

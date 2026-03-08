@@ -9,7 +9,7 @@
       <fieldForLabel>instance_name</fieldForLabel>
       <fieldForValue>id</fieldForValue>
       <search>
-        <query>| rest /servicesNS/nobody/TA-thehive-cortex/ta_thehive_cortex_instances splunk_server=local
+        <query>| rest /servicesNS/nobody/TA-thehive-cortex/thehive_cortex_instances splunk_server=local
 | rename title as id
 | where type="TheHive5"
 | eval instance_name = account_name+": "+host+":"+port+if(isnotnull(uri),uri,"/")</query>
@@ -155,7 +155,7 @@
             <set token="global_thehive_uri">$result.uri$</set>
             <set token="global_thehive_case_uri">$result.case_uri$</set>
           </done>
-          <query>| rest /servicesNS/nobody/TA-thehive-cortex/ta_thehive_cortex_instances splunk_server=local | rename title as id | where id="$instance_id$" | eval case_uri = if(type=="TheHive5","cases","case") | eval case_uri = if(uri!="/","/"+case_uri,case_uri)</query>
+          <query>| rest /servicesNS/nobody/TA-thehive-cortex/thehive_cortex_instances splunk_server=local | rename title as id | where id="$instance_id$" | eval case_uri = if(type=="TheHive5","cases","case") | eval case_uri = if(uri!="/","/"+case_uri,case_uri)</query>
           <earliest>$filter_date.earliest$</earliest>
           <latest>$filter_date.latest$</latest>
           <sampleRatio>1</sampleRatio>
