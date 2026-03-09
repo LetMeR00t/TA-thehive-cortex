@@ -310,7 +310,7 @@
                             "required": false,
                             "help": "Select the account for proxy authentication if required.",
                             "options": {
-                                "referenceName": "account"
+                                "referenceName": "accounts"
                             }
                         },
                         {
@@ -391,7 +391,10 @@
                         {
                             "field": "thehive_default_instance",
                             "label": "TheHive Default Instance",
-                            "type": "text"
+                            "type": "singleSelect",
+                            "options": {
+                                "referenceName": "instances"
+                            }
                         },
                         {
                             "field": "thehive_max_cases",
