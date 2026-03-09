@@ -13,18 +13,29 @@
   <row>
     <panel>
       <title>Audit logs : Modular input regarding TheHive Cortex API (Inputs)</title>
-      <input type="text" token="pid">
-        <label>PID</label>
+      <input type="dropdown" token="exec_id">
+        <label>Execution UID</label>
+        <choice value="*">All</choice>
         <default>*</default>
+        <fieldForLabel>exec_id</fieldForLabel>
+        <fieldForValue>exec_id</fieldForValue>
+        <search>
+          <query>index=_internal (source="*ta_thehive_cortex_thehive_*.log" OR source="*TA-thehive-cortex_thehive_*.log")
+| rex field=_raw "exec_id=(?&lt;exec_id&gt;[^ ]+)"
+| stats count by exec_id</query>
+          <earliest>$time.earliest$</earliest>
+          <latest>$time.latest$</latest>
+        </search>
       </input>
       <table>
         <search>
-          <query>index=_internal source IN ("*ta_thehive_cortex_thehive_*.log","*ta_thehive_cortex_backfill_*.log") pid=$pid$
-| rex field="_raw" "^\d+\-\d+\-\d+ \d+:\d+:\d+,\d+ (?&lt;level&gt;[^ ]+) pid=(?&lt;pid&gt;[^ ]+) tid=[^ ]+ file=[^ ]+ \| (?&lt;signature&gt;.*)"
-| eval signature = coalesce(signature,_raw)
+          <query>index=_internal (source="*ta_thehive_cortex_thehive_*.log" OR source="*ta_thehive_cortex_backfill_*.log" OR source="*TA-thehive-cortex_thehive_*.log" OR source="*TA-thehive-cortex_backfill_*.log")
+| rex field="_raw" "^\d+\-\d+\-\d+ \d+:\d+:\d+,\d+ (?&lt;level&gt;[^\t ]+)\s+(?&lt;location&gt;[^\-]+) \- (?&lt;exec_id_prefix&gt;exec_id=(?&lt;exec_id&gt;[^ ]+) )?(?&lt;signature&gt;.*)"
+| eval exec_id = coalesce(exec_id, "N/A"), signature = coalesce(signature,_raw)
+| search exec_id=$exec_id$
 | sort 0 -_time -signature
-| table _time host pid level signature
-| rename host as "Host", pid as PID, level as Level, signature as "Signature"</query>
+| table _time host exec_id level signature
+| rename host as "Host", exec_id as "Execution UID", level as Level, signature as "Signature"</query>
           <earliest>$time.earliest$</earliest>
           <latest>$time.latest$</latest>
           <sampleRatio>1</sampleRatio>
@@ -35,7 +46,7 @@
         <format type="color" field="Level">
           <colorPalette type="map">{"ERROR":#DC4E41,"WARNING":#F1813F,"INFO":#62B3B2,"DEBUG":#708794}</colorPalette>
         </format>
-        <format type="color" field="PID">
+        <format type="color" field="Execution UID">
           <colorPalette type="sharedList"></colorPalette>
           <scale type="sharedCategory"></scale>
         </format>

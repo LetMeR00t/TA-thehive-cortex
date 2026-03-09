@@ -139,15 +139,10 @@
       <input type="text" token="create_description" depends="$show_inputs_create$">
         <label>Description</label>
       </input>
-      <input id="input_create_add_tag" type="text" token="create_add_tag" depends="$show_inputs_create$" searchWhenChanged="true">
-        <label>Enter a new tag:</label>
-      </input>
-      <input id="input_create_tags" type="multiselect" token="create_tags" depends="$show_inputs_create$">
-        <label>Tags (readonly)</label>
-        <choice value="none">None</choice>
-        <delimiter>; </delimiter>
-        <default>none</default>
-        <initialValue>none</initialValue>
+      <input type="text" token="create_tags" depends="$show_inputs_create$">
+        <label>Tags (comma separated)</label>
+        <default></default>
+        <initialValue></initialValue>
       </input>
       <input type="dropdown" token="create_scope">
         <label>Scope*</label>
@@ -181,7 +176,7 @@
           <query>| loadjob $create_sid$
           | append
           [| makeresults
-| eval _time="sendalert thehive_create_a_new_case param.thehive_instance_id="$instance_id$" param.case_mode=\"$create_case_mode$\" param.unique_id_field=\"$create_unique_id_field$\" param.case_template=\"$create_case_template$\" param.source=\"$create_source$\" param.timestamp_field=\"$create_timestamp_field$\" param.title=\"$create_title$\" param.description=\"$create_description$\" param.tags=\"$create_tags$\" param.scope=$create_scope$ param.severity=$create_severity$ param.tlp=$create_tlp$ param.pap=$create_pap$"
+| eval _time="sendalert thehive_create_a_new_case param.thehive_instance_id=\"$instance_id$\" param.case_mode=\"$create_case_mode$\" param.unique_id_field=\"$create_unique_id_field$\" param.case_template=\"$create_case_template$\" param.source=\"$create_source$\" param.timestamp_field=\"$create_timestamp_field$\" param.title=\"$create_title$\" param.description=\"$create_description$\" param.tags=\"$create_tags$\" param.scope=$create_scope$ param.severity=$create_severity$ param.tlp=$create_tlp$ param.pap=$create_pap$"
 |table _time]</query>
           <earliest>0</earliest>
           <latest></latest>
