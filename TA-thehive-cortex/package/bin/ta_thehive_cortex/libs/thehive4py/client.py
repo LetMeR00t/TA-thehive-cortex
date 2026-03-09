@@ -5,6 +5,7 @@ from thehive4py.endpoints import (
     CaseEndpoint,
     CaseTemplateEndpoint,
     CommentEndpoint,
+    FunctionEndpoint,
     ObservableEndpoint,
     OrganisationEndpoint,
     ProcedureEndpoint,
@@ -74,6 +75,7 @@ class TheHiveApi:
         self.task = TaskEndpoint(self.session)
         self.task_log = TaskLogEndpoint(self.session)
         self.timeline = TimelineEndpoint(self.session)
+        self.function = FunctionEndpoint(self.session)
 
         # user management endpoints
         self.user = UserEndpoint(self.session)
