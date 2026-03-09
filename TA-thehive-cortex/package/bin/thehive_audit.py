@@ -83,7 +83,7 @@ class THEHIVE_AUDIT(smi.Script):
         d2 = now - now % 60
         d1 = d2 - interval
         filters = Between("_createdAt", int(d1 * 1000), int(d2 * 1000))
-        new_events = thehive.get_audit_events(filters=filters, **modular_input_args)
+        new_events = thehive.get_audit_logs_events(filters=filters, **modular_input_args)
         for event in new_events:
             ew.write_event(smi.Event(source="thehive:"+stanza, host=thehive.session.hive_url[8:], index=helper.get_output_index(), sourcetype="thehive:last_created:audit", data=json.dumps(event)))
 

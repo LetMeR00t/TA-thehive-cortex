@@ -97,6 +97,7 @@ class BACKFILL_OBSERVABLES(smi.Script):
             dates = (helper.get_arg("date") or "").split(",") if isinstance(helper.get_arg("date"), str) else (helper.get_arg("date") or ["_updatedAt", "_createdAt"])
 
             for date_field in dates:
+                modular_input_args["date"] = date_field
                 date_mode = date_field.replace("_", "last_")
                 filters = Between(date_field, d1 * 1000, d2 * 1000)
                 new_events = thehive.get_observables_events(filters=filters, **modular_input_args)

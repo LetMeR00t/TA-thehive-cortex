@@ -94,7 +94,7 @@ class BACKFILL_AUDIT(smi.Script):
             }
 
             filters = Between("_createdAt", int(d1 * 1000), int(d2 * 1000))
-            new_events = thehive.get_audit_events(filters=filters, **modular_input_args)
+            new_events = thehive.get_audit_logs_events(filters=filters, **modular_input_args)
             for event in new_events:
                 ew.write_event(smi.Event(source="thehive:"+stanza, host=thehive.session.hive_url[8:], index=helper.get_output_index(), sourcetype="thehive:last_created:audit", data=json.dumps(event)))
             logger_file.info(id="70", message=str(len(new_events)) + " events were recovered.")

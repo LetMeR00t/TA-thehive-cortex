@@ -81,6 +81,7 @@ class THEHIVE_OBSERVABLES(smi.Script):
         dates = (helper.get_arg("date") or "").split(",") if isinstance(helper.get_arg("date"), str) else (helper.get_arg("date") or ["_updatedAt", "_createdAt"])
 
         for date_field in dates:
+            modular_input_args["date"] = date_field
             date_mode = date_field.replace("_", "last_")
             interval = int(input_item.get("interval", 60))
             now = time.time()
