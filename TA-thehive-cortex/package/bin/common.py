@@ -35,9 +35,10 @@ import globals
 
 class LoggerFile(object):
 
-    def __init__(self, logger=None, command_id=""):
+    def __init__(self, logger=None, command_id="", exec_id=""):
         self._logger = logger
         self.command_id = str(command_id)
+        self.exec_id = str(exec_id)
 
     @property
     def logger(self):
@@ -57,6 +58,8 @@ class LoggerFile(object):
             except AttributeError:
                 log_id_str = "000000"
 
+            exec_prefix = f" exec_id={self.exec_id}" if self.exec_id else ""
+
             getattr(self.logger, type)(
                 log_context
                 + "["
@@ -65,7 +68,9 @@ class LoggerFile(object):
                 + self.command_id
                 + "-"
                 + str(id)
-                + "] "
+                + "]"
+                + exec_prefix
+                + " "
                 + str(message)
             )
 

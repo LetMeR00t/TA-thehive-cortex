@@ -562,8 +562,11 @@
                         {
                             "field": "instance_id",
                             "label": "Instance ID",
-                            "type": "text",
-                            "defaultValue": "<default>"
+                            "type": "singleSelect",
+                            "options": {
+                                "referenceName": "instances"
+                            },
+                            "help": "Select the instance from the list."
                         },
                         {
                             "field": "type",
@@ -705,8 +708,11 @@
                         {
                             "field": "instance_id",
                             "label": "Instance ID",
-                            "type": "text",
-                            "defaultValue": "<default>"
+                            "type": "singleSelect",
+                            "options": {
+                                "referenceName": "instances"
+                            },
+                            "help": "Select the instance from the list."
                         },
                         {
                             "field": "type",
@@ -860,8 +866,11 @@
                         {
                             "field": "instance_id",
                             "label": "Instance ID",
-                            "type": "text",
-                            "defaultValue": "<default>"
+                            "type": "singleSelect",
+                            "options": {
+                                "referenceName": "instances"
+                            },
+                            "help": "Select the instance from the list."
                         },
                         {
                             "field": "max_size_value",
@@ -911,8 +920,11 @@
                         {
                             "field": "instance_id",
                             "label": "Instance ID",
-                            "type": "text",
-                            "defaultValue": "<default>"
+                            "type": "singleSelect",
+                            "options": {
+                                "referenceName": "instances"
+                            },
+                            "help": "Select the instance from the list."
                         },
                         {
                             "field": "backfill_start",
@@ -992,8 +1004,11 @@
                         {
                             "field": "instance_id",
                             "label": "Instance ID",
-                            "type": "text",
-                            "defaultValue": "<default>"
+                            "type": "singleSelect",
+                            "options": {
+                                "referenceName": "instances"
+                            },
+                            "help": "Select the instance from the list."
                         },
                         {
                             "field": "max_size_value",
@@ -1043,8 +1058,11 @@
                         {
                             "field": "instance_id",
                             "label": "Instance ID",
-                            "type": "text",
-                            "defaultValue": "<default>"
+                            "type": "singleSelect",
+                            "options": {
+                                "referenceName": "instances"
+                            },
+                            "help": "Select the instance from the list."
                         },
                         {
                             "field": "backfill_start",

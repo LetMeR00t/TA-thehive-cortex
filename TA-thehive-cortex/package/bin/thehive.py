@@ -13,6 +13,7 @@ __email__ = "letmer00t@gmail.com"
 import ta_thehive_cortex_declare
 
 # Standard library imports
+import os
 import sys
 from typing import Tuple
 
@@ -161,9 +162,11 @@ def create_thehive_instance(instance_id, settings, logger, acronym):
     return (thehive, configuration, defaults, logger_file, instance_id)
 
 
-def create_thehive_instance_modular_input(instance_id, helper, acronym):
+def create_thehive_instance_modular_input(instance_id, helper, acronym, logger=None):
     """This function is used to create an instance of TheHive specifically for modular inputs that don't provide settings information"""
-    logger_file = LoggerFile(helper.logger, command_id=acronym)
+    # Use provided logger or fallback to helper.logger
+    effective_logger = logger if logger else helper.logger
+    logger_file = LoggerFile(effective_logger, command_id=acronym)
 
     # Initialize settings
     token = (
@@ -195,10 +198,6 @@ def create_thehive_instance_modular_input(instance_id, helper, acronym):
     (thehive_username, thehive_secret) = configuration.getInstanceUsernameApiKey(
         instance_id_final
     )
-    # As we are in a modular input, we can't retrieve the thehive_secret information, we will use the helper instead
-    thehive_secret = helper.get_user_credential_by_username(thehive_username)[
-        "password"
-    ]
     thehive_url = configuration.getInstanceURL(instance_id_final)
     thehive_authentication_type = configuration.getInstanceSetting(
         instance_id_final, "authentication_type"
@@ -228,7 +227,7 @@ def create_thehive_instance_modular_input(instance_id, helper, acronym):
             username=thehive_username,
             password=thehive_secret,
             proxies=thehive_proxies,
-            verify=True,
+            verify=thehive_verify,
             cert=thehive_cert,
             organisation=thehive_organisation,
             version=thehive_version,
@@ -244,7 +243,7 @@ def create_thehive_instance_modular_input(instance_id, helper, acronym):
             url=thehive_url,
             apiKey=thehive_secret,
             proxies=thehive_proxies,
-            verify=True,
+            verify=thehive_verify,
             cert=thehive_cert,
             organisation=thehive_organisation,
             version=thehive_version,
@@ -289,8 +288,6 @@ class TheHive4Splunk(TheHiveApi):
         self._utils = Utils(logger_file=logger_file)
 
         try:
-            import os
-
             self.logger_file.debug(
                 id="TH_DEBUG_VERIFY",
                 message=f"Verification of CA cert path: {verify}. Exists? {os.path.exists(verify) if isinstance(verify, str) else 'N/A'}",
@@ -453,7 +450,10 @@ class TheHive4Splunk(TheHiveApi):
             )
 
             # Store the events accordingly
-            for event in raw_events:
+            for raw_event in raw_events:
+                # Force conversion to dict if it's a thehive4py object
+                event = dict(raw_event) if not isinstance(raw_event, dict) else raw_event.copy()
+                
                 # Post processing before indexing
                 ### Generic for all inputs
                 event["_createdAt"] = event["_createdAt"] / 1000
@@ -580,7 +580,10 @@ class TheHive4Splunk(TheHiveApi):
             )
 
             # Store the events accordingly
-            for event in raw_events:
+            for raw_event in raw_events:
+                # Force conversion to dict if it's a thehive4py object
+                event = dict(raw_event) if not isinstance(raw_event, dict) else raw_event.copy()
+                
                 # Post processing before indexing
 
                 ## DATES ##
