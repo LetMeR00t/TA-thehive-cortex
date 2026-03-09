@@ -9,7 +9,7 @@
             </span>
             <splunk-search-dropdown name="action.thehive_create_a_new_alert.param.thehive_instance_id" id="thehive_instance_id"
                 allow-custom-value=true
-                search="| rest /servicesNS/nobody/TA-thehive-cortex/thehive_cortex_instances splunk_server=local | rename title as id | where type=&quot;TheHive5&quot; | eval instance_label = id+&quot; (&quot;+environment+&quot;)&quot;"
+                search="| rest /servicesNS/nobody/TA-thehive-cortex/thehive_cortex_instances splunk_server=local | rename title as id | where type=&quot;TheHive5&quot; | eval instance_label = id+&quot; (&quot;+environment+&quot;)&quot; | append [| makeresults | eval id=&quot;&lt;default&gt;&quot;, instance_label=&quot;&lt;default&gt;&quot;] | sort -id"
                 label-field="instance_label"
                 value-field="id" />
         </div>
