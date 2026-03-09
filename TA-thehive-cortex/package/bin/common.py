@@ -193,11 +193,18 @@ class Settings(object):
             ).get_conf("thehive_cortex_instances")
             instances_conf = instance_cfm.get_all()
             
+            self.__id_to_name = {}
             for row_id, row in instances_conf.items():
                 self.logger_file.debug(
                     id="S5", message="New instance detected, getting " + str(row)
                 )
                 
+                # Build ID mapping (UCC/REST ID to name)
+                # UCC ID is usually /servicesNS/nobody/TA-thehive-cortex/thehive_cortex_instances/<name>
+                technical_id = f"/servicesNS/nobody/TA-thehive-cortex/thehive_cortex_instances/{row_id}"
+                self.__id_to_name[technical_id] = row_id
+                self.__id_to_name[technical_id.replace(" ", "%20")] = row_id
+
                 # Get username and password from associated account
                 account_name = row.get("account_name")
                 if account_name and account_name in accounts:
@@ -305,9 +312,11 @@ class Settings(object):
                 self.__instances[row_id] = row
 
         # Get additional parameters
-        self.__additional_parameters = self.readDefaultLocalConfiguration(
-            "thehive_cortex_settings.conf"
-        ).get("additional_parameters", {})
+        conf = self.readDefaultLocalConfiguration("thehive_cortex_settings.conf")
+        self.__additional_parameters = {
+            **conf.get("additional_parameters", {}),
+            **conf.get("settings", {}),
+        }
         self.logger_file.debug(
             id="S15",
             message="Getting these additional parameters: "
@@ -407,13 +416,16 @@ class Settings(object):
 
     def getInstanceURL(self, instance_id):
         """This function returns the URL of the given instance"""
+        # Resolve ID if it's a technical ID
+        instance_id_resolved = self.__id_to_name.get(instance_id, instance_id)
+        
         try:
-            instance = self.__instances[instance_id]
+            instance = self.__instances[instance_id_resolved]
         except KeyError as e:
             self.logger_file.error(
                 id="S30",
                 message="This instance ID ("
-                + instance_id
+                + instance_id_resolved
                 + ") doesn't exist in your configuration",
             )
             sys.exit(30)
@@ -424,7 +436,7 @@ class Settings(object):
         self.logger_file.debug(
             id="S30",
             message="This instance ID ("
-            + str(instance_id)
+            + str(instance_id_resolved)
             + ") returns: "
             + str(self.sanitizeInstance(instance)),
         )
@@ -432,13 +444,16 @@ class Settings(object):
 
     def getInstanceUsernameApiKey(self, instance_id):
         """This function returns the Username/Secret (password or API key) of the given instance"""
+        # Resolve ID if it's a technical ID
+        instance_id_resolved = self.__id_to_name.get(instance_id, instance_id)
+
         try:
-            instance = self.__instances[instance_id]
+            instance = self.__instances[instance_id_resolved]
         except KeyError as e:
             self.logger_file.error(
                 id="S31",
                 message="This instance ID ("
-                + instance_id
+                + instance_id_resolved
                 + ") doesn't exist in your configuration",
             )
             sys.exit(31)
@@ -451,7 +466,7 @@ class Settings(object):
         self.logger_file.debug(
             id="S35",
             message="This instance ID ("
-            + str(instance_id)
+            + str(instance_id_resolved)
             + ") returns: "
             + str(instance["username"]),
         )
@@ -459,13 +474,16 @@ class Settings(object):
 
     def getInstanceSetting(self, instance_id, setting):
         """This function returns the setting for the given instance"""
+        # Resolve ID if it's a technical ID
+        instance_id_resolved = self.__id_to_name.get(instance_id, instance_id)
+
         instance = None
-        if instance_id in self.__instances and setting in self.__instances[instance_id]:
-            instance = self.__instances[instance_id][setting]
+        if instance_id_resolved in self.__instances and setting in self.__instances[instance_id_resolved]:
+            instance = self.__instances[instance_id_resolved][setting]
             self.logger_file.debug(
                 id="S40",
                 message="this instance id ("
-                + str(instance_id)
+                + str(instance_id_resolved)
                 + ") returns: "
                 + str(setting)
                 + "="
@@ -477,7 +495,7 @@ class Settings(object):
                 message="Can't recover the setting \""
                 + str(setting)
                 + '" for the instance "'
-                + str(instance_id)
+                + str(instance_id_resolved)
                 + '"',
             )
         return instance
@@ -489,11 +507,15 @@ class Settings(object):
             if "thehive_default_instance" in self.__additional_parameters
             else None
         )
+        
+        # Resolve ID if it's a technical ID
+        param_resolved = self.__id_to_name.get(param, param)
+
         self.logger_file.debug(
             id="S45",
-            message="Getting this parameter : thehive_default_instance=" + str(param),
+            message="Getting this parameter : thehive_default_instance=" + str(param_resolved),
         )
-        return param
+        return param_resolved
 
     def getTheHiveCasesMax(self):
         """This function returns the maximum number of cases to return of a TheHive instance"""
