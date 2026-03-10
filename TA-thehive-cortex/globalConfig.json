@@ -796,6 +796,10 @@
                                     {
                                         "value": "startDate",
                                         "label": "Started time"
+                                    },
+                                    {
+                                        "value": "date",
+                                        "label": "Occurred time"
                                     }
                                 ]
                             },
@@ -971,6 +975,10 @@
                                     {
                                         "value": "startDate",
                                         "label": "Started time"
+                                    },
+                                    {
+                                        "value": "date",
+                                        "label": "Occurred time"
                                     }
                                 ]
                             },
