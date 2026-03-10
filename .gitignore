@@ -136,3 +136,4 @@ tasks/
 output/
 .gemini/
 tests/
+gemini/

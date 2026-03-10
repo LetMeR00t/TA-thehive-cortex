@@ -153,7 +153,15 @@
                             "help": "Select the account to use for authentication.",
                             "options": {
                                 "referenceName": "accounts"
-                            }
+                            },
+                            "validators": [
+                                {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 100,
+                                    "errorMsg": "Account name is required."
+                                }
+                            ]
                         },
                         {
                             "field": "authentication_type",
@@ -173,7 +181,15 @@
                                     }
                                 ]
                             },
-                            "defaultValue": "api_key"
+                            "defaultValue": "api_key",
+                            "validators": [
+                                {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 50,
+                                    "errorMsg": "Authentication type is required."
+                                }
+                            ]
                         },
                         {
                             "field": "type",
@@ -192,7 +208,15 @@
                                         "value": "Cortex3"
                                     }
                                 ]
-                            }
+                            },
+                            "validators": [
+                                {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 50,
+                                    "errorMsg": "Type is required."
+                                }
+                            ]
                         },
                         {
                             "field": "environment",
@@ -220,7 +244,15 @@
                                     }
                                 ]
                             },
-                            "defaultValue": "PRODUCTION"
+                            "defaultValue": "PRODUCTION",
+                            "validators": [
+                                {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 50,
+                                    "errorMsg": "Environment is required."
+                                }
+                            ]
                         },
                         {
                             "field": "host",
@@ -311,7 +343,14 @@
                             "help": "Select the account for proxy authentication if required.",
                             "options": {
                                 "referenceName": "accounts"
-                            }
+                            },
+                            "validators": [
+                                {
+                                    "type": "string",
+                                    "minLength": 0,
+                                    "maxLength": 100
+                                }
+                            ]
                         },
                         {
                             "field": "client_cert",
@@ -386,7 +425,14 @@
                             "field": "cortex_sort_jobs",
                             "label": "Cortex Sort Jobs",
                             "type": "text",
-                            "defaultValue": "-createdAt"
+                            "defaultValue": "-createdAt",
+                            "validators": [
+                                {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 100
+                                }
+                            ]
                         },
                         {
                             "field": "thehive_default_instance",
@@ -394,7 +440,14 @@
                             "type": "singleSelect",
                             "options": {
                                 "referenceName": "instances"
-                            }
+                            },
+                            "validators": [
+                                {
+                                    "type": "string",
+                                    "minLength": 0,
+                                    "maxLength": 100
+                                }
+                            ]
                         },
                         {
                             "field": "thehive_max_cases",
@@ -416,7 +469,14 @@
                             "field": "thehive_sort_cases",
                             "label": "TheHive Sort Cases",
                             "type": "text",
-                            "defaultValue": "-startDate"
+                            "defaultValue": "-startDate",
+                            "validators": [
+                                {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 100
+                                }
+                            ]
                         },
                         {
                             "field": "thehive_max_alerts",
@@ -438,24 +498,52 @@
                             "field": "thehive_sort_alerts",
                             "label": "TheHive Sort Alerts",
                             "type": "text",
-                            "defaultValue": "-date"
+                            "defaultValue": "-date",
+                            "validators": [
+                                {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 100
+                                }
+                            ]
                         },
                         {
                             "field": "splunk_es_alerts_index",
                             "label": "Splunk ES Alerts Index",
-                            "type": "text"
+                            "type": "text",
+                            "validators": [
+                                {
+                                    "type": "string",
+                                    "minLength": 0,
+                                    "maxLength": 100
+                                }
+                            ]
                         },
                         {
                             "field": "thehive_ttp_catalog_name",
                             "label": "TheHive TTP Catalog Name",
                             "type": "text",
-                            "defaultValue": "Enterprise Attack"
+                            "defaultValue": "Enterprise Attack",
+                            "validators": [
+                                {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 100
+                                }
+                            ]
                         },
                         {
                             "field": "thehive_creation_attachment_prefix",
                             "label": "TheHive Creation Attachment Prefix",
                             "type": "text",
-                            "defaultValue": "events_"
+                            "defaultValue": "events_",
+                            "validators": [
+                                {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 100
+                                }
+                            ]
                         },
                         {
                             "field": "thehive_creation_max_retry",
@@ -489,7 +577,14 @@
                                     }
                                 ]
                             },
-                            "defaultValue": "ENABLED"
+                            "defaultValue": "ENABLED",
+                            "validators": [
+                                {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 20
+                                }
+                            ]
                         }
                     ]
                 },
@@ -548,7 +643,17 @@
                             "field": "interval",
                             "label": "Interval",
                             "type": "text",
-                            "defaultValue": "60"
+                            "defaultValue": "60",
+                            "validators": [
+                                {
+                                    "type": "number",
+                                    "range": [
+                                        1,
+                                        86400
+                                    ],
+                                    "errorMsg": "Interval must be a number between 1 and 86400 (1 day)"
+                                }
+                            ]
                         },
                         {
                             "field": "index",
@@ -557,7 +662,14 @@
                             "defaultValue": "default",
                             "options": {
                                 "endpointUrl": "data/indexes"
-                            }
+                            },
+                            "validators": [
+                                {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 100
+                                }
+                            ]
                         },
                         {
                             "field": "instance_id",
@@ -566,7 +678,14 @@
                             "options": {
                                 "referenceName": "instances"
                             },
-                            "help": "Select the instance from the list."
+                            "help": "Select the instance from the list.",
+                            "validators": [
+                                {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 100
+                                }
+                            ]
                         },
                         {
                             "field": "type",
@@ -584,7 +703,14 @@
                                         "label": "Cases"
                                     }
                                 ]
-                            }
+                            },
+                            "validators": [
+                                {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 100
+                                }
+                            ]
                         },
                         {
                             "field": "additional_information",
@@ -614,7 +740,14 @@
                                         "label": "TTPs"
                                     }
                                 ]
-                            }
+                            },
+                            "validators": [
+                                {
+                                    "type": "string",
+                                    "minLength": 0,
+                                    "maxLength": 200
+                                }
+                            ]
                         },
                         {
                             "field": "extra_data",
@@ -636,7 +769,14 @@
                                         "label": "(Case) alerts"
                                     }
                                 ]
-                            }
+                            },
+                            "validators": [
+                                {
+                                    "type": "string",
+                                    "minLength": 0,
+                                    "maxLength": 200
+                                }
+                            ]
                         },
                         {
                             "field": "date",
@@ -658,18 +798,42 @@
                                         "label": "Started time"
                                     }
                                 ]
-                            }
+                            },
+                            "validators": [
+                                {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 100
+                                }
+                            ]
                         },
                         {
                             "field": "max_size_value",
                             "label": "Max size for values",
                             "type": "text",
-                            "defaultValue": "1000"
+                            "defaultValue": "1000",
+                            "validators": [
+                                {
+                                    "type": "number",
+                                    "range": [
+                                        1,
+                                        1000000
+                                    ],
+                                    "errorMsg": "Max size must be a number between 1 and 1000000"
+                                }
+                            ]
                         },
                         {
                             "field": "fields_removal",
                             "label": "Fields removal",
-                            "type": "text"
+                            "type": "text",
+                            "validators": [
+                                {
+                                    "type": "string",
+                                    "minLength": 0,
+                                    "maxLength": 1000
+                                }
+                            ]
                         }
                     ]
                 },
@@ -694,7 +858,17 @@
                             "field": "interval",
                             "label": "Interval",
                             "type": "text",
-                            "defaultValue": "-1"
+                            "defaultValue": "-1",
+                            "validators": [
+                                {
+                                    "type": "number",
+                                    "range": [
+                                        -1,
+                                        86400
+                                    ],
+                                    "errorMsg": "Interval must be -1 for backfill or a positive number."
+                                }
+                            ]
                         },
                         {
                             "field": "index",
@@ -703,7 +877,14 @@
                             "defaultValue": "default",
                             "options": {
                                 "endpointUrl": "data/indexes"
-                            }
+                            },
+                            "validators": [
+                                {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 100
+                                }
+                            ]
                         },
                         {
                             "field": "instance_id",
@@ -712,7 +893,14 @@
                             "options": {
                                 "referenceName": "instances"
                             },
-                            "help": "Select the instance from the list."
+                            "help": "Select the instance from the list.",
+                            "validators": [
+                                {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 100
+                                }
+                            ]
                         },
                         {
                             "field": "type",
@@ -730,19 +918,40 @@
                                         "label": "Cases"
                                     }
                                 ]
-                            }
+                            },
+                            "validators": [
+                                {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 100
+                                }
+                            ]
                         },
                         {
                             "field": "backfill_start",
                             "label": "Backfill: Start date",
                             "type": "text",
-                            "required": true
+                            "required": true,
+                            "validators": [
+                                {
+                                    "type": "regex",
+                                    "pattern": "^\\d{4}-\\d{2}-\\d{2}(T| )\\d{2}:\\d{2}:\\d{2}$",
+                                    "errorMsg": "Date format must be YYYY-MM-DDTHH:MM:SS or YYYY-MM-DD HH:MM:SS"
+                                }
+                            ]
                         },
                         {
                             "field": "backfill_end",
                             "label": "Backfill: End date",
                             "type": "text",
-                            "required": true
+                            "required": true,
+                            "validators": [
+                                {
+                                    "type": "regex",
+                                    "pattern": "^\\d{4}-\\d{2}-\\d{2}(T| )\\d{2}:\\d{2}:\\d{2}$",
+                                    "errorMsg": "Date format must be YYYY-MM-DDTHH:MM:SS or YYYY-MM-DD HH:MM:SS"
+                                }
+                            ]
                         },
                         {
                             "field": "date",
@@ -764,18 +973,42 @@
                                         "label": "Started time"
                                     }
                                 ]
-                            }
+                            },
+                            "validators": [
+                                {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 100
+                                }
+                            ]
                         },
                         {
                             "field": "max_size_value",
                             "label": "Max size for values",
                             "type": "text",
-                            "defaultValue": "1000"
+                            "defaultValue": "1000",
+                            "validators": [
+                                {
+                                    "type": "number",
+                                    "range": [
+                                        1,
+                                        1000000
+                                    ],
+                                    "errorMsg": "Max size must be a number between 1 and 1000000"
+                                }
+                            ]
                         },
                         {
                             "field": "fields_removal",
                             "label": "Fields removal",
-                            "type": "text"
+                            "type": "text",
+                            "validators": [
+                                {
+                                    "type": "string",
+                                    "minLength": 0,
+                                    "maxLength": 1000
+                                }
+                            ]
                         },
                         {
                             "field": "additional_information",
@@ -805,7 +1038,14 @@
                                         "label": "TTPs"
                                     }
                                 ]
-                            }
+                            },
+                            "validators": [
+                                {
+                                    "type": "string",
+                                    "minLength": 0,
+                                    "maxLength": 200
+                                }
+                            ]
                         },
                         {
                             "field": "extra_data",
@@ -827,7 +1067,14 @@
                                         "label": "(Case) alerts"
                                     }
                                 ]
-                            }
+                            },
+                            "validators": [
+                                {
+                                    "type": "string",
+                                    "minLength": 0,
+                                    "maxLength": 200
+                                }
+                            ]
                         }
                     ]
                 },
@@ -852,7 +1099,17 @@
                             "field": "interval",
                             "label": "Interval",
                             "type": "text",
-                            "defaultValue": "60"
+                            "defaultValue": "60",
+                            "validators": [
+                                {
+                                    "type": "number",
+                                    "range": [
+                                        1,
+                                        86400
+                                    ],
+                                    "errorMsg": "Interval must be a number between 1 and 86400 (1 day)"
+                                }
+                            ]
                         },
                         {
                             "field": "index",
@@ -861,7 +1118,14 @@
                             "defaultValue": "default",
                             "options": {
                                 "endpointUrl": "data/indexes"
-                            }
+                            },
+                            "validators": [
+                                {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 100
+                                }
+                            ]
                         },
                         {
                             "field": "instance_id",
@@ -870,18 +1134,42 @@
                             "options": {
                                 "referenceName": "instances"
                             },
-                            "help": "Select the instance from the list."
+                            "help": "Select the instance from the list.",
+                            "validators": [
+                                {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 100
+                                }
+                            ]
                         },
                         {
                             "field": "max_size_value",
                             "label": "Max size for values",
                             "type": "text",
-                            "defaultValue": "1000"
+                            "defaultValue": "1000",
+                            "validators": [
+                                {
+                                    "type": "number",
+                                    "range": [
+                                        1,
+                                        1000000
+                                    ],
+                                    "errorMsg": "Max size must be a number between 1 and 1000000"
+                                }
+                            ]
                         },
                         {
                             "field": "fields_removal",
                             "label": "Fields removal",
-                            "type": "text"
+                            "type": "text",
+                            "validators": [
+                                {
+                                    "type": "string",
+                                    "minLength": 0,
+                                    "maxLength": 1000
+                                }
+                            ]
                         }
                     ]
                 },
@@ -906,7 +1194,17 @@
                             "field": "interval",
                             "label": "Interval",
                             "type": "text",
-                            "defaultValue": "-1"
+                            "defaultValue": "-1",
+                            "validators": [
+                                {
+                                    "type": "number",
+                                    "range": [
+                                        -1,
+                                        86400
+                                    ],
+                                    "errorMsg": "Interval must be -1 for backfill or a positive number."
+                                }
+                            ]
                         },
                         {
                             "field": "index",
@@ -915,7 +1213,14 @@
                             "defaultValue": "default",
                             "options": {
                                 "endpointUrl": "data/indexes"
-                            }
+                            },
+                            "validators": [
+                                {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 100
+                                }
+                            ]
                         },
                         {
                             "field": "instance_id",
@@ -924,19 +1229,40 @@
                             "options": {
                                 "referenceName": "instances"
                             },
-                            "help": "Select the instance from the list."
+                            "help": "Select the instance from the list.",
+                            "validators": [
+                                {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 100
+                                }
+                            ]
                         },
                         {
                             "field": "backfill_start",
                             "label": "Backfill: Start date",
                             "type": "text",
-                            "required": true
+                            "required": true,
+                            "validators": [
+                                {
+                                    "type": "regex",
+                                    "pattern": "^\\d{4}-\\d{2}-\\d{2}(T| )\\d{2}:\\d{2}:\\d{2}$",
+                                    "errorMsg": "Date format must be YYYY-MM-DDTHH:MM:SS or YYYY-MM-DD HH:MM:SS"
+                                }
+                            ]
                         },
                         {
                             "field": "backfill_end",
                             "label": "Backfill: End date",
                             "type": "text",
-                            "required": true
+                            "required": true,
+                            "validators": [
+                                {
+                                    "type": "regex",
+                                    "pattern": "^\\d{4}-\\d{2}-\\d{2}(T| )\\d{2}:\\d{2}:\\d{2}$",
+                                    "errorMsg": "Date format must be YYYY-MM-DDTHH:MM:SS or YYYY-MM-DD HH:MM:SS"
+                                }
+                            ]
                         },
                         {
                             "field": "date",
@@ -954,18 +1280,42 @@
                                         "label": "Last updated"
                                     }
                                 ]
-                            }
+                            },
+                            "validators": [
+                                {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 100
+                                }
+                            ]
                         },
                         {
                             "field": "max_size_value",
                             "label": "Max size for values",
                             "type": "text",
-                            "defaultValue": "1000"
+                            "defaultValue": "1000",
+                            "validators": [
+                                {
+                                    "type": "number",
+                                    "range": [
+                                        1,
+                                        1000000
+                                    ],
+                                    "errorMsg": "Max size must be a number between 1 and 1000000"
+                                }
+                            ]
                         },
                         {
                             "field": "fields_removal",
                             "label": "Fields removal",
-                            "type": "text"
+                            "type": "text",
+                            "validators": [
+                                {
+                                    "type": "string",
+                                    "minLength": 0,
+                                    "maxLength": 1000
+                                }
+                            ]
                         }
                     ]
                 },
@@ -990,7 +1340,17 @@
                             "field": "interval",
                             "label": "Interval",
                             "type": "text",
-                            "defaultValue": "60"
+                            "defaultValue": "60",
+                            "validators": [
+                                {
+                                    "type": "number",
+                                    "range": [
+                                        1,
+                                        86400
+                                    ],
+                                    "errorMsg": "Interval must be a number between 1 and 86400 (1 day)"
+                                }
+                            ]
                         },
                         {
                             "field": "index",
@@ -999,7 +1359,14 @@
                             "defaultValue": "default",
                             "options": {
                                 "endpointUrl": "data/indexes"
-                            }
+                            },
+                            "validators": [
+                                {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 100
+                                }
+                            ]
                         },
                         {
                             "field": "instance_id",
@@ -1008,18 +1375,42 @@
                             "options": {
                                 "referenceName": "instances"
                             },
-                            "help": "Select the instance from the list."
+                            "help": "Select the instance from the list.",
+                            "validators": [
+                                {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 100
+                                }
+                            ]
                         },
                         {
                             "field": "max_size_value",
                             "label": "Max size for values",
                             "type": "text",
-                            "defaultValue": "1000"
+                            "defaultValue": "1000",
+                            "validators": [
+                                {
+                                    "type": "number",
+                                    "range": [
+                                        1,
+                                        1000000
+                                    ],
+                                    "errorMsg": "Max size must be a number between 1 and 1000000"
+                                }
+                            ]
                         },
                         {
                             "field": "fields_removal",
                             "label": "Fields removal",
-                            "type": "text"
+                            "type": "text",
+                            "validators": [
+                                {
+                                    "type": "string",
+                                    "minLength": 0,
+                                    "maxLength": 1000
+                                }
+                            ]
                         }
                     ]
                 },
@@ -1044,7 +1435,17 @@
                             "field": "interval",
                             "label": "Interval",
                             "type": "text",
-                            "defaultValue": "-1"
+                            "defaultValue": "-1",
+                            "validators": [
+                                {
+                                    "type": "number",
+                                    "range": [
+                                        -1,
+                                        86400
+                                    ],
+                                    "errorMsg": "Interval must be -1 for backfill or a positive number."
+                                }
+                            ]
                         },
                         {
                             "field": "index",
@@ -1053,7 +1454,14 @@
                             "defaultValue": "default",
                             "options": {
                                 "endpointUrl": "data/indexes"
-                            }
+                            },
+                            "validators": [
+                                {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 100
+                                }
+                            ]
                         },
                         {
                             "field": "instance_id",
@@ -1062,30 +1470,68 @@
                             "options": {
                                 "referenceName": "instances"
                             },
-                            "help": "Select the instance from the list."
+                            "help": "Select the instance from the list.",
+                            "validators": [
+                                {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 100
+                                }
+                            ]
                         },
                         {
                             "field": "backfill_start",
                             "label": "Backfill: Start date",
                             "type": "text",
-                            "required": true
+                            "required": true,
+                            "validators": [
+                                {
+                                    "type": "regex",
+                                    "pattern": "^\\d{4}-\\d{2}-\\d{2}(T| )\\d{2}:\\d{2}:\\d{2}$",
+                                    "errorMsg": "Date format must be YYYY-MM-DDTHH:MM:SS or YYYY-MM-DD HH:MM:SS"
+                                }
+                            ]
                         },
                         {
                             "field": "backfill_end",
                             "label": "Backfill: End date",
                             "type": "text",
-                            "required": true
+                            "required": true,
+                            "validators": [
+                                {
+                                    "type": "regex",
+                                    "pattern": "^\\d{4}-\\d{2}-\\d{2}(T| )\\d{2}:\\d{2}:\\d{2}$",
+                                    "errorMsg": "Date format must be YYYY-MM-DDTHH:MM:SS or YYYY-MM-DD HH:MM:SS"
+                                }
+                            ]
                         },
                         {
                             "field": "max_size_value",
                             "label": "Max size for values",
                             "type": "text",
-                            "defaultValue": "1000"
+                            "defaultValue": "1000",
+                            "validators": [
+                                {
+                                    "type": "number",
+                                    "range": [
+                                        1,
+                                        1000000
+                                    ],
+                                    "errorMsg": "Max size must be a number between 1 and 1000000"
+                                }
+                            ]
                         },
                         {
                             "field": "fields_removal",
                             "label": "Fields removal",
-                            "type": "text"
+                            "type": "text",
+                            "validators": [
+                                {
+                                    "type": "string",
+                                    "minLength": 0,
+                                    "maxLength": 1000
+                                }
+                            ]
                         }
                     ]
                 }
