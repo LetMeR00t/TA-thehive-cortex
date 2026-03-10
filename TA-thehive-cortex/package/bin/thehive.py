@@ -463,7 +463,7 @@ class TheHive4Splunk(TheHiveApi):
                     event["_updatedAt"] = event["_updatedAt"] / 1000
 
                 # Set the _time of the event to the created/updated time
-                event["_time"] = int(event[kwargs["date"]])
+                event["_time"] = int(event.get(kwargs["date"], event.get("_createdAt", 0)))
 
                 if "observables" in kwargs["additional_information"]:
                     ## OBSERVABLES ##
@@ -599,7 +599,7 @@ class TheHive4Splunk(TheHiveApi):
                     event["_updatedAt"] = event["_updatedAt"] / 1000
 
                 # Set the _time of the event to the created/updated time
-                event["_time"] = int(event[kwargs["date"]])
+                event["_time"] = int(event.get(kwargs["date"], event.get("_createdAt", 0)))
 
                 if "observables" in kwargs["additional_information"]:
                     ## OBSERVABLES ##
@@ -793,7 +793,7 @@ class TheHive4Splunk(TheHiveApi):
                     event["_updatedAt"] = event["_updatedAt"] / 1000
 
                 # Set the _time of the event to the created/updated time
-                event["_time"] = int(event[kwargs["date"]])
+                event["_time"] = int(event.get(kwargs["date"], event.get("_createdAt", 0)))
 
                 # Remove underscore at the beginning
                 for field in [

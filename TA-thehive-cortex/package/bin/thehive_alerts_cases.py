@@ -82,7 +82,7 @@ class THEHIVE_ALERTS_CASES(smi.Script):
         if types is None: types = ["alerts", "cases"]
         elif isinstance(types, str): types = types.split(",")
 
-        dates = (helper.get_arg("date") or "").split(",") if isinstance(helper.get_arg("date"), str) else (helper.get_arg("date") or ["_updatedAt", "_createdAt", "startDate"])
+        dates = (helper.get_arg("date") or "").split(",") if isinstance(helper.get_arg("date"), str) else (helper.get_arg("date") or ["_updatedAt", "_createdAt", "startDate", "date"])
 
         modular_input_args = {
             "max_size_value": int(helper.get_arg("max_size_value")) if helper.get_arg("max_size_value") else 1000,
@@ -93,23 +93,37 @@ class THEHIVE_ALERTS_CASES(smi.Script):
 
         for input_type in types:
             for date_field in dates:
+                # startDate is only for cases, date is only for alerts (occurred time)
+                if input_type == "alerts" and date_field == "startDate":
+                    continue
+                if input_type == "cases" and date_field == "date":
+                    continue
+                
                 modular_input_args["type"] = input_type
                 modular_input_args["date"] = date_field
                 
-                date_mode = date_field.replace("_", "last_")
+                if date_field == "date":
+                    date_mode = "occured_date"
+                else:
+                    date_mode = date_field.replace("_", "last_")
                 interval = int(input_item.get("interval", 60))
                 now = time.time()
                 d2 = now - now % 60
                 d1 = d2 - interval
                 filters = Between(date_field, int(d1 * 1000), int(d2 * 1000))
-                if input_type == "cases":
-                    (new_events, events_tasks) = thehive.get_cases_events(filters=filters, sortby=Desc(date_field), **modular_input_args)
-                    for task in events_tasks:
-                        ew.write_event(smi.Event(source="thehive:"+stanza, host=thehive.session.hive_url[8:], index=helper.get_output_index(), sourcetype="thehive:"+date_mode+":case_tasks", data=json.dumps(task)))
-                elif input_type == "alerts":
-                    new_events = thehive.get_alerts_events(filters=filters, **modular_input_args)
-                for event in new_events:
-                    ew.write_event(smi.Event(source="thehive:"+stanza, host=thehive.session.hive_url[8:], index=helper.get_output_index(), sourcetype="thehive:"+date_mode+":"+input_type, data=json.dumps(event)))
+                
+                try:
+                    if input_type == "cases":
+                        (new_events, events_tasks) = thehive.get_cases_events(filters=filters, sortby=Desc(date_field), **modular_input_args)
+                        for task in events_tasks:
+                            ew.write_event(smi.Event(source="thehive:"+stanza, host=thehive.session.hive_url[8:], index=helper.get_output_index(), sourcetype="thehive:"+date_mode+":case_tasks", data=json.dumps(task)))
+                    elif input_type == "alerts":
+                        new_events = thehive.get_alerts_events(filters=filters, **modular_input_args)
+                    
+                    for event in new_events:
+                        ew.write_event(smi.Event(source="thehive:"+stanza, host=thehive.session.hive_url[8:], index=helper.get_output_index(), sourcetype="thehive:"+date_mode+":"+input_type, data=json.dumps(event)))
+                except Exception as e:
+                    logger_file.error(id="MI-ERR", message="Error processing type={} with date_field={}: {}".format(input_type, date_field, str(e)))
 
 if __name__ == '__main__':
     exit_code = THEHIVE_ALERTS_CASES().run(sys.argv)

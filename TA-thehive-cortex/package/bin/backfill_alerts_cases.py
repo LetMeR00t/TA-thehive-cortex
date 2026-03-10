@@ -112,7 +112,10 @@ class BACKFILL_ALERTS_CASES(smi.Script):
                 for date_field in dates:
                     modular_input_args["type"] = input_type
                     modular_input_args["date"] = date_field
-                    date_mode = date_field.replace("_", "last_")
+                    if date_field == "date":
+                        date_mode = "occured_date"
+                    else:
+                        date_mode = date_field.replace("_", "last_")
                     filters = Between(date_field, d1 * 1000, d2 * 1000)
                     
                     if input_type == "cases":
