@@ -15,6 +15,7 @@ import ta_thehive_cortex_declare
 # Standard library imports
 import os
 import sys
+import uuid
 from typing import Tuple
 
 # Third-party imports
@@ -33,7 +34,8 @@ from ta_logging import setup_logging
 def initialize_thehive_instances(keywords, settings, acronym, logger_name="script"):
     """This function is used to initialize a TheHive instance"""
     logger = setup_logging(logger_name)
-    logger_file = LoggerFile(logger, acronym)
+    exec_id = str(uuid.uuid4())[:8]
+    logger_file = LoggerFile(logger, acronym, exec_id=exec_id)
 
     # Check the existence of the instance_id
     if len(keywords) == 1:
@@ -48,15 +50,15 @@ def initialize_thehive_instances(keywords, settings, acronym, logger_name="scrip
     instances = []
     for instance_id in instances_id:
         instances.append(
-            create_thehive_instance(instance_id, settings, logger, acronym=acronym)
+            create_thehive_instance(instance_id, settings, logger, acronym=acronym, exec_id=exec_id)
         )
 
     return instances
 
 
-def create_thehive_instance(instance_id, settings, logger, acronym):
+def create_thehive_instance(instance_id, settings, logger, acronym, exec_id=None):
     """This function is used to create an instance of TheHive"""
-    logger_file = LoggerFile(logger, acronym)
+    logger_file = LoggerFile(logger, acronym, exec_id=exec_id)
     # Initialize settings
     token = (
         settings["sessionKey"] if "sessionKey" in settings else settings["session_key"]

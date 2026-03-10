@@ -58,7 +58,7 @@ class LoggerFile(object):
             except AttributeError:
                 log_id_str = "000000"
 
-            exec_prefix = f" exec_id={self.exec_id}" if self.exec_id else ""
+            exec_prefix = f" exec_id={self.exec_id} -" if self.exec_id else ""
 
             getattr(self.logger, type)(
                 log_context

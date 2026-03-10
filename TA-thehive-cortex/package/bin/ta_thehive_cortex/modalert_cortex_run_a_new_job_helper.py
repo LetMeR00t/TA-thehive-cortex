@@ -47,6 +47,7 @@ def process_event(helper, *args, **kwargs):
         settings=helper.settings,
         logger=helper._logger,
         acronym="RNJ",
+        exec_id=helper.exec_id,
     )
 
     logger_file.debug(

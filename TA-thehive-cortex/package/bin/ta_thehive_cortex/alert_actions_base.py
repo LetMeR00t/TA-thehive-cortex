@@ -11,6 +11,8 @@ __maintainer__ = "Alexandre Demeyer"
 __email__ = "letmer00t@gmail.com"
 
 import ta_thehive_cortex_declare
+import uuid
+from common import LoggerFile
 
 # Standard library imports
 import csv
@@ -40,6 +42,8 @@ class ModularAlertBase(ModularAction):
         # self._logger_name = "modalert_" + alert_name
         self._logger_name = alert_name + "_modalert"
         self._logger = get_logger(self._logger_name)
+        self.exec_id = str(uuid.uuid4())[:8]
+        self.logger_file = LoggerFile(self._logger, command_id="MA-" + alert_name[:4].upper(), exec_id=self.exec_id)
         super(ModularAlertBase, self).__init__(
             sys.stdin.read(), self._logger, alert_name)
         self.setup_util_module = None
@@ -52,15 +56,19 @@ class ModularAlertBase(ModularAction):
         self.rest_helper = TARestHelper(self._logger)
 
     def log_error(self, msg):
+        self.logger_file.error(id="MA-ERR", message=msg)
         self.message(msg, 'failure', level=logging.ERROR)
 
     def log_info(self, msg):
+        self.logger_file.info(id="MA-INF", message=msg)
         self.message(msg, 'success', level=logging.INFO)
 
     def log_debug(self, msg):
+        self.logger_file.debug(id="MA-DBG", message=msg)
         self.message(msg, None, level=logging.DEBUG)
 
     def log_warn(self, msg):
+        self.logger_file.warn(id="MA-WRN", message=msg)
         self.message(msg, None, level=logging.WARN)
 
     def set_log_level(self, level):

@@ -15,6 +15,7 @@ import ta_thehive_cortex_declare
 # Standard library imports
 import sys
 import traceback
+import uuid
 
 # Third-party imports
 import cortex4py.exceptions
@@ -53,7 +54,8 @@ colorCode = {
 
 def initialize_cortex_instance(keywords, settings, acronym, logger_name="script"):
     """ This function is used to initialize a Cortex instance """
-    logger_file = LoggerFile(setup_logging(logger_name), acronym)
+    exec_id = str(uuid.uuid4())[:8]
+    logger_file = LoggerFile(setup_logging(logger_name), acronym, exec_id=exec_id)
 
     # Check the existence of the instance_id
     if len(keywords) == 1:
@@ -62,10 +64,10 @@ def initialize_cortex_instance(keywords, settings, acronym, logger_name="script"
         logger_file.error("[C1-ERROR] No instance ID was given to the script")
         exit(4)
 
-    return create_cortex_instance(instance_id, settings, logger_file)
+    return create_cortex_instance(instance_id, settings, logger_file.logger, acronym=acronym, exec_id=exec_id)
 
-def create_cortex_instance(instance_id, settings, logger, acronym):
-    logger_file = LoggerFile(logger, acronym)
+def create_cortex_instance(instance_id, settings, logger, acronym, exec_id=None):
+    logger_file = LoggerFile(logger, acronym, exec_id=exec_id)
     """ This function is used to create an instance of TheHive """
     # Initialize settings
     token = settings["sessionKey"] if "sessionKey" in settings else settings["session_key"]

@@ -52,9 +52,9 @@ class THEHIVE_OBSERVABLES(smi.Script):
                 self.exec_id = eid
             def get_arg(self, key): return self.item.get(key)
             def get_output_index(self): return self.item.get("index", "default")
-            def log_debug(self, msg): self.logger.debug(f"exec_id={self.exec_id} {msg}")
-            def log_info(self, msg): self.logger.info(f"exec_id={self.exec_id} {msg}")
-            def log_error(self, msg): self.logger.error(f"exec_id={self.exec_id} {msg}")
+            def log_debug(self, msg): self.logger.debug(msg)
+            def log_info(self, msg): self.logger.info(msg)
+            def log_error(self, msg): self.logger.error(msg)
             def new_event(self, **kwargs): return smi.Event(**kwargs)
             def get_user_credential_by_username(self, username):
                 self.log_debug(f"Searching credentials for username: {username}")

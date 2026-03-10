@@ -57,6 +57,7 @@ def process_event(helper, *args, **kwargs):
                 settings=helper.settings,
                 logger=helper._logger,
                 acronym="THCA",
+                exec_id=helper.exec_id,
             )
         )
 

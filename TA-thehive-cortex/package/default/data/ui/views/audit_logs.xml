@@ -21,7 +21,7 @@
         <fieldForValue>exec_id</fieldForValue>
         <search>
           <query>index=_internal (source="*ta_thehive_cortex_thehive_*.log" OR source="*TA-thehive-cortex_thehive_*.log")
-| rex field=_raw "exec_id=(?&lt;exec_id&gt;[^ ]+)"
+| rex field=_raw "exec_id=(?&lt;exec_id&gt;[^ ]+) \-"
 | stats count by exec_id</query>
           <earliest>$time.earliest$</earliest>
           <latest>$time.latest$</latest>
@@ -30,7 +30,7 @@
       <table>
         <search>
           <query>index=_internal (source="*ta_thehive_cortex_thehive_*.log" OR source="*ta_thehive_cortex_backfill_*.log" OR source="*TA-thehive-cortex_thehive_*.log" OR source="*TA-thehive-cortex_backfill_*.log")
-| rex field="_raw" "^\d+\-\d+\-\d+ \d+:\d+:\d+,\d+ (?&lt;level&gt;[^\t ]+)\s+(?&lt;location&gt;[^\-]+) \- (?&lt;exec_id_prefix&gt;exec_id=(?&lt;exec_id&gt;[^ ]+) )?(?&lt;signature&gt;.*)"
+| rex field="_raw" "^\d+\-\d+\-\d+ \d+:\d+:\d+,\d+ (?&lt;level&gt;[^\t ]+)\s+(?&lt;location&gt;[^\-]+) \- (?&lt;exec_id_prefix&gt;exec_id=(?&lt;exec_id&gt;[^ ]+) \- )?(?&lt;signature&gt;.*)"
 | eval exec_id = coalesce(exec_id, "N/A"), signature = coalesce(signature,_raw)
 | search exec_id=$exec_id$
 | sort 0 -_time -signature
