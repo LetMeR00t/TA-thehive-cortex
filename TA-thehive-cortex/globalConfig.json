@@ -9,7 +9,7 @@
             "light",
             "dark"
         ],
-        "checkForUpdates": false
+        "checkForUpdates": true
     },
     "pages": {
         "configuration": {
