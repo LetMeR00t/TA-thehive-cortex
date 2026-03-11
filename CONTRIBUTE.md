@@ -1,5 +1,32 @@
 # Contribution Guide - TA-thehive-cortex
 
+## Build & Packaging Lifecycle
+
+### 1. Build (UCC Generation)
+The Add-on uses the [Splunk UCC Generator](https://splunk.github.io/addonfactory-ucc-generator/). To build the application, ensure you have Python 3.9+ installed and run the following command from the project root:
+
+```powershell
+ucc-gen build --source TA-thehive-cortex/package --output output --ta-version <version>
+```
+*Note: You may need to specify `--python-binary-name` if your environment requires a specific Python path.*
+
+### 2. Package generation (.spl)
+Once the UCC build is completed in the `output/` folder, the `.spl` file (tar.gz archive compatible with Splunkbase/Cloud) must be generated. It is critical to perform a cleanup to ensure AppInspect compliance.
+
+**Packaging procedure:**
+1. Navigate to the `output/` folder.
+2. Purge residual files (Windows binaries, Mako templates, cache).
+3. Compress the app folder in `.tar.gz` format and rename it to `.spl`.
+
+**Recommended PowerShell command (for Windows users):**
+```powershell
+# Final cleanup before compression
+Get-ChildItem "output/TA-thehive-cortex/lib" -Recurse -Include *.exe, *.pyd | Remove-Item -Force -ErrorAction SilentlyContinue;
+
+# Creating the .spl file (tar.gz)
+tar -cvzf TA-thehive-cortex.spl -C output TA-thehive-cortex
+```
+
 ## UCC Architecture
 The add-on uses the UCC framework. The `globalConfig.json` file is the source of truth for the user interface and modular inputs.
 
