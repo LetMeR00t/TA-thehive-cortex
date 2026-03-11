@@ -29,7 +29,7 @@
         <query>| rest /servicesNS/nobody/TA-thehive-cortex/thehive_cortex_instances splunk_server=local
 | rename title as id
 | where type="Cortex3"
-| eval instance_name = account_name+": "+host+":"+port</query>
+| eval instance_name = id+" ("+environment+")"</query>
         <earliest>-24h@h</earliest>
         <latest>now</latest>
         <done>
