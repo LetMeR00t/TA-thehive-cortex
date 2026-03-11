@@ -164,11 +164,16 @@ def create_thehive_instance(instance_id, settings, logger, acronym, exec_id=None
     return (thehive, configuration, defaults, logger_file, instance_id)
 
 
-def create_thehive_instance_modular_input(instance_id, helper, acronym, logger=None):
+def create_thehive_instance_modular_input(instance_id, helper, acronym, logger=None, exec_id=None):
     """This function is used to create an instance of TheHive specifically for modular inputs that don't provide settings information"""
     # Use provided logger or fallback to helper.logger
     effective_logger = logger if logger else helper.logger
-    logger_file = LoggerFile(effective_logger, command_id=acronym)
+    
+    # Ensure exec_id is provided or generated
+    if not exec_id:
+        exec_id = str(uuid.uuid4())[:8]
+        
+    logger_file = LoggerFile(effective_logger, command_id=acronym, exec_id=exec_id)
 
     # Initialize settings
     token = (

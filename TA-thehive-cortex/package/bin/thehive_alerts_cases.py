@@ -75,8 +75,7 @@ class THEHIVE_ALERTS_CASES(smi.Script):
                 return [username, ""]
 
         helper = MockHelper(input_item, stanza, custom_logger, inputs, exec_id)
-        (thehive, configuration, logger_file) = create_thehive_instance_modular_input(instance_id=helper.get_arg("instance_id"), helper=helper, acronym="MI-THAC", logger=custom_logger)
-        logger_file.exec_id = exec_id
+        (thehive, configuration, logger_file) = create_thehive_instance_modular_input(instance_id=helper.get_arg("instance_id"), helper=helper, acronym="MI-THAC", logger=custom_logger, exec_id=exec_id)
 
         types = helper.get_arg("type")
         if types is None: types = ["alerts", "cases"]
@@ -99,8 +98,17 @@ class THEHIVE_ALERTS_CASES(smi.Script):
                 if input_type == "cases" and date_field == "date":
                     continue
                 
-                modular_input_args["type"] = input_type
-                modular_input_args["date"] = date_field
+                # Process independently depending on the additional fields provided
+                current_modular_input_args = modular_input_args.copy()
+                if input_type == "alerts":
+                    current_modular_input_args["additional_information"] = [item for item in modular_input_args["additional_information"] if item in ["observables", "attachments"]]
+                    current_modular_input_args["extra_data"] = [item for item in modular_input_args["extra_data"] if item in ["caseNumber", "status"]]
+                elif input_type == "cases":
+                    current_modular_input_args["additional_information"] = [item for item in modular_input_args["additional_information"] if item in ["tasks", "observables", "attachments", "pages", "ttps"]]
+                    current_modular_input_args["extra_data"] = [item for item in modular_input_args["extra_data"] if item in ["status", "alerts"]]
+
+                current_modular_input_args["type"] = input_type
+                current_modular_input_args["date"] = date_field
                 
                 if date_field == "date":
                     date_mode = "occured_date"
@@ -114,11 +122,11 @@ class THEHIVE_ALERTS_CASES(smi.Script):
                 
                 try:
                     if input_type == "cases":
-                        (new_events, events_tasks) = thehive.get_cases_events(filters=filters, sortby=Desc(date_field), **modular_input_args)
+                        (new_events, events_tasks) = thehive.get_cases_events(filters=filters, sortby=Desc(date_field), **current_modular_input_args)
                         for task in events_tasks:
                             ew.write_event(smi.Event(source="thehive:"+stanza, host=thehive.session.hive_url[8:], index=helper.get_output_index(), sourcetype="thehive:"+date_mode+":case_tasks", data=json.dumps(task)))
                     elif input_type == "alerts":
-                        new_events = thehive.get_alerts_events(filters=filters, **modular_input_args)
+                        new_events = thehive.get_alerts_events(filters=filters, **current_modular_input_args)
                     
                     for event in new_events:
                         ew.write_event(smi.Event(source="thehive:"+stanza, host=thehive.session.hive_url[8:], index=helper.get_output_index(), sourcetype="thehive:"+date_mode+":"+input_type, data=json.dumps(event)))

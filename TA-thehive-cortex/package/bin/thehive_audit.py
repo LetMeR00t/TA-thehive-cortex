@@ -70,8 +70,7 @@ class THEHIVE_AUDIT(smi.Script):
                 return [username, ""]
 
         helper = MockHelper(input_item, stanza, custom_logger, inputs, exec_id)
-        (thehive, configuration, logger_file) = create_thehive_instance_modular_input(instance_id=helper.get_arg("instance_id"), helper=helper, acronym="MI-THA", logger=custom_logger)
-        logger_file.exec_id = exec_id
+        (thehive, configuration, logger_file) = create_thehive_instance_modular_input(instance_id=helper.get_arg("instance_id"), helper=helper, acronym="MI-THA", logger=custom_logger, exec_id=exec_id)
 
         modular_input_args = {
             "max_size_value": int(helper.get_arg("max_size_value")) if helper.get_arg("max_size_value") else 1000,

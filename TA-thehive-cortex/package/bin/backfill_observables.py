@@ -70,8 +70,7 @@ class BACKFILL_OBSERVABLES(smi.Script):
                 return [username, ""]
 
         helper = MockHelper(input_item, stanza, custom_logger, inputs, exec_id)
-        (thehive, configuration, logger_file) = create_thehive_instance_modular_input(instance_id=helper.get_arg("instance_id"), helper=helper, acronym="MI-BOB", logger=custom_logger)
-        logger_file.exec_id = exec_id
+        (thehive, configuration, logger_file) = create_thehive_instance_modular_input(instance_id=helper.get_arg("instance_id"), helper=helper, acronym="MI-BOB", logger=custom_logger, exec_id=exec_id)
 
         # Backfill specific logic
         backfill_start = helper.get_arg("backfill_start")
