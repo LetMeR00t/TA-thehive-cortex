@@ -228,12 +228,18 @@ def parse_events(helper, thehive: TheHive4Splunk, alert_args):
             ):
                 row[key] = [e[1 : len(e) - 1] for e in row["__mv_" + key].split(";")]
         # we filter those out here
-        row = {
-            key: value
-            for key, value in row.items()
-            if not key.startswith("__mv_") and key not in ["rid"]
-        }
-        row_sanitized = row.copy()
+        # AND ensure all values are normalized to strings (joined if lists)
+        # (Improvements for multi-value fields and tags based on PR #119 by @chang6chang)
+        row_sanitized = dict()
+        for key, value in row.items():
+            if not key.startswith("__mv_") and key not in ["rid"]:
+                if isinstance(value, list):
+                    # Join multi-value fields to a comma-separated string
+                    row_sanitized[key] = ", ".join(map(str, value))
+                else:
+                    row_sanitized[key] = str(value)
+        
+        row = row_sanitized
         thehive.logger_file.debug(
             id="THC-62", message="Row after pre-processing: " + str(row)
         )
@@ -563,24 +569,19 @@ def parse_events(helper, thehive: TheHive4Splunk, alert_args):
                         if "description" in data
                         else "No description provided for this observable"
                     )
-                    obs_tags = data["tags"].split(",") if "tags" in data else []
+                    
+                    # Handle tags correctly: must be a list of strings, each max 128 chars
+                    obs_tags_raw = data.get("tags", "")
+                    if isinstance(obs_tags_raw, list):
+                        obs_tags = [str(t) for t in obs_tags_raw]
+                    else:
+                        obs_tags = [t.strip() for t in str(obs_tags_raw).split(",") if t.strip()]
+                    
+                    # Add the field in the tags and truncate each tag to 128 chars
+                    obs_tags.append("field:" + field)
+                    obs_tags = [t[:128] for t in obs_tags]
+                    
                     obs_tlp = TLP[data["tlp"]] if "tlp" in data else TLP["AMBER"]
-                    obs_pap = PAP[data["pap"]] if "pap" in data else PAP["AMBER"]
-                    obs_is_ioc = bool(data["is_ioc"]) if "is_ioc" in data else False
-                    obs_sighted = bool(data["sighted"]) if "sighted" in data else False
-                    obs_sighted_at = (
-                        int(float(data["sighted_at"]) * 1000)
-                        if "sighted_at" in data
-                        else None
-                    )
-                    obs_ignore_similarity = (
-                        bool(data["ignore_similarity"])
-                        if "ignore_similarity" in data
-                        else False
-                    )
-
-                    # Add the field in the tags
-                    obs_tags += ["field:" + field]
 
                     observable = dict(
                         dataType=obs_datatype,

@@ -96,13 +96,20 @@ def run_function(helper, thehive: TheHive4Splunk, alert_args):
             ):
                 row[key] = [e[1 : len(e) - 1] for e in row["__mv_" + key].split(";")]
         # we filter those out here
-        row = {
-            key: value
-            for key, value in row.items()
-            if not key.startswith("__mv_") and key not in ["rid"]
-        }
+        # AND ensure all values are normalized to strings (joined if lists)
+        # (Improvements for multi-value fields based on PR #119 by @chang6chang)
+        row_sanitized = dict()
+        for key, value in row.items():
+            if not key.startswith("__mv_") and key not in ["rid"]:
+                if isinstance(value, list):
+                    # Join multi-value fields to a comma-separated string
+                    row_sanitized[key] = ", ".join(map(str, value))
+                else:
+                    row_sanitized[key] = str(value)
+
+        row = row_sanitized
         thehive.logger_file.debug(
-            id="66", message="Row after pre-processing: " + str(row)
+            id="67", message="Row after pre-processing: " + str(row)
         )
         events.append(row)
 
