@@ -138,3 +138,4 @@ output/
 tests/
 gemini/
 *.spl
+release_notes/
