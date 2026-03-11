@@ -116,6 +116,10 @@
                                 "field": "environment"
                             },
                             {
+                                "label": "Organisation",
+                                "field": "organisation"
+                            },
+                            {
                                 "label": "Host",
                                 "field": "host"
                             },
