@@ -134,8 +134,7 @@ class ModularAlertBase(ModularAction):
                                                   timeout=timeout,
                                                   proxy_uri=self._get_proxy_uri() if use_proxy else None)
 
-    def build_http_connection(self, config, timeout=120,
-                              disable_ssl_validation=False):
+    def build_http_connection(self, config, timeout=120):
         from httplib2 import (socks, ProxyInfo, Http)
         """
         :config: dict like, proxy and account information are in the following
@@ -183,10 +182,10 @@ class ModularAlertBase(ModularAction):
                                        proxy_rdns=rdns)
         if proxy_info:
             http = Http(proxy_info=proxy_info, timeout=timeout,
-                        disable_ssl_certificate_validation=disable_ssl_validation)
+                        disable_ssl_certificate_validation=False)
         else:
             http = Http(timeout=timeout,
-                        disable_ssl_certificate_validation=disable_ssl_validation)
+                        disable_ssl_certificate_validation=False)
 
         if config.get("username") and config.get("password"):
             http.add_credentials(config["username"], config["password"])
