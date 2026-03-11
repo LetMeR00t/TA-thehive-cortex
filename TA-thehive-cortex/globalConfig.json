@@ -8,7 +8,8 @@
         "supportedThemes": [
             "light",
             "dark"
-        ]
+        ],
+        "checkForUpdates": false
     },
     "pages": {
         "configuration": {
