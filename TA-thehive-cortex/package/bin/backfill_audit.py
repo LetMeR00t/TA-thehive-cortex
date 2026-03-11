@@ -75,17 +75,24 @@ class BACKFILL_AUDIT(smi.Script):
         backfill_start = helper.get_arg("backfill_start")
         backfill_end = helper.get_arg("backfill_end")
 
+        def parse_date(date_str, is_end=False):
+            for fmt in ("%Y-%m-%dT%H:%M:%S", "%Y-%m-%d %H:%M:%S", "%Y-%m-%d"):
+                try:
+                    dt = datetime.datetime.strptime(date_str, fmt)
+                    if fmt == "%Y-%m-%d" and is_end:
+                        dt = dt.replace(hour=23, minute=59, second=59)
+                    return int(dt.timestamp())
+                except ValueError:
+                    continue
+            raise ValueError(f"Invalid date format for backfill: {date_str}. Expected YYYY-MM-DD, YYYY-MM-DDTHH:MM:SS or YYYY-MM-DD HH:MM:SS")
+
         if backfill_start and backfill_end:
             try:
-                d1 = int(datetime.datetime.strptime(backfill_start, "%Y-%m-%dT%H:%M:%S").timestamp())
-                d2 = int(datetime.datetime.strptime(backfill_end, "%Y-%m-%dT%H:%M:%S").timestamp())
-            except ValueError:
-                try:
-                    d1 = int(datetime.datetime.strptime(backfill_start, "%Y-%m-%d %H:%M:%S").timestamp())
-                    d2 = int(datetime.datetime.strptime(backfill_end, "%Y-%m-%d %H:%M:%S").timestamp())
-                except ValueError as e:
-                    helper.log_error(f"Invalid date format for backfill: {str(e)}")
-                    return
+                d1 = parse_date(backfill_start)
+                d2 = parse_date(backfill_end, is_end=True)
+            except ValueError as e:
+                helper.log_error(str(e))
+                return
 
             modular_input_args = {
                 "max_size_value": int(helper.get_arg("max_size_value")) if helper.get_arg("max_size_value") else 1000,

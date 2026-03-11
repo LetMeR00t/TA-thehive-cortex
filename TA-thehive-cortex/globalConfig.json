@@ -872,7 +872,14 @@
                                         }
                                     }
                                 ]
-                            }
+                            },
+                            "validators": [
+                                {
+                                    "type": "regex",
+                                    "pattern": "^.*$",
+                                    "errorMsg": "Invalid input."
+                                }
+                            ]
                         },
                         {
                             "field": "max_size_value",
@@ -998,12 +1005,13 @@
                             "field": "backfill_start",
                             "label": "Backfill: Start date",
                             "type": "text",
+                            "help": "Format: YYYY-MM-DD, YYYY-MM-DDTHH:MM:SS or YYYY-MM-DD HH:MM:SS. Example: 2023-01-01 or 2023-01-01T12:00:00.",
                             "required": true,
                             "validators": [
                                 {
                                     "type": "regex",
-                                    "pattern": "^\\d{4}-\\d{2}-\\d{2}(T| )\\d{2}:\\d{2}:\\d{2}$",
-                                    "errorMsg": "Date format must be YYYY-MM-DDTHH:MM:SS or YYYY-MM-DD HH:MM:SS"
+                                    "pattern": "^\\d{4}-\\d{2}-\\d{2}(((T| )\\d{2}:\\d{2}:\\d{2})?)$",
+                                    "errorMsg": "Date format must be YYYY-MM-DD, YYYY-MM-DDTHH:MM:SS or YYYY-MM-DD HH:MM:SS"
                                 }
                             ]
                         },
@@ -1011,12 +1019,13 @@
                             "field": "backfill_end",
                             "label": "Backfill: End date",
                             "type": "text",
+                            "help": "Format: YYYY-MM-DD, YYYY-MM-DDTHH:MM:SS or YYYY-MM-DD HH:MM:SS. If only a date is provided, it will include the entire day until 23:59:59.",
                             "required": true,
                             "validators": [
                                 {
                                     "type": "regex",
-                                    "pattern": "^\\d{4}-\\d{2}-\\d{2}(T| )\\d{2}:\\d{2}:\\d{2}$",
-                                    "errorMsg": "Date format must be YYYY-MM-DDTHH:MM:SS or YYYY-MM-DD HH:MM:SS"
+                                    "pattern": "^\\d{4}-\\d{2}-\\d{2}(((T| )\\d{2}:\\d{2}:\\d{2})?)$",
+                                    "errorMsg": "Date format must be YYYY-MM-DD, YYYY-MM-DDTHH:MM:SS or YYYY-MM-DD HH:MM:SS"
                                 }
                             ]
                         },
@@ -1089,7 +1098,14 @@
                                         }
                                     }
                                 ]
-                            }
+                            },
+                            "validators": [
+                                {
+                                    "type": "regex",
+                                    "pattern": "^.*$",
+                                    "errorMsg": "Invalid input."
+                                }
+                            ]
                         },
                         {
                             "field": "max_size_value",
@@ -1351,12 +1367,13 @@
                             "field": "backfill_start",
                             "label": "Backfill: Start date",
                             "type": "text",
+                            "help": "Format: YYYY-MM-DD, YYYY-MM-DDTHH:MM:SS or YYYY-MM-DD HH:MM:SS. Example: 2023-01-01 or 2023-01-01T12:00:00.",
                             "required": true,
                             "validators": [
                                 {
                                     "type": "regex",
-                                    "pattern": "^\\d{4}-\\d{2}-\\d{2}(T| )\\d{2}:\\d{2}:\\d{2}$",
-                                    "errorMsg": "Date format must be YYYY-MM-DDTHH:MM:SS or YYYY-MM-DD HH:MM:SS"
+                                    "pattern": "^\\d{4}-\\d{2}-\\d{2}(((T| )\\d{2}:\\d{2}:\\d{2})?)$",
+                                    "errorMsg": "Date format must be YYYY-MM-DD, YYYY-MM-DDTHH:MM:SS or YYYY-MM-DD HH:MM:SS"
                                 }
                             ]
                         },
@@ -1364,12 +1381,13 @@
                             "field": "backfill_end",
                             "label": "Backfill: End date",
                             "type": "text",
+                            "help": "Format: YYYY-MM-DD, YYYY-MM-DDTHH:MM:SS or YYYY-MM-DD HH:MM:SS. If only a date is provided, it will include the entire day until 23:59:59.",
                             "required": true,
                             "validators": [
                                 {
                                     "type": "regex",
-                                    "pattern": "^\\d{4}-\\d{2}-\\d{2}(T| )\\d{2}:\\d{2}:\\d{2}$",
-                                    "errorMsg": "Date format must be YYYY-MM-DDTHH:MM:SS or YYYY-MM-DD HH:MM:SS"
+                                    "pattern": "^\\d{4}-\\d{2}-\\d{2}(((T| )\\d{2}:\\d{2}:\\d{2})?)$",
+                                    "errorMsg": "Date format must be YYYY-MM-DD, YYYY-MM-DDTHH:MM:SS or YYYY-MM-DD HH:MM:SS"
                                 }
                             ]
                         },
@@ -1592,12 +1610,13 @@
                             "field": "backfill_start",
                             "label": "Backfill: Start date",
                             "type": "text",
+                            "help": "Format: YYYY-MM-DD, YYYY-MM-DDTHH:MM:SS or YYYY-MM-DD HH:MM:SS. Example: 2023-01-01 or 2023-01-01T12:00:00.",
                             "required": true,
                             "validators": [
                                 {
                                     "type": "regex",
-                                    "pattern": "^\\d{4}-\\d{2}-\\d{2}(T| )\\d{2}:\\d{2}:\\d{2}$",
-                                    "errorMsg": "Date format must be YYYY-MM-DDTHH:MM:SS or YYYY-MM-DD HH:MM:SS"
+                                    "pattern": "^\\d{4}-\\d{2}-\\d{2}(((T| )\\d{2}:\\d{2}:\\d{2})?)$",
+                                    "errorMsg": "Date format must be YYYY-MM-DD, YYYY-MM-DDTHH:MM:SS or YYYY-MM-DD HH:MM:SS"
                                 }
                             ]
                         },
@@ -1605,12 +1624,13 @@
                             "field": "backfill_end",
                             "label": "Backfill: End date",
                             "type": "text",
+                            "help": "Format: YYYY-MM-DD, YYYY-MM-DDTHH:MM:SS or YYYY-MM-DD HH:MM:SS. If only a date is provided, it will include the entire day until 23:59:59.",
                             "required": true,
                             "validators": [
                                 {
                                     "type": "regex",
-                                    "pattern": "^\\d{4}-\\d{2}-\\d{2}(T| )\\d{2}:\\d{2}:\\d{2}$",
-                                    "errorMsg": "Date format must be YYYY-MM-DDTHH:MM:SS or YYYY-MM-DD HH:MM:SS"
+                                    "pattern": "^\\d{4}-\\d{2}-\\d{2}(((T| )\\d{2}:\\d{2}:\\d{2})?)$",
+                                    "errorMsg": "Date format must be YYYY-MM-DD, YYYY-MM-DDTHH:MM:SS or YYYY-MM-DD HH:MM:SS"
                                 }
                             ]
                         },
