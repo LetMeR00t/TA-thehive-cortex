@@ -1,23 +1,27 @@
-# Guide de Contribution - TA-thehive-cortex
+# Contribution Guide - TA-thehive-cortex
 
-## Architecture UCC
-L'add-on utilise le framework UCC. Le fichier `globalConfig.json` est la source de vérité pour l'interface utilisateur et les entrées modulaires.
+## UCC Architecture
+The add-on uses the UCC framework. The `globalConfig.json` file is the source of truth for the user interface and modular inputs.
 
-## Leçons Apprises (Migration v4.0.0)
+## Lessons Learned (v4.0.0 Migration)
 
-### 1. Gestion des Modular Inputs
-- **Logique métier** : Toute la logique de collecte doit résider dans `package/bin/input_module_<nom>.py`.
-- **Wrappers** : Ne jamais créer manuellement les scripts d'enveloppe (`thehive_alerts_cases.py`, etc.) dans `package/bin/`. UCC les génère automatiquement dans `output/`. S'ils existent dans la source, ils peuvent causer des conflits ou des comportements inattendus.
-- **Paramètres** : Assurez-vous que tous les paramètres définis dans `globalConfig.json` (ex: `max_size_value`, `fields_removal`) sont récupérés via `helper.get_arg('<nom>')` dans le script Python.
+### 1. Modular Inputs Management
+- **Business Logic**: All collection logic must reside in `package/bin/input_module_<name>.py`.
+- **Wrappers**: Never manually create wrapper scripts (`thehive_alerts_cases.py`, etc.) in `package/bin/`. UCC generates them automatically in `output/`. If they exist in the source, they can cause conflicts or unexpected behaviors.
+- **Parameters**: Ensure all parameters defined in `globalConfig.json` (e.g., `max_size_value`, `fields_removal`) are retrieved via `helper.get_arg('<name>')` in the Python script.
 
-### 2. Nettoyage et Redondance
-- **Dossiers binaires** : Éviter les dossiers en majuscules type `TA-thehive-cortex/` à l'intérieur de `bin/`. Préférer un package Python en minuscules (ex: `ta_thehive_cortex/`) et configurer `sys.path` dans un fichier de déclaration (ex: `ta_thehive_cortex_declare.py`).
-- **Scripts inutiles** : Supprimer systématiquement les anciens scripts de la v3.9.0 qui ne suivent pas le pattern `input_module_*.py`.
+### 2. Cleanup and Redundancy
+- **Binary Folders**: Avoid uppercase folders like `TA-thehive-cortex/` inside `bin/`. Prefer a lowercase Python package (e.g., `ta_thehive_cortex/`) and configure `sys.path` in a declaration file (e.g., `ta_thehive_cortex_declare.py`).
+- **Useless Scripts**: Systematically remove old scripts from v3.9.0 that do not follow the `input_module_*.py` pattern.
 
-### 3. Splunk AppInspect & Qualité
-- **DATETIME_CONFIG** : Dans `props.conf`, ne jamais laisser `DATETIME_CONFIG` vide. Si Splunk doit gérer le temps automatiquement, il est préférable de supprimer la ligne plutôt que de la laisser vide, pour éviter un échec AppInspect.
-- **Navigation (XML)** : UCC génère son propre `default.xml`. Si vous restaurez un fichier manuel, assurez-vous qu'il contient les entrées nécessaires pour les pages UCC (`configuration`, `inputs`, `dashboard`).
-- **Verbose Build** : Toujours utiliser `ucc-gen build ... -v` pour identifier les fichiers en conflit lors de la génération.
+### 3. Splunk AppInspect & Quality
+- **DATETIME_CONFIG**: In `props.conf`, never leave `DATETIME_CONFIG` empty. If Splunk should handle time automatically, it is better to remove the line rather than leaving it empty, to avoid AppInspect failure.
+- **Navigation (XML)**: UCC generates its own `default.xml`. If you restore a manual file, ensure it contains the necessary entries for UCC pages (`configuration`, `inputs`, `dashboard`).
+- **Verbose Build**: Always use `ucc-gen build ... -v` to identify conflicting files during generation.
 
-### 4. Déploiement (Windows)
-- Si des fichiers `.pyd` ou `.exe` sont verrouillés, il est nécessaire d'arrêter complètement Splunk ET de tuer les processus Python orphelins avant de tenter une copie de dossier.
+### 4. Deployment (Windows)
+- If `.pyd` or `.exe` files are locked, it is necessary to completely stop Splunk AND kill orphan Python processes before attempting a folder copy.
+
+### 5. Preservation of Local Configuration
+- **local/ folder**: During deployment (copying `output/` to Splunk), it is imperative to preserve the existing `local/` folder in Splunk. This folder contains encrypted passwords, accounts, and instance configurations defined by the user via the interface.
+- **Strategy**: Always backup or temporarily move the `local/` folder before deleting the old app version to install the new UCC build.
