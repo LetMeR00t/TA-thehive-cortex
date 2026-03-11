@@ -328,22 +328,31 @@ def parse_events(helper, thehive: TheHive4Splunk, alert_args):
             alert["description"] = "No description provided"
 
         # check if severity is provided or not in the logs (Splunk ES event)
-        if "th_severity" in row:
+        if row.get("th_severity") in SEVERITY:
             alert["severity"] = SEVERITY[row["th_severity"]]
+            del row_sanitized["th_severity"]
+        elif row.get("th_severity") is not None and str(row.get("th_severity")).lower() in SEVERITY:
+            alert["severity"] = SEVERITY[str(row["th_severity"]).lower()]
             del row_sanitized["th_severity"]
         else:
             alert["severity"] = alert_args["severity"]
 
         # check if tlp is provided or not in the logs (Splunk ES event)
-        if "th_tlp" in row:
+        if row.get("th_tlp") in TLP:
             alert["tlp"] = TLP[row["th_tlp"]]
+            del row_sanitized["th_tlp"]
+        elif row.get("th_tlp") is not None and str(row.get("th_tlp")).upper() in TLP:
+            alert["tlp"] = TLP[str(row["th_tlp"]).upper()]
             del row_sanitized["th_tlp"]
         else:
             alert["tlp"] = alert_args["tlp"]
 
         # check if pap is provided or not in the logs (Splunk ES event)
-        if "th_pap" in row:
+        if row.get("th_pap") in PAP:
             alert["pap"] = PAP[row["th_pap"]]
+            del row_sanitized["th_pap"]
+        elif row.get("th_pap") is not None and str(row.get("th_pap")).upper() in PAP:
+            alert["pap"] = PAP[str(row["th_pap"]).upper()]
             del row_sanitized["th_pap"]
         else:
             alert["pap"] = alert_args["pap"]
