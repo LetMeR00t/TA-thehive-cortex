@@ -308,14 +308,13 @@
                             "label": "Organisation",
                             "type": "text",
                             "required": false,
-                            "defaultValue": "-",
-                            "help": "Organisation name (TheHive only). Set to '-' if not used.",
+                            "help": "Organisation name (TheHive only). If not set, the first accessible organisation will be used.",
                             "validators": [
                                 {
                                     "type": "string",
-                                    "minLength": 1,
+                                    "minLength": 0,
                                     "maxLength": 100,
-                                    "errorMsg": "Length of organisation should be between 1 and 100"
+                                    "errorMsg": "Length of organisation should be between 0 and 100"
                                 }
                             ]
                         },
@@ -621,10 +620,36 @@
                     }
                 ]
             },
+            "groupsMenu": [
+                {
+                    "groupName": "alerts_cases",
+                    "groupTitle": "Alerts & Cases",
+                    "groupServices": [
+                        "thehive_alerts_cases",
+                        "backfill_alerts_cases"
+                    ]
+                },
+                {
+                    "groupName": "observables",
+                    "groupTitle": "Observables",
+                    "groupServices": [
+                        "thehive_observables",
+                        "backfill_observables"
+                    ]
+                },
+                {
+                    "groupName": "audit_logs",
+                    "groupTitle": "Audit Logs",
+                    "groupServices": [
+                        "thehive_audit",
+                        "backfill_audit"
+                    ]
+                }
+            ],
             "services": [
                 {
                     "name": "thehive_alerts_cases",
-                    "title": "TheHive: Alerts & Cases",
+                    "title": "Alerts & Cases: Regular",
                     "entity": [
                         {
                             "field": "name",
@@ -781,35 +806,73 @@
                         {
                             "field": "date",
                             "label": "Date",
-                            "type": "multipleSelect",
+                            "type": "checkboxTree",
                             "options": {
                                 "delimiter": ",",
-                                "items": [
+                                "groups": [
                                     {
-                                        "value": "_createdAt",
-                                        "label": "Created time"
+                                        "label": "Common",
+                                        "fields": [
+                                            "_createdAt",
+                                            "_updatedAt"
+                                        ],
+                                        "options": {
+                                            "isExpandable": true,
+                                            "expand": true
+                                        }
                                     },
                                     {
-                                        "value": "_updatedAt",
-                                        "label": "Updated time"
+                                        "label": "Alerts only",
+                                        "fields": [
+                                            "date"
+                                        ],
+                                        "options": {
+                                            "isExpandable": true,
+                                            "expand": true
+                                        }
                                     },
                                     {
-                                        "value": "startDate",
-                                        "label": "Started time"
+                                        "label": "Cases only",
+                                        "fields": [
+                                            "startDate"
+                                        ],
+                                        "options": {
+                                            "isExpandable": true,
+                                            "expand": true
+                                        }
+                                    }
+                                ],
+                                "rows": [
+                                    {
+                                        "field": "_createdAt",
+                                        "checkbox": {
+                                            "label": "Created time",
+                                            "defaultValue": false
+                                        }
                                     },
                                     {
-                                        "value": "date",
-                                        "label": "Occurred time"
+                                        "field": "_updatedAt",
+                                        "checkbox": {
+                                            "label": "Updated time",
+                                            "defaultValue": false
+                                        }
+                                    },
+                                    {
+                                        "field": "date",
+                                        "checkbox": {
+                                            "label": "Occurred time",
+                                            "defaultValue": false
+                                        }
+                                    },
+                                    {
+                                        "field": "startDate",
+                                        "checkbox": {
+                                            "label": "Started time",
+                                            "defaultValue": false
+                                        }
                                     }
                                 ]
-                            },
-                            "validators": [
-                                {
-                                    "type": "string",
-                                    "minLength": 1,
-                                    "maxLength": 100
-                                }
-                            ]
+                            }
                         },
                         {
                             "field": "max_size_value",
@@ -843,7 +906,7 @@
                 },
                 {
                     "name": "backfill_alerts_cases",
-                    "title": "Backfill: Alerts & Cases",
+                    "title": "Alerts & Cases: One-shot",
                     "entity": [
                         {
                             "field": "name",
@@ -868,9 +931,9 @@
                                     "type": "number",
                                     "range": [
                                         -1,
-                                        86400
+                                        -1
                                     ],
-                                    "errorMsg": "Interval must be -1 for backfill or a positive number."
+                                    "errorMsg": "Interval must be -1 for one-shot collection (backfill)."
                                 }
                             ]
                         },
@@ -960,35 +1023,73 @@
                         {
                             "field": "date",
                             "label": "Date",
-                            "type": "multipleSelect",
+                            "type": "checkboxTree",
                             "options": {
                                 "delimiter": ",",
-                                "items": [
+                                "groups": [
                                     {
-                                        "value": "_createdAt",
-                                        "label": "Created time"
+                                        "label": "Common",
+                                        "fields": [
+                                            "_createdAt",
+                                            "_updatedAt"
+                                        ],
+                                        "options": {
+                                            "isExpandable": true,
+                                            "expand": true
+                                        }
                                     },
                                     {
-                                        "value": "_updatedAt",
-                                        "label": "Updated time"
+                                        "label": "Alerts only",
+                                        "fields": [
+                                            "date"
+                                        ],
+                                        "options": {
+                                            "isExpandable": true,
+                                            "expand": true
+                                        }
                                     },
                                     {
-                                        "value": "startDate",
-                                        "label": "Started time"
+                                        "label": "Cases only",
+                                        "fields": [
+                                            "startDate"
+                                        ],
+                                        "options": {
+                                            "isExpandable": true,
+                                            "expand": true
+                                        }
+                                    }
+                                ],
+                                "rows": [
+                                    {
+                                        "field": "_createdAt",
+                                        "checkbox": {
+                                            "label": "Created time",
+                                            "defaultValue": false
+                                        }
                                     },
                                     {
-                                        "value": "date",
-                                        "label": "Occurred time"
+                                        "field": "_updatedAt",
+                                        "checkbox": {
+                                            "label": "Updated time",
+                                            "defaultValue": false
+                                        }
+                                    },
+                                    {
+                                        "field": "date",
+                                        "checkbox": {
+                                            "label": "Occurred time",
+                                            "defaultValue": false
+                                        }
+                                    },
+                                    {
+                                        "field": "startDate",
+                                        "checkbox": {
+                                            "label": "Started time",
+                                            "defaultValue": false
+                                        }
                                     }
                                 ]
-                            },
-                            "validators": [
-                                {
-                                    "type": "string",
-                                    "minLength": 1,
-                                    "maxLength": 100
-                                }
-                            ]
+                            }
                         },
                         {
                             "field": "max_size_value",
@@ -1088,7 +1189,7 @@
                 },
                 {
                     "name": "thehive_observables",
-                    "title": "TheHive: Observables",
+                    "title": "Observables: Regular",
                     "entity": [
                         {
                             "field": "name",
@@ -1183,7 +1284,7 @@
                 },
                 {
                     "name": "backfill_observables",
-                    "title": "Backfill: Observables",
+                    "title": "Observables: One-shot",
                     "entity": [
                         {
                             "field": "name",
@@ -1208,9 +1309,9 @@
                                     "type": "number",
                                     "range": [
                                         -1,
-                                        86400
+                                        -1
                                     ],
-                                    "errorMsg": "Interval must be -1 for backfill or a positive number."
+                                    "errorMsg": "Interval must be -1 for one-shot collection (backfill)."
                                 }
                             ]
                         },
@@ -1329,7 +1430,7 @@
                 },
                 {
                     "name": "thehive_audit",
-                    "title": "TheHive: Audit",
+                    "title": "Audit Logs: Regular",
                     "entity": [
                         {
                             "field": "name",
@@ -1424,7 +1525,7 @@
                 },
                 {
                     "name": "backfill_audit",
-                    "title": "Backfill: Audit",
+                    "title": "Audit Logs: One-shot",
                     "entity": [
                         {
                             "field": "name",
@@ -1449,9 +1550,9 @@
                                     "type": "number",
                                     "range": [
                                         -1,
-                                        86400
+                                        -1
                                     ],
-                                    "errorMsg": "Interval must be -1 for backfill or a positive number."
+                                    "errorMsg": "Interval must be -1 for one-shot collection (backfill)."
                                 }
                             ]
                         },
