@@ -625,15 +625,25 @@ def parse_events(helper, thehive: TheHive4Splunk, alert_args):
             # TTPs are given manually
             # Ensure that there is no duplicate
             alert["ttps"] = [InputProcedure(ttp) for ttp in ttps]
-        elif "annotations.mitre_attack.mitre_tactic" in row:
+        elif "annotations.mitre_attack.mitre_tactic" in row and "annotations.mitre_attack" in row:
             # Try to extract them from Splunk ES notable event
             mitre_tactics = row["annotations.mitre_attack.mitre_tactic"]
             mitre_technics = row["annotations.mitre_attack"]
-            date = datetime.datetime.fromtimestamp(int(row["_time"])).strftime(
+
+            # Ensure they are lists (handle case when Splunk returns a single value as a string)
+            if not isinstance(mitre_tactics, list):
+                mitre_tactics = [mitre_tactics]
+            if not isinstance(mitre_technics, list):
+                mitre_technics = [mitre_technics]
+
+            date = datetime.datetime.fromtimestamp(int(row.get("_time", time.time()))).strftime(
                 "%Y-%m-%d"
             )
             alert["ttps"] = []
-            for i in range(0, len(mitre_technics)):
+            
+            # Iterate based on the minimum length to avoid IndexError if lists are not perfectly aligned
+            # and ensure we process all available pairs.
+            for i in range(min(len(mitre_tactics), len(mitre_technics))):
                 ttp = {
                     "tactic": mitre_tactics[i],
                     "patternId": mitre_technics[i],
