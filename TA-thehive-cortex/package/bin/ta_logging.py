@@ -22,15 +22,19 @@ import splunk.Intersplunk
 def setup_logging(name):
     ta_name = "TA-thehive-cortex"
     
-    # Robust path detection
-    current_dir = os.path.dirname(os.path.abspath(__file__))
-    # Assuming the script is in etc/apps/TA-thehive-cortex/bin
-    # We want etc/../../../var/log/splunk
-    base_log_path = os.path.abspath(os.path.join(current_dir, "..", "..", "..", "..", "var", "log", "splunk"))
+    # Standard Splunk log path using SPLUNK_HOME
+    splunk_home = os.environ.get("SPLUNK_HOME")
+    if splunk_home:
+        base_log_path = os.path.join(splunk_home, "var", "log", "splunk")
+    else:
+        # Fallback to current directory if SPLUNK_HOME is not set
+        base_log_path = os.path.dirname(os.path.abspath(__file__))
     
     if not os.path.exists(base_log_path):
-        # Fallback to current directory if the expected Splunk structure is not found
-        base_log_path = current_dir
+        try:
+            os.makedirs(base_log_path)
+        except:
+            base_log_path = os.path.dirname(os.path.abspath(__file__))
 
     logger_name = ta_name + "_" + name
     logger = logging.getLogger(logger_name)    

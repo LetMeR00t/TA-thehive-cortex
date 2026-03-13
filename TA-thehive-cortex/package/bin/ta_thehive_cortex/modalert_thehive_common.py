@@ -220,7 +220,7 @@ def parse_events(helper, thehive: TheHive4Splunk, alert_args):
         thehive.logger_file.debug(
             id="THC-61", message="Row before pre-processing: " + str(row)
         )
-        for key, value in row.items():
+        for key, value in list(row.items()):
             if (
                 not key.startswith("__mv_")
                 and "__mv_" + key in row
@@ -231,7 +231,7 @@ def parse_events(helper, thehive: TheHive4Splunk, alert_args):
         # AND ensure all values are normalized to strings (joined if lists)
         # (Improvements for multi-value fields and tags based on PR #119 by @chang6chang)
         row_sanitized = dict()
-        for key, value in row.items():
+        for key, value in list(row.items()):
             if not key.startswith("__mv_") and key not in ["rid"]:
                 if isinstance(value, list):
                     # Join multi-value fields to a comma-separated string
@@ -385,7 +385,7 @@ def parse_events(helper, thehive: TheHive4Splunk, alert_args):
 
         observables_data = dict()
         # now we take those KV pairs to add to dict
-        for key, value in row.items():
+        for key, value in list(row.items()):
             if value != "":
                 thehive.logger_file.debug(
                     id="THC-90", message=f"field to process: {key}"
@@ -581,7 +581,12 @@ def parse_events(helper, thehive: TheHive4Splunk, alert_args):
                     obs_tags.append("field:" + field)
                     obs_tags = [t[:128] for t in obs_tags]
                     
-                    obs_tlp = TLP[data["tlp"]] if "tlp" in data else TLP["AMBER"]
+                    obs_tlp = TLP.get(str(data.get("tlp")), TLP["AMBER"])
+                    obs_pap = PAP.get(str(data.get("pap")), PAP["AMBER"])
+                    obs_is_ioc = data["ioc"] if "ioc" in data else False
+                    obs_sighted = data["sighted"] if "sighted" in data else True
+                    obs_sighted_at = int(data["sightedAt"]) if "sightedAt" in data else None
+                    obs_ignore_similarity = data["ignoreSimilarity"] if "ignoreSimilarity" in data else False
 
                     observable = dict(
                         dataType=obs_datatype,
@@ -673,7 +678,7 @@ def parse_events(helper, thehive: TheHive4Splunk, alert_args):
             # Sanitize dictionnaries
             # Get all keys from events
             # Check all events for each key
-            for k in parsed_events[sourceRef]["events_keys"]:
+            for k in list(parsed_events[sourceRef]["events_keys"]):
                 count = 0
                 total = len(parsed_events[sourceRef]["events"])
                 for event in parsed_events[sourceRef]["events"]:
@@ -682,7 +687,7 @@ def parse_events(helper, thehive: TheHive4Splunk, alert_args):
                         count += 1
                 if count == total:
                     # This means that all fields are empty, remove the key
-                    for event in parsed_events[sourceRef]["events"]:
+                    for event in list(parsed_events[sourceRef]["events"]):
                         if k in event:
                             del event[k]
 
