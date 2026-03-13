@@ -1,0 +1,2268 @@
+{
+    "meta": {
+        "name": "TA-thehive-cortex",
+        "displayName": "TheHive-Cortex",
+        "version": "4.0.0",
+        "restRoot": "thehive_cortex",
+        "schemaVersion": "0.0.10",
+        "supportedThemes": [
+            "light",
+            "dark"
+        ],
+        "checkForUpdates": true
+    },
+    "pages": {
+        "configuration": {
+            "title": "Configuration",
+            "description": "Set up the integration with TheHive and Cortex",
+            "tabs": [
+                {
+                    "name": "accounts",
+                    "title": "Accounts",
+                    "table": {
+                        "actions": [
+                            "edit",
+                            "delete",
+                            "clone"
+                        ],
+                        "header": [
+                            {
+                                "label": "Name",
+                                "field": "name"
+                            },
+                            {
+                                "label": "Username",
+                                "field": "username"
+                            }
+                        ]
+                    },
+                    "entity": [
+                        {
+                            "field": "name",
+                            "label": "Account name",
+                            "type": "text",
+                            "required": true,
+                            "help": "Enter a unique name for this account.",
+                            "validators": [
+                                {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 50,
+                                    "errorMsg": "Length of Account name should be between 1 and 50"
+                                },
+                                {
+                                    "type": "regex",
+                                    "pattern": "^[a-zA-Z]\\w*$",
+                                    "errorMsg": "Account name must start with a letter and followed by alphabetic letters, digits or underscores."
+                                }
+                            ]
+                        },
+                        {
+                            "field": "username",
+                            "label": "Username",
+                            "type": "text",
+                            "required": true,
+                            "help": "Enter the username for this account.",
+                            "validators": [
+                                {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 200,
+                                    "errorMsg": "Length of username should be between 1 and 200"
+                                }
+                            ]
+                        },
+                        {
+                            "field": "password",
+                            "label": "Password",
+                            "type": "text",
+                            "encrypted": true,
+                            "required": true,
+                            "help": "Enter the password for this account.",
+                            "validators": [
+                                {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 8192,
+                                    "errorMsg": "Length of password should be between 1 and 8192"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "name": "instances",
+                    "title": "Instances",
+                    "table": {
+                        "actions": [
+                            "edit",
+                            "delete",
+                            "clone"
+                        ],
+                        "header": [
+                            {
+                                "label": "Name",
+                                "field": "name"
+                            },
+                            {
+                                "label": "Account",
+                                "field": "account_name"
+                            },
+                            {
+                                "label": "Type",
+                                "field": "type"
+                            },
+                            {
+                                "label": "Environment",
+                                "field": "environment"
+                            },
+                            {
+                                "label": "Organisation",
+                                "field": "organisation"
+                            },
+                            {
+                                "label": "Host",
+                                "field": "host"
+                            },
+                            {
+                                "label": "Port",
+                                "field": "port"
+                            },
+                            {
+                                "label": "Comment",
+                                "field": "comment"
+                            }
+                        ]
+                    },
+                    "entity": [
+                        {
+                            "field": "name",
+                            "label": "Name",
+                            "type": "text",
+                            "help": "A unique name for the instance.",
+                            "required": true,
+                            "validators": [
+                                {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 100,
+                                    "errorMsg": "Length of name should be between 1 and 100"
+                                }
+                            ]
+                        },
+                        {
+                            "field": "account_name",
+                            "label": "Account",
+                            "type": "singleSelect",
+                            "required": true,
+                            "help": "Select the account to use for authentication.",
+                            "options": {
+                                "referenceName": "accounts"
+                            },
+                            "validators": [
+                                {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 100,
+                                    "errorMsg": "Account name is required."
+                                }
+                            ]
+                        },
+                        {
+                            "field": "authentication_type",
+                            "label": "Authentication Type",
+                            "type": "singleSelect",
+                            "required": true,
+                            "help": "Select the type of authentication to use.",
+                            "options": {
+                                "autoCompleteFields": [
+                                    {
+                                        "label": "Password",
+                                        "value": "password"
+                                    },
+                                    {
+                                        "label": "API Key",
+                                        "value": "api_key"
+                                    }
+                                ]
+                            },
+                            "defaultValue": "api_key",
+                            "validators": [
+                                {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 50,
+                                    "errorMsg": "Authentication type is required."
+                                }
+                            ]
+                        },
+                        {
+                            "field": "type",
+                            "label": "Type",
+                            "type": "singleSelect",
+                            "required": true,
+                            "help": "Select the type of instance.",
+                            "options": {
+                                "autoCompleteFields": [
+                                    {
+                                        "label": "TheHive5",
+                                        "value": "TheHive5"
+                                    },
+                                    {
+                                        "label": "Cortex3",
+                                        "value": "Cortex3"
+                                    }
+                                ]
+                            },
+                            "validators": [
+                                {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 50,
+                                    "errorMsg": "Type is required."
+                                }
+                            ]
+                        },
+                        {
+                            "field": "environment",
+                            "label": "Environment",
+                            "type": "singleSelect",
+                            "required": true,
+                            "help": "Select the environment of the instance.",
+                            "options": {
+                                "autoCompleteFields": [
+                                    {
+                                        "label": "PRODUCTION",
+                                        "value": "PRODUCTION"
+                                    },
+                                    {
+                                        "label": "VALIDATION",
+                                        "value": "VALIDATION"
+                                    },
+                                    {
+                                        "label": "INTEGRATION",
+                                        "value": "INTEGRATION"
+                                    },
+                                    {
+                                        "label": "DEVELOPMENT",
+                                        "value": "DEVELOPMENT"
+                                    }
+                                ]
+                            },
+                            "defaultValue": "PRODUCTION",
+                            "validators": [
+                                {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 50,
+                                    "errorMsg": "Environment is required."
+                                }
+                            ]
+                        },
+                        {
+                            "field": "host",
+                            "label": "Host",
+                            "type": "text",
+                            "required": true,
+                            "help": "Instance host (e.g. 127.0.0.1 or thehive.example.com).",
+                            "validators": [
+                                {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 255,
+                                    "errorMsg": "Length of host should be between 1 and 255"
+                                }
+                            ]
+                        },
+                        {
+                            "field": "port",
+                            "label": "Port",
+                            "type": "text",
+                            "required": true,
+                            "defaultValue": "9000",
+                            "help": "Port number (e.g. 9000).",
+                            "validators": [
+                                {
+                                    "type": "number",
+                                    "range": [
+                                        1,
+                                        65535
+                                    ],
+                                    "errorMsg": "Port must be a number between 1 and 65535"
+                                }
+                            ]
+                        },
+                        {
+                            "field": "uri",
+                            "label": "URI",
+                            "type": "text",
+                            "required": false,
+                            "defaultValue": "/",
+                            "help": "Base URI of the instance (default is '/').",
+                            "validators": [
+                                {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 255,
+                                    "errorMsg": "Length of URI should be between 1 and 255"
+                                }
+                            ]
+                        },
+                        {
+                            "field": "organisation",
+                            "label": "Organisation",
+                            "type": "text",
+                            "required": false,
+                            "help": "Organisation name (TheHive only). If not set, the first accessible organisation will be used.",
+                            "validators": [
+                                {
+                                    "type": "string",
+                                    "minLength": 0,
+                                    "maxLength": 100,
+                                    "errorMsg": "Length of organisation should be between 0 and 100"
+                                }
+                            ]
+                        },
+                        {
+                            "field": "proxy_url",
+                            "label": "Proxy URL",
+                            "type": "text",
+                            "required": false,
+                            "defaultValue": "-",
+                            "help": "Proxy URL (e.g. proxy.example.com). Set to '-' if not used.",
+                            "validators": [
+                                {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 255,
+                                    "errorMsg": "Length of proxy URL should be between 1 and 255"
+                                }
+                            ]
+                        },
+                        {
+                            "field": "proxy_account",
+                            "label": "Proxy Account",
+                            "type": "singleSelect",
+                            "required": false,
+                            "help": "Select the account for proxy authentication if required.",
+                            "options": {
+                                "referenceName": "accounts"
+                            },
+                            "validators": [
+                                {
+                                    "type": "string",
+                                    "minLength": 0,
+                                    "maxLength": 100
+                                }
+                            ]
+                        },
+                        {
+                            "field": "client_cert",
+                            "label": "Client Certificate Path",
+                            "type": "text",
+                            "required": false,
+                            "defaultValue": "-",
+                            "help": "Filename of the client certificate placed in the app's local/ folder. Set to '-' if not used.",
+                            "validators": [
+                                {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 255,
+                                    "errorMsg": "Length of client cert path should be between 1 and 255"
+                                }
+                            ]
+                        },
+                        {
+                            "field": "ca_cert_path",
+                            "label": "CA Certificate Path",
+                            "type": "text",
+                            "required": false,
+                            "defaultValue": "-",
+                            "help": "Filename of the custom CA certificate bundle (PEM format) placed in the app's local/ folder. Set to '-' to use default Splunk/Python CA bundle.",
+                            "validators": [
+                                {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 255,
+                                    "errorMsg": "Length of CA cert path should be between 1 and 255"
+                                }
+                            ]
+                        },
+                        {
+                            "field": "comment",
+                            "label": "Comment",
+                            "type": "text",
+                            "required": false,
+                            "help": "Optional comment for this instance.",
+                            "validators": [
+                                {
+                                    "type": "string",
+                                    "minLength": 0,
+                                    "maxLength": 255,
+                                    "errorMsg": "Length of comment should be max 255"
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "name": "settings",
+                    "title": "Settings",
+                    "entity": [
+                        {
+                            "field": "cortex_max_jobs",
+                            "label": "Cortex Max Jobs",
+                            "type": "text",
+                            "defaultValue": "100",
+                            "validators": [
+                                {
+                                    "type": "number",
+                                    "range": [
+                                        1,
+                                        10000
+                                    ],
+                                    "errorMsg": "Must be between 1 and 10000"
+                                }
+                            ]
+                        },
+                        {
+                            "field": "cortex_sort_jobs",
+                            "label": "Cortex Sort Jobs",
+                            "type": "text",
+                            "defaultValue": "-createdAt",
+                            "validators": [
+                                {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 100
+                                }
+                            ]
+                        },
+                        {
+                            "field": "thehive_default_instance",
+                            "label": "TheHive Default Instance",
+                            "type": "singleSelect",
+                            "options": {
+                                "referenceName": "instances"
+                            },
+                            "validators": [
+                                {
+                                    "type": "string",
+                                    "minLength": 0,
+                                    "maxLength": 100
+                                }
+                            ]
+                        },
+                        {
+                            "field": "thehive_max_cases",
+                            "label": "TheHive Max Cases",
+                            "type": "text",
+                            "defaultValue": "1000",
+                            "validators": [
+                                {
+                                    "type": "number",
+                                    "range": [
+                                        1,
+                                        10000
+                                    ],
+                                    "errorMsg": "Must be between 1 and 10000"
+                                }
+                            ]
+                        },
+                        {
+                            "field": "thehive_sort_cases",
+                            "label": "TheHive Sort Cases",
+                            "type": "text",
+                            "defaultValue": "-startDate",
+                            "validators": [
+                                {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 100
+                                }
+                            ]
+                        },
+                        {
+                            "field": "thehive_max_alerts",
+                            "label": "TheHive Max Alerts",
+                            "type": "text",
+                            "defaultValue": "1000",
+                            "validators": [
+                                {
+                                    "type": "number",
+                                    "range": [
+                                        1,
+                                        10000
+                                    ],
+                                    "errorMsg": "Must be between 1 and 10000"
+                                }
+                            ]
+                        },
+                        {
+                            "field": "thehive_sort_alerts",
+                            "label": "TheHive Sort Alerts",
+                            "type": "text",
+                            "defaultValue": "-date",
+                            "validators": [
+                                {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 100
+                                }
+                            ]
+                        },
+                        {
+                            "field": "splunk_es_alerts_index",
+                            "label": "Splunk ES Alerts Index",
+                            "type": "text",
+                            "validators": [
+                                {
+                                    "type": "string",
+                                    "minLength": 0,
+                                    "maxLength": 100
+                                }
+                            ]
+                        },
+                        {
+                            "field": "thehive_ttp_catalog_name",
+                            "label": "TheHive TTP Catalog Name",
+                            "type": "text",
+                            "defaultValue": "Enterprise Attack",
+                            "validators": [
+                                {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 100
+                                }
+                            ]
+                        },
+                        {
+                            "field": "thehive_creation_attachment_prefix",
+                            "label": "TheHive Creation Attachment Prefix",
+                            "type": "text",
+                            "defaultValue": "events_",
+                            "validators": [
+                                {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 100
+                                }
+                            ]
+                        },
+                        {
+                            "field": "thehive_creation_max_retry",
+                            "label": "TheHive Creation Max Retry",
+                            "type": "text",
+                            "defaultValue": "2",
+                            "validators": [
+                                {
+                                    "type": "number",
+                                    "range": [
+                                        0,
+                                        10
+                                    ],
+                                    "errorMsg": "Must be between 0 and 10"
+                                }
+                            ]
+                        },
+                        {
+                            "field": "splunk_sanitize_backslashes",
+                            "label": "Splunk Sanitize Backslashes",
+                            "type": "singleSelect",
+                            "options": {
+                                "autoCompleteFields": [
+                                    {
+                                        "label": "ENABLED",
+                                        "value": "ENABLED"
+                                    },
+                                    {
+                                        "label": "DISABLED",
+                                        "value": "DISABLED"
+                                    }
+                                ]
+                            },
+                            "defaultValue": "ENABLED",
+                            "validators": [
+                                {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 20
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "type": "loggingTab"
+                }
+            ]
+        },
+        "inputs": {
+            "title": "Inputs",
+            "description": "Manage your data inputs",
+            "table": {
+                "actions": [
+                    "edit",
+                    "delete",
+                    "clone"
+                ],
+                "header": [
+                    {
+                        "label": "Name",
+                        "field": "name"
+                    },
+                    {
+                        "label": "Interval",
+                        "field": "interval"
+                    },
+                    {
+                        "label": "Index",
+                        "field": "index"
+                    },
+                    {
+                        "label": "Status",
+                        "field": "disabled"
+                    }
+                ]
+            },
+            "groupsMenu": [
+                {
+                    "groupName": "alerts_cases",
+                    "groupTitle": "Alerts & Cases",
+                    "groupServices": [
+                        "thehive_alerts_cases",
+                        "backfill_alerts_cases"
+                    ]
+                },
+                {
+                    "groupName": "observables",
+                    "groupTitle": "Observables",
+                    "groupServices": [
+                        "thehive_observables",
+                        "backfill_observables"
+                    ]
+                },
+                {
+                    "groupName": "audit_logs",
+                    "groupTitle": "Audit Logs",
+                    "groupServices": [
+                        "thehive_audit",
+                        "backfill_audit"
+                    ]
+                }
+            ],
+            "services": [
+                {
+                    "name": "thehive_alerts_cases",
+                    "title": "Alerts & Cases: Regular",
+                    "entity": [
+                        {
+                            "field": "name",
+                            "label": "Name",
+                            "type": "text",
+                            "required": true,
+                            "validators": [
+                                {
+                                    "type": "regex",
+                                    "errorMsg": "Input Name must begin with a letter and consist exclusively of alphanumeric characters and underscores.",
+                                    "pattern": "^[a-zA-Z]\\w*$"
+                                }
+                            ]
+                        },
+                        {
+                            "field": "interval",
+                            "label": "Interval",
+                            "type": "text",
+                            "defaultValue": "60",
+                            "validators": [
+                                {
+                                    "type": "number",
+                                    "range": [
+                                        1,
+                                        86400
+                                    ],
+                                    "errorMsg": "Interval must be a number between 1 and 86400 (1 day)"
+                                }
+                            ]
+                        },
+                        {
+                            "field": "index",
+                            "label": "Index",
+                            "type": "singleSelect",
+                            "defaultValue": "default",
+                            "options": {
+                                "endpointUrl": "data/indexes"
+                            },
+                            "validators": [
+                                {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 100
+                                }
+                            ]
+                        },
+                        {
+                            "field": "instance_id",
+                            "label": "Instance ID",
+                            "type": "singleSelect",
+                            "options": {
+                                "referenceName": "instances"
+                            },
+                            "help": "Select the instance from the list.",
+                            "validators": [
+                                {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 100
+                                }
+                            ]
+                        },
+                        {
+                            "field": "type",
+                            "label": "Type",
+                            "type": "multipleSelect",
+                            "options": {
+                                "delimiter": ",",
+                                "items": [
+                                    {
+                                        "value": "alerts",
+                                        "label": "Alerts"
+                                    },
+                                    {
+                                        "value": "cases",
+                                        "label": "Cases"
+                                    }
+                                ]
+                            },
+                            "validators": [
+                                {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 100
+                                }
+                            ]
+                        },
+                        {
+                            "field": "additional_information",
+                            "label": "Additional information",
+                            "type": "checkboxTree",
+                            "options": {
+                                "delimiter": ",",
+                                "groups": [
+                                    {
+                                        "label": "Common",
+                                        "fields": [
+                                            "observables",
+                                            "attachments",
+                                            "ttps"
+                                        ],
+                                        "options": {
+                                            "isExpandable": true,
+                                            "expand": false
+                                        }
+                                    },
+                                    {
+                                        "label": "Cases only",
+                                        "fields": [
+                                            "tasks",
+                                            "pages"
+                                        ],
+                                        "options": {
+                                            "isExpandable": true,
+                                            "expand": false
+                                        }
+                                    }
+                                ],
+                                "rows": [
+                                    {
+                                        "field": "observables",
+                                        "checkbox": {
+                                            "label": "Observables",
+                                            "defaultValue": false
+                                        }
+                                    },
+                                    {
+                                        "field": "attachments",
+                                        "checkbox": {
+                                            "label": "Attachments",
+                                            "defaultValue": false
+                                        }
+                                    },
+                                    {
+                                        "field": "ttps",
+                                        "checkbox": {
+                                            "label": "TTPs",
+                                            "defaultValue": false
+                                        }
+                                    },
+                                    {
+                                        "field": "tasks",
+                                        "checkbox": {
+                                            "label": "Tasks",
+                                            "defaultValue": false
+                                        }
+                                    },
+                                    {
+                                        "field": "pages",
+                                        "checkbox": {
+                                            "label": "Pages",
+                                            "defaultValue": false
+                                        }
+                                    }
+                                ]
+                            },
+                            "validators": [
+                                {
+                                    "type": "regex",
+                                    "pattern": "^.*$",
+                                    "errorMsg": "Invalid input."
+                                }
+                            ]
+                        },
+                        {
+                            "field": "extra_data",
+                            "label": "Extra data",
+                            "type": "checkboxTree",
+                            "options": {
+                                "delimiter": ",",
+                                "groups": [
+                                    {
+                                        "label": "Common",
+                                        "fields": [
+                                            "status",
+                                            "procedureCount"
+                                        ],
+                                        "options": {
+                                            "isExpandable": true,
+                                            "expand": false
+                                        }
+                                    },
+                                    {
+                                        "label": "Alerts only",
+                                        "fields": [
+                                            "caseNumber",
+                                            "importDate",
+                                            "relatedCase"
+                                        ],
+                                        "options": {
+                                            "isExpandable": true,
+                                            "expand": false
+                                        }
+                                    },
+                                    {
+                                        "label": "Cases only",
+                                        "fields": [
+                                            "observableStats",
+                                            "taskStats",
+                                            "alerts",
+                                            "alertCount",
+                                            "isOwner",
+                                            "shareCount",
+                                            "permissions",
+                                            "actionRequired",
+                                            "attachmentCount",
+                                            "contributors",
+                                            "computed.handlingDuration",
+                                            "computed.handlingDurationInSeconds",
+                                            "computed.handlingDurationInMinutes",
+                                            "computed.handlingDurationInHours",
+                                            "computed.handlingDurationInDays",
+                                            "links"
+                                        ],
+                                        "options": {
+                                            "isExpandable": true,
+                                            "expand": false
+                                        }
+                                    }
+                                ],
+                                "rows": [
+                                    {
+                                        "field": "status",
+                                        "checkbox": {
+                                            "label": "status",
+                                            "defaultValue": false
+                                        }
+                                    },
+                                    {
+                                        "field": "procedureCount",
+                                        "checkbox": {
+                                            "label": "procedureCount",
+                                            "defaultValue": false
+                                        }
+                                    },
+                                    {
+                                        "field": "caseNumber",
+                                        "checkbox": {
+                                            "label": "caseNumber",
+                                            "defaultValue": false
+                                        }
+                                    },
+                                    {
+                                        "field": "importDate",
+                                        "checkbox": {
+                                            "label": "importDate",
+                                            "defaultValue": false
+                                        }
+                                    },
+                                    {
+                                        "field": "relatedCase",
+                                        "checkbox": {
+                                            "label": "relatedCase",
+                                            "defaultValue": false
+                                        }
+                                    },
+                                    {
+                                        "field": "observableStats",
+                                        "checkbox": {
+                                            "label": "observableStats",
+                                            "defaultValue": false
+                                        }
+                                    },
+                                    {
+                                        "field": "taskStats",
+                                        "checkbox": {
+                                            "label": "taskStats",
+                                            "defaultValue": false
+                                        }
+                                    },
+                                    {
+                                        "field": "alerts",
+                                        "checkbox": {
+                                            "label": "alerts",
+                                            "defaultValue": false
+                                        }
+                                    },
+                                    {
+                                        "field": "alertCount",
+                                        "checkbox": {
+                                            "label": "alertCount",
+                                            "defaultValue": false
+                                        }
+                                    },
+                                    {
+                                        "field": "isOwner",
+                                        "checkbox": {
+                                            "label": "isOwner",
+                                            "defaultValue": false
+                                        }
+                                    },
+                                    {
+                                        "field": "shareCount",
+                                        "checkbox": {
+                                            "label": "shareCount",
+                                            "defaultValue": false
+                                        }
+                                    },
+                                    {
+                                        "field": "permissions",
+                                        "checkbox": {
+                                            "label": "permissions",
+                                            "defaultValue": false
+                                        }
+                                    },
+                                    {
+                                        "field": "actionRequired",
+                                        "checkbox": {
+                                            "label": "actionRequired",
+                                            "defaultValue": false
+                                        }
+                                    },
+                                    {
+                                        "field": "attachmentCount",
+                                        "checkbox": {
+                                            "label": "attachmentCount",
+                                            "defaultValue": false
+                                        }
+                                    },
+                                    {
+                                        "field": "contributors",
+                                        "checkbox": {
+                                            "label": "contributors",
+                                            "defaultValue": false
+                                        }
+                                    },
+                                    {
+                                        "field": "computed.handlingDuration",
+                                        "checkbox": {
+                                            "label": "computed.handlingDuration",
+                                            "defaultValue": false
+                                        }
+                                    },
+                                    {
+                                        "field": "computed.handlingDurationInSeconds",
+                                        "checkbox": {
+                                            "label": "computed.handlingDurationInSeconds",
+                                            "defaultValue": false
+                                        }
+                                    },
+                                    {
+                                        "field": "computed.handlingDurationInMinutes",
+                                        "checkbox": {
+                                            "label": "computed.handlingDurationInMinutes",
+                                            "defaultValue": false
+                                        }
+                                    },
+                                    {
+                                        "field": "computed.handlingDurationInHours",
+                                        "checkbox": {
+                                            "label": "computed.handlingDurationInHours",
+                                            "defaultValue": false
+                                        }
+                                    },
+                                    {
+                                        "field": "computed.handlingDurationInDays",
+                                        "checkbox": {
+                                            "label": "computed.handlingDurationInDays",
+                                            "defaultValue": false
+                                        }
+                                    },
+                                    {
+                                        "field": "links",
+                                        "checkbox": {
+                                            "label": "links",
+                                            "defaultValue": false
+                                        }
+                                    }
+                                ]
+                            },
+                            "validators": [
+                                {
+                                    "type": "regex",
+                                    "pattern": "^.*$",
+                                    "errorMsg": "Invalid input."
+                                }
+                            ]
+                        },
+                        {
+                            "field": "date",
+                            "label": "Date",
+                            "type": "checkboxTree",
+                            "options": {
+                                "delimiter": ",",
+                                "groups": [
+                                    {
+                                        "label": "Common",
+                                        "fields": [
+                                            "_createdAt",
+                                            "_updatedAt"
+                                        ],
+                                        "options": {
+                                            "isExpandable": true,
+                                            "expand": false
+                                        }
+                                    },
+                                    {
+                                        "label": "Alerts only",
+                                        "fields": [
+                                            "date"
+                                        ],
+                                        "options": {
+                                            "isExpandable": true,
+                                            "expand": false
+                                        }
+                                    },
+                                    {
+                                        "label": "Cases only",
+                                        "fields": [
+                                            "startDate"
+                                        ],
+                                        "options": {
+                                            "isExpandable": true,
+                                            "expand": false
+                                        }
+                                    }
+                                ],
+                                "rows": [
+                                    {
+                                        "field": "_createdAt",
+                                        "checkbox": {
+                                            "label": "Created time",
+                                            "defaultValue": false
+                                        }
+                                    },
+                                    {
+                                        "field": "_updatedAt",
+                                        "checkbox": {
+                                            "label": "Updated time",
+                                            "defaultValue": false
+                                        }
+                                    },
+                                    {
+                                        "field": "date",
+                                        "checkbox": {
+                                            "label": "Occurred time",
+                                            "defaultValue": false
+                                        }
+                                    },
+                                    {
+                                        "field": "startDate",
+                                        "checkbox": {
+                                            "label": "Started time",
+                                            "defaultValue": false
+                                        }
+                                    }
+                                ]
+                            },
+                            "validators": [
+                                {
+                                    "type": "regex",
+                                    "pattern": "^.*$",
+                                    "errorMsg": "Invalid input."
+                                }
+                            ]
+                        },
+                        {
+                            "field": "max_size_value",
+                            "label": "Max size for values",
+                            "type": "text",
+                            "defaultValue": "1000",
+                            "validators": [
+                                {
+                                    "type": "number",
+                                    "range": [
+                                        1,
+                                        1000000
+                                    ],
+                                    "errorMsg": "Max size must be a number between 1 and 1000000"
+                                }
+                            ]
+                        },
+                        {
+                            "field": "fields_removal",
+                            "label": "Fields removal",
+                            "type": "text",
+                            "validators": [
+                                {
+                                    "type": "string",
+                                    "minLength": 0,
+                                    "maxLength": 1000
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "name": "backfill_alerts_cases",
+                    "title": "Alerts & Cases: One-shot",
+                    "entity": [
+                        {
+                            "field": "name",
+                            "label": "Name",
+                            "type": "text",
+                            "required": true,
+                            "validators": [
+                                {
+                                    "type": "regex",
+                                    "errorMsg": "Input Name must begin with a letter and consist exclusively of alphanumeric characters and underscores.",
+                                    "pattern": "^[a-zA-Z]\\w*$"
+                                }
+                            ]
+                        },
+                        {
+                            "field": "interval",
+                            "label": "Interval",
+                            "type": "text",
+                            "defaultValue": "-1",
+                            "validators": [
+                                {
+                                    "type": "number",
+                                    "range": [
+                                        -1,
+                                        -1
+                                    ],
+                                    "errorMsg": "Interval must be -1 for one-shot collection (backfill)."
+                                }
+                            ]
+                        },
+                        {
+                            "field": "index",
+                            "label": "Index",
+                            "type": "singleSelect",
+                            "defaultValue": "default",
+                            "options": {
+                                "endpointUrl": "data/indexes"
+                            },
+                            "validators": [
+                                {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 100
+                                }
+                            ]
+                        },
+                        {
+                            "field": "instance_id",
+                            "label": "Instance ID",
+                            "type": "singleSelect",
+                            "options": {
+                                "referenceName": "instances"
+                            },
+                            "help": "Select the instance from the list.",
+                            "validators": [
+                                {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 100
+                                }
+                            ]
+                        },
+                        {
+                            "field": "type",
+                            "label": "Type",
+                            "type": "multipleSelect",
+                            "options": {
+                                "delimiter": ",",
+                                "items": [
+                                    {
+                                        "value": "alerts",
+                                        "label": "Alerts"
+                                    },
+                                    {
+                                        "value": "cases",
+                                        "label": "Cases"
+                                    }
+                                ]
+                            },
+                            "validators": [
+                                {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 100
+                                }
+                            ]
+                        },
+                        {
+                            "field": "backfill_start",
+                            "label": "Backfill: Start date",
+                            "type": "text",
+                            "help": "Format: YYYY-MM-DD, YYYY-MM-DDTHH:MM:SS or YYYY-MM-DD HH:MM:SS. Example: 2023-01-01 or 2023-01-01T12:00:00.",
+                            "required": true,
+                            "validators": [
+                                {
+                                    "type": "regex",
+                                    "pattern": "^\\d{4}-\\d{2}-\\d{2}(((T| )\\d{2}:\\d{2}:\\d{2})?)$",
+                                    "errorMsg": "Date format must be YYYY-MM-DD, YYYY-MM-DDTHH:MM:SS or YYYY-MM-DD HH:MM:SS"
+                                }
+                            ]
+                        },
+                        {
+                            "field": "backfill_end",
+                            "label": "Backfill: End date",
+                            "type": "text",
+                            "help": "Format: YYYY-MM-DD, YYYY-MM-DDTHH:MM:SS or YYYY-MM-DD HH:MM:SS. If only a date is provided, it will include the entire day until 23:59:59.",
+                            "required": true,
+                            "validators": [
+                                {
+                                    "type": "regex",
+                                    "pattern": "^\\d{4}-\\d{2}-\\d{2}(((T| )\\d{2}:\\d{2}:\\d{2})?)$",
+                                    "errorMsg": "Date format must be YYYY-MM-DD, YYYY-MM-DDTHH:MM:SS or YYYY-MM-DD HH:MM:SS"
+                                }
+                            ]
+                        },
+                        {
+                            "field": "date",
+                            "label": "Date",
+                            "type": "checkboxTree",
+                            "options": {
+                                "delimiter": ",",
+                                "groups": [
+                                    {
+                                        "label": "Common",
+                                        "fields": [
+                                            "_createdAt",
+                                            "_updatedAt"
+                                        ],
+                                        "options": {
+                                            "isExpandable": true,
+                                            "expand": false
+                                        }
+                                    },
+                                    {
+                                        "label": "Alerts only",
+                                        "fields": [
+                                            "date"
+                                        ],
+                                        "options": {
+                                            "isExpandable": true,
+                                            "expand": false
+                                        }
+                                    },
+                                    {
+                                        "label": "Cases only",
+                                        "fields": [
+                                            "startDate"
+                                        ],
+                                        "options": {
+                                            "isExpandable": true,
+                                            "expand": false
+                                        }
+                                    }
+                                ],
+                                "rows": [
+                                    {
+                                        "field": "_createdAt",
+                                        "checkbox": {
+                                            "label": "Created time",
+                                            "defaultValue": false
+                                        }
+                                    },
+                                    {
+                                        "field": "_updatedAt",
+                                        "checkbox": {
+                                            "label": "Updated time",
+                                            "defaultValue": false
+                                        }
+                                    },
+                                    {
+                                        "field": "date",
+                                        "checkbox": {
+                                            "label": "Occurred time",
+                                            "defaultValue": false
+                                        }
+                                    },
+                                    {
+                                        "field": "startDate",
+                                        "checkbox": {
+                                            "label": "Started time",
+                                            "defaultValue": false
+                                        }
+                                    }
+                                ]
+                            },
+                            "validators": [
+                                {
+                                    "type": "regex",
+                                    "pattern": "^.*$",
+                                    "errorMsg": "Invalid input."
+                                }
+                            ]
+                        },
+                        {
+                            "field": "max_size_value",
+                            "label": "Max size for values",
+                            "type": "text",
+                            "defaultValue": "1000",
+                            "validators": [
+                                {
+                                    "type": "number",
+                                    "range": [
+                                        1,
+                                        1000000
+                                    ],
+                                    "errorMsg": "Max size must be a number between 1 and 1000000"
+                                }
+                            ]
+                        },
+                        {
+                            "field": "fields_removal",
+                            "label": "Fields removal",
+                            "type": "text",
+                            "validators": [
+                                {
+                                    "type": "string",
+                                    "minLength": 0,
+                                    "maxLength": 1000
+                                }
+                            ]
+                        },
+                        {
+                            "field": "additional_information",
+                            "label": "Additional information",
+                            "type": "checkboxTree",
+                            "options": {
+                                "delimiter": ",",
+                                "groups": [
+                                    {
+                                        "label": "Common",
+                                        "fields": [
+                                            "observables",
+                                            "attachments",
+                                            "ttps"
+                                        ],
+                                        "options": {
+                                            "isExpandable": true,
+                                            "expand": false
+                                        }
+                                    },
+                                    {
+                                        "label": "Cases only",
+                                        "fields": [
+                                            "tasks",
+                                            "pages"
+                                        ],
+                                        "options": {
+                                            "isExpandable": true,
+                                            "expand": false
+                                        }
+                                    }
+                                ],
+                                "rows": [
+                                    {
+                                        "field": "observables",
+                                        "checkbox": {
+                                            "label": "Observables",
+                                            "defaultValue": false
+                                        }
+                                    },
+                                    {
+                                        "field": "attachments",
+                                        "checkbox": {
+                                            "label": "Attachments",
+                                            "defaultValue": false
+                                        }
+                                    },
+                                    {
+                                        "field": "ttps",
+                                        "checkbox": {
+                                            "label": "TTPs",
+                                            "defaultValue": false
+                                        }
+                                    },
+                                    {
+                                        "field": "tasks",
+                                        "checkbox": {
+                                            "label": "Tasks",
+                                            "defaultValue": false
+                                        }
+                                    },
+                                    {
+                                        "field": "pages",
+                                        "checkbox": {
+                                            "label": "Pages",
+                                            "defaultValue": false
+                                        }
+                                    }
+                                ]
+                            },
+                            "validators": [
+                                {
+                                    "type": "regex",
+                                    "pattern": "^.*$",
+                                    "errorMsg": "Invalid input."
+                                }
+                            ]
+                        },
+                        {
+                            "field": "extra_data",
+                            "label": "Extra data",
+                            "type": "checkboxTree",
+                            "options": {
+                                "delimiter": ",",
+                                "groups": [
+                                    {
+                                        "label": "Common",
+                                        "fields": [
+                                            "status",
+                                            "procedureCount"
+                                        ],
+                                        "options": {
+                                            "isExpandable": true,
+                                            "expand": false
+                                        }
+                                    },
+                                    {
+                                        "label": "Alerts only",
+                                        "fields": [
+                                            "caseNumber",
+                                            "importDate",
+                                            "relatedCase"
+                                        ],
+                                        "options": {
+                                            "isExpandable": true,
+                                            "expand": false
+                                        }
+                                    },
+                                    {
+                                        "label": "Cases only",
+                                        "fields": [
+                                            "observableStats",
+                                            "taskStats",
+                                            "alerts",
+                                            "alertCount",
+                                            "isOwner",
+                                            "shareCount",
+                                            "permissions",
+                                            "actionRequired",
+                                            "attachmentCount",
+                                            "contributors",
+                                            "computed.handlingDuration",
+                                            "computed.handlingDurationInSeconds",
+                                            "computed.handlingDurationInMinutes",
+                                            "computed.handlingDurationInHours",
+                                            "computed.handlingDurationInDays",
+                                            "links"
+                                        ],
+                                        "options": {
+                                            "isExpandable": true,
+                                            "expand": false
+                                        }
+                                    }
+                                ],
+                                "rows": [
+                                    {
+                                        "field": "status",
+                                        "checkbox": {
+                                            "label": "status",
+                                            "defaultValue": false
+                                        }
+                                    },
+                                    {
+                                        "field": "procedureCount",
+                                        "checkbox": {
+                                            "label": "procedureCount",
+                                            "defaultValue": false
+                                        }
+                                    },
+                                    {
+                                        "field": "caseNumber",
+                                        "checkbox": {
+                                            "label": "caseNumber",
+                                            "defaultValue": false
+                                        }
+                                    },
+                                    {
+                                        "field": "importDate",
+                                        "checkbox": {
+                                            "label": "importDate",
+                                            "defaultValue": false
+                                        }
+                                    },
+                                    {
+                                        "field": "relatedCase",
+                                        "checkbox": {
+                                            "label": "relatedCase",
+                                            "defaultValue": false
+                                        }
+                                    },
+                                    {
+                                        "field": "observableStats",
+                                        "checkbox": {
+                                            "label": "observableStats",
+                                            "defaultValue": false
+                                        }
+                                    },
+                                    {
+                                        "field": "taskStats",
+                                        "checkbox": {
+                                            "label": "taskStats",
+                                            "defaultValue": false
+                                        }
+                                    },
+                                    {
+                                        "field": "alerts",
+                                        "checkbox": {
+                                            "label": "alerts",
+                                            "defaultValue": false
+                                        }
+                                    },
+                                    {
+                                        "field": "alertCount",
+                                        "checkbox": {
+                                            "label": "alertCount",
+                                            "defaultValue": false
+                                        }
+                                    },
+                                    {
+                                        "field": "isOwner",
+                                        "checkbox": {
+                                            "label": "isOwner",
+                                            "defaultValue": false
+                                        }
+                                    },
+                                    {
+                                        "field": "shareCount",
+                                        "checkbox": {
+                                            "label": "shareCount",
+                                            "defaultValue": false
+                                        }
+                                    },
+                                    {
+                                        "field": "permissions",
+                                        "checkbox": {
+                                            "label": "permissions",
+                                            "defaultValue": false
+                                        }
+                                    },
+                                    {
+                                        "field": "actionRequired",
+                                        "checkbox": {
+                                            "label": "actionRequired",
+                                            "defaultValue": false
+                                        }
+                                    },
+                                    {
+                                        "field": "attachmentCount",
+                                        "checkbox": {
+                                            "label": "attachmentCount",
+                                            "defaultValue": false
+                                        }
+                                    },
+                                    {
+                                        "field": "contributors",
+                                        "checkbox": {
+                                            "label": "contributors",
+                                            "defaultValue": false
+                                        }
+                                    },
+                                    {
+                                        "field": "computed.handlingDuration",
+                                        "checkbox": {
+                                            "label": "computed.handlingDuration",
+                                            "defaultValue": false
+                                        }
+                                    },
+                                    {
+                                        "field": "computed.handlingDurationInSeconds",
+                                        "checkbox": {
+                                            "label": "computed.handlingDurationInSeconds",
+                                            "defaultValue": false
+                                        }
+                                    },
+                                    {
+                                        "field": "computed.handlingDurationInMinutes",
+                                        "checkbox": {
+                                            "label": "computed.handlingDurationInMinutes",
+                                            "defaultValue": false
+                                        }
+                                    },
+                                    {
+                                        "field": "computed.handlingDurationInHours",
+                                        "checkbox": {
+                                            "label": "computed.handlingDurationInHours",
+                                            "defaultValue": false
+                                        }
+                                    },
+                                    {
+                                        "field": "computed.handlingDurationInDays",
+                                        "checkbox": {
+                                            "label": "computed.handlingDurationInDays",
+                                            "defaultValue": false
+                                        }
+                                    },
+                                    {
+                                        "field": "links",
+                                        "checkbox": {
+                                            "label": "links",
+                                            "defaultValue": false
+                                        }
+                                    }
+                                ]
+                            },
+                            "validators": [
+                                {
+                                    "type": "regex",
+                                    "pattern": "^.*$",
+                                    "errorMsg": "Invalid input."
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "name": "thehive_observables",
+                    "title": "Observables: Regular",
+                    "entity": [
+                        {
+                            "field": "name",
+                            "label": "Name",
+                            "type": "text",
+                            "required": true,
+                            "validators": [
+                                {
+                                    "type": "regex",
+                                    "errorMsg": "Input Name must begin with a letter and consist exclusively of alphanumeric characters and underscores.",
+                                    "pattern": "^[a-zA-Z]\\w*$"
+                                }
+                            ]
+                        },
+                        {
+                            "field": "interval",
+                            "label": "Interval",
+                            "type": "text",
+                            "defaultValue": "60",
+                            "validators": [
+                                {
+                                    "type": "number",
+                                    "range": [
+                                        1,
+                                        86400
+                                    ],
+                                    "errorMsg": "Interval must be a number between 1 and 86400 (1 day)"
+                                }
+                            ]
+                        },
+                        {
+                            "field": "index",
+                            "label": "Index",
+                            "type": "singleSelect",
+                            "defaultValue": "default",
+                            "options": {
+                                "endpointUrl": "data/indexes"
+                            },
+                            "validators": [
+                                {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 100
+                                }
+                            ]
+                        },
+                        {
+                            "field": "instance_id",
+                            "label": "Instance ID",
+                            "type": "singleSelect",
+                            "options": {
+                                "referenceName": "instances"
+                            },
+                            "help": "Select the instance from the list.",
+                            "validators": [
+                                {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 100
+                                }
+                            ]
+                        },
+                        {
+                            "field": "max_size_value",
+                            "label": "Max size for values",
+                            "type": "text",
+                            "defaultValue": "1000",
+                            "validators": [
+                                {
+                                    "type": "number",
+                                    "range": [
+                                        1,
+                                        1000000
+                                    ],
+                                    "errorMsg": "Max size must be a number between 1 and 1000000"
+                                }
+                            ]
+                        },
+                        {
+                            "field": "event_mode",
+                            "label": "Event mode",
+                            "type": "singleSelect",
+                            "required": true,
+                            "help": "Detailed: collect the full observable event. Summarized: collect only data, dataType, ioc, type and tags fields.",
+                            "options": {
+                                "autoCompleteFields": [
+                                    {
+                                        "value": "detailed",
+                                        "label": "Detailed"
+                                    },
+                                    {
+                                        "value": "summarized",
+                                        "label": "Summarized"
+                                    }
+                                ]
+                            },
+                            "defaultValue": "detailed",
+                            "validators": [
+                                {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 20
+                                }
+                            ]
+                        },
+                        {
+                            "field": "fields_removal",
+                            "label": "Fields removal",
+                            "type": "text",
+                            "validators": [
+                                {
+                                    "type": "string",
+                                    "minLength": 0,
+                                    "maxLength": 1000
+                                }
+                            ]
+                        },
+                        {
+                            "field": "extra_data",
+                            "label": "Extra data",
+                            "type": "multipleSelect",
+                            "options": {
+                                "delimiter": ",",
+                                "items": [
+                                    {
+                                        "value": "seenSummary",
+                                        "label": "seenSummary"
+                                    },
+                                    {
+                                        "value": "shares",
+                                        "label": "shares"
+                                    },
+                                    {
+                                        "value": "links",
+                                        "label": "links"
+                                    },
+                                    {
+                                        "value": "permissions",
+                                        "label": "permissions"
+                                    },
+                                    {
+                                        "value": "isOwner",
+                                        "label": "isOwner"
+                                    },
+                                    {
+                                        "value": "shareCount",
+                                        "label": "shareCount"
+                                    }
+                                ]
+                            },
+                            "validators": [
+                                {
+                                    "type": "string",
+                                    "minLength": 0,
+                                    "maxLength": 500
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "name": "backfill_observables",
+                    "title": "Observables: One-shot",
+                    "entity": [
+                        {
+                            "field": "name",
+                            "label": "Name",
+                            "type": "text",
+                            "required": true,
+                            "validators": [
+                                {
+                                    "type": "regex",
+                                    "errorMsg": "Input Name must begin with a letter and consist exclusively of alphanumeric characters and underscores.",
+                                    "pattern": "^[a-zA-Z]\\w*$"
+                                }
+                            ]
+                        },
+                        {
+                            "field": "interval",
+                            "label": "Interval",
+                            "type": "text",
+                            "defaultValue": "-1",
+                            "validators": [
+                                {
+                                    "type": "number",
+                                    "range": [
+                                        -1,
+                                        -1
+                                    ],
+                                    "errorMsg": "Interval must be -1 for one-shot collection (backfill)."
+                                }
+                            ]
+                        },
+                        {
+                            "field": "index",
+                            "label": "Index",
+                            "type": "singleSelect",
+                            "defaultValue": "default",
+                            "options": {
+                                "endpointUrl": "data/indexes"
+                            },
+                            "validators": [
+                                {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 100
+                                }
+                            ]
+                        },
+                        {
+                            "field": "instance_id",
+                            "label": "Instance ID",
+                            "type": "singleSelect",
+                            "options": {
+                                "referenceName": "instances"
+                            },
+                            "help": "Select the instance from the list.",
+                            "validators": [
+                                {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 100
+                                }
+                            ]
+                        },
+                        {
+                            "field": "backfill_start",
+                            "label": "Backfill: Start date",
+                            "type": "text",
+                            "help": "Format: YYYY-MM-DD, YYYY-MM-DDTHH:MM:SS or YYYY-MM-DD HH:MM:SS. Example: 2023-01-01 or 2023-01-01T12:00:00.",
+                            "required": true,
+                            "validators": [
+                                {
+                                    "type": "regex",
+                                    "pattern": "^\\d{4}-\\d{2}-\\d{2}(((T| )\\d{2}:\\d{2}:\\d{2})?)$",
+                                    "errorMsg": "Date format must be YYYY-MM-DD, YYYY-MM-DDTHH:MM:SS or YYYY-MM-DD HH:MM:SS"
+                                }
+                            ]
+                        },
+                        {
+                            "field": "backfill_end",
+                            "label": "Backfill: End date",
+                            "type": "text",
+                            "help": "Format: YYYY-MM-DD, YYYY-MM-DDTHH:MM:SS or YYYY-MM-DD HH:MM:SS. If only a date is provided, it will include the entire day until 23:59:59.",
+                            "required": true,
+                            "validators": [
+                                {
+                                    "type": "regex",
+                                    "pattern": "^\\d{4}-\\d{2}-\\d{2}(((T| )\\d{2}:\\d{2}:\\d{2})?)$",
+                                    "errorMsg": "Date format must be YYYY-MM-DD, YYYY-MM-DDTHH:MM:SS or YYYY-MM-DD HH:MM:SS"
+                                }
+                            ]
+                        },
+                        {
+                            "field": "date",
+                            "label": "Date",
+                            "type": "multipleSelect",
+                            "options": {
+                                "delimiter": ",",
+                                "items": [
+                                    {
+                                        "value": "_createdAt",
+                                        "label": "Created time"
+                                    },
+                                    {
+                                        "value": "_updatedAt",
+                                        "label": "Updated time"
+                                    }
+                                ]
+                            },
+                            "validators": [
+                                {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 100
+                                }
+                            ]
+                        },
+                        {
+                            "field": "max_size_value",
+                            "label": "Max size for values",
+                            "type": "text",
+                            "defaultValue": "1000",
+                            "validators": [
+                                {
+                                    "type": "number",
+                                    "range": [
+                                        1,
+                                        1000000
+                                    ],
+                                    "errorMsg": "Max size must be a number between 1 and 1000000"
+                                }
+                            ]
+                        },
+                        {
+                            "field": "event_mode",
+                            "label": "Event mode",
+                            "type": "singleSelect",
+                            "required": true,
+                            "help": "Detailed: collect the full observable event. Summarized: collect only data, dataType, ioc, type and tags fields.",
+                            "options": {
+                                "autoCompleteFields": [
+                                    {
+                                        "value": "detailed",
+                                        "label": "Detailed"
+                                    },
+                                    {
+                                        "value": "summarized",
+                                        "label": "Summarized"
+                                    }
+                                ]
+                            },
+                            "defaultValue": "detailed",
+                            "validators": [
+                                {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 20
+                                }
+                            ]
+                        },
+                        {
+                            "field": "fields_removal",
+                            "label": "Fields removal",
+                            "type": "text",
+                            "validators": [
+                                {
+                                    "type": "string",
+                                    "minLength": 0,
+                                    "maxLength": 1000
+                                }
+                            ]
+                        },
+                        {
+                            "field": "extra_data",
+                            "label": "Extra data",
+                            "type": "multipleSelect",
+                            "options": {
+                                "delimiter": ",",
+                                "items": [
+                                    {
+                                        "value": "seenSummary",
+                                        "label": "seenSummary"
+                                    },
+                                    {
+                                        "value": "shares",
+                                        "label": "shares"
+                                    },
+                                    {
+                                        "value": "links",
+                                        "label": "links"
+                                    },
+                                    {
+                                        "value": "permissions",
+                                        "label": "permissions"
+                                    },
+                                    {
+                                        "value": "isOwner",
+                                        "label": "isOwner"
+                                    },
+                                    {
+                                        "value": "shareCount",
+                                        "label": "shareCount"
+                                    }
+                                ]
+                            },
+                            "validators": [
+                                {
+                                    "type": "string",
+                                    "minLength": 0,
+                                    "maxLength": 500
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "name": "thehive_audit",
+                    "title": "Audit Logs: Regular",
+                    "entity": [
+                        {
+                            "field": "name",
+                            "label": "Name",
+                            "type": "text",
+                            "required": true,
+                            "validators": [
+                                {
+                                    "type": "regex",
+                                    "errorMsg": "Input Name must begin with a letter and consist exclusively of alphanumeric characters and underscores.",
+                                    "pattern": "^[a-zA-Z]\\w*$"
+                                }
+                            ]
+                        },
+                        {
+                            "field": "interval",
+                            "label": "Interval",
+                            "type": "text",
+                            "defaultValue": "60",
+                            "validators": [
+                                {
+                                    "type": "number",
+                                    "range": [
+                                        1,
+                                        86400
+                                    ],
+                                    "errorMsg": "Interval must be a number between 1 and 86400 (1 day)"
+                                }
+                            ]
+                        },
+                        {
+                            "field": "index",
+                            "label": "Index",
+                            "type": "singleSelect",
+                            "defaultValue": "default",
+                            "options": {
+                                "endpointUrl": "data/indexes"
+                            },
+                            "validators": [
+                                {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 100
+                                }
+                            ]
+                        },
+                        {
+                            "field": "instance_id",
+                            "label": "Instance ID",
+                            "type": "singleSelect",
+                            "options": {
+                                "referenceName": "instances"
+                            },
+                            "help": "Select the instance from the list.",
+                            "validators": [
+                                {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 100
+                                }
+                            ]
+                        },
+                        {
+                            "field": "max_size_value",
+                            "label": "Max size for values",
+                            "type": "text",
+                            "defaultValue": "1000",
+                            "validators": [
+                                {
+                                    "type": "number",
+                                    "range": [
+                                        1,
+                                        1000000
+                                    ],
+                                    "errorMsg": "Max size must be a number between 1 and 1000000"
+                                }
+                            ]
+                        },
+                        {
+                            "field": "fields_removal",
+                            "label": "Fields removal",
+                            "type": "text",
+                            "validators": [
+                                {
+                                    "type": "string",
+                                    "minLength": 0,
+                                    "maxLength": 1000
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "name": "backfill_audit",
+                    "title": "Audit Logs: One-shot",
+                    "entity": [
+                        {
+                            "field": "name",
+                            "label": "Name",
+                            "type": "text",
+                            "required": true,
+                            "validators": [
+                                {
+                                    "type": "regex",
+                                    "errorMsg": "Input Name must begin with a letter and consist exclusively of alphanumeric characters and underscores.",
+                                    "pattern": "^[a-zA-Z]\\w*$"
+                                }
+                            ]
+                        },
+                        {
+                            "field": "interval",
+                            "label": "Interval",
+                            "type": "text",
+                            "defaultValue": "-1",
+                            "validators": [
+                                {
+                                    "type": "number",
+                                    "range": [
+                                        -1,
+                                        -1
+                                    ],
+                                    "errorMsg": "Interval must be -1 for one-shot collection (backfill)."
+                                }
+                            ]
+                        },
+                        {
+                            "field": "index",
+                            "label": "Index",
+                            "type": "singleSelect",
+                            "defaultValue": "default",
+                            "options": {
+                                "endpointUrl": "data/indexes"
+                            },
+                            "validators": [
+                                {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 100
+                                }
+                            ]
+                        },
+                        {
+                            "field": "instance_id",
+                            "label": "Instance ID",
+                            "type": "singleSelect",
+                            "options": {
+                                "referenceName": "instances"
+                            },
+                            "help": "Select the instance from the list.",
+                            "validators": [
+                                {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 100
+                                }
+                            ]
+                        },
+                        {
+                            "field": "backfill_start",
+                            "label": "Backfill: Start date",
+                            "type": "text",
+                            "help": "Format: YYYY-MM-DD, YYYY-MM-DDTHH:MM:SS or YYYY-MM-DD HH:MM:SS. Example: 2023-01-01 or 2023-01-01T12:00:00.",
+                            "required": true,
+                            "validators": [
+                                {
+                                    "type": "regex",
+                                    "pattern": "^\\d{4}-\\d{2}-\\d{2}(((T| )\\d{2}:\\d{2}:\\d{2})?)$",
+                                    "errorMsg": "Date format must be YYYY-MM-DD, YYYY-MM-DDTHH:MM:SS or YYYY-MM-DD HH:MM:SS"
+                                }
+                            ]
+                        },
+                        {
+                            "field": "backfill_end",
+                            "label": "Backfill: End date",
+                            "type": "text",
+                            "help": "Format: YYYY-MM-DD, YYYY-MM-DDTHH:MM:SS or YYYY-MM-DD HH:MM:SS. If only a date is provided, it will include the entire day until 23:59:59.",
+                            "required": true,
+                            "validators": [
+                                {
+                                    "type": "regex",
+                                    "pattern": "^\\d{4}-\\d{2}-\\d{2}(((T| )\\d{2}:\\d{2}:\\d{2})?)$",
+                                    "errorMsg": "Date format must be YYYY-MM-DD, YYYY-MM-DDTHH:MM:SS or YYYY-MM-DD HH:MM:SS"
+                                }
+                            ]
+                        },
+                        {
+                            "field": "max_size_value",
+                            "label": "Max size for values",
+                            "type": "text",
+                            "defaultValue": "1000",
+                            "validators": [
+                                {
+                                    "type": "number",
+                                    "range": [
+                                        1,
+                                        1000000
+                                    ],
+                                    "errorMsg": "Max size must be a number between 1 and 1000000"
+                                }
+                            ]
+                        },
+                        {
+                            "field": "fields_removal",
+                            "label": "Fields removal",
+                            "type": "text",
+                            "validators": [
+                                {
+                                    "type": "string",
+                                    "minLength": 0,
+                                    "maxLength": 1000
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        },
+        "dashboard": {
+            "panels": [
+                {
+                    "name": "default"
+                }
+            ]
+        }
+    }
+}

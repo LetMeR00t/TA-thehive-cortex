@@ -1,0 +1,313 @@
+<form version="1.1">
+  <label>📃 Audit logs</label>
+  <description>This dashboard is used to monitor audit logs from scripts</description>
+  <fieldset submitButton="false">
+    <input type="time" token="time">
+      <label>Time</label>
+      <default>
+        <earliest>-60m@m</earliest>
+        <latest>now</latest>
+      </default>
+    </input>
+    <input type="dropdown" token="exec_id">
+      <label>Execution UID</label>
+      <choice value="*">All</choice>
+      <default>*</default>
+      <fieldForLabel>exec_id</fieldForLabel>
+      <fieldForValue>exec_id</fieldForValue>
+      <search>
+        <query>index=_internal source="*TA-thehive-cortex_*.log"
+| rex field=_raw "exec_id=(?&lt;exec_id&gt;[^ \-]+)"
+| stats count by exec_id</query>
+        <earliest>$time.earliest$</earliest>
+        <latest>$time.latest$</latest>
+      </search>
+    </input>
+  </fieldset>
+  <row>
+    <panel>
+      <title>Audit logs : Modular input regarding TheHive Cortex API (Inputs)</title>
+      <input type="dropdown" token="input_source">
+        <label>Input Type</label>
+        <choice value="*">All</choice>
+        <default>*</default>
+        <fieldForLabel>input_name</fieldForLabel>
+        <fieldForValue>source</fieldForValue>
+        <search>
+          <query>index=_internal source="*TA-thehive-cortex_*.log" NOT (source="*search*" OR source="*get*" OR source="*run*")
+| stats count by source
+| rex field=source "TA-thehive-cortex_(?&lt;input_name&gt;[^.]+)\.log"
+| table input_name source</query>
+          <earliest>$time.earliest$</earliest>
+          <latest>$time.latest$</latest>
+        </search>
+      </input>
+      <table>
+        <search>
+          <query>index=_internal source="*TA-thehive-cortex_*.log" NOT (source="*search*" OR source="*get*" OR source="*run*")
+| search source=$input_source|s$
+| rex field=source "TA-thehive-cortex_(?&lt;input_type&gt;[^.]+)\.log"
+| rex field=_raw "^\d+\-\d+\-\d+ \d+:\d+:\d+,\d+ (?&lt;level_extract&gt;[^\s]+)\s+(?&lt;location_extract&gt;[^\-]+) \- (?&lt;signature_extract&gt;.*)"
+| rex field=signature_extract "exec_id=(?&lt;exec_id_extract&gt;[^ \-]+)"
+| eval level = coalesce(level_extract, level), exec_id = coalesce(exec_id_extract, "N/A"), signature = coalesce(signature_extract, _raw)
+| search exec_id=$exec_id$
+| sort 0 -_time -signature
+| table _time host input_type exec_id level signature
+| rename host as "Host", input_type as "Input Type", exec_id as "Execution UID", level as Level, signature as "Signature"</query>
+          <earliest>$time.earliest$</earliest>
+          <latest>$time.latest$</latest>
+          <sampleRatio>1</sampleRatio>
+        </search>
+        <option name="count">25</option>
+        <option name="drilldown">none</option>
+        <option name="refresh.display">progressbar</option>
+        <format type="color" field="Level">
+          <colorPalette type="map">{"ERROR":#DC4E41,"WARNING":#F1813F,"INFO":#62B3B2,"DEBUG":#708794}</colorPalette>
+        </format>
+        <format type="color" field="Execution UID">
+          <colorPalette type="sharedList"></colorPalette>
+          <scale type="sharedCategory"></scale>
+        </format>
+        <format type="color" field="Host">
+          <colorPalette type="sharedList"></colorPalette>
+          <scale type="sharedCategory"></scale>
+        </format>
+        <format type="color" field="Input Type">
+          <colorPalette type="sharedList"></colorPalette>
+          <scale type="sharedCategory"></scale>
+        </format>
+      </table>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <title>Audit logs : Modular alerts regarding TheHive Cortex API (Custom Alert Action)</title>
+      <input type="dropdown" token="action_filter">
+        <label>Action (Sourcetype)</label>
+        <choice value="*">All</choice>
+        <default>*</default>
+        <fieldForLabel>label</fieldForLabel>
+        <fieldForValue>sourcetype</fieldForValue>
+        <search>
+          <query>(index=_* OR index=cim_*) sourcetype="modular_alerts:thehive_*" OR sourcetype="modular_alerts:cortex_*"
+| stats count by sourcetype
+| eval label = case(
+    sourcetype=="modular_alerts:thehive_create_a_new_alert", "TheHive: Create Alert",
+    sourcetype=="modular_alerts:thehive_create_a_new_case", "TheHive: Create Case",
+    sourcetype=="modular_alerts:thehive_run_function", "TheHive: Run Function",
+    sourcetype=="modular_alerts:cortex_run_a_new_job", "Cortex: Run Job",
+    1=1, sourcetype
+  )</query>
+          <earliest>$time.earliest$</earliest>
+          <latest>$time.latest$</latest>
+        </search>
+      </input>
+      <table>
+        <search>
+          <query>(index=_* OR index=cim_*) sourcetype="modular_alerts:thehive_*" OR sourcetype="modular_alerts:cortex_*"
+| search sourcetype="$action_filter$"
+| rex field=_raw "(?:log_level=)(?&lt;type_extract&gt;[^\s]+)"
+| rex field=_raw "(?:exec_id=)(?&lt;exec_id_extract&gt;[a-f0-9]{8})(?:\s+|$)"
+| rex field=_raw "\| (?&lt;signature_extract&gt;.*)"
+| eval type_val = coalesce(type_extract, log_level, type)
+| eval type = case(type_val=="10" OR type_val=="DEBUG", "DEBUG", type_val=="20" OR type_val=="INFO", "INFO", type_val=="30" OR type_val=="WARNING", "WARNING", type_val=="40" OR type_val=="ERROR", "ERROR", 1=1, type_val)
+| eval exec_id = coalesce(exec_id_extract, "N/A"), signature = coalesce(signature_extract, _raw)
+| search exec_id=$exec_id$
+| table _time, sourcetype, exec_id, type, signature
+| sort 0 -_time
+| rename sourcetype as "Action", exec_id as "Execution ID", type as "Level", signature as "Message"</query>
+          <earliest>$time.earliest$</earliest>
+          <latest>$time.latest$</latest>
+          <sampleRatio>1</sampleRatio>
+        </search>
+        <option name="count">30</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">none</option>
+        <option name="percentagesRow">false</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="rowNumbers">false</option>
+        <option name="totalsRow">false</option>
+        <option name="wrap">true</option>
+        <format type="color" field="Level">
+          <colorPalette type="map">{"DEBUG":#602CA1,"INFO":#0099E0,"WARNING":#CBA700,"ERROR":#D41F1F}</colorPalette>
+        </format>
+        <format type="color" field="Execution ID">
+          <colorPalette type="sharedList"></colorPalette>
+          <scale type="sharedCategory"></scale>
+        </format>
+        <format type="color" field="Action">
+          <colorPalette type="sharedList"></colorPalette>
+          <scale type="sharedCategory"></scale>
+        </format>
+      </table>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <title>Audit logs : Custom commands regarding TheHive Cortex API</title>
+      <input type="dropdown" token="command_source">
+        <label>Command (Source)</label>
+        <choice value="*">All</choice>
+        <default>*</default>
+        <fieldForLabel>source_name</fieldForLabel>
+        <fieldForValue>source</fieldForValue>
+        <search>
+          <query>index=_internal source="*TA-thehive-cortex_*.log" (source="*search*" OR source="*get*" OR source="*run*")
+| stats count by source
+| rex field=source "TA-thehive-cortex_(?&lt;source_name&gt;[^.]+)\.log"
+| table source_name source</query>
+          <earliest>$time.earliest$</earliest>
+          <latest>$time.latest$</latest>
+        </search>
+      </input>
+      <table>
+        <search>
+          <query>index=_internal source="*TA-thehive-cortex_*.log" (source="*search*" OR source="*get*" OR source="*run*")
+| search source=$command_source|s$
+| rex field=source "TA-thehive-cortex_(?&lt;source_name&gt;[^.]+)\.log"
+| rex field=_raw "^\d+\-\d+\-\d+ \d+:\d+:\d+,\d+ (?&lt;type_extract&gt;[^\s]+)\s+(?&lt;location_extract&gt;[^\-]+) \- (?&lt;signature_extract&gt;.*)"
+| rex field=signature_extract "exec_id=(?&lt;exec_id_extract&gt;[^ \-]+)"
+| eval type = coalesce(type_extract, type), exec_id = coalesce(exec_id_extract, "N/A"), signature = if(isnotnull(location_extract), location_extract . " - " . coalesce(signature_extract, _raw), coalesce(signature_extract, _raw)), source = source_name
+| search exec_id=$exec_id$
+| table _time, source, exec_id, type, signature
+| sort 0 -_time
+| rename source as "Source", exec_id as "Execution ID", type as "Type", signature as "Message"</query>
+          <earliest>$time.earliest$</earliest>
+          <latest>$time.latest$</latest>
+          <sampleRatio>1</sampleRatio>
+        </search>
+        <option name="count">30</option>
+        <option name="dataOverlayMode">none</option>
+        <option name="drilldown">none</option>
+        <option name="percentagesRow">false</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="rowNumbers">false</option>
+        <option name="totalsRow">false</option>
+        <option name="wrap">true</option>
+        <format type="color" field="Type">
+          <colorPalette type="map">{"DEBUG":#602CA1,"INFO":#0099E0,"WARNING":#CBA700,"ERROR":#D41F1F}</colorPalette>
+        </format>
+        <format type="color" field="Source">
+          <colorPalette type="sharedList"></colorPalette>
+          <scale type="sharedCategory"></scale>
+        </format>
+        <format type="color" field="Execution ID">
+          <colorPalette type="sharedList"></colorPalette>
+          <scale type="sharedCategory"></scale>
+        </format>
+      </table>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <title>Number of alerts and detected issues</title>
+      <chart>
+        <search>
+          <query>(index=_* OR index=cim_*) sourcetype="modular_alerts:thehive_*" OR sourcetype="modular_alerts:cortex_*"
+| search sourcetype="$action_filter$"
+| rex field=_raw "(?:log_level=)(?&lt;type_extract&gt;[^\s]+)"
+| rex field=_raw "(?:exec_id=)(?&lt;exec_id_extract&gt;[a-f0-9]{8})(?:\s+|$)"
+| rex field=_raw "\| (?&lt;signature_extract&gt;.*)"
+| eval type_val = coalesce(type_extract, log_level, type)
+| eval type = case(type_val=="10" OR type_val=="DEBUG", "DEBUG", type_val=="20" OR type_val=="INFO", "INFO", type_val=="30" OR type_val=="WARNING", "WARNING", type_val=="40" OR type_val=="ERROR", "ERROR", 1=1, type_val)
+| eval exec_id = coalesce(exec_id_extract, "N/A"), signature = coalesce(signature_extract, _raw)
+| search exec_id=$exec_id$
+| search type=ERROR OR signature="[CAA-THCA-125]*"
+| eval information = if(like(signature,"%CAA-THCA-125%"),"Alert was created","An issue was found")
+| timechart count by information</query>
+          <earliest>$time.earliest$</earliest>
+          <latest>$time.latest$</latest>
+          <sampleRatio>1</sampleRatio>
+        </search>
+        <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+        <option name="charting.axisTitleX.visibility">visible</option>
+        <option name="charting.axisTitleY.visibility">visible</option>
+        <option name="charting.axisTitleY2.visibility">visible</option>
+        <option name="charting.axisX.abbreviation">none</option>
+        <option name="charting.axisX.scale">linear</option>
+        <option name="charting.axisY.abbreviation">none</option>
+        <option name="charting.axisY.scale">linear</option>
+        <option name="charting.axisY2.abbreviation">none</option>
+        <option name="charting.axisY2.enabled">0</option>
+        <option name="charting.axisY2.scale">inherit</option>
+        <option name="charting.chart">column</option>
+        <option name="charting.chart.bubbleMaximumSize">50</option>
+        <option name="charting.chart.bubbleMinimumSize">10</option>
+        <option name="charting.chart.bubbleSizeBy">area</option>
+        <option name="charting.chart.nullValueMode">gaps</option>
+        <option name="charting.chart.showDataLabels">none</option>
+        <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+        <option name="charting.chart.stackMode">default</option>
+        <option name="charting.chart.style">shiny</option>
+        <option name="charting.drilldown">none</option>
+        <option name="charting.fieldColors">{"Alert was created":#118832,"An issue was found":#D41F1F}</option>
+        <option name="charting.layout.splitSeries">0</option>
+        <option name="charting.layout.splitSeries.allowIndependentYRanges">0</option>
+        <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+        <option name="charting.legend.mode">standard</option>
+        <option name="charting.legend.placement">bottom</option>
+        <option name="charting.lineWidth">2</option>
+        <option name="height">412</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="trellis.enabled">0</option>
+        <option name="trellis.scales.shared">1</option>
+        <option name="trellis.size">medium</option>
+      </chart>
+    </panel>
+  </row>
+  <row>
+    <panel>
+      <title>Event codes used by the TheHive Cortex application found in the logs</title>
+      <chart>
+        <title>"DEBUG" mode enabled will let you see the all list of event codes generated if you encounter any trouble</title>
+        <search>
+          <query>(index=_* OR index=cim_*) sourcetype="modular_alerts:thehive_*" OR sourcetype="modular_alerts:cortex_*"
+| search sourcetype="$action_filter$"
+| rex field=_raw "(?:exec_id=)(?&lt;exec_id_extract&gt;[a-f0-9]{8})(?:\s+|$)"
+| eval exec_id = coalesce(exec_id_extract, "N/A")
+| search exec_id=$exec_id$
+| rex field=_raw "\[(?&lt;event_code&gt;CAA-[^\]]+)\]"
+| where isnotnull(event_code)
+| timechart limit=20 count by event_code</query>
+          <earliest>$time.earliest$</earliest>
+          <latest>$time.latest$</latest>
+          <sampleRatio>1</sampleRatio>
+        </search>
+        <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
+        <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
+        <option name="charting.axisTitleX.visibility">visible</option>
+        <option name="charting.axisTitleY.visibility">visible</option>
+        <option name="charting.axisTitleY2.visibility">visible</option>
+        <option name="charting.axisX.abbreviation">none</option>
+        <option name="charting.axisX.scale">linear</option>
+        <option name="charting.axisY.abbreviation">none</option>
+        <option name="charting.axisY.scale">linear</option>
+        <option name="charting.axisY2.abbreviation">none</option>
+        <option name="charting.axisY2.enabled">0</option>
+        <option name="charting.axisY2.scale">inherit</option>
+        <option name="charting.chart">column</option>
+        <option name="charting.chart.bubbleMaximumSize">50</option>
+        <option name="charting.chart.bubbleMinimumSize">10</option>
+        <option name="charting.chart.bubbleSizeBy">area</option>
+        <option name="charting.chart.nullValueMode">gaps</option>
+        <option name="charting.chart.showDataLabels">none</option>
+        <option name="charting.chart.sliceCollapsingThreshold">0.01</option>
+        <option name="charting.chart.stackMode">default</option>
+        <option name="charting.chart.style">shiny</option>
+        <option name="charting.drilldown">none</option>
+        <option name="charting.layout.splitSeries">0</option>
+        <option name="charting.layout.splitSeries.allowIndependentYRanges">0</option>
+        <option name="charting.legend.labelStyle.overflowMode">ellipsisMiddle</option>
+        <option name="charting.legend.mode">standard</option>
+        <option name="charting.legend.placement">bottom</option>
+        <option name="charting.lineWidth">2</option>
+        <option name="height">412</option>
+        <option name="refresh.display">progressbar</option>
+        <option name="trellis.enabled">0</option>
+        <option name="trellis.scales.shared">1</option>
+        <option name="trellis.size">medium</option>
+      </chart>
+    </panel>
+  </row>
+</form>

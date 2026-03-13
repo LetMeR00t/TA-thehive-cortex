@@ -10,7 +10,7 @@ You should create a specific user and organization in your TheHive/Cortex instan
 
 Before the migration, you should backup your instances information using a:
 
-- `| inputlookup thehive_cortex_instances | outputlookup thehive_cortex_instances_bk.csv`
+- `| rest /servicesNS/nobody/TA-thehive-cortex/ta_thehive_cortex_instances | table title, host, port`
 
 in another application such as "search", then migrate and finally restore the backup using a:
 
@@ -53,7 +53,7 @@ Once you've done that, you can configure all your instances. An instance is an e
 - **Port**: Port used by your instance (Default:9000 for TheHive, 9001 for Cortex).
 - **URI**: Indicates what is the URI based for your instance. By default, TheHive/Cortex is installed at the root of the server so the URI would be "/". If you are using a Cloud instance, you may have to specify the URI used by your cloud instance. For example, if your TheHive instance is accessible with this URL : "https://my-cloud-website.com:443/mythehiveinstance", then you should specify in the URI field "/mythehiveinstance".
 
-> **Note**: Protocol used by default is HTTPS and can't be modified. Moreover, the certificate verification is mandatory and set to True (below screenshot is not up to date). If you use an HTTPS connection with a self-signed certificate of a custom certificate authority, you must add your trusted certificate to the "certifi" library. To do so, append your certificate under "\$APP_FOLDER\$/bin/ta_thehive_cortex/aob_py3/certifi/cacert.pem"
+> **Note**: Protocol used by default is HTTPS and can't be modified. Moreover, the certificate verification is mandatory and set to True (below screenshot is not up to date). If you use an HTTPS connection with a self-signed certificate of a custom certificate authority, you must add your trusted certificate to the "certifi" library. To do so, append your certificate under "\$APP_FOLDER\$/bin/ta_thehive_cortex/libs/certifi/cacert.pem"
 
 ![Instances add](../images/instances_add.png)
 *This image shows the addition of a new instance (partially filled fields) by specifying an account name defined beforehand.*

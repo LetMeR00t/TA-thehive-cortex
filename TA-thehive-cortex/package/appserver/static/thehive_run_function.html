@@ -1,0 +1,29 @@
+<form class="form-horizontal form-complex">
+
+    <div class="control-group">
+        <label class="control-label" for="thehive_instance_id">Instance <span class="required">*</span> </label>
+        
+        <div class="controls">
+            <span class="help-block"> 
+                    Indicate which instance to use (Set the 'id' provided under 'Instances'). You can use '&lt;default&gt;' to set automatically the ID to the default set parameter in the configuration page.
+            </span>
+            <splunk-search-dropdown name="action.thehive_run_function.param.thehive_instance_id" id="thehive_instance_id"
+                allow-custom-value=true
+                search="| rest /servicesNS/nobody/TA-thehive-cortex/thehive_cortex_instances splunk_server=local | rename title as id | where type=&quot;TheHive5&quot; | eval instance_label = id+&quot; (&quot;+environment+&quot;)&quot;"
+                label-field="instance_label"
+                value-field="id" />
+        </div>
+    </div>
+
+    <div class="control-group">
+        <label class="control-label" for="name">Function name <span class="required">*</span> </label>
+
+        <div class="controls">
+            <span class="help-block"> 
+                    The name of the function you want to call. Please note that a specific licence in TheHive is required to use this action
+            </span>
+            <input type="text" class="input-xlarge" name="action.thehive_run_function.param.name" id="name" placeholder="" />
+        </div>
+    </div> 
+
+</form>
