@@ -79,7 +79,7 @@ if __name__ == '__main__':
                 logger_file.debug(id="5",message="Filters are: filterKeyword: "+filterKeyword+", filterStatus: "+filterStatus+", filterSeverity: "+filterSeverity+", filterTags: "+filterTags+", filterTitle: "+filterTitle+", filterAssignee: "+filterAssignee+", filterDate: "+filterDate+", max_cases: "+str(paginate)+", sort_cases: "+str(sortCases))
 
                 # Format the query
-                filters = {}
+                filters = None
                 
                 if filterKeyword != FILTER_KEYWORD_DEFAULT:
                     f = Eq("keyword", filterKeyword)
@@ -90,46 +90,46 @@ if __name__ == '__main__':
                         f = subFilters.pop()
                         for otherSubF in subFilters:
                             f = f|otherSubF
-                        filters = f if filters == {} else f&filters
+                        filters = f if filters is None else f&filters
                 if filterSeverity != FILTER_SEVERITY_DEFAULT:
                     subFilters = [Eq("severity",int(s)) for s in filterSeverity.replace(" ","").split(";") if s != "*"]
                     if subFilters:
                         f = subFilters.pop()
                         for otherSubF in subFilters:
                             f = f|otherSubF
-                        filters = f if filters == {} else f&filters
+                        filters = f if filters is None else f&filters
                 if filterTags != FILTER_TAGS_DEFAULT:
                     subFilters = [Eq("tags",s) for s in filterTags.replace(" ","").split(";") if s != "*"]
                     if subFilters:
                         f = subFilters.pop()
                         for otherSubF in subFilters:
                             f = f|otherSubF
-                        filters = f if filters == {} else f&filters
+                        filters = f if filters is None else f&filters
                 if filterTitle != FILTER_TITLE_DEFAULT:
                     f = Like("title", filterTitle)
-                    filters = f if filters == {} else f&filters
+                    filters = f if filters is None else f&filters
                 if filterAssignee != FILTER_ASSIGNEE_DEFAULT:
                     subFilters = [Eq("assignee",s) for s in filterAssignee.replace(" ","").split(";") if s != "*"]
                     if subFilters:
                         f = subFilters.pop()
                         for otherSubF in subFilters:
                             f = f|otherSubF
-                        filters = f if filters == {} else f&filters
+                        filters = f if filters is None else f&filters
                 if filterDate != FILTER_DATE_DEFAULT:
                     filterDate = filterDate.split(" TO ")
-                    d1 = int(filterDate[0]) if filterDate[0] != "*" else "*"
-                    d2 = int(filterDate[1]) if filterDate[1] != "*" else "*"
-                    if d1 != "*" and d2 != "*":
+                    d1 = int(filterDate[0]) if filterDate[0] != "*" else None
+                    d2 = int(filterDate[1]) if filterDate[1] != "*" else None
+                    if d1 is not None and d2 is not None:
                         f = Between("startDate",d1,d2)
-                    elif d1 != "*":
+                    elif d1 is not None:
                         f = Gte("startDate",d1)
-                    elif d2 != "*":
+                    elif d2 is not None:
                         f = Lte("startDate",d2)
                     else:
                         f = None
                     
                     if f:
-                        filters = f if filters == {} else f&filters
+                        filters = f if filters is None else f&filters
 
                 logger_file.debug(id="15",message="Query is: "+str(filters))
             

@@ -402,12 +402,19 @@ class TheHive4Splunk(TheHiveApi):
                 )
                 sys.exit(100)
             else:
-                self.logger_file.error(
-                    id="TH110",
-                    message="THEHIVE_CONNECTION_ERROR - Error: "
-                    + str(e)
-                    + ". Check any error in the TheHive instance logs following this API REST call. If the error is persisting after several tries, please raise an issue to the application maintainer.",
-                )
+                error_msg = str(e)
+                if "<!DOCTYPE html>" in error_msg or "<html>" in error_msg.lower():
+                    self.logger_file.error(
+                        id="TH109",
+                        message=f"THEHIVE_HTML_RESPONSE_ERROR - The server at {url} returned an HTML page instead of JSON. This often happens if the URL is incorrect (e.g., missing /api/ or pointing to a login page) or if a proxy/WAF is intercepting the request. Partial response: {error_msg[:200]}...",
+                    )
+                else:
+                    self.logger_file.error(
+                        id="TH110",
+                        message="THEHIVE_CONNECTION_ERROR - Error: "
+                        + error_msg
+                        + ". Check any error in the TheHive instance logs following this API REST call. If the error is persisting after several tries, please raise an issue to the application maintainer.",
+                    )
                 sys.exit(110)
 
         self.__sid = sid
@@ -444,11 +451,11 @@ class TheHive4Splunk(TheHiveApi):
         for i in range(0, count_events, step):
             if i + step < count_events:
                 paginate = Paginate(
-                    start=i, end=i + step, extra_data=kwargs["extra_data"]
+                    start=i, end=i + step, extra_data=kwargs.get("extra_data", "")
                 )
             else:
                 paginate = Paginate(
-                    start=i, end=count_events, extra_data=kwargs["extra_data"]
+                    start=i, end=count_events, extra_data=kwargs.get("extra_data", "")
                 )
 
             # Get alerts using the query
@@ -574,11 +581,11 @@ class TheHive4Splunk(TheHiveApi):
         for i in range(0, count_events, step):
             if i + step < count_events:
                 paginate = Paginate(
-                    start=i, end=i + step, extra_data=kwargs["extra_data"]
+                    start=i, end=i + step, extra_data=kwargs.get("extra_data", "")
                 )
             else:
                 paginate = Paginate(
-                    start=i, end=count_events, extra_data=kwargs["extra_data"]
+                    start=i, end=count_events, extra_data=kwargs.get("extra_data", "")
                 )
 
             # Get cases using the query
@@ -780,9 +787,13 @@ class TheHive4Splunk(TheHiveApi):
         step = 100
         for i in range(0, count_events, step):
             if i + step < count_events:
-                paginate = Paginate(start=i, end=i + step)
+                paginate = Paginate(
+                    start=i, end=i + step, extra_data=kwargs.get("extra_data", "")
+                )
             else:
-                paginate = Paginate(start=i, end=count_events)
+                paginate = Paginate(
+                    start=i, end=count_events, extra_data=kwargs.get("extra_data", "")
+                )
 
             raw_events = self.observable.find(
                 filters=filters, sortby=final_sortby, paginate=paginate
@@ -825,6 +836,19 @@ class TheHive4Splunk(TheHiveApi):
                 event = self._utils.check_and_reduce_values_size(
                     d=event, max_size=int(kwargs["max_size_value"])
                 )
+
+                # Handle summarized mode for observables
+                if kwargs.get("event_mode") == "summarized":
+                    keep_fields = [
+                        "data",
+                        "dataType",
+                        "ioc",
+                        "type",
+                        "tags",
+                        "time",
+                    ]
+                    event = {k: v for k, v in event.items() if k in keep_fields}
+
                 self.logger_file.debug(
                     id="TH145",
                     message=f"Event after processing (check_and_reduce_values_size): {event}",
@@ -862,9 +886,13 @@ class TheHive4Splunk(TheHiveApi):
         step = 100
         for i in range(0, count_events, step):
             if i + step < count_events:
-                paginate = Paginate(start=i, end=i + step)
+                paginate = Paginate(
+                    start=i, end=i + step, extra_data=kwargs.get("extra_data", "")
+                )
             else:
-                paginate = Paginate(start=i, end=count_events)
+                paginate = Paginate(
+                    start=i, end=count_events, extra_data=kwargs.get("extra_data", "")
+                )
 
             raw_events = self.organisation.get_audit_logs(
                 filters=filters, sortby=final_sortby, paginate=paginate

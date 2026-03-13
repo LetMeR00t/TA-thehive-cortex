@@ -19,7 +19,7 @@ from copy import deepcopy
 
 # Third-party imports
 import splunk.Intersplunk
-from thehive4py.query import Between, Eq, Like
+from thehive4py.query import Between, Eq, Like, Gte, Lte
 from thehive4py.query.page import Paginate
 from thehive4py.query.sort import Asc, Desc
 
@@ -79,7 +79,7 @@ if __name__ == '__main__':
             logger_file.debug(id="5",message="Filters are: filterType: "+filterType+", filterSeverity: "+filterSeverity+", filterTags: "+filterTags+", filterTitle: "+filterTitle+", filterRead: "+filterRead+", filterSource: "+filterSource+", filterDate: "+filterDate+", max_alerts: "+str(maxAlerts)+", sort_alerts: "+str(sortAlerts))
 
             # Format the query
-            filters = {}
+            filters = None
 
             if filterType != FILTER_TYPE_DEFAULT:
                 subFilters = [Like("type",s) for s in filterType.replace(" ","").split(";") if s != "*"]
@@ -92,32 +92,42 @@ if __name__ == '__main__':
                 f = subFilters.pop()
                 for otherSubF in subFilters:
                     f = f|otherSubF
-                filters = f if filters == {} else f&filters
+                filters = f if filters is None else f&filters
             if filterTags != FILTER_TAGS_DEFAULT:
                 subFilters = [Eq("tags",s) for s in filterTags.replace(" ","").split(";") if s != "*"]
                 f = subFilters.pop()
                 for otherSubF in subFilters:
                     f = f|otherSubF
-                filters = f if filters == {} else f&filters
+                filters = f if filters is None else f&filters
             if filterTitle != FILTER_TITLE_DEFAULT:
                 f = Like("title", filterTitle)
-                filters = f if filters == {} else f&filters
+                filters = f if filters is None else f&filters
             if filterRead != FILTER_READ_DEFAULT:
                 read = False if int(filterRead)==0 else True
                 f = Eq("read", read)
-                filters = f if filters == {} else f&filters
+                filters = f if filters is None else f&filters
             if filterSource != FILTER_SOURCE_DEFAULT:
                 subFilters = [Eq("source",s) for s in filterSource.replace(" ","").split(";") if s != "*"]
                 f = subFilters.pop()
                 for otherSubF in subFilters:
                     f = f|otherSubF
-                filters = f if filters == {} else f&filters
+                filters = f if filters is None else f&filters
             if filterDate != FILTER_DATE_DEFAULT:
                 filterDate = filterDate.split(" TO ")
-                d1 = int(filterDate[0]) if filterDate[0] != "*" else "*"
-                d2 = int(filterDate[1]) if filterDate[1] != "*" else "*"
-                f = Between("date",d1,d2)
-                filters = f if filters == {} else f&filters
+                d1 = int(filterDate[0]) if filterDate[0] != "*" else None
+                d2 = int(filterDate[1]) if filterDate[1] != "*" else None
+                
+                if d1 is not None and d2 is not None:
+                    f = Between("date",d1,d2)
+                elif d1 is not None:
+                    f = Gte("date",d1)
+                elif d2 is not None:
+                    f = Lte("date",d2)
+                else:
+                    f = None
+                
+                if f:
+                    filters = f if filters is None else f&filters
 
             logger_file.debug(id="15",message="Query is: "+str(filters))
         
