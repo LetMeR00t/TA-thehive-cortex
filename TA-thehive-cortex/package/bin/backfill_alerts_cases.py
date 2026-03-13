@@ -134,15 +134,26 @@ class BACKFILL_ALERTS_CASES(smi.Script):
                     current_modular_input_args["type"] = input_type
                     current_modular_input_args["date"] = date_field
                     if date_field == "date":
-                        date_mode = "occured_date"
+                        date_mode = "occuredDate"
                     else:
-                        date_mode = date_field.replace("_", "last_")
-                    filters = Between(date_field, d1 * 1000, d2 * 1000)
+                        date_mode = date_field.lstrip("_")
+                    
+                    # Robust filter logic
+                    if d1 is not None and d2 is not None:
+                        filters = Between(date_field, int(d1 * 1000), int(d2 * 1000))
+                    elif d1 is not None:
+                        from thehive4py.query.filters import Gte
+                        filters = Gte(date_field, int(d1 * 1000))
+                    elif d2 is not None:
+                        from thehive4py.query.filters import Lte
+                        filters = Lte(date_field, int(d2 * 1000))
+                    else:
+                        filters = None
                     
                     if input_type == "cases":
                         (new_events, events_tasks) = thehive.get_cases_events(filters=filters, sortby=Desc(date_field), **current_modular_input_args)
                         for task in events_tasks:
-                            ew.write_event(smi.Event(source="thehive:"+stanza, host=thehive.session.hive_url[8:], index=helper.get_output_index(), sourcetype="thehive:"+date_mode+":case_tasks", data=json.dumps(task)))
+                            ew.write_event(smi.Event(source="thehive:"+stanza, host=thehive.session.hive_url[8:], index=helper.get_output_index(), sourcetype="thehive:"+date_mode+":tasks", data=json.dumps(task)))
                     elif input_type == "alerts":
                         new_events = thehive.get_alerts_events(filters=filters, **current_modular_input_args)
 

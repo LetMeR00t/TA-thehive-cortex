@@ -745,66 +745,291 @@
                         {
                             "field": "additional_information",
                             "label": "Additional information",
-                            "type": "multipleSelect",
+                            "type": "checkboxTree",
                             "options": {
                                 "delimiter": ",",
-                                "items": [
+                                "groups": [
                                     {
-                                        "value": "tasks",
-                                        "label": "Tasks"
+                                        "label": "Common",
+                                        "fields": [
+                                            "observables",
+                                            "attachments",
+                                            "ttps"
+                                        ],
+                                        "options": {
+                                            "isExpandable": true,
+                                            "expand": false
+                                        }
                                     },
                                     {
-                                        "value": "observables",
-                                        "label": "Observables"
+                                        "label": "Cases only",
+                                        "fields": [
+                                            "tasks",
+                                            "pages"
+                                        ],
+                                        "options": {
+                                            "isExpandable": true,
+                                            "expand": false
+                                        }
+                                    }
+                                ],
+                                "rows": [
+                                    {
+                                        "field": "observables",
+                                        "checkbox": {
+                                            "label": "Observables",
+                                            "defaultValue": false
+                                        }
                                     },
                                     {
-                                        "value": "attachments",
-                                        "label": "Attachments"
+                                        "field": "attachments",
+                                        "checkbox": {
+                                            "label": "Attachments",
+                                            "defaultValue": false
+                                        }
                                     },
                                     {
-                                        "value": "pages",
-                                        "label": "Pages"
+                                        "field": "ttps",
+                                        "checkbox": {
+                                            "label": "TTPs",
+                                            "defaultValue": false
+                                        }
                                     },
                                     {
-                                        "value": "ttps",
-                                        "label": "TTPs"
+                                        "field": "tasks",
+                                        "checkbox": {
+                                            "label": "Tasks",
+                                            "defaultValue": false
+                                        }
+                                    },
+                                    {
+                                        "field": "pages",
+                                        "checkbox": {
+                                            "label": "Pages",
+                                            "defaultValue": false
+                                        }
                                     }
                                 ]
                             },
                             "validators": [
                                 {
-                                    "type": "string",
-                                    "minLength": 0,
-                                    "maxLength": 200
+                                    "type": "regex",
+                                    "pattern": "^.*$",
+                                    "errorMsg": "Invalid input."
                                 }
                             ]
                         },
                         {
                             "field": "extra_data",
                             "label": "Extra data",
-                            "type": "multipleSelect",
+                            "type": "checkboxTree",
                             "options": {
                                 "delimiter": ",",
-                                "items": [
+                                "groups": [
                                     {
-                                        "value": "caseNumber",
-                                        "label": "(Alert) caseNumber"
+                                        "label": "Common",
+                                        "fields": [
+                                            "status",
+                                            "procedureCount"
+                                        ],
+                                        "options": {
+                                            "isExpandable": true,
+                                            "expand": false
+                                        }
                                     },
                                     {
-                                        "value": "status",
-                                        "label": "(Alert/Case) status"
+                                        "label": "Alerts only",
+                                        "fields": [
+                                            "caseNumber",
+                                            "importDate",
+                                            "relatedCase"
+                                        ],
+                                        "options": {
+                                            "isExpandable": true,
+                                            "expand": false
+                                        }
                                     },
                                     {
-                                        "value": "alerts",
-                                        "label": "(Case) alerts"
+                                        "label": "Cases only",
+                                        "fields": [
+                                            "observableStats",
+                                            "taskStats",
+                                            "alerts",
+                                            "alertCount",
+                                            "isOwner",
+                                            "shareCount",
+                                            "permissions",
+                                            "actionRequired",
+                                            "attachmentCount",
+                                            "contributors",
+                                            "computed.handlingDuration",
+                                            "computed.handlingDurationInSeconds",
+                                            "computed.handlingDurationInMinutes",
+                                            "computed.handlingDurationInHours",
+                                            "computed.handlingDurationInDays",
+                                            "links"
+                                        ],
+                                        "options": {
+                                            "isExpandable": true,
+                                            "expand": false
+                                        }
+                                    }
+                                ],
+                                "rows": [
+                                    {
+                                        "field": "status",
+                                        "checkbox": {
+                                            "label": "status",
+                                            "defaultValue": false
+                                        }
+                                    },
+                                    {
+                                        "field": "procedureCount",
+                                        "checkbox": {
+                                            "label": "procedureCount",
+                                            "defaultValue": false
+                                        }
+                                    },
+                                    {
+                                        "field": "caseNumber",
+                                        "checkbox": {
+                                            "label": "caseNumber",
+                                            "defaultValue": false
+                                        }
+                                    },
+                                    {
+                                        "field": "importDate",
+                                        "checkbox": {
+                                            "label": "importDate",
+                                            "defaultValue": false
+                                        }
+                                    },
+                                    {
+                                        "field": "relatedCase",
+                                        "checkbox": {
+                                            "label": "relatedCase",
+                                            "defaultValue": false
+                                        }
+                                    },
+                                    {
+                                        "field": "observableStats",
+                                        "checkbox": {
+                                            "label": "observableStats",
+                                            "defaultValue": false
+                                        }
+                                    },
+                                    {
+                                        "field": "taskStats",
+                                        "checkbox": {
+                                            "label": "taskStats",
+                                            "defaultValue": false
+                                        }
+                                    },
+                                    {
+                                        "field": "alerts",
+                                        "checkbox": {
+                                            "label": "alerts",
+                                            "defaultValue": false
+                                        }
+                                    },
+                                    {
+                                        "field": "alertCount",
+                                        "checkbox": {
+                                            "label": "alertCount",
+                                            "defaultValue": false
+                                        }
+                                    },
+                                    {
+                                        "field": "isOwner",
+                                        "checkbox": {
+                                            "label": "isOwner",
+                                            "defaultValue": false
+                                        }
+                                    },
+                                    {
+                                        "field": "shareCount",
+                                        "checkbox": {
+                                            "label": "shareCount",
+                                            "defaultValue": false
+                                        }
+                                    },
+                                    {
+                                        "field": "permissions",
+                                        "checkbox": {
+                                            "label": "permissions",
+                                            "defaultValue": false
+                                        }
+                                    },
+                                    {
+                                        "field": "actionRequired",
+                                        "checkbox": {
+                                            "label": "actionRequired",
+                                            "defaultValue": false
+                                        }
+                                    },
+                                    {
+                                        "field": "attachmentCount",
+                                        "checkbox": {
+                                            "label": "attachmentCount",
+                                            "defaultValue": false
+                                        }
+                                    },
+                                    {
+                                        "field": "contributors",
+                                        "checkbox": {
+                                            "label": "contributors",
+                                            "defaultValue": false
+                                        }
+                                    },
+                                    {
+                                        "field": "computed.handlingDuration",
+                                        "checkbox": {
+                                            "label": "computed.handlingDuration",
+                                            "defaultValue": false
+                                        }
+                                    },
+                                    {
+                                        "field": "computed.handlingDurationInSeconds",
+                                        "checkbox": {
+                                            "label": "computed.handlingDurationInSeconds",
+                                            "defaultValue": false
+                                        }
+                                    },
+                                    {
+                                        "field": "computed.handlingDurationInMinutes",
+                                        "checkbox": {
+                                            "label": "computed.handlingDurationInMinutes",
+                                            "defaultValue": false
+                                        }
+                                    },
+                                    {
+                                        "field": "computed.handlingDurationInHours",
+                                        "checkbox": {
+                                            "label": "computed.handlingDurationInHours",
+                                            "defaultValue": false
+                                        }
+                                    },
+                                    {
+                                        "field": "computed.handlingDurationInDays",
+                                        "checkbox": {
+                                            "label": "computed.handlingDurationInDays",
+                                            "defaultValue": false
+                                        }
+                                    },
+                                    {
+                                        "field": "links",
+                                        "checkbox": {
+                                            "label": "links",
+                                            "defaultValue": false
+                                        }
                                     }
                                 ]
                             },
                             "validators": [
                                 {
-                                    "type": "string",
-                                    "minLength": 0,
-                                    "maxLength": 200
+                                    "type": "regex",
+                                    "pattern": "^.*$",
+                                    "errorMsg": "Invalid input."
                                 }
                             ]
                         },
@@ -823,7 +1048,7 @@
                                         ],
                                         "options": {
                                             "isExpandable": true,
-                                            "expand": true
+                                            "expand": false
                                         }
                                     },
                                     {
@@ -833,7 +1058,7 @@
                                         ],
                                         "options": {
                                             "isExpandable": true,
-                                            "expand": true
+                                            "expand": false
                                         }
                                     },
                                     {
@@ -843,7 +1068,7 @@
                                         ],
                                         "options": {
                                             "isExpandable": true,
-                                            "expand": true
+                                            "expand": false
                                         }
                                     }
                                 ],
@@ -1049,7 +1274,7 @@
                                         ],
                                         "options": {
                                             "isExpandable": true,
-                                            "expand": true
+                                            "expand": false
                                         }
                                     },
                                     {
@@ -1059,7 +1284,7 @@
                                         ],
                                         "options": {
                                             "isExpandable": true,
-                                            "expand": true
+                                            "expand": false
                                         }
                                     },
                                     {
@@ -1069,7 +1294,7 @@
                                         ],
                                         "options": {
                                             "isExpandable": true,
-                                            "expand": true
+                                            "expand": false
                                         }
                                     }
                                 ],
@@ -1143,66 +1368,291 @@
                         {
                             "field": "additional_information",
                             "label": "Additional information",
-                            "type": "multipleSelect",
+                            "type": "checkboxTree",
                             "options": {
                                 "delimiter": ",",
-                                "items": [
+                                "groups": [
                                     {
-                                        "value": "tasks",
-                                        "label": "Tasks"
+                                        "label": "Common",
+                                        "fields": [
+                                            "observables",
+                                            "attachments",
+                                            "ttps"
+                                        ],
+                                        "options": {
+                                            "isExpandable": true,
+                                            "expand": false
+                                        }
                                     },
                                     {
-                                        "value": "observables",
-                                        "label": "Observables"
+                                        "label": "Cases only",
+                                        "fields": [
+                                            "tasks",
+                                            "pages"
+                                        ],
+                                        "options": {
+                                            "isExpandable": true,
+                                            "expand": false
+                                        }
+                                    }
+                                ],
+                                "rows": [
+                                    {
+                                        "field": "observables",
+                                        "checkbox": {
+                                            "label": "Observables",
+                                            "defaultValue": false
+                                        }
                                     },
                                     {
-                                        "value": "attachments",
-                                        "label": "Attachments"
+                                        "field": "attachments",
+                                        "checkbox": {
+                                            "label": "Attachments",
+                                            "defaultValue": false
+                                        }
                                     },
                                     {
-                                        "value": "pages",
-                                        "label": "Pages"
+                                        "field": "ttps",
+                                        "checkbox": {
+                                            "label": "TTPs",
+                                            "defaultValue": false
+                                        }
                                     },
                                     {
-                                        "value": "ttps",
-                                        "label": "TTPs"
+                                        "field": "tasks",
+                                        "checkbox": {
+                                            "label": "Tasks",
+                                            "defaultValue": false
+                                        }
+                                    },
+                                    {
+                                        "field": "pages",
+                                        "checkbox": {
+                                            "label": "Pages",
+                                            "defaultValue": false
+                                        }
                                     }
                                 ]
                             },
                             "validators": [
                                 {
-                                    "type": "string",
-                                    "minLength": 0,
-                                    "maxLength": 200
+                                    "type": "regex",
+                                    "pattern": "^.*$",
+                                    "errorMsg": "Invalid input."
                                 }
                             ]
                         },
                         {
                             "field": "extra_data",
                             "label": "Extra data",
-                            "type": "multipleSelect",
+                            "type": "checkboxTree",
                             "options": {
                                 "delimiter": ",",
-                                "items": [
+                                "groups": [
                                     {
-                                        "value": "caseNumber",
-                                        "label": "(Alert) caseNumber"
+                                        "label": "Common",
+                                        "fields": [
+                                            "status",
+                                            "procedureCount"
+                                        ],
+                                        "options": {
+                                            "isExpandable": true,
+                                            "expand": false
+                                        }
                                     },
                                     {
-                                        "value": "status",
-                                        "label": "(Alert/Case) status"
+                                        "label": "Alerts only",
+                                        "fields": [
+                                            "caseNumber",
+                                            "importDate",
+                                            "relatedCase"
+                                        ],
+                                        "options": {
+                                            "isExpandable": true,
+                                            "expand": false
+                                        }
                                     },
                                     {
-                                        "value": "alerts",
-                                        "label": "(Case) alerts"
+                                        "label": "Cases only",
+                                        "fields": [
+                                            "observableStats",
+                                            "taskStats",
+                                            "alerts",
+                                            "alertCount",
+                                            "isOwner",
+                                            "shareCount",
+                                            "permissions",
+                                            "actionRequired",
+                                            "attachmentCount",
+                                            "contributors",
+                                            "computed.handlingDuration",
+                                            "computed.handlingDurationInSeconds",
+                                            "computed.handlingDurationInMinutes",
+                                            "computed.handlingDurationInHours",
+                                            "computed.handlingDurationInDays",
+                                            "links"
+                                        ],
+                                        "options": {
+                                            "isExpandable": true,
+                                            "expand": false
+                                        }
+                                    }
+                                ],
+                                "rows": [
+                                    {
+                                        "field": "status",
+                                        "checkbox": {
+                                            "label": "status",
+                                            "defaultValue": false
+                                        }
+                                    },
+                                    {
+                                        "field": "procedureCount",
+                                        "checkbox": {
+                                            "label": "procedureCount",
+                                            "defaultValue": false
+                                        }
+                                    },
+                                    {
+                                        "field": "caseNumber",
+                                        "checkbox": {
+                                            "label": "caseNumber",
+                                            "defaultValue": false
+                                        }
+                                    },
+                                    {
+                                        "field": "importDate",
+                                        "checkbox": {
+                                            "label": "importDate",
+                                            "defaultValue": false
+                                        }
+                                    },
+                                    {
+                                        "field": "relatedCase",
+                                        "checkbox": {
+                                            "label": "relatedCase",
+                                            "defaultValue": false
+                                        }
+                                    },
+                                    {
+                                        "field": "observableStats",
+                                        "checkbox": {
+                                            "label": "observableStats",
+                                            "defaultValue": false
+                                        }
+                                    },
+                                    {
+                                        "field": "taskStats",
+                                        "checkbox": {
+                                            "label": "taskStats",
+                                            "defaultValue": false
+                                        }
+                                    },
+                                    {
+                                        "field": "alerts",
+                                        "checkbox": {
+                                            "label": "alerts",
+                                            "defaultValue": false
+                                        }
+                                    },
+                                    {
+                                        "field": "alertCount",
+                                        "checkbox": {
+                                            "label": "alertCount",
+                                            "defaultValue": false
+                                        }
+                                    },
+                                    {
+                                        "field": "isOwner",
+                                        "checkbox": {
+                                            "label": "isOwner",
+                                            "defaultValue": false
+                                        }
+                                    },
+                                    {
+                                        "field": "shareCount",
+                                        "checkbox": {
+                                            "label": "shareCount",
+                                            "defaultValue": false
+                                        }
+                                    },
+                                    {
+                                        "field": "permissions",
+                                        "checkbox": {
+                                            "label": "permissions",
+                                            "defaultValue": false
+                                        }
+                                    },
+                                    {
+                                        "field": "actionRequired",
+                                        "checkbox": {
+                                            "label": "actionRequired",
+                                            "defaultValue": false
+                                        }
+                                    },
+                                    {
+                                        "field": "attachmentCount",
+                                        "checkbox": {
+                                            "label": "attachmentCount",
+                                            "defaultValue": false
+                                        }
+                                    },
+                                    {
+                                        "field": "contributors",
+                                        "checkbox": {
+                                            "label": "contributors",
+                                            "defaultValue": false
+                                        }
+                                    },
+                                    {
+                                        "field": "computed.handlingDuration",
+                                        "checkbox": {
+                                            "label": "computed.handlingDuration",
+                                            "defaultValue": false
+                                        }
+                                    },
+                                    {
+                                        "field": "computed.handlingDurationInSeconds",
+                                        "checkbox": {
+                                            "label": "computed.handlingDurationInSeconds",
+                                            "defaultValue": false
+                                        }
+                                    },
+                                    {
+                                        "field": "computed.handlingDurationInMinutes",
+                                        "checkbox": {
+                                            "label": "computed.handlingDurationInMinutes",
+                                            "defaultValue": false
+                                        }
+                                    },
+                                    {
+                                        "field": "computed.handlingDurationInHours",
+                                        "checkbox": {
+                                            "label": "computed.handlingDurationInHours",
+                                            "defaultValue": false
+                                        }
+                                    },
+                                    {
+                                        "field": "computed.handlingDurationInDays",
+                                        "checkbox": {
+                                            "label": "computed.handlingDurationInDays",
+                                            "defaultValue": false
+                                        }
+                                    },
+                                    {
+                                        "field": "links",
+                                        "checkbox": {
+                                            "label": "links",
+                                            "defaultValue": false
+                                        }
                                     }
                                 ]
                             },
                             "validators": [
                                 {
-                                    "type": "string",
-                                    "minLength": 0,
-                                    "maxLength": 200
+                                    "type": "regex",
+                                    "pattern": "^.*$",
+                                    "errorMsg": "Invalid input."
                                 }
                             ]
                         }
@@ -1290,6 +1740,33 @@
                             ]
                         },
                         {
+                            "field": "event_mode",
+                            "label": "Event mode",
+                            "type": "singleSelect",
+                            "required": true,
+                            "help": "Detailed: collect the full observable event. Summarized: collect only data, dataType, ioc, type and tags fields.",
+                            "options": {
+                                "autoCompleteFields": [
+                                    {
+                                        "value": "detailed",
+                                        "label": "Detailed"
+                                    },
+                                    {
+                                        "value": "summarized",
+                                        "label": "Summarized"
+                                    }
+                                ]
+                            },
+                            "defaultValue": "detailed",
+                            "validators": [
+                                {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 20
+                                }
+                            ]
+                        },
+                        {
                             "field": "fields_removal",
                             "label": "Fields removal",
                             "type": "text",
@@ -1298,6 +1775,47 @@
                                     "type": "string",
                                     "minLength": 0,
                                     "maxLength": 1000
+                                }
+                            ]
+                        },
+                        {
+                            "field": "extra_data",
+                            "label": "Extra data",
+                            "type": "multipleSelect",
+                            "options": {
+                                "delimiter": ",",
+                                "items": [
+                                    {
+                                        "value": "seenSummary",
+                                        "label": "seenSummary"
+                                    },
+                                    {
+                                        "value": "shares",
+                                        "label": "shares"
+                                    },
+                                    {
+                                        "value": "links",
+                                        "label": "links"
+                                    },
+                                    {
+                                        "value": "permissions",
+                                        "label": "permissions"
+                                    },
+                                    {
+                                        "value": "isOwner",
+                                        "label": "isOwner"
+                                    },
+                                    {
+                                        "value": "shareCount",
+                                        "label": "shareCount"
+                                    }
+                                ]
+                            },
+                            "validators": [
+                                {
+                                    "type": "string",
+                                    "minLength": 0,
+                                    "maxLength": 500
                                 }
                             ]
                         }
@@ -1405,11 +1923,11 @@
                                 "items": [
                                     {
                                         "value": "_createdAt",
-                                        "label": "Last created"
+                                        "label": "Created time"
                                     },
                                     {
                                         "value": "_updatedAt",
-                                        "label": "Last updated"
+                                        "label": "Updated time"
                                     }
                                 ]
                             },
@@ -1438,6 +1956,33 @@
                             ]
                         },
                         {
+                            "field": "event_mode",
+                            "label": "Event mode",
+                            "type": "singleSelect",
+                            "required": true,
+                            "help": "Detailed: collect the full observable event. Summarized: collect only data, dataType, ioc, type and tags fields.",
+                            "options": {
+                                "autoCompleteFields": [
+                                    {
+                                        "value": "detailed",
+                                        "label": "Detailed"
+                                    },
+                                    {
+                                        "value": "summarized",
+                                        "label": "Summarized"
+                                    }
+                                ]
+                            },
+                            "defaultValue": "detailed",
+                            "validators": [
+                                {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 20
+                                }
+                            ]
+                        },
+                        {
                             "field": "fields_removal",
                             "label": "Fields removal",
                             "type": "text",
@@ -1446,6 +1991,47 @@
                                     "type": "string",
                                     "minLength": 0,
                                     "maxLength": 1000
+                                }
+                            ]
+                        },
+                        {
+                            "field": "extra_data",
+                            "label": "Extra data",
+                            "type": "multipleSelect",
+                            "options": {
+                                "delimiter": ",",
+                                "items": [
+                                    {
+                                        "value": "seenSummary",
+                                        "label": "seenSummary"
+                                    },
+                                    {
+                                        "value": "shares",
+                                        "label": "shares"
+                                    },
+                                    {
+                                        "value": "links",
+                                        "label": "links"
+                                    },
+                                    {
+                                        "value": "permissions",
+                                        "label": "permissions"
+                                    },
+                                    {
+                                        "value": "isOwner",
+                                        "label": "isOwner"
+                                    },
+                                    {
+                                        "value": "shareCount",
+                                        "label": "shareCount"
+                                    }
+                                ]
+                            },
+                            "validators": [
+                                {
+                                    "type": "string",
+                                    "minLength": 0,
+                                    "maxLength": 500
                                 }
                             ]
                         }

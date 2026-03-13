@@ -99,10 +99,21 @@ class BACKFILL_AUDIT(smi.Script):
                 "fields_removal": helper.get_arg("fields_removal") or "",
             }
 
-            filters = Between("_createdAt", int(d1 * 1000), int(d2 * 1000))
+            # Robust filter logic
+            if d1 is not None and d2 is not None:
+                filters = Between("_createdAt", int(d1 * 1000), int(d2 * 1000))
+            elif d1 is not None:
+                from thehive4py.query.filters import Gte
+                filters = Gte("_createdAt", int(d1 * 1000))
+            elif d2 is not None:
+                from thehive4py.query.filters import Lte
+                filters = Lte("_createdAt", int(d2 * 1000))
+            else:
+                filters = None
+
             new_events = thehive.get_audit_logs_events(filters=filters, **modular_input_args)
             for event in new_events:
-                ew.write_event(smi.Event(source="thehive:"+stanza, host=thehive.session.hive_url[8:], index=helper.get_output_index(), sourcetype="thehive:last_created:audit", data=json.dumps(event)))
+                ew.write_event(smi.Event(source="thehive:"+stanza, host=thehive.session.hive_url[8:], index=helper.get_output_index(), sourcetype="thehive:audit", data=json.dumps(event)))
             logger_file.info(id="70", message=str(len(new_events)) + " events were recovered.")
 
 if __name__ == '__main__':

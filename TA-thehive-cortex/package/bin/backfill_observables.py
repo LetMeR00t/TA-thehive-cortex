@@ -34,7 +34,9 @@ class BACKFILL_OBSERVABLES(smi.Script):
         scheme.add_argument(smi.Argument('backfill_end', required_on_create=True))
         scheme.add_argument(smi.Argument('date', required_on_create=False))
         scheme.add_argument(smi.Argument('max_size_value', required_on_create=False))
+        scheme.add_argument(smi.Argument('event_mode', required_on_create=False))
         scheme.add_argument(smi.Argument('fields_removal', required_on_create=False))
+        scheme.add_argument(smi.Argument('extra_data', required_on_create=False))
         return scheme
 
     def stream_events(self, inputs, ew):
@@ -97,15 +99,28 @@ class BACKFILL_OBSERVABLES(smi.Script):
 
             modular_input_args = {
                 "max_size_value": int(helper.get_arg("max_size_value")) if helper.get_arg("max_size_value") else 1000,
+                "event_mode": helper.get_arg("event_mode") or "detailed",
                 "fields_removal": helper.get_arg("fields_removal") or "",
+                "extra_data": helper.get_arg("extra_data") or "",
             }
 
             dates = (helper.get_arg("date") or "").split(",") if isinstance(helper.get_arg("date"), str) else (helper.get_arg("date") or ["_updatedAt", "_createdAt"])
 
             for date_field in dates:
                 modular_input_args["date"] = date_field
-                date_mode = date_field.replace("_", "last_")
-                filters = Between(date_field, d1 * 1000, d2 * 1000)
+                date_mode = date_field.lstrip("_")
+                # Robust filter logic
+                if d1 is not None and d2 is not None:
+                    filters = Between(date_field, int(d1 * 1000), int(d2 * 1000))
+                elif d1 is not None:
+                    from thehive4py.query.filters import Gte
+                    filters = Gte(date_field, int(d1 * 1000))
+                elif d2 is not None:
+                    from thehive4py.query.filters import Lte
+                    filters = Lte(date_field, int(d2 * 1000))
+                else:
+                    filters = None
+
                 new_events = thehive.get_observables_events(filters=filters, **modular_input_args)
                 for event in new_events:
                     ew.write_event(smi.Event(source="thehive:"+stanza, host=thehive.session.hive_url[8:], index=helper.get_output_index(), sourcetype="thehive:"+date_mode+":observables", data=json.dumps(event)))
