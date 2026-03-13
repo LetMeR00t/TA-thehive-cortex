@@ -1,5 +1,5 @@
 # encoding = utf-8
-import import_declare_test
+import ta_thehive_cortex_declare
 import os
 import sys
 import time
@@ -23,7 +23,7 @@ class BACKFILL_AUDIT(smi.Script):
 
     def get_scheme(self):
         scheme = smi.Scheme('backfill_audit')
-        scheme.description = 'Backfill: Audit'
+        scheme.description = 'TheHive: Audit - Backfill'
         scheme.use_external_validation = True
         scheme.streaming_mode_xml = True
         scheme.use_single_instance = False
@@ -65,13 +65,12 @@ class BACKFILL_AUDIT(smi.Script):
                         if ent.get('username') == username:
                             return [username, ent.get('clear_password')]
                 except Exception as e:
-                    self.log_error(f"Error retrieving credentials for {username}: {str(e)}")
+                    self.log_error(f"Error: {str(e)}")
                 return [username, ""]
 
         helper = MockHelper(input_item, stanza, custom_logger, inputs, exec_id)
-        (thehive, configuration, logger_file) = create_thehive_instance_modular_input(instance_id=helper.get_arg("instance_id"), helper=helper, acronym="MI-BAB", logger=custom_logger, exec_id=exec_id)
+        (thehive, configuration, logger_file) = create_thehive_instance_modular_input(instance_id=helper.get_arg("instance_id"), helper=helper, acronym="MI-THA-BF", logger=custom_logger, exec_id=exec_id)
 
-        # Backfill specific logic
         backfill_start = helper.get_arg("backfill_start")
         backfill_end = helper.get_arg("backfill_end")
 
@@ -81,40 +80,32 @@ class BACKFILL_AUDIT(smi.Script):
                     dt = datetime.datetime.strptime(date_str, fmt)
                     if fmt == "%Y-%m-%d" and is_end:
                         dt = dt.replace(hour=23, minute=59, second=59)
-                    return int(dt.timestamp())
+                    return int(dt.timestamp() * 1000)
                 except ValueError:
                     continue
-            raise ValueError(f"Invalid date format for backfill: {date_str}. Expected YYYY-MM-DD, YYYY-MM-DDTHH:MM:SS or YYYY-MM-DD HH:MM:SS")
+            raise ValueError(f"Invalid date format: {date_str}")
 
-        if backfill_start and backfill_end:
-            try:
-                d1 = parse_date(backfill_start)
-                d2 = parse_date(backfill_end, is_end=True)
-            except ValueError as e:
-                helper.log_error(str(e))
-                return
+        try:
+            d1 = parse_date(backfill_start)
+            d2 = parse_date(backfill_end, is_end=True)
+        except ValueError as e:
+            logger_file.error(id="MI-ERR", message=str(e))
+            return
 
-            modular_input_args = {
-                "max_size_value": int(helper.get_arg("max_size_value")) if helper.get_arg("max_size_value") else 1000,
-                "fields_removal": helper.get_arg("fields_removal") or "",
-            }
+        modular_input_args = {
+            "max_size_value": int(helper.get_arg("max_size_value")) if helper.get_arg("max_size_value") else 1000,
+            "fields_removal": helper.get_arg("fields_removal") or "",
+        }
 
-            # Robust filter logic
-            if d1 is not None and d2 is not None:
-                filters = Between("_createdAt", int(d1 * 1000), int(d2 * 1000))
-            elif d1 is not None:
-                from thehive4py.query.filters import Gte
-                filters = Gte("_createdAt", int(d1 * 1000))
-            elif d2 is not None:
-                from thehive4py.query.filters import Lte
-                filters = Lte("_createdAt", int(d2 * 1000))
-            else:
-                filters = None
-
+        filters = Between("_createdAt", d1, d2)
+        
+        try:
             new_events = thehive.get_audit_logs_events(filters=filters, **modular_input_args)
             for event in new_events:
                 ew.write_event(smi.Event(source="thehive:"+stanza, host=thehive.session.hive_url[8:], index=helper.get_output_index(), sourcetype="thehive:audit", data=json.dumps(event)))
-            logger_file.info(id="70", message=str(len(new_events)) + " events were recovered.")
+            logger_file.info(id="70", message=f"{str(len(new_events))} events were recovered.")
+        except Exception as e:
+            logger_file.error(id="MI-ERR", message=f"Error: {str(e)}")
 
 if __name__ == '__main__':
     exit_code = BACKFILL_AUDIT().run(sys.argv)
