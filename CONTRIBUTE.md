@@ -3,12 +3,13 @@
 ## Build & Packaging Lifecycle
 
 ### 1. Build (UCC Generation)
-The Add-on uses the [Splunk UCC Generator](https://splunk.github.io/addonfactory-ucc-generator/). To build the application, ensure you have Python 3.9+ installed and run the following command from the project root:
+The Add-on uses the [Splunk UCC Generator](https://splunk.github.io/addonfactory-ucc-generator/). To build the application, ensure you have Python 3.9 installed and run the following command from the project root:
 
 ```powershell
-ucc-gen build --source TA-thehive-cortex/package --output output --ta-version <version>
+# Recommended build command
+ucc-gen build --source TA-thehive-cortex/package --config TA-thehive-cortex/globalConfig.json --output output --ta-version 4.0.0 --overwrite -v --python-binary-name python
 ```
-*Note: You may need to specify `--python-binary-name` if your environment requires a specific Python path.*
+*Note: You may need to specify `--python-binary-name` (e.g., `python3.9` or the full path) if your default Python is not compatible.*
 
 ### 2. Package generation (.spl)
 Once the UCC build is completed in the `output/` folder, the `.spl` file (tar.gz archive compatible with Splunkbase/Cloud) must be generated. It is critical to perform a cleanup to ensure AppInspect compliance.
