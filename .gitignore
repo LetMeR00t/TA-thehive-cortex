@@ -138,4 +138,5 @@ output/
 tests/
 gemini/
 *.spl
-release_notes/
+# release_notes/
+!release_notes/

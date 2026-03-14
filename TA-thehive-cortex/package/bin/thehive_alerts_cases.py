@@ -1,5 +1,5 @@
 # encoding = utf-8
-import import_declare_test
+import ta_thehive_cortex_declare
 import os
 import sys
 import time
@@ -62,16 +62,13 @@ class THEHIVE_ALERTS_CASES(smi.Script):
             def log_error(self, msg): self.logger.error(msg)
             def new_event(self, **kwargs): return smi.Event(**kwargs)
             def get_user_credential_by_username(self, username):
-                self.log_debug(f"Searching credentials for username: {username}")
                 try:
                     entities = entity.getEntities('storage/passwords', namespace='TA-thehive-cortex', owner='nobody', sessionKey=self.session_key)
                     for _, ent in entities.items():
                         if ent.get('username') == username:
-                            self.log_debug(f"Credentials found for {username}")
                             return [username, ent.get('clear_password')]
                 except Exception as e:
-                    self.log_error(f"Error retrieving credentials for {username}: {str(e)}")
-                self.log_error(f"Credentials NOT FOUND for {username} in TA-thehive-cortex storage/passwords")
+                    self.log_error(f"Error: {str(e)}")
                 return [username, ""]
 
         helper = MockHelper(input_item, stanza, custom_logger, inputs, exec_id)
@@ -92,13 +89,9 @@ class THEHIVE_ALERTS_CASES(smi.Script):
 
         for input_type in types:
             for date_field in dates:
-                # startDate is only for cases, date is only for alerts (occurred time)
-                if input_type == "alerts" and date_field == "startDate":
-                    continue
-                if input_type == "cases" and date_field == "date":
-                    continue
+                if input_type == "alerts" and date_field == "startDate": continue
+                if input_type == "cases" and date_field == "date": continue
                 
-                # Process independently depending on the additional fields provided
                 current_modular_input_args = modular_input_args.copy()
                 if input_type == "alerts":
                     current_modular_input_args["additional_information"] = [item for item in modular_input_args["additional_information"] if item in ["observables", "attachments"]]
@@ -109,40 +102,27 @@ class THEHIVE_ALERTS_CASES(smi.Script):
 
                 current_modular_input_args["type"] = input_type
                 current_modular_input_args["date"] = date_field
+                date_mode = "occuredDate" if date_field == "date" else date_field.lstrip("_")
                 
-                if date_field == "date":
-                    date_mode = "occuredDate"
-                else:
-                    date_mode = date_field.lstrip("_")
                 interval = int(input_item.get("interval", 60))
                 now = time.time()
                 d2 = now - now % 60
                 d1 = d2 - interval
-                # Robust filter logic
-                if d1 is not None and d2 is not None:
-                    filters = Between(date_field, int(d1 * 1000), int(d2 * 1000))
-                elif d1 is not None:
-                    from thehive4py.query.filters import Gte
-                    filters = Gte(date_field, int(d1 * 1000))
-                elif d2 is not None:
-                    from thehive4py.query.filters import Lte
-                    filters = Lte(date_field, int(d2 * 1000))
-                else:
-                    filters = None
+                filters = Between(date_field, int(d1 * 1000), int(d2 * 1000))
                 
                 try:
                     if input_type == "cases":
                         (new_events, events_tasks) = thehive.get_cases_events(filters=filters, sortby=Desc(date_field), **current_modular_input_args)
                         if "tasks" in current_modular_input_args["additional_information"]:
                             for task in events_tasks:
-                                ew.write_event(smi.Event(source="thehive:"+stanza, host=thehive.session.hive_url[8:], index=helper.get_output_index(), sourcetype="thehive:"+date_mode+":tasks", data=json.dumps(task)))
+                                ew.write_event(smi.Event(source="thehive:"+stanza, host=thehive.session.hive_url[8:], index=helper.get_output_index(), sourcetype="thehive:tasks:"+date_mode, data=json.dumps(task)))
                     elif input_type == "alerts":
                         new_events = thehive.get_alerts_events(filters=filters, **current_modular_input_args)
                     
                     for event in new_events:
-                        ew.write_event(smi.Event(source="thehive:"+stanza, host=thehive.session.hive_url[8:], index=helper.get_output_index(), sourcetype="thehive:"+date_mode+":"+input_type, data=json.dumps(event)))
+                        ew.write_event(smi.Event(source="thehive:"+stanza, host=thehive.session.hive_url[8:], index=helper.get_output_index(), sourcetype="thehive:"+input_type+":"+date_mode, data=json.dumps(event)))
                 except Exception as e:
-                    logger_file.error(id="MI-ERR", message="Error processing type={} with date_field={}: {}".format(input_type, date_field, str(e)))
+                    logger_file.error(id="MI-ERR", message=f"Error: {str(e)}")
 
 if __name__ == '__main__':
     exit_code = THEHIVE_ALERTS_CASES().run(sys.argv)

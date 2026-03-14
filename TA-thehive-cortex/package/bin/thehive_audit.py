@@ -1,5 +1,5 @@
 # encoding = utf-8
-import import_declare_test
+import ta_thehive_cortex_declare
 import os
 import sys
 import time
@@ -57,16 +57,13 @@ class THEHIVE_AUDIT(smi.Script):
             def log_error(self, msg): self.logger.error(msg)
             def new_event(self, **kwargs): return smi.Event(**kwargs)
             def get_user_credential_by_username(self, username):
-                self.log_debug(f"Searching credentials for username: {username}")
                 try:
                     entities = entity.getEntities('storage/passwords', namespace='TA-thehive-cortex', owner='nobody', sessionKey=self.session_key)
                     for _, ent in entities.items():
                         if ent.get('username') == username:
-                            self.log_debug(f"Credentials found for {username}")
                             return [username, ent.get('clear_password')]
                 except Exception as e:
-                    self.log_error(f"Error retrieving credentials for {username}: {str(e)}")
-                self.log_error(f"Credentials NOT FOUND for {username} in TA-thehive-cortex storage/passwords")
+                    self.log_error(f"Error: {str(e)}")
                 return [username, ""]
 
         helper = MockHelper(input_item, stanza, custom_logger, inputs, exec_id)
@@ -81,22 +78,14 @@ class THEHIVE_AUDIT(smi.Script):
         now = time.time()
         d2 = now - now % 60
         d1 = d2 - interval
-        
-        # Robust filter logic
-        if d1 is not None and d2 is not None:
-            filters = Between("_createdAt", int(d1 * 1000), int(d2 * 1000))
-        elif d1 is not None:
-            from thehive4py.query.filters import Gte
-            filters = Gte("_createdAt", int(d1 * 1000))
-        elif d2 is not None:
-            from thehive4py.query.filters import Lte
-            filters = Lte("_createdAt", int(d2 * 1000))
-        else:
-            filters = None
+        filters = Between("_createdAt", int(d1 * 1000), int(d2 * 1000))
 
-        new_events = thehive.get_audit_logs_events(filters=filters, **modular_input_args)
-        for event in new_events:
-            ew.write_event(smi.Event(source="thehive:"+stanza, host=thehive.session.hive_url[8:], index=helper.get_output_index(), sourcetype="thehive:audit", data=json.dumps(event)))
+        try:
+            new_events = thehive.get_audit_logs_events(filters=filters, **modular_input_args)
+            for event in new_events:
+                ew.write_event(smi.Event(source="thehive:"+stanza, host=thehive.session.hive_url[8:], index=helper.get_output_index(), sourcetype="thehive:audit", data=json.dumps(event)))
+        except Exception as e:
+            logger_file.error(id="MI-ERR", message=f"Error: {str(e)}")
 
 if __name__ == '__main__':
     exit_code = THEHIVE_AUDIT().run(sys.argv)

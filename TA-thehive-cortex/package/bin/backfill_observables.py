@@ -123,7 +123,7 @@ class BACKFILL_OBSERVABLES(smi.Script):
 
                 new_events = thehive.get_observables_events(filters=filters, **modular_input_args)
                 for event in new_events:
-                    ew.write_event(smi.Event(source="thehive:"+stanza, host=thehive.session.hive_url[8:], index=helper.get_output_index(), sourcetype="thehive:"+date_mode+":observables", data=json.dumps(event)))
+                    ew.write_event(smi.Event(source="thehive:"+stanza, host=thehive.session.hive_url[8:], index=helper.get_output_index(), sourcetype="thehive:observables:"+date_mode, data=json.dumps(event)))
                 logger_file.info(id="70", message=f"{str(len(new_events))} events (date: {date_mode}) were recovered.")
 
 if __name__ == '__main__':

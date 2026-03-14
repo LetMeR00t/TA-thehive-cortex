@@ -3,53 +3,42 @@
 ## Build & Packaging Lifecycle
 
 ### 1. Build (UCC Generation)
-The Add-on uses the [Splunk UCC Generator](https://splunk.github.io/addonfactory-ucc-generator/). To build the application, ensure you have Python 3.9 installed and run the following command from the project root:
+The Add-on uses the [Splunk UCC Generator](https://splunk.github.io/addonfactory-ucc-generator/). 
 
+**Prerequisite:** You MUST use **Python 3.9** to run the UCC generator to ensure compatibility with Splunk's internal libraries.
+
+To build the application:
 ```powershell
 # Recommended build command
 ucc-gen build --source TA-thehive-cortex/package --config TA-thehive-cortex/globalConfig.json --output output --ta-version 4.0.0 --overwrite -v --python-binary-name python
 ```
 *Note: You may need to specify `--python-binary-name` (e.g., `python3.9` or the full path) if your default Python is not compatible.*
 
-### 2. Package generation (.spl)
-Once the UCC build is completed in the `output/` folder, the `.spl` file (tar.gz archive compatible with Splunkbase/Cloud) must be generated. It is critical to perform a cleanup to ensure AppInspect compliance.
+### 2. Packaging (.spl)
+For the agent's environment, the following cleanup is applied to the `output/` folder before packaging:
 
-**Packaging procedure:**
-1. Navigate to the `output/` folder.
-2. Purge residual files (Windows binaries, Mako templates, cache).
-3. Compress the app folder in `.tar.gz` format and rename it to `.spl`.
-
-**Recommended PowerShell command (for Windows users):**
 ```powershell
-# Final cleanup before compression
+# Cleanup Windows binaries (keep Mako templates as they are required for UI)
 Get-ChildItem "output/TA-thehive-cortex/lib" -Recurse -Include *.exe, *.pyd | Remove-Item -Force -ErrorAction SilentlyContinue;
 
-# Creating the .spl file (tar.gz)
+# Create the .spl file
 tar -cvzf TA-thehive-cortex.spl -C output TA-thehive-cortex
 ```
 
-## UCC Architecture
-The add-on uses the UCC framework. The `globalConfig.json` file is the source of truth for the user interface and modular inputs.
+---
 
-## Lessons Learned (v4.0.0 Migration)
+## Autonomous Safe Deployment (CRITICAL)
+**NEVER** delete the `local/` folder in the Splunk directory during a deployment. 
 
-### 1. Modular Inputs Management
-- **Business Logic**: All collection logic must reside in `package/bin/input_module_<name>.py`.
-- **Wrappers**: Never manually create wrapper scripts (`thehive_alerts_cases.py`, etc.) in `package/bin/`. UCC generates them automatically in `output/`. If they exist in the source, they can cause conflicts or unexpected behaviors.
-- **Parameters**: Ensure all parameters defined in `globalConfig.json` (e.g., `max_size_value`, `fields_removal`) are retrieved via `helper.get_arg('<name>')` in the Python script.
+Deployment must be performed directly via shell commands (PowerShell) by strictly following these steps:
+1. Stop Splunk to release file locks.
+2. Temporarily move the existing `local/` folder to a backup directory outside the app's tree.
+3. Remove the old version of the application.
+4. Deploy the new build from `output/`.
+5. Restore the backed-up `local/` folder.
+6. Restart Splunk.
 
-### 2. Cleanup and Redundancy
-- **Binary Folders**: Avoid uppercase folders like `TA-thehive-cortex/` inside `bin/`. Prefer a lowercase Python package (e.g., `ta_thehive_cortex/`) and configure `sys.path` in a declaration file (e.g., `ta_thehive_cortex_declare.py`).
-- **Useless Scripts**: Systematically remove old scripts from v3.9.0 that do not follow the `input_module_*.py` pattern.
-
-### 3. Splunk AppInspect & Quality
-- **DATETIME_CONFIG**: In `props.conf`, never leave `DATETIME_CONFIG` empty. If Splunk should handle time automatically, it is better to remove the line rather than leaving it empty, to avoid AppInspect failure.
-- **Navigation (XML)**: UCC generates its own `default.xml`. If you restore a manual file, ensure it contains the necessary entries for UCC pages (`configuration`, `inputs`, `dashboard`).
-- **Verbose Build**: Always use `ucc-gen build ... -v` to identify conflicting files during generation.
-
-### 4. Deployment (Windows)
-- If `.pyd` or `.exe` files are locked, it is necessary to completely stop Splunk AND kill orphan Python processes before attempting a folder copy.
-
-### 5. Preservation of Local Configuration
-- **local/ folder**: During deployment (copying `output/` to Splunk), it is imperative to preserve the existing `local/` folder in Splunk. This folder contains encrypted passwords, accounts, and instance configurations defined by the user via the interface.
-- **Strategy**: Always backup or temporarily move the `local/` folder before deleting the old app version to install the new UCC build.
+**Direct command example:**
+```powershell
+& "C:\Program Files\Splunk\bin\splunk.exe" stop; if (Test-Path "C:\Program Files\Splunk\etc\apps\TA-thehive-cortex\local") { Move-Item "C:\Program Files\Splunk\etc\apps\TA-thehive-cortex\local" "$env:TEMP\TA_local_backup" -Force }; Remove-Item "C:\Program Files\Splunk\etc\apps\TA-thehive-cortex" -Recurse -Force -ErrorAction SilentlyContinue; Copy-Item -Path "output\TA-thehive-cortex" -Destination "C:\Program Files\Splunk\etc\apps\" -Recurse -Force; if (Test-Path "$env:TEMP\TA_local_backup") { if (-not (Test-Path "C:\Program Files\Splunk\etc\apps\TA-thehive-cortex\local")) { New-Item -Path "C:\Program Files\Splunk\etc\apps\TA-thehive-cortex\local" -ItemType Directory }; Copy-Item -Path "$env:TEMP\TA_local_backup\*" -Destination "C:\Program Files\Splunk\etc\apps\TA-thehive-cortex\local" -Recurse -Force; Remove-Item "$env:TEMP\TA_local_backup" -Recurse -Force }; & "C:\Program Files\Splunk\bin\splunk.exe" start
+```

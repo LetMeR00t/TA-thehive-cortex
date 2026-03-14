@@ -1,5 +1,5 @@
 # encoding = utf-8
-import import_declare_test
+import ta_thehive_cortex_declare
 import os
 import sys
 import time
@@ -24,7 +24,7 @@ class BACKFILL_ALERTS_CASES(smi.Script):
 
     def get_scheme(self):
         scheme = smi.Scheme('backfill_alerts_cases')
-        scheme.description = 'Backfill: Alerts & Cases'
+        scheme.description = 'TheHive: Alerts & Cases - Backfill'
         scheme.use_external_validation = True
         scheme.streaming_mode_xml = True
         scheme.use_single_instance = False
@@ -76,7 +76,6 @@ class BACKFILL_ALERTS_CASES(smi.Script):
         helper = MockHelper(input_item, stanza, custom_logger, inputs, exec_id)
         (thehive, configuration, logger_file) = create_thehive_instance_modular_input(instance_id=helper.get_arg("instance_id"), helper=helper, acronym="MI-BAC", logger=custom_logger, exec_id=exec_id)
 
-        # Backfill specific logic
         backfill_start = helper.get_arg("backfill_start")
         backfill_end = helper.get_arg("backfill_end")
 
@@ -86,81 +85,66 @@ class BACKFILL_ALERTS_CASES(smi.Script):
                     dt = datetime.datetime.strptime(date_str, fmt)
                     if fmt == "%Y-%m-%d" and is_end:
                         dt = dt.replace(hour=23, minute=59, second=59)
-                    return int(dt.timestamp())
+                    return int(dt.timestamp() * 1000)
                 except ValueError:
                     continue
-            raise ValueError(f"Invalid date format for backfill: {date_str}. Expected YYYY-MM-DD, YYYY-MM-DDTHH:MM:SS or YYYY-MM-DD HH:MM:SS")
+            raise ValueError(f"Invalid date format: {date_str}")
 
-        if backfill_start and backfill_end:
-            try:
-                d1 = parse_date(backfill_start)
-                d2 = parse_date(backfill_end, is_end=True)
-            except ValueError as e:
-                helper.log_error(str(e))
-                return
+        try:
+            d1 = parse_date(backfill_start)
+            d2 = parse_date(backfill_end, is_end=True)
+        except ValueError as e:
+            logger_file.error(id="MI-ERR", message=str(e))
+            return
 
-            types = helper.get_arg("type")
-            if types is None: types = ["alerts", "cases"]
-            elif isinstance(types, str): types = types.split(",")
+        types = helper.get_arg("type")
+        if types is None: types = ["alerts", "cases"]
+        elif isinstance(types, str): types = types.split(",")
 
-            selected_dates = helper.get_arg("date") or []
-            if isinstance(selected_dates, str): selected_dates = selected_dates.split(",")
-            dates = selected_dates if selected_dates else ["_updatedAt", "_createdAt", "startDate"]
+        selected_dates = helper.get_arg("date") or []
+        if isinstance(selected_dates, str): selected_dates = selected_dates.split(",")
+        dates = selected_dates if selected_dates else ["_updatedAt", "_createdAt", "startDate"]
 
-            modular_input_args = {
-                "max_size_value": int(helper.get_arg("max_size_value")) if helper.get_arg("max_size_value") else 1000,
-                "fields_removal": helper.get_arg("fields_removal") or "",
-                "additional_information": (helper.get_arg("additional_information") or "").split(",") if isinstance(helper.get_arg("additional_information"), str) else (helper.get_arg("additional_information") or []),
-                "extra_data": (helper.get_arg("extra_data") or "").split(",") if isinstance(helper.get_arg("extra_data"), str) else (helper.get_arg("extra_data") or [])
-            }
+        modular_input_args = {
+            "max_size_value": int(helper.get_arg("max_size_value")) if helper.get_arg("max_size_value") else 1000,
+            "fields_removal": helper.get_arg("fields_removal") or "",
+            "additional_information": (helper.get_arg("additional_information") or "").split(",") if isinstance(helper.get_arg("additional_information"), str) else (helper.get_arg("additional_information") or []),
+            "extra_data": (helper.get_arg("extra_data") or "").split(",") if isinstance(helper.get_arg("extra_data"), str) else (helper.get_arg("extra_data") or [])
+        }
 
-            for input_type in types:
-                for date_field in dates:
-                    # startDate is only for cases, date is only for alerts (occurred time)
-                    if input_type == "alerts" and date_field == "startDate":
-                        continue
-                    if input_type == "cases" and date_field == "date":
-                        continue
+        for input_type in types:
+            for date_field in dates:
+                if input_type == "alerts" and date_field == "startDate": continue
+                if input_type == "cases" and date_field == "date": continue
 
-                    # Process independently depending on the additional fields provided
-                    current_modular_input_args = modular_input_args.copy()
-                    if input_type == "alerts":
-                        current_modular_input_args["additional_information"] = [item for item in modular_input_args["additional_information"] if item in ["observables", "attachments"]]
-                        current_modular_input_args["extra_data"] = [item for item in modular_input_args["extra_data"] if item in ["caseNumber", "status"]]
-                    elif input_type == "cases":
-                        current_modular_input_args["additional_information"] = [item for item in modular_input_args["additional_information"] if item in ["tasks", "observables", "attachments", "pages", "ttps"]]
-                        current_modular_input_args["extra_data"] = [item for item in modular_input_args["extra_data"] if item in ["status", "alerts"]]
+                current_modular_input_args = modular_input_args.copy()
+                if input_type == "alerts":
+                    current_modular_input_args["additional_information"] = [item for item in modular_input_args["additional_information"] if item in ["observables", "attachments"]]
+                    current_modular_input_args["extra_data"] = [item for item in modular_input_args["extra_data"] if item in ["caseNumber", "status"]]
+                elif input_type == "cases":
+                    current_modular_input_args["additional_information"] = [item for item in modular_input_args["additional_information"] if item in ["tasks", "observables", "attachments", "pages", "ttps"]]
+                    current_modular_input_args["extra_data"] = [item for item in modular_input_args["extra_data"] if item in ["status", "alerts"]]
 
-                    current_modular_input_args["type"] = input_type
-                    current_modular_input_args["date"] = date_field
-                    if date_field == "date":
-                        date_mode = "occuredDate"
-                    else:
-                        date_mode = date_field.lstrip("_")
-                    
-                    # Robust filter logic
-                    if d1 is not None and d2 is not None:
-                        filters = Between(date_field, int(d1 * 1000), int(d2 * 1000))
-                    elif d1 is not None:
-                        from thehive4py.query.filters import Gte
-                        filters = Gte(date_field, int(d1 * 1000))
-                    elif d2 is not None:
-                        from thehive4py.query.filters import Lte
-                        filters = Lte(date_field, int(d2 * 1000))
-                    else:
-                        filters = None
-                    
+                current_modular_input_args["type"] = input_type
+                current_modular_input_args["date"] = date_field
+                date_mode = "occuredDate" if date_field == "date" else date_field.lstrip("_")
+
+                filters = Between(date_field, d1, d2)
+                
+                try:
                     if input_type == "cases":
                         (new_events, events_tasks) = thehive.get_cases_events(filters=filters, sortby=Desc(date_field), **current_modular_input_args)
-                        for task in events_tasks:
-                            ew.write_event(smi.Event(source="thehive:"+stanza, host=thehive.session.hive_url[8:], index=helper.get_output_index(), sourcetype="thehive:"+date_mode+":tasks", data=json.dumps(task)))
+                        if "tasks" in current_modular_input_args["additional_information"]:
+                            for task in events_tasks:
+                                ew.write_event(smi.Event(source="thehive:"+stanza, host=thehive.session.hive_url[8:], index=helper.get_output_index(), sourcetype="thehive:tasks:"+date_mode, data=json.dumps(task)))
                     elif input_type == "alerts":
                         new_events = thehive.get_alerts_events(filters=filters, **current_modular_input_args)
-
+                    
                     for event in new_events:
-                        ew.write_event(smi.Event(source="thehive:"+stanza, host=thehive.session.hive_url[8:], index=helper.get_output_index(), sourcetype="thehive:"+date_mode+":"+input_type, data=json.dumps(event)))
-
+                        ew.write_event(smi.Event(source="thehive:"+stanza, host=thehive.session.hive_url[8:], index=helper.get_output_index(), sourcetype="thehive:"+input_type+":"+date_mode, data=json.dumps(event)))
                     logger_file.info(id="70", message=f"{str(len(new_events))} events (type: {input_type}, date: {date_mode}) were recovered.")
+                except Exception as e:
+                    logger_file.error(id="MI-ERR", message=f"Error: {str(e)}")
 
 if __name__ == '__main__':
     exit_code = BACKFILL_ALERTS_CASES().run(sys.argv)
