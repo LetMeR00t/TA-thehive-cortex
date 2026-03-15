@@ -98,8 +98,8 @@ dataTypeList = [
 ]
 
 
-def create_datatype_lookup(thehive: TheHive4Splunk):
-    """This function is used to create a datatype lookup if it doesn't exist"""
+def create_datatype_lookup(thehive: TheHive4Splunk, force=False):
+    """This function is used to create or refresh a datatype lookup"""
 
     dataType_dict = dict()
     # if it does not exist, create thehive_datatypes.csv
@@ -109,37 +109,46 @@ def create_datatype_lookup(thehive: TheHive4Splunk):
     )
     th_dt_filename = os.path.join(directory, "thehive_datatypes.csv")
 
-    if not os.path.exists(th_dt_filename):
-        # file th_dt_filename.csv doesn't exist. Create the file
+    if force or not os.path.exists(th_dt_filename):
+        # file th_dt_filename.csv doesn't exist or force refresh. Create/Update the file
         observables = list()
         observables.append(["field_name", "field_type", "datatype", "description"])
 
         # Get the list of datatypes from TheHive itself
-        th_datatypes = thehive.observable_type.list()
-        thehive.logger_file.debug(
-            id="THC-2", message="Datatypes recovered from TheHive: " + str(th_datatypes)
-        )
-
-        # Parse the response
-        for dt in th_datatypes:
-            observables.append([dt["name"], "observable", dt["name"], ""])
-            dataType_dict[dt["name"]] = dt["name"]
-
-        # Write the file
         try:
-            if not os.path.exists(directory):
-                os.makedirs(directory)
-            with open(th_dt_filename, "w", newline="") as file_object:
-                csv_writer = csv.writer(file_object, delimiter=",")
-                for observable in observables:
-                    csv_writer.writerow(observable)
-        except IOError:
-            thehive.logger_file.error(
-                id="THC-5",
-                message="FATAL {} could not be opened in write mode".format(
-                    th_dt_filename
-                ),
+            th_datatypes = thehive.observable_type.list()
+            thehive.logger_file.debug(
+                id="THC-2", message="Datatypes recovered from TheHive: " + str(th_datatypes)
             )
+
+            # Parse the response
+            for dt in th_datatypes:
+                observables.append([dt["name"], "observable", dt["name"], ""])
+                dataType_dict[dt["name"]] = dt["name"]
+
+            # Write the file
+            try:
+                if not os.path.exists(directory):
+                    os.makedirs(directory)
+                with open(th_dt_filename, "w", newline="") as file_object:
+                    csv_writer = csv.writer(file_object, delimiter=",")
+                    for observable in observables:
+                        csv_writer.writerow(observable)
+            except IOError:
+                thehive.logger_file.error(
+                    id="THC-5",
+                    message="FATAL {} could not be opened in write mode".format(
+                        th_dt_filename
+                    ),
+                )
+        except Exception as e:
+            thehive.logger_file.error(
+                id="THC-6",
+                message="Could not recover datatypes from TheHive API: " + str(e)
+            )
+            if not force:
+                # If it's not a force refresh, we can't do anything
+                raise e
 
     return dataType_dict
 
@@ -154,6 +163,36 @@ def get_datatype_dict(thehive: TheHive4Splunk):
     )
     th_dt_filename = os.path.join(directory, "thehive_datatypes.csv")
     thehive.logger_file.debug(id="THC-10", message="Directory found: " + str(directory))
+
+    # Smart Sync: Check if file exists and its age
+    refresh_needed = False
+    if os.path.exists(th_dt_filename):
+        file_age = time.time() - os.path.getmtime(th_dt_filename)
+        if file_age > 86400:  # 24 hours
+            thehive.logger_file.info(
+                id="THC-11",
+                message=f"File {th_dt_filename} is older than 24h ({int(file_age)}s). Refreshing from API..."
+            )
+            refresh_needed = True
+    else:
+        refresh_needed = True
+
+    if refresh_needed:
+        try:
+            # Try to refresh/create the lookup
+            create_datatype_lookup(thehive, force=True)
+        except Exception:
+            # Fallback to existing file if API refresh fails
+            if os.path.exists(th_dt_filename):
+                thehive.logger_file.warn(
+                    id="THC-12",
+                    message=f"API refresh failed for {th_dt_filename}. Falling back to existing file."
+                )
+            else:
+                thehive.logger_file.error(
+                    id="THC-13",
+                    message=f"API refresh failed and no existing file {th_dt_filename} found."
+                )
 
     if os.path.exists(th_dt_filename):
         try:
@@ -179,8 +218,6 @@ def get_datatype_dict(thehive: TheHive4Splunk):
                     id="THC-16",
                     message=f"file {th_dt_filename} empty, malformed or not readable",
                 )
-    else:
-        dataType_dict = create_datatype_lookup(thehive)
     return dataType_dict
 
 

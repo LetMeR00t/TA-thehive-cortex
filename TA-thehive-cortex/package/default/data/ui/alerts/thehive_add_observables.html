@@ -1,0 +1,120 @@
+<form class="form-horizontal form-complex">
+
+    <div class="control-group">
+        <label class="control-label" for="thehive_instance_id">Instance <span class="required">*</span> </label>
+        
+        <div class="controls">
+            <span class="help-block"> 
+                    Indicate which instance to use (Set the 'id' provided under 'Instances'). You can use '&lt;default&gt;' to set automatically the ID to the default set parameter in the configuration page.
+            </span>
+            <splunk-search-dropdown name="action.thehive_add_observables.param.thehive_instance_id" id="thehive_instance_id"
+                allow-custom-value=true
+                search="| rest /servicesNS/nobody/TA-thehive-cortex/thehive_cortex_instances splunk_server=local | rename title as id | where type=&quot;TheHive5&quot; | eval instance_label = id+&quot; (&quot;+environment+&quot;)&quot; | append [| makeresults | eval id=&quot;&lt;default&gt;&quot;, instance_label=&quot;&lt;default&gt;&quot;] | sort -id"
+                label-field="instance_label"
+                value-field="id" />
+        </div>
+    </div>
+
+    <div class="control-group">
+        <label class="control-label" for="id_field">Target Alert/Case ID(s) <span class="required">*</span> </label>
+
+        <div class="controls">
+            <span class="help-block"> 
+                    A field name or static value (comma-separated) that contains the internal ID(s) of the target alert(s) or case(s). Format must be ~[0-9]+ (e.g., ~12345).
+            </span>
+            <input type="text" class="input-xlarge" name="action.thehive_add_observables.param.id_field" id="id_field" placeholder="e.g. ~12345 or id_field" />
+        </div>
+    </div>
+
+    <div class="control-group">
+        <label class="control-label" for="target_type_field">Target Type</label>
+
+        <div class="controls">
+            <span class="help-block"> 
+                    A field name or static value ("alert" or "case") indicating the type of the target.
+            </span>
+            <input type="text" class="input-xlarge" name="action.thehive_add_observables.param.target_type_field" id="target_type_field" placeholder="alert" />
+        </div>
+    </div>
+
+    <div class="control-group">
+        <label class="control-label" for="tags_field">Tags</label>
+
+        <div class="controls">
+            <span class="help-block"> 
+                    A field name or static value (comma-separated) for observable tags.
+            </span>
+            <input type="text" class="input-xlarge" name="action.thehive_add_observables.param.tags_field" id="tags_field" placeholder="" />
+        </div>
+    </div>
+
+    <div class="control-group">
+        <label class="control-label" for="tlp_field">TLP</label>
+
+        <div class="controls">
+            <span class="help-block"> 
+                    A field name or static value (WHITE, GREEN, AMBER, AMBER+STRICT, RED) for observable TLP.
+            </span>
+            <input type="text" class="input-xlarge" name="action.thehive_add_observables.param.tlp_field" id="tlp_field" placeholder="AMBER" />
+        </div>
+    </div>
+
+    <div class="control-group">
+        <label class="control-label" for="pap_field">PAP</label>
+
+        <div class="controls">
+            <span class="help-block"> 
+                    A field name or static value (WHITE, GREEN, AMBER, RED) for observable PAP.
+            </span>
+            <input type="text" class="input-xlarge" name="action.thehive_add_observables.param.pap_field" id="pap_field" placeholder="AMBER" />
+        </div>
+    </div>
+
+    <div class="control-group">
+        <label class="control-label" for="ioc_field">Is IOC</label>
+
+        <div class="controls">
+            <span class="help-block"> 
+                    A field name or static value (true/false) indicating if the observable is an IOC.
+            </span>
+            <input type="text" class="input-xlarge" name="action.thehive_add_observables.param.ioc_field" id="ioc_field" placeholder="false" />
+        </div>
+    </div>
+
+    <div class="control-group">
+        <label class="control-label" for="sighted_field">Sighted</label>
+
+        <div class="controls">
+            <span class="help-block"> 
+                    A field name or static value (true/false) indicating if the observable has been sighted.
+            </span>
+            <input type="text" class="input-xlarge" name="action.thehive_add_observables.param.sighted_field" id="sighted_field" placeholder="false" />
+        </div>
+    </div>
+
+    <div class="control-group">
+        <label class="control-label" for="sighted_date_field">Sighted Date</label>
+
+        <div class="controls">
+            <span class="help-block"> 
+                    A field name containing the sighting date (Splunk epoch time). If Sighted is enabled and no date is found, it defaults to the current time.
+            </span>
+            <input type="text" class="input-xlarge" name="action.thehive_add_observables.param.sighted_date_field" id="sighted_date_field" placeholder="" />
+        </div>
+    </div>
+
+    <div class="control-group">
+        <label class="control-label" for="scope">Scope</label>
+        
+        <div class="controls">
+            <span class="help-block"> 
+                    Select the scope for result fields. Default is all fields.
+            </span>
+            <select class="" name="action.thehive_add_observables.param.scope" id="scope">
+                <option value="0">Include only listed fields in thehive_datatypes.csv</option>
+                <option value="1">Include all fields (default datatype is 'other')</option>
+            </select>
+        </div>
+    </div>
+
+</form>

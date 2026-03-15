@@ -49,6 +49,7 @@ The overall process is as follows:
 it will be initialised with the default datatypes (see [example file](../TA-thehive-cortex/README/thehive_datatypes.csv.sample))
 - save your search as an alert.
 - set the alert action "thehive_create_a_new_alert": it will create an alert into TheHive.
+- set the alert action "thehive_add_observables": it will add observable(s) to an existing alert or case into TheHive using internal IDs (~12345).
 - you can pass additional info, TLP per observables, custom fields, modify title, description, etc. directly from the results of your search.
 
 > Please note that the following examples are only there to formalize example of data and explain how the script is processing them
@@ -311,6 +312,19 @@ In this example, alert title will be the value of field `myfield` from result se
 - Severity: Change the severity (Low/Medium/High) of the created alert. Default is High
 - TLP: Change the TLP of the created alert. Default is TLP:AMBER
 - PAP: Change the PAP of the created alert. Default is PAP:AMBER
+
+### Add observable(s) overall description
+
+- TheHive instance: one of the instances defined in the instances dashboard. You can use "&lt;default&gt;" to use the default instance defined in the configuration page.
+- Target Alert/Case ID(s): A field name or static value (comma-separated) that contains the internal ID(s) of the target alert(s) or case(s). Format must be ~[0-9]+ (e.g., ~12345).
+- Target Type: A field name or static value ("alert" or "case") indicating the type of the target.
+- Tags: A field name or static value (comma-separated) for observable tags.
+- TLP: A field name or static value (WHITE, GREEN, AMBER, AMBER+STRICT, RED) for observable TLP.
+- PAP: A field name or static value (WHITE, GREEN, AMBER, RED) for observable PAP.
+- Is IOC: A field name or static value (true/false) indicating if the observable is an IOC.
+- Sighted: A field name or static value (true/false) indicating if the observable has been sighted.
+- Sighted Date: A field name containing the sighting date (Splunk epoch time). If Sighted is enabled and no date is found, it defaults to the current time.
+- Scope: you can choose to (option 1) include **only listed** fields in thehive_datatypes.csv or (option 2) include **all fields** (default datatype is 'other').
 
 ### Manage fields to become observables
 
