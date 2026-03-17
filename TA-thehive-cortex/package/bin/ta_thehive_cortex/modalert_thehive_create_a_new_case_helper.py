@@ -280,22 +280,36 @@ def create_case(
                             )
                     except Exception as e:
                         # Catch 400 "already exists" and log as WARNING
-                        if "already exists" in str(e).lower() or (hasattr(e, 'status_code') and e.status_code == 400):
+                        status_code = getattr(e, 'status_code', None)
+                        if status_code is None and hasattr(e, 'response'):
+                            status_code = getattr(e.response, 'status_code', None)
+                        
+                        error_msg = str(e).lower()
+                        is_duplicate = "already exists" in error_msg or "duplicate" in error_msg or status_code in [400, 409]
+                        
+                        if is_duplicate:
                             thehive.logger_file.warning(
                                 id="136",
-                                message="Observable already exists in case {}. Skipping. url={}, data={}".format(
-                                    new_case["_id"], thehive.session.hive_url, str(observable)
+                                message="Observable already exists in case {} (Status={}). Skipping. url={}, data={}".format(
+                                    new_case["_id"], status_code, thehive.session.hive_url, str(observable)
                                 ),
                             )
                         else:
+                            # Log the full error context for debugging
+                            response_text = ""
+                            if hasattr(e, 'response'):
+                                try:
+                                    response_text = f" | Response: {e.response.text}"
+                                except: pass
                             thehive.logger_file.error(
                                 id="137",
                                 message="TheHive observable update on recent case creation has failed. "
-                                "url={}, data={}, observable={}, error={}".format(
+                                "url={}, data={}, observable={}, error={}{}".format(
                                     thehive.session.hive_url,
                                     str(case),
                                     str(observable),
                                     str(e),
+                                    response_text
                                 ),
                             )
 

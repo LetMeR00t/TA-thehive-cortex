@@ -26,6 +26,8 @@ class AlertActionWorkerthehive_add_observables(ModularAlertBase):
 
     def validate_params(self):
 
+        self.log_info(f"Received configuration: {str(self.configuration)}")
+
         if not self.get_param("thehive_instance_id"):
             self.log_error('thehive_instance_id is a mandatory parameter, but its value is None.')
             return False

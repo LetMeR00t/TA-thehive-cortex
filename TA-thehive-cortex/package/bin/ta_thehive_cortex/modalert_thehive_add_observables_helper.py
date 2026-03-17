@@ -176,9 +176,23 @@ def process_event(helper, *args, **kwargs):
                     logger_file.info(id="THAO-50", message=f"Successfully added observable to {target_type} {tid}")
                 except Exception as e:
                     # Catch 400 "already exists" and log as WARNING
-                    if "already exists" in str(e).lower() or (hasattr(e, 'status_code') and e.status_code == 400):
-                        logger_file.warning(id="THAO-60", message=f"Observable already exists in {target_type} {tid}. Skipping.")
+                    # We check: message text, status_code attribute, or response object status_code
+                    status_code = getattr(e, 'status_code', None)
+                    if status_code is None and hasattr(e, 'response'):
+                        status_code = getattr(e.response, 'status_code', None)
+                    
+                    error_msg = str(e).lower()
+                    is_duplicate = "already exists" in error_msg or "duplicate" in error_msg or status_code in [400, 409]
+                    
+                    if is_duplicate:
+                        logger_file.warning(id="THAO-60", message=f"Observable already exists in {target_type} {tid} (Status={status_code}). Skipping.")
                     else:
-                        logger_file.error(id="THAO-70", message=f"Failed to add observable to {target_type} {tid}: {str(e)}")
+                        # Log the full error context for debugging
+                        response_text = ""
+                        if hasattr(e, 'response'):
+                            try:
+                                response_text = f" | Response: {e.response.text}"
+                            except: pass
+                        logger_file.error(id="THAO-70", message=f"Failed to add observable to {target_type} {tid}: {str(e)}{response_text}")
 
     return 0
