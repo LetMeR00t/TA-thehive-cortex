@@ -94,6 +94,7 @@
 | eval label = case(
     sourcetype=="modular_alerts:thehive_create_a_new_alert", "TheHive: Create Alert",
     sourcetype=="modular_alerts:thehive_create_a_new_case", "TheHive: Create Case",
+    sourcetype=="modular_alerts:thehive_add_observables", "TheHive: Add Observable(s)",
     sourcetype=="modular_alerts:thehive_run_function", "TheHive: Run Function",
     sourcetype=="modular_alerts:cortex_run_a_new_job", "Cortex: Run Job",
     1=1, sourcetype
@@ -212,8 +213,8 @@
 | eval type = case(type_val=="10" OR type_val=="DEBUG", "DEBUG", type_val=="20" OR type_val=="INFO", "INFO", type_val=="30" OR type_val=="WARNING", "WARNING", type_val=="40" OR type_val=="ERROR", "ERROR", 1=1, type_val)
 | eval exec_id = coalesce(exec_id_extract, "N/A"), signature = coalesce(signature_extract, _raw)
 | search exec_id=$exec_id$
-| search type=ERROR OR signature="[CAA-THCA-125]*"
-| eval information = if(like(signature,"%CAA-THCA-125%"),"Alert was created","An issue was found")
+| search type=ERROR OR signature="[CAA-THCA-125]*" OR signature="[THAO-50]*"
+| eval information = if(like(signature,"%CAA-THCA-125%") OR like(signature,"%THAO-50%"),"Alert/Observable was created","An issue was found")
 | timechart count by information</query>
           <earliest>$time.earliest$</earliest>
           <latest>$time.latest$</latest>

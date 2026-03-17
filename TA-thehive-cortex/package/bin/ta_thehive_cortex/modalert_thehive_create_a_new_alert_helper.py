@@ -231,13 +231,30 @@ def create_alert(
                 new_alert = thehive.alert.create(alert)
                 alert_created = True
             except TheHiveError as e:
-                thehive.logger_file.warning(
-                    id="122",
-                    message="TheHive alert creation has failed. Will retry... "
-                    "url={}, data={}, content={}, error={}".format(
-                        thehive.session.hive_url, str(alert), str(new_alert), str(e)
-                    ),
-                )
+                # Catch 400/409 "already exists" and log as WARNING
+                status_code = getattr(e, 'status_code', None)
+                if status_code is None and hasattr(e, 'response'):
+                    status_code = getattr(e.response, 'status_code', None)
+                
+                error_msg = str(e).lower()
+                is_duplicate = "already exists" in error_msg or "duplicate" in error_msg or status_code in [400, 409]
+
+                if is_duplicate:
+                    thehive.logger_file.warning(
+                        id="122",
+                        message="TheHive alert creation has failed (Duplicate found, Status={}). Will retry... "
+                        "url={}, data={}, error={}".format(
+                            status_code, thehive.session.hive_url, str(alert), str(e)
+                        ),
+                    )
+                else:
+                    thehive.logger_file.warning(
+                        id="123",
+                        message="TheHive alert creation has failed. Will retry... "
+                        "url={}, data={}, content={}, error={}".format(
+                            thehive.session.hive_url, str(alert), str(new_alert), str(e)
+                        ),
+                    )
             retry_count += 1
         if retry_count == max_retry:
             thehive.logger_file.error(

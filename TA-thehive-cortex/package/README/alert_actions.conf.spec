@@ -45,6 +45,19 @@ python.version = python3
 param.thehive_instance_id = <string>
 param.title = <string>
 
+[thehive_add_observables]
+python.version = python3
+param.thehive_instance_id = <string>
+param.id_field = <string>
+param.target_type_field = <string>
+param.tags_field = <string>
+param.tlp_field = <string>
+param.pap_field = <string>
+param.ioc_field = <string>
+param.sighted_field = <string>
+param.sighted_date_field = <string>
+param.scope = <string>
+
 [cortex_run_a_new_job]
 python.version = python3
 param.data_field_name = <string>

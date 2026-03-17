@@ -10,6 +10,9 @@ __version__ = "4.0.0"
 __maintainer__ = "Alexandre Demeyer"
 __email__ = "letmer00t@gmail.com"
 
+log_context = "[]"
+log_id = 0
+
 def initialize_globals(log_content_input="[]"):
     global log_context
     global log_id

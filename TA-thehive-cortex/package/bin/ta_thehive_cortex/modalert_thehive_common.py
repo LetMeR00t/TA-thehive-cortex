@@ -98,8 +98,8 @@ dataTypeList = [
 ]
 
 
-def create_datatype_lookup(thehive: TheHive4Splunk):
-    """This function is used to create a datatype lookup if it doesn't exist"""
+def create_datatype_lookup(thehive: TheHive4Splunk, force=False):
+    """This function is used to create or refresh a datatype lookup"""
 
     dataType_dict = dict()
     # if it does not exist, create thehive_datatypes.csv
@@ -109,37 +109,46 @@ def create_datatype_lookup(thehive: TheHive4Splunk):
     )
     th_dt_filename = os.path.join(directory, "thehive_datatypes.csv")
 
-    if not os.path.exists(th_dt_filename):
-        # file th_dt_filename.csv doesn't exist. Create the file
+    if force or not os.path.exists(th_dt_filename):
+        # file th_dt_filename.csv doesn't exist or force refresh. Create/Update the file
         observables = list()
         observables.append(["field_name", "field_type", "datatype", "description"])
 
         # Get the list of datatypes from TheHive itself
-        th_datatypes = thehive.observable_type.list()
-        thehive.logger_file.debug(
-            id="THC-2", message="Datatypes recovered from TheHive: " + str(th_datatypes)
-        )
-
-        # Parse the response
-        for dt in th_datatypes:
-            observables.append([dt["name"], "observable", dt["name"], ""])
-            dataType_dict[dt["name"]] = dt["name"]
-
-        # Write the file
         try:
-            if not os.path.exists(directory):
-                os.makedirs(directory)
-            with open(th_dt_filename, "w", newline="") as file_object:
-                csv_writer = csv.writer(file_object, delimiter=",")
-                for observable in observables:
-                    csv_writer.writerow(observable)
-        except IOError:
-            thehive.logger_file.error(
-                id="THC-5",
-                message="FATAL {} could not be opened in write mode".format(
-                    th_dt_filename
-                ),
+            th_datatypes = thehive.observable_type.list()
+            thehive.logger_file.debug(
+                id="THC-2", message="Datatypes recovered from TheHive: " + str(th_datatypes)
             )
+
+            # Parse the response
+            for dt in th_datatypes:
+                observables.append([dt["name"], "observable", dt["name"], ""])
+                dataType_dict[dt["name"]] = dt["name"]
+
+            # Write the file
+            try:
+                if not os.path.exists(directory):
+                    os.makedirs(directory)
+                with open(th_dt_filename, "w", newline="") as file_object:
+                    csv_writer = csv.writer(file_object, delimiter=",")
+                    for observable in observables:
+                        csv_writer.writerow(observable)
+            except IOError:
+                thehive.logger_file.error(
+                    id="THC-5",
+                    message="FATAL {} could not be opened in write mode".format(
+                        th_dt_filename
+                    ),
+                )
+        except Exception as e:
+            thehive.logger_file.error(
+                id="THC-6",
+                message="Could not recover datatypes from TheHive API: " + str(e)
+            )
+            if not force:
+                # If it's not a force refresh, we can't do anything
+                raise e
 
     return dataType_dict
 
@@ -154,6 +163,36 @@ def get_datatype_dict(thehive: TheHive4Splunk):
     )
     th_dt_filename = os.path.join(directory, "thehive_datatypes.csv")
     thehive.logger_file.debug(id="THC-10", message="Directory found: " + str(directory))
+
+    # Smart Sync: Check if file exists and its age
+    refresh_needed = False
+    if os.path.exists(th_dt_filename):
+        file_age = time.time() - os.path.getmtime(th_dt_filename)
+        if file_age > 86400:  # 24 hours
+            thehive.logger_file.info(
+                id="THC-11",
+                message=f"File {th_dt_filename} is older than 24h ({int(file_age)}s). Refreshing from API..."
+            )
+            refresh_needed = True
+    else:
+        refresh_needed = True
+
+    if refresh_needed:
+        try:
+            # Try to refresh/create the lookup
+            create_datatype_lookup(thehive, force=True)
+        except Exception:
+            # Fallback to existing file if API refresh fails
+            if os.path.exists(th_dt_filename):
+                thehive.logger_file.warn(
+                    id="THC-12",
+                    message=f"API refresh failed for {th_dt_filename}. Falling back to existing file."
+                )
+            else:
+                thehive.logger_file.error(
+                    id="THC-13",
+                    message=f"API refresh failed and no existing file {th_dt_filename} found."
+                )
 
     if os.path.exists(th_dt_filename):
         try:
@@ -179,8 +218,6 @@ def get_datatype_dict(thehive: TheHive4Splunk):
                     id="THC-16",
                     message=f"file {th_dt_filename} empty, malformed or not readable",
                 )
-    else:
-        dataType_dict = create_datatype_lookup(thehive)
     return dataType_dict
 
 
@@ -245,27 +282,30 @@ def parse_events(helper, thehive: TheHive4Splunk, alert_args):
         )
 
         sourceRef = ""
+        unique_id_field = alert_args.get("unique_id_field")
         # Define thehive alert unique ID (if duplicated, alert creations fails)
         if (
             "alert_mode" in alert_args
             and alert_args["alert_mode"] == "es_mode"
-            and alert_args["unique_id_field"] not in row
+            and unique_id_field
+            and unique_id_field not in row
         ) or (
             "case_mode" in alert_args
             and alert_args["case_mode"] == "es_mode"
-            and alert_args["unique_id_field"] not in row
+            and unique_id_field
+            and unique_id_field not in row
         ):
             # Check if it's coming from Splunk ES
             if "event_id" in row:
                 sourceRef = row["event_id"]
             else:
                 sourceRef = helper.sid
-        elif alert_args["unique_id_field"] in row:
-            newSource = str(row[alert_args["unique_id_field"]])
+        elif unique_id_field and unique_id_field in row:
+            newSource = str(row[unique_id_field])
             if newSource not in [None, ""]:
                 # grabs that field's value and assigns it to our sourceRef
                 sourceRef = newSource
-                del row_sanitized[alert_args["unique_id_field"]]
+                del row_sanitized[unique_id_field]
             else:
                 sourceRef = helper.sid + alert_reference_time
         else:
@@ -298,7 +338,8 @@ def parse_events(helper, thehive: TheHive4Splunk, alert_args):
 
         # check if title contains a field name instead of a string.
         # if yes, strip it from the row and assign value to title
-        if alert_args["title"] == "<inheritance>":
+        arg_title = alert_args.get("title")
+        if arg_title == "<inheritance>":
             # Find the most accurate information for the title
             if "search_name" in row:
                 # Use this information coming from Splunk ES
@@ -307,24 +348,25 @@ def parse_events(helper, thehive: TheHive4Splunk, alert_args):
             else:
                 # Take the name of the savedsearch itself
                 alert["title"] = helper.settings["search_name"]
-        elif alert_args["title"]:
+        elif arg_title:
             # Field is not null but it's not inheritance, try to format the field
-            alert["title"] = extract_field(row, alert_args["title"])
+            alert["title"] = extract_field(row, arg_title)
             # Check if sanitization is required
-            if alert_args["title"] in row:
-                del row_sanitized[alert_args["title"]]
+            if arg_title in row:
+                del row_sanitized[arg_title]
         else:
             # Give a default name
             alert["title"] = "Notable event"
 
         # check if description contains a field name instead of a string.
         # if yes, strip it from the row and assign value to description
-        if alert_args["description"]:
+        arg_description = alert_args.get("description")
+        if arg_description:
             # Field is not null, try to format the field
-            alert["description"] = extract_field(row, alert_args["description"])
+            alert["description"] = extract_field(row, arg_description)
             # Check if sanitization is required
-            if alert_args["description"] in row:
-                del row_sanitized[alert_args["description"]]
+            if arg_description in row:
+                del row_sanitized[arg_description]
         elif "description" in row:
             # Description is provided in the event
             alert["description"] = row["description"]
@@ -341,7 +383,7 @@ def parse_events(helper, thehive: TheHive4Splunk, alert_args):
             alert["severity"] = SEVERITY[str(row["th_severity"]).lower()]
             del row_sanitized["th_severity"]
         else:
-            alert["severity"] = alert_args["severity"]
+            alert["severity"] = alert_args.get("severity", 2) # Default to Medium
 
         # check if tlp is provided or not in the logs (Splunk ES event)
         if row.get("th_tlp") in TLP:
@@ -351,7 +393,7 @@ def parse_events(helper, thehive: TheHive4Splunk, alert_args):
             alert["tlp"] = TLP[str(row["th_tlp"]).upper()]
             del row_sanitized["th_tlp"]
         else:
-            alert["tlp"] = alert_args["tlp"]
+            alert["tlp"] = alert_args.get("tlp", 2) # Default to AMBER
 
         # check if pap is provided or not in the logs (Splunk ES event)
         if row.get("th_pap") in PAP:
@@ -361,13 +403,14 @@ def parse_events(helper, thehive: TheHive4Splunk, alert_args):
             alert["pap"] = PAP[str(row["th_pap"]).upper()]
             del row_sanitized["th_pap"]
         else:
-            alert["pap"] = alert_args["pap"]
+            alert["pap"] = alert_args.get("pap", 2) # Default to AMBER
 
         # find the field name used for a valid timestamp
         # and strip it from the row
-        if alert_args["timestamp"] in row:
-            del row_sanitized[alert_args["timestamp"]]
-            newTimestamp = str(int(float(row.pop(alert_args["timestamp"]))))
+        arg_timestamp = alert_args.get("timestamp")
+        if arg_timestamp and arg_timestamp in row:
+            del row_sanitized[arg_timestamp]
+            newTimestamp = str(int(float(row.pop(arg_timestamp))))
             thehive.logger_file.debug(
                 id="THC-80", message="new Timestamp from row: {} ".format(newTimestamp)
             )
@@ -381,7 +424,7 @@ def parse_events(helper, thehive: TheHive4Splunk, alert_args):
                 id="THC-85", message="alert timestamp: {} ".format(alert["timestamp"])
             )
         else:
-            alert["timestamp"] = alert_args["timestamp"]
+            alert["timestamp"] = arg_timestamp if arg_timestamp else int(time.time() * 1000)
 
         observables_data = dict()
         # now we take those KV pairs to add to dict
@@ -563,45 +606,54 @@ def parse_events(helper, thehive: TheHive4Splunk, alert_args):
                 obs_datatype = data["datatype"] if "datatype" in data else "other"
                 # Test if the observable has at least its value
                 if "value" in data:
-                    obs_data = data["value"]
-                    obs_message = (
-                        data["description"]
-                        if "description" in data
-                        else "No description provided for this observable"
+                    # Multi-value support: split by comma, semicolon, pipe or newline
+                    raw_val_str = str(data["value"])
+                    raw_values = [v.strip() for v in re.split(r'[,;|\\n]+', raw_val_str) if v.strip()]
+                    
+                    thehive.logger_file.debug(
+                        id="THC-112",
+                        message=f"Multi-value split for {field}: '{raw_val_str}' -> {str(raw_values)}"
                     )
                     
-                    # Handle tags correctly: must be a list of strings, each max 128 chars
-                    obs_tags_raw = data.get("tags", "")
-                    if isinstance(obs_tags_raw, list):
-                        obs_tags = [str(t) for t in obs_tags_raw]
-                    else:
-                        obs_tags = [t.strip() for t in str(obs_tags_raw).split(",") if t.strip()]
-                    
-                    # Add the field in the tags and truncate each tag to 128 chars
-                    obs_tags.append("field:" + field)
-                    obs_tags = [t[:128] for t in obs_tags]
-                    
-                    obs_tlp = TLP.get(str(data.get("tlp")), TLP["AMBER"])
-                    obs_pap = PAP.get(str(data.get("pap")), PAP["AMBER"])
-                    obs_is_ioc = data["ioc"] if "ioc" in data else False
-                    obs_sighted = data["sighted"] if "sighted" in data else True
-                    obs_sighted_at = int(data["sightedAt"]) if "sightedAt" in data else None
-                    obs_ignore_similarity = data["ignoreSimilarity"] if "ignoreSimilarity" in data else False
+                    for obs_data in raw_values:
+                        obs_message = (
+                            data["description"]
+                            if "description" in data
+                            else "No description provided for this observable"
+                        )
+                        
+                        # Handle tags correctly: must be a list of strings, each max 128 chars
+                        obs_tags_raw = data.get("tags", "")
+                        if isinstance(obs_tags_raw, list):
+                            obs_tags = [str(t) for t in obs_tags_raw]
+                        else:
+                            obs_tags = [t.strip() for t in str(obs_tags_raw).split(",") if t.strip()]
+                        
+                        # Add the field in the tags and truncate each tag to 128 chars
+                        obs_tags.append("field:" + field)
+                        obs_tags = [t[:128] for t in obs_tags]
+                        
+                        obs_tlp = TLP.get(str(data.get("tlp")), TLP["AMBER"])
+                        obs_pap = PAP.get(str(data.get("pap")), PAP["AMBER"])
+                        obs_is_ioc = data["ioc"] if "ioc" in data else False
+                        obs_sighted = data["sighted"] if "sighted" in data else True
+                        obs_sighted_at = int(data["sightedAt"]) if "sightedAt" in data else None
+                        obs_ignore_similarity = data["ignoreSimilarity"] if "ignoreSimilarity" in data else False
 
-                    observable = dict(
-                        dataType=obs_datatype,
-                        data=obs_data,
-                        message=obs_message,
-                        tags=obs_tags,
-                        tlp=obs_tlp,
-                        pap=obs_pap,
-                        ioc=obs_is_ioc,
-                        sighted=obs_sighted,
-                        sightedAt=obs_sighted_at,
-                        ignoreSimilarity=obs_ignore_similarity,
-                    )
-                    if observable not in observables:
-                        observables.append(observable)
+                        observable = dict(
+                            dataType=obs_datatype,
+                            data=obs_data,
+                            message=obs_message,
+                            tags=obs_tags,
+                            tlp=obs_tlp,
+                            pap=obs_pap,
+                            ioc=obs_is_ioc,
+                            sighted=obs_sighted,
+                            sightedAt=obs_sighted_at,
+                            ignoreSimilarity=obs_ignore_similarity,
+                        )
+                        if observable not in observables:
+                            observables.append(observable)
 
                 else:
                     thehive.logger_file.warn(
@@ -620,9 +672,8 @@ def parse_events(helper, thehive: TheHive4Splunk, alert_args):
         else:
             alert["observables"] = []
             thehive.logger_file.debug(
-                id="THC-116", message="No observable found for an alert: " + str(alert)
+                id="THC-116", message=f"No observable found in current row (sourceRef={srcRef})."
             )
-
         # Process customFields
         alert["customFields"] = [InputCustomField(cf) for cf in customFields]
 

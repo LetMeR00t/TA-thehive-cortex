@@ -101,6 +101,7 @@ celerybeat.pid
 
 # Environments
 .env
+.env.example
 .venv
 env/
 venv/
@@ -136,7 +137,6 @@ tasks/
 output/
 .gemini/
 tests/
-gemini/
 *.spl
 # release_notes/
 !release_notes/

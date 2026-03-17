@@ -249,34 +249,69 @@ def create_case(
             # Processing Observables if any
             if "observables" in cases[srcRef]:
                 for observable in cases[srcRef]["observables"]:
-                    response = thehive.observable.create_in_case(
-                        case_id=new_case["_id"], observable=observable
-                    )
+                    try:
+                        response = thehive.observable.create_in_case(
+                            case_id=new_case["_id"], observable=observable
+                        )
 
-                    if "failure" in response:
-                        # somehow we got a bad response code from thehive
-                        thehive.logger_file.error(
-                            id="135",
-                            message="TheHive observable update on recent case creation has failed. "
-                            "url={}, data={}, content={}, observable={}, error={}".format(
-                                thehive.session.hive_url,
-                                str(case),
-                                str(response),
-                                str(observable),
-                                str(response["failure"]),
-                            ),
-                        )
-                    else:
-                        response = response[0]
-                        # log response status
-                        thehive.logger_file.info(
-                            id="130",
-                            message="TheHive case {} was successfully updated with the observable {} on url={}".format(
-                                new_case["_id"],
-                                response["data"].replace(".", "[.]"),
-                                thehive.session.hive_url,
-                            ),
-                        )
+                        if "failure" in response:
+                            # somehow we got a bad response code from thehive
+                            thehive.logger_file.error(
+                                id="135",
+                                message="TheHive observable update on recent case creation has failed. "
+                                "url={}, data={}, content={}, observable={}, error={}".format(
+                                    thehive.session.hive_url,
+                                    str(case),
+                                    str(response),
+                                    str(observable),
+                                    str(response["failure"]),
+                                ),
+                            )
+                        else:
+                            response = response[0]
+                            # log response status
+                            thehive.logger_file.info(
+                                id="130",
+                                message="TheHive case {} was successfully updated with the observable {} on url={}".format(
+                                    new_case["_id"],
+                                    response["data"].replace(".", "[.]"),
+                                    thehive.session.hive_url,
+                                ),
+                            )
+                    except Exception as e:
+                        # Catch 400 "already exists" and log as WARNING
+                        status_code = getattr(e, 'status_code', None)
+                        if status_code is None and hasattr(e, 'response'):
+                            status_code = getattr(e.response, 'status_code', None)
+                        
+                        error_msg = str(e).lower()
+                        is_duplicate = "already exists" in error_msg or "duplicate" in error_msg or status_code in [400, 409]
+                        
+                        if is_duplicate:
+                            thehive.logger_file.warning(
+                                id="136",
+                                message="Observable already exists in case {} (Status={}). Skipping. url={}, data={}".format(
+                                    new_case["_id"], status_code, thehive.session.hive_url, str(observable)
+                                ),
+                            )
+                        else:
+                            # Log the full error context for debugging
+                            response_text = ""
+                            if hasattr(e, 'response'):
+                                try:
+                                    response_text = f" | Response: {e.response.text}"
+                                except: pass
+                            thehive.logger_file.error(
+                                id="137",
+                                message="TheHive observable update on recent case creation has failed. "
+                                "url={}, data={}, observable={}, error={}{}".format(
+                                    thehive.session.hive_url,
+                                    str(case),
+                                    str(observable),
+                                    str(e),
+                                    response_text
+                                ),
+                            )
 
             # Processing TTPs if any
             if "ttps" in cases[srcRef]:
