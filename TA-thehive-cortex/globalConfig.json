@@ -659,6 +659,14 @@
                     ]
                 },
                 {
+                    "groupName": "tasks",
+                    "groupTitle": "Tasks",
+                    "groupServices": [
+                        "thehive_tasks",
+                        "backfill_tasks"
+                    ]
+                },
+                {
                     "groupName": "instance_status",
                     "groupTitle": "Instance Status",
                     "groupServices": [
@@ -2626,6 +2634,386 @@
                                         0,
                                         10000
                                     ]
+                                }
+                            ]
+                        },
+                        {
+                            "field": "max_size_value",
+                            "label": "Max size for values",
+                            "type": "text",
+                            "defaultValue": "1000",
+                            "validators": [
+                                {
+                                    "type": "number",
+                                    "range": [
+                                        1,
+                                        1000000
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "field": "fields_removal",
+                            "label": "Fields removal",
+                            "type": "text",
+                            "validators": [
+                                {
+                                    "type": "string",
+                                    "minLength": 0,
+                                    "maxLength": 1000
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "name": "thehive_tasks",
+                    "title": "Tasks: Regular",
+                    "sourcetype": "thehive:tasks",
+                    "entity": [
+                        {
+                            "field": "name",
+                            "label": "Name",
+                            "type": "text",
+                            "required": true,
+                            "validators": [
+                                {
+                                    "type": "regex",
+                                    "errorMsg": "Input Name must begin with a letter and consist exclusively of alphanumeric characters and underscores.",
+                                    "pattern": "^[a-zA-Z]\\w*$"
+                                }
+                            ]
+                        },
+                        {
+                            "field": "interval",
+                            "label": "Interval",
+                            "type": "text",
+                            "defaultValue": "300",
+                            "validators": [
+                                {
+                                    "type": "number",
+                                    "range": [
+                                        1,
+                                        86400
+                                    ],
+                                    "errorMsg": "Interval must be a number between 1 and 86400 (1 day)"
+                                }
+                            ]
+                        },
+                        {
+                            "field": "index",
+                            "label": "Index",
+                            "type": "singleSelect",
+                            "defaultValue": "default",
+                            "options": {
+                                "endpointUrl": "data/indexes"
+                            },
+                            "validators": [
+                                {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 100
+                                }
+                            ]
+                        },
+                        {
+                            "field": "instance_id",
+                            "label": "Instance ID",
+                            "type": "singleSelect",
+                            "options": {
+                                "referenceName": "instances"
+                            },
+                            "help": "Select the instance from the list.",
+                            "validators": [
+                                {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 100
+                                }
+                            ]
+                        },
+                        {
+                            "field": "date_field",
+                            "label": "Date field",
+                            "type": "singleSelect",
+                            "required": true,
+                            "help": "Field used for incremental polling (Greater than or equal to current time - interval).",
+                            "options": {
+                                "autoCompleteFields": [
+                                    {
+                                        "value": "updatedAt",
+                                        "label": "Updated time"
+                                    },
+                                    {
+                                        "value": "createdAt",
+                                        "label": "Created time"
+                                    },
+                                    {
+                                        "value": "startDate",
+                                        "label": "Start time"
+                                    }
+                                ]
+                            },
+                            "defaultValue": "updatedAt",
+                            "validators": [
+                                {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 20
+                                }
+                            ]
+                        },
+                        {
+                            "field": "extra_data",
+                            "label": "Extra data",
+                            "type": "multipleSelect",
+                            "required": false,
+                            "options": {
+                                "delimiter": ",",
+                                "items": [
+                                    {
+                                        "value": "case",
+                                        "label": "Case"
+                                    },
+                                    {
+                                        "value": "caseId",
+                                        "label": "Case ID"
+                                    },
+                                    {
+                                        "value": "caseTemplate",
+                                        "label": "Case Template"
+                                    },
+                                    {
+                                        "value": "caseTemplateId",
+                                        "label": "Case Template ID"
+                                    },
+                                    {
+                                        "value": "isOwner",
+                                        "label": "Is Owner"
+                                    },
+                                    {
+                                        "value": "shareCount",
+                                        "label": "Share Count"
+                                    },
+                                    {
+                                        "value": "actionRequired",
+                                        "label": "Action Required"
+                                    },
+                                    {
+                                        "value": "actionRequiredMap",
+                                        "label": "Action Required Map"
+                                    }
+                                ]
+                            },
+                            "help": "Select additional information to retrieve for each task.",
+                            "validators": [
+                                {
+                                    "type": "string",
+                                    "minLength": 0,
+                                    "maxLength": 1000
+                                }
+                            ]
+                        },
+                        {
+                            "field": "max_size_value",
+                            "label": "Max size for values",
+                            "type": "text",
+                            "defaultValue": "1000",
+                            "validators": [
+                                {
+                                    "type": "number",
+                                    "range": [
+                                        1,
+                                        1000000
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "field": "fields_removal",
+                            "label": "Fields removal",
+                            "type": "text",
+                            "validators": [
+                                {
+                                    "type": "string",
+                                    "minLength": 0,
+                                    "maxLength": 1000
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "name": "backfill_tasks",
+                    "title": "Tasks: One-shot",
+                    "sourcetype": "thehive:tasks",
+                    "entity": [
+                        {
+                            "field": "name",
+                            "label": "Name",
+                            "type": "text",
+                            "required": true,
+                            "validators": [
+                                {
+                                    "type": "regex",
+                                    "errorMsg": "Input Name must begin with a letter and consist exclusively of alphanumeric characters and underscores.",
+                                    "pattern": "^[a-zA-Z]\\w*$"
+                                }
+                            ]
+                        },
+                        {
+                            "field": "interval",
+                            "label": "Interval",
+                            "type": "text",
+                            "defaultValue": "-1",
+                            "validators": [
+                                {
+                                    "type": "number",
+                                    "range": [
+                                        -1,
+                                        -1
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "field": "index",
+                            "label": "Index",
+                            "type": "singleSelect",
+                            "defaultValue": "default",
+                            "options": {
+                                "endpointUrl": "data/indexes"
+                            },
+                            "validators": [
+                                {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 100
+                                }
+                            ]
+                        },
+                        {
+                            "field": "instance_id",
+                            "label": "Instance ID",
+                            "type": "singleSelect",
+                            "options": {
+                                "referenceName": "instances"
+                            },
+                            "help": "Select the instance from the list.",
+                            "validators": [
+                                {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 100
+                                }
+                            ]
+                        },
+                        {
+                            "field": "backfill_start",
+                            "label": "Backfill: Start date",
+                            "type": "text",
+                            "help": "Format: YYYY-MM-DD, YYYY-MM-DDTHH:MM:SS or YYYY-MM-DD HH:MM:SS.",
+                            "required": true,
+                            "validators": [
+                                {
+                                    "type": "regex",
+                                    "pattern": "^\\d{4}-\\d{2}-\\d{2}(((T| )\\d{2}:\\d{2}:\\d{2})?)$",
+                                    "errorMsg": "Date format must be YYYY-MM-DD, YYYY-MM-DDTHH:MM:SS or YYYY-MM-DD HH:MM:SS"
+                                }
+                            ]
+                        },
+                        {
+                            "field": "backfill_end",
+                            "label": "Backfill: End date",
+                            "type": "text",
+                            "help": "Format: YYYY-MM-DD, YYYY-MM-DDTHH:MM:SS or YYYY-MM-DD HH:MM:SS.",
+                            "required": true,
+                            "validators": [
+                                {
+                                    "type": "regex",
+                                    "pattern": "^\\d{4}-\\d{2}-\\d{2}(((T| )\\d{2}:\\d{2}:\\d{2})?)$",
+                                    "errorMsg": "Date format must be YYYY-MM-DD, YYYY-MM-DDTHH:MM:SS or YYYY-MM-DD HH:MM:SS"
+                                }
+                            ]
+                        },
+                        {
+                            "field": "date_field",
+                            "label": "Date field",
+                            "type": "singleSelect",
+                            "required": true,
+                            "options": {
+                                "autoCompleteFields": [
+                                    {
+                                        "value": "updatedAt",
+                                        "label": "Updated time"
+                                    },
+                                    {
+                                        "value": "createdAt",
+                                        "label": "Created time"
+                                    },
+                                    {
+                                        "value": "startDate",
+                                        "label": "Start time"
+                                    }
+                                ]
+                            },
+                            "defaultValue": "updatedAt",
+                            "validators": [
+                                {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 20
+                                }
+                            ]
+                        },
+                        {
+                            "field": "extra_data",
+                            "label": "Extra data",
+                            "type": "multipleSelect",
+                            "required": false,
+                            "options": {
+                                "delimiter": ",",
+                                "items": [
+                                    {
+                                        "value": "case",
+                                        "label": "Case"
+                                    },
+                                    {
+                                        "value": "caseId",
+                                        "label": "Case ID"
+                                    },
+                                    {
+                                        "value": "caseTemplate",
+                                        "label": "Case Template"
+                                    },
+                                    {
+                                        "value": "caseTemplateId",
+                                        "label": "Case Template ID"
+                                    },
+                                    {
+                                        "value": "isOwner",
+                                        "label": "Is Owner"
+                                    },
+                                    {
+                                        "value": "shareCount",
+                                        "label": "Share Count"
+                                    },
+                                    {
+                                        "value": "actionRequired",
+                                        "label": "Action Required"
+                                    },
+                                    {
+                                        "value": "actionRequiredMap",
+                                        "label": "Action Required Map"
+                                    }
+                                ]
+                            },
+                            "help": "Select additional information to retrieve for each task.",
+                            "validators": [
+                                {
+                                    "type": "string",
+                                    "minLength": 0,
+                                    "maxLength": 1000
                                 }
                             ]
                         },
