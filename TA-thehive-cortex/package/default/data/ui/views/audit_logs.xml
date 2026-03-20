@@ -42,10 +42,13 @@
     input_name=="thehive_audit", "TheHive: Audit Logs",
     input_name=="thehive_observables", "TheHive: Observables",
     input_name=="thehive_timeline", "TheHive: Timeline",
+    input_name=="thehive_tasks", "TheHive: Tasks",
+    input_name=="thehive_instance_status", "TheHive: Instance Status",
     input_name=="backfill_alerts_cases", "TheHive: Alerts &amp; Cases (Backfill)",
     input_name=="backfill_audit", "TheHive: Audit Logs (Backfill)",
     input_name=="backfill_observables", "TheHive: Observables (Backfill)",
     input_name=="backfill_timeline", "TheHive: Timeline (Backfill)",
+    input_name=="backfill_tasks", "TheHive: Tasks (Backfill)",
     1=1, input_name
   )
 | table input_label source</query>
@@ -63,10 +66,13 @@
     input_name=="thehive_audit", "TheHive: Audit Logs",
     input_name=="thehive_observables", "TheHive: Observables",
     input_name=="thehive_timeline", "TheHive: Timeline",
+    input_name=="thehive_tasks", "TheHive: Tasks",
+    input_name=="thehive_instance_status", "TheHive: Instance Status",
     input_name=="backfill_alerts_cases", "TheHive: Alerts &amp; Cases (Backfill)",
     input_name=="backfill_audit", "TheHive: Audit Logs (Backfill)",
     input_name=="backfill_observables", "TheHive: Observables (Backfill)",
     input_name=="backfill_timeline", "TheHive: Timeline (Backfill)",
+    input_name=="backfill_tasks", "TheHive: Tasks (Backfill)",
     1=1, input_name
   )
 | rex field=_raw "^\d+\-\d+\-\d+ \d+:\d+:\d+,\d+ (?&lt;level_extract&gt;[^\s]+)\s+(?&lt;location_extract&gt;[^\-]+) \- (?&lt;signature_extract&gt;.*)"

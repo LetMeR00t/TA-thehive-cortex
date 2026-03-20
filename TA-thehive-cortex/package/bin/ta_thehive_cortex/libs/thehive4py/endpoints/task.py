@@ -117,10 +117,21 @@ class TaskEndpoint(EndpointBase):
             json={"query": query},
         )
 
-    def get_tasks(self, filters: Optional[FilterExpr] = None) -> List[OutputTask]:
+    def get_tasks(
+        self, filters: Optional[FilterExpr] = None, extra_data: Optional[List[str]] = None
+    ) -> List[OutputTask]:
         # Count first
         count = self.count(filters=filters)
         tasks = []
+
+        if extra_data is None:
+            extra_data = [
+                "caseId",
+                "isOwner",
+                "shareCount",
+                "actionRequired",
+                "actionRequiredMap",
+            ]
 
         sortby = Asc(field="_createdAt")
         step = 100
@@ -129,25 +140,13 @@ class TaskEndpoint(EndpointBase):
                 paginate = Paginate(
                     start=i,
                     end=i + step,
-                    extra_data=[
-                        "caseId",
-                        "isOwner",
-                        "shareCount",
-                        "actionRequired",
-                        "actionRequiredMap",
-                    ],
+                    extra_data=extra_data,
                 )
             else:
                 paginate = Paginate(
                     start=i,
                     end=count,
-                    extra_data=[
-                        "caseId",
-                        "isOwner",
-                        "shareCount",
-                        "actionRequired",
-                        "actionRequiredMap",
-                    ],
+                    extra_data=extra_data,
                 )
 
             # Get objects using the query
