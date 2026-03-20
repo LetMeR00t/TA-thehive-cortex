@@ -91,6 +91,8 @@ Sourcetypes have been normalized in v4.0.0 for better consistency. The new namin
 | **Observables** | `thehive:observables:createdAt`, `thehive:observables:updatedAt` |
 | **Audit Logs** | `thehive:audit` |
 | **Tasks** | `thehive:tasks:createdAt`, `thehive:tasks:updatedAt`, `thehive:tasks:startDate` |
+| **Timeline** | `thehive:timeline` |
+| **Instance Status** | `thehive:status` |
 
 ## Migration Macros
 To ensure continuity with historical data and simplify searches across both legacy (v3.9.0) and new (v4.0.0) sourcetypes, the following **macros** are provided:

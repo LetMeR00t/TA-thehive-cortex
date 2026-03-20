@@ -31,13 +31,24 @@
         <label>Input Type</label>
         <choice value="*">All</choice>
         <default>*</default>
-        <fieldForLabel>input_name</fieldForLabel>
+        <fieldForLabel>input_label</fieldForLabel>
         <fieldForValue>source</fieldForValue>
         <search>
           <query>index=_internal source="*TA-thehive-cortex_*.log" NOT (source="*search*" OR source="*get*" OR source="*run*")
 | stats count by source
 | rex field=source "TA-thehive-cortex_(?&lt;input_name&gt;[^.]+)\.log"
-| table input_name source</query>
+| eval input_label = case(
+    input_name=="thehive_alerts_cases", "TheHive: Alerts &amp; Cases",
+    input_name=="thehive_audit", "TheHive: Audit Logs",
+    input_name=="thehive_observables", "TheHive: Observables",
+    input_name=="thehive_timeline", "TheHive: Timeline",
+    input_name=="backfill_alerts_cases", "TheHive: Alerts &amp; Cases (Backfill)",
+    input_name=="backfill_audit", "TheHive: Audit Logs (Backfill)",
+    input_name=="backfill_observables", "TheHive: Observables (Backfill)",
+    input_name=="backfill_timeline", "TheHive: Timeline (Backfill)",
+    1=1, input_name
+  )
+| table input_label source</query>
           <earliest>$time.earliest$</earliest>
           <latest>$time.latest$</latest>
         </search>
@@ -46,7 +57,18 @@
         <search>
           <query>index=_internal source="*TA-thehive-cortex_*.log" NOT (source="*search*" OR source="*get*" OR source="*run*")
 | search source=$input_source|s$
-| rex field=source "TA-thehive-cortex_(?&lt;input_type&gt;[^.]+)\.log"
+| rex field=source "TA-thehive-cortex_(?&lt;input_name&gt;[^.]+)\.log"
+| eval input_type = case(
+    input_name=="thehive_alerts_cases", "TheHive: Alerts &amp; Cases",
+    input_name=="thehive_audit", "TheHive: Audit Logs",
+    input_name=="thehive_observables", "TheHive: Observables",
+    input_name=="thehive_timeline", "TheHive: Timeline",
+    input_name=="backfill_alerts_cases", "TheHive: Alerts &amp; Cases (Backfill)",
+    input_name=="backfill_audit", "TheHive: Audit Logs (Backfill)",
+    input_name=="backfill_observables", "TheHive: Observables (Backfill)",
+    input_name=="backfill_timeline", "TheHive: Timeline (Backfill)",
+    1=1, input_name
+  )
 | rex field=_raw "^\d+\-\d+\-\d+ \d+:\d+:\d+,\d+ (?&lt;level_extract&gt;[^\s]+)\s+(?&lt;location_extract&gt;[^\-]+) \- (?&lt;signature_extract&gt;.*)"
 | rex field=signature_extract "exec_id=(?&lt;exec_id_extract&gt;[^ \-]+)"
 | eval level = coalesce(level_extract, level), exec_id = coalesce(exec_id_extract, "N/A"), signature = coalesce(signature_extract, _raw)

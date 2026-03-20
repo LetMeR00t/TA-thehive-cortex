@@ -127,6 +127,31 @@ You can configure those parameters:
 - **Max size for values**: Indicates the maximum size for each value of the JSON log. This setting can be used to truncate large values (such as the description) to avoid having large values. When applied, a '[trunc]' string will be applied at the limit of the value size. Default set to '1000' (characters)
 - **Fields removal**: Indicates if you want to get rid of several keys within the JSON logs. Let's imagine that you have one field that you want to get rid within your logs because it's too large, then you can specify the path in the JSON in this field. The path will be interpreted depending on '.' and '\*' characters. Use '.' to go deeper in the JSON structure and the '\*' if you want to process all elements from a list. Several values can be provided separated by a comma. Example: "description,object.case,context.customFields.*.order" (it will remove the field 'description', the field 'case' within the filed 'object' and the field 'order' in all elements from the list 'customFields' within the 'context' field)
 
+#### Timeline
+
+This input is used to collect timeline events from Cases.
+You can configure those parameters:
+
+- **Name**: Provide a unique name for your input
+- **Interval**: Define the periodicity of the log collection in seconds. Default set to '60'
+- **Index**: Indicates in which index the data will be saved to. Default set to 'default'
+- **Instance ID**: Indicates the instance ID to be used to contact TheHive. Default set to '<default>'
+- **Event kinds**: Filter by timeline event kinds (e.g., Task, Artifact, Comment, etc.). Leave empty for all.
+- **Max events per case**: Number of most recent events to take per case during each collection (0 = unlimited).
+- **Max size for values**: Indicates the maximum size for each value of the JSON log.
+- **Fields removal**: Indicates if you want to get rid of several keys within the JSON logs. Several values can be provided separated by a comma. Example: "description,object.case"
+
+#### Instance Status
+
+This input is used to collect health and status information from TheHive instance (version, license, connectors status, etc.).
+You can configure those parameters:
+
+- **Name**: Provide a unique name for your input
+- **Interval**: Define the periodicity of the status collection in seconds. Default set to '300' (5 minutes)
+- **Index**: Indicates in which index the data will be saved to. Default set to 'default'
+- **Instance ID**: Indicates the instance ID to be used to contact TheHive.
+- **Fields removal**: Indicates if you want to get rid of several keys within the JSON logs. Several values can be provided separated by a comma.
+
 ### Logging
 
 You can enable a "debug" logging mode (under **Configuration**) to have more information in searches/logs.
