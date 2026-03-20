@@ -135,7 +135,7 @@ You can configure those parameters:
 - **Name**: Provide a unique name for your input
 - **Interval**: Define the periodicity of the log collection in seconds. Default set to '60'
 - **Index**: Indicates in which index the data will be saved to. Default set to 'default'
-- **Instance ID**: Indicates the instance ID to be used to contact TheHive. Default set to '<default>'
+- **Instance ID**: Indicates the instance ID to be used to contact TheHive. Default set to '&lt;default&gt;'
 - **Event kinds**: Filter by timeline event kinds (e.g., Task, Artifact, Comment, etc.). Leave empty for all.
 - **Max events per case**: Number of most recent events to take per case during each collection (0 = unlimited).
 - **Max size for values**: Indicates the maximum size for each value of the JSON log.
