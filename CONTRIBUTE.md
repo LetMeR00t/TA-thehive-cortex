@@ -49,27 +49,6 @@ Deployment must be performed directly via shell commands (PowerShell) by strictl
 
 ---
 
-## Unit Testing & TDD
-
-We follow a Test-Driven Development (TDD) approach for new features. Unit tests are located in the `tests/` directory.
-
-### Running Unit Tests
-Since the Add-on depends on Splunk-specific libraries and third-party libraries (in `package/bin/ta_thehive_cortex/libs`), we use mocks to run tests outside of Splunk.
-
-To run the unit tests:
-```powershell
-python tests/test_thehive_timeline_unit.py
-```
-
-### Mocking Strategy
-When writing unit tests for the main classes (e.g., `TheHive4Splunk`), you must mock the following:
-- Splunk libraries (`splunklib`, `solnlib`).
-- Third-party HTTP libraries (`requests`, `urllib3`) if they are imported at the top level of dependencies.
-- The `__init__` method of base classes if they perform network calls or connection checks.
-- Internal attributes like `_logger_file` and `_utils` should be set manually on mock objects to bypass property restrictions.
-
----
-
 ## Lessons Learned & Best Practices
 
 *This section is for sharing generic technical lessons learned during development. Do not include setup-specific or sensitive information.*
