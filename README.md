@@ -20,6 +20,8 @@
   - [Custom alert actions (Splunk Enterprise) and adaptative responses (Splunk Enterprise Security)](#custom-alert-actions-splunk-enterprise-and-adaptative-responses-splunk-enterprise-security)
     - [Fields and datatypes](#fields-and-datatypes)
   - [Commands usable in Splunk searches](#commands-usable-in-splunk-searches)
+    - [TheHive Commands](#thehive-commands)
+    - [Cortex Commands](#cortex-commands)
   - [Dashboards](#dashboards)
 - [Support](#support)
 - [Credits](#credits)
