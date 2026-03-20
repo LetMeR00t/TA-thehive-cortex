@@ -649,12 +649,28 @@
                         "thehive_audit",
                         "backfill_audit"
                     ]
+                },
+                {
+                    "groupName": "timeline",
+                    "groupTitle": "Timeline",
+                    "groupServices": [
+                        "thehive_timeline",
+                        "backfill_timeline"
+                    ]
+                },
+                {
+                    "groupName": "instance_status",
+                    "groupTitle": "Instance Status",
+                    "groupServices": [
+                        "thehive_instance_status"
+                    ]
                 }
             ],
             "services": [
                 {
                     "name": "thehive_alerts_cases",
                     "title": "Alerts & Cases: Regular",
+                    "sourcetype": "thehive:alerts_cases",
                     "entity": [
                         {
                             "field": "name",
@@ -1144,6 +1160,7 @@
                 {
                     "name": "backfill_alerts_cases",
                     "title": "Alerts & Cases: One-shot",
+                    "sourcetype": "thehive:alerts_cases",
                     "entity": [
                         {
                             "field": "name",
@@ -1661,6 +1678,7 @@
                 {
                     "name": "thehive_observables",
                     "title": "Observables: Regular",
+                    "sourcetype": "thehive:observables",
                     "entity": [
                         {
                             "field": "name",
@@ -1824,6 +1842,7 @@
                 {
                     "name": "backfill_observables",
                     "title": "Observables: One-shot",
+                    "sourcetype": "thehive:observables",
                     "entity": [
                         {
                             "field": "name",
@@ -2040,6 +2059,7 @@
                 {
                     "name": "thehive_audit",
                     "title": "Audit Logs: Regular",
+                    "sourcetype": "thehive:audit",
                     "entity": [
                         {
                             "field": "name",
@@ -2135,6 +2155,7 @@
                 {
                     "name": "backfill_audit",
                     "title": "Audit Logs: One-shot",
+                    "sourcetype": "thehive:audit",
                     "entity": [
                         {
                             "field": "name",
@@ -2238,6 +2259,468 @@
                                         1000000
                                     ],
                                     "errorMsg": "Max size must be a number between 1 and 1000000"
+                                }
+                            ]
+                        },
+                        {
+                            "field": "fields_removal",
+                            "label": "Fields removal",
+                            "type": "text",
+                            "validators": [
+                                {
+                                    "type": "string",
+                                    "minLength": 0,
+                                    "maxLength": 1000
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "name": "thehive_timeline",
+                    "title": "Timeline: Regular",
+                    "sourcetype": "thehive:timeline",
+                    "entity": [
+                        {
+                            "field": "name",
+                            "label": "Name",
+                            "type": "text",
+                            "required": true,
+                            "validators": [
+                                {
+                                    "type": "regex",
+                                    "errorMsg": "Input Name must begin with a letter and consist exclusively of alphanumeric characters and underscores.",
+                                    "pattern": "^[a-zA-Z]\\w*$"
+                                }
+                            ]
+                        },
+                        {
+                            "field": "interval",
+                            "label": "Interval",
+                            "type": "text",
+                            "defaultValue": "60",
+                            "validators": [
+                                {
+                                    "type": "number",
+                                    "range": [
+                                        1,
+                                        86400
+                                    ],
+                                    "errorMsg": "Interval must be a number between 1 and 86400 (1 day)"
+                                }
+                            ]
+                        },
+                        {
+                            "field": "index",
+                            "label": "Index",
+                            "type": "singleSelect",
+                            "defaultValue": "default",
+                            "options": {
+                                "endpointUrl": "data/indexes"
+                            },
+                            "validators": [
+                                {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 100
+                                }
+                            ]
+                        },
+                        {
+                            "field": "instance_id",
+                            "label": "Instance ID",
+                            "type": "singleSelect",
+                            "options": {
+                                "referenceName": "instances"
+                            },
+                            "help": "Select the instance from the list.",
+                            "validators": [
+                                {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 100
+                                }
+                            ]
+                        },
+                        {
+                            "field": "timeline_event_kinds",
+                            "label": "Event kinds",
+                            "type": "multipleSelect",
+                            "options": {
+                                "delimiter": ",",
+                                "items": [
+                                    {
+                                        "value": "case.created",
+                                        "label": "Case: Created"
+                                    },
+                                    {
+                                        "value": "case.start",
+                                        "label": "Case: Started"
+                                    },
+                                    {
+                                        "value": "case.new",
+                                        "label": "Case: New"
+                                    },
+                                    {
+                                        "value": "case.inProgress",
+                                        "label": "Case: In Progress"
+                                    },
+                                    {
+                                        "value": "case.end",
+                                        "label": "Case: Ended"
+                                    },
+                                    {
+                                        "value": "case.closed",
+                                        "label": "Case: Closed"
+                                    },
+                                    {
+                                        "value": "alert.occurred",
+                                        "label": "Alert: Occurred"
+                                    },
+                                    {
+                                        "value": "observable.sighted",
+                                        "label": "Observable: Sighted"
+                                    },
+                                    {
+                                        "value": "procedure.occurred",
+                                        "label": "Procedure: Occurred"
+                                    },
+                                    {
+                                        "value": "task",
+                                        "label": "Task"
+                                    },
+                                    {
+                                        "value": "log.created",
+                                        "label": "Task Log: Created"
+                                    },
+                                    {
+                                        "value": "custom",
+                                        "label": "Custom Event"
+                                    }
+                                ]
+                            },
+                            "help": "Filter by timeline event kinds. Leave empty for all.",
+                            "validators": [
+                                {
+                                    "type": "string",
+                                    "minLength": 0,
+                                    "maxLength": 500
+                                }
+                            ]
+                        },
+                        {
+                            "field": "max_events_per_case",
+                            "label": "Max events per case",
+                            "type": "text",
+                            "defaultValue": "0",
+                            "help": "Number of most recent events to take per case (0 = unlimited).",
+                            "validators": [
+                                {
+                                    "type": "number",
+                                    "range": [
+                                        0,
+                                        10000
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "field": "max_size_value",
+                            "label": "Max size for values",
+                            "type": "text",
+                            "defaultValue": "1000",
+                            "validators": [
+                                {
+                                    "type": "number",
+                                    "range": [
+                                        1,
+                                        1000000
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "field": "fields_removal",
+                            "label": "Fields removal",
+                            "type": "text",
+                            "validators": [
+                                {
+                                    "type": "string",
+                                    "minLength": 0,
+                                    "maxLength": 1000
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "name": "backfill_timeline",
+                    "title": "Timeline: One-shot",
+                    "sourcetype": "thehive:timeline",
+                    "entity": [
+                        {
+                            "field": "name",
+                            "label": "Name",
+                            "type": "text",
+                            "required": true,
+                            "validators": [
+                                {
+                                    "type": "regex",
+                                    "errorMsg": "Input Name must begin with a letter and consist exclusively of alphanumeric characters and underscores.",
+                                    "pattern": "^[a-zA-Z]\\w*$"
+                                }
+                            ]
+                        },
+                        {
+                            "field": "interval",
+                            "label": "Interval",
+                            "type": "text",
+                            "defaultValue": "-1",
+                            "validators": [
+                                {
+                                    "type": "number",
+                                    "range": [
+                                        -1,
+                                        -1
+                                    ],
+                                    "errorMsg": "Interval must be -1 for one-shot collection (backfill)."
+                                }
+                            ]
+                        },
+                        {
+                            "field": "index",
+                            "label": "Index",
+                            "type": "singleSelect",
+                            "defaultValue": "default",
+                            "options": {
+                                "endpointUrl": "data/indexes"
+                            },
+                            "validators": [
+                                {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 100
+                                }
+                            ]
+                        },
+                        {
+                            "field": "instance_id",
+                            "label": "Instance ID",
+                            "type": "singleSelect",
+                            "options": {
+                                "referenceName": "instances"
+                            },
+                            "help": "Select the instance from the list.",
+                            "validators": [
+                                {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 100
+                                }
+                            ]
+                        },
+                        {
+                            "field": "backfill_start",
+                            "label": "Backfill: Start date",
+                            "type": "text",
+                            "help": "Format: YYYY-MM-DD, YYYY-MM-DDTHH:MM:SS or YYYY-MM-DD HH:MM:SS. Example: 2023-01-01 or 2023-01-01T12:00:00.",
+                            "required": true,
+                            "validators": [
+                                {
+                                    "type": "regex",
+                                    "pattern": "^\\d{4}-\\d{2}-\\d{2}(((T| )\\d{2}:\\d{2}:\\d{2})?)$",
+                                    "errorMsg": "Date format must be YYYY-MM-DD, YYYY-MM-DDTHH:MM:SS or YYYY-MM-DD HH:MM:SS"
+                                }
+                            ]
+                        },
+                        {
+                            "field": "backfill_end",
+                            "label": "Backfill: End date",
+                            "type": "text",
+                            "help": "Format: YYYY-MM-DD, YYYY-MM-DDTHH:MM:SS or YYYY-MM-DD HH:MM:SS. If only a date is provided, it will include the entire day until 23:59:59.",
+                            "required": true,
+                            "validators": [
+                                {
+                                    "type": "regex",
+                                    "pattern": "^\\d{4}-\\d{2}-\\d{2}(((T| )\\d{2}:\\d{2}:\\d{2})?)$",
+                                    "errorMsg": "Date format must be YYYY-MM-DD, YYYY-MM-DDTHH:MM:SS or YYYY-MM-DD HH:MM:SS"
+                                }
+                            ]
+                        },
+                        {
+                            "field": "timeline_event_kinds",
+                            "label": "Event kinds",
+                            "type": "multipleSelect",
+                            "options": {
+                                "delimiter": ",",
+                                "items": [
+                                    {
+                                        "value": "case.created",
+                                        "label": "Case: Created"
+                                    },
+                                    {
+                                        "value": "case.start",
+                                        "label": "Case: Started"
+                                    },
+                                    {
+                                        "value": "case.new",
+                                        "label": "Case: New"
+                                    },
+                                    {
+                                        "value": "case.inProgress",
+                                        "label": "Case: In Progress"
+                                    },
+                                    {
+                                        "value": "case.end",
+                                        "label": "Case: Ended"
+                                    },
+                                    {
+                                        "value": "case.closed",
+                                        "label": "Case: Closed"
+                                    },
+                                    {
+                                        "value": "alert.occurred",
+                                        "label": "Alert: Occurred"
+                                    },
+                                    {
+                                        "value": "observable.sighted",
+                                        "label": "Observable: Sighted"
+                                    },
+                                    {
+                                        "value": "procedure.occurred",
+                                        "label": "Procedure: Occurred"
+                                    },
+                                    {
+                                        "value": "task",
+                                        "label": "Task"
+                                    },
+                                    {
+                                        "value": "log.created",
+                                        "label": "Task Log: Created"
+                                    },
+                                    {
+                                        "value": "custom",
+                                        "label": "Custom Event"
+                                    }
+                                ]
+                            },
+                            "help": "Filter by timeline event kinds. Leave empty for all.",
+                            "validators": [
+                                {
+                                    "type": "string",
+                                    "minLength": 0,
+                                    "maxLength": 500
+                                }
+                            ]
+                        },
+                        {
+                            "field": "max_events_per_case",
+                            "label": "Max events per case",
+                            "type": "text",
+                            "defaultValue": "0",
+                            "help": "Number of most recent events to take per case (0 = unlimited).",
+                            "validators": [
+                                {
+                                    "type": "number",
+                                    "range": [
+                                        0,
+                                        10000
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "field": "max_size_value",
+                            "label": "Max size for values",
+                            "type": "text",
+                            "defaultValue": "1000",
+                            "validators": [
+                                {
+                                    "type": "number",
+                                    "range": [
+                                        1,
+                                        1000000
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "field": "fields_removal",
+                            "label": "Fields removal",
+                            "type": "text",
+                            "validators": [
+                                {
+                                    "type": "string",
+                                    "minLength": 0,
+                                    "maxLength": 1000
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "name": "thehive_instance_status",
+                    "title": "Instance Status: Regular",
+                    "sourcetype": "thehive:status",
+                    "entity": [
+                        {
+                            "field": "name",
+                            "label": "Name",
+                            "type": "text",
+                            "required": true,
+                            "validators": [
+                                {
+                                    "type": "regex",
+                                    "errorMsg": "Input Name must begin with a letter and consist exclusively of alphanumeric characters and underscores.",
+                                    "pattern": "^[a-zA-Z]\\w*$"
+                                }
+                            ]
+                        },
+                        {
+                            "field": "interval",
+                            "label": "Interval",
+                            "type": "text",
+                            "defaultValue": "300",
+                            "validators": [
+                                {
+                                    "type": "number",
+                                    "range": [
+                                        1,
+                                        86400
+                                    ],
+                                    "errorMsg": "Interval must be a number between 1 and 86400 (1 day)"
+                                }
+                            ]
+                        },
+                        {
+                            "field": "index",
+                            "label": "Index",
+                            "type": "singleSelect",
+                            "defaultValue": "default",
+                            "options": {
+                                "endpointUrl": "data/indexes"
+                            },
+                            "validators": [
+                                {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 100
+                                }
+                            ]
+                        },
+                        {
+                            "field": "instance_id",
+                            "label": "Instance ID",
+                            "type": "singleSelect",
+                            "options": {
+                                "referenceName": "instances"
+                            },
+                            "help": "Select the instance from the list.",
+                            "validators": [
+                                {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 100
                                 }
                             ]
                         },
