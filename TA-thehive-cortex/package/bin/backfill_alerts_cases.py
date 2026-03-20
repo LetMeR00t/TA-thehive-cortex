@@ -136,7 +136,7 @@ class BACKFILL_ALERTS_CASES(smi.Script):
                         (new_events, events_tasks) = thehive.get_cases_events(filters=filters, sortby=Desc(date_field), **current_modular_input_args)
                         if "tasks" in current_modular_input_args["additional_information"]:
                             for task in events_tasks:
-                                ew.write_event(smi.Event(source="thehive:"+stanza, host=thehive.session.hive_url[8:], index=helper.get_output_index(), sourcetype="thehive:tasks:"+date_mode, data=json.dumps(task)))
+                                ew.write_event(smi.Event(source="thehive:"+stanza, host=thehive.session.hive_url[8:], index=helper.get_output_index(), sourcetype="thehive:cases:tasks:"+date_mode, data=json.dumps(task)))
                     elif input_type == "alerts":
                         new_events = thehive.get_alerts_events(filters=filters, **current_modular_input_args)
                     

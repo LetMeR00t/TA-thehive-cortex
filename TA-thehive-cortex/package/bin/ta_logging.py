@@ -26,9 +26,11 @@ def setup_logging(name):
     splunk_home = os.environ.get("SPLUNK_HOME")
     if splunk_home:
         base_log_path = os.path.join(splunk_home, "var", "log", "splunk")
+        app_path = os.path.join(splunk_home, "etc", "apps", ta_name)
     else:
         # Fallback to current directory if SPLUNK_HOME is not set
         base_log_path = os.path.dirname(os.path.abspath(__file__))
+        app_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     
     if not os.path.exists(base_log_path):
         try:
@@ -56,5 +58,33 @@ def setup_logging(name):
             print(f"CRITICAL: Cannot initialize log handler for {log_file_path}: {str(e)}", file=sys.stderr)
         
     logger.propagate = False
-    logger.setLevel(logging.DEBUG)
+    
+    # Retrieve loglevel from configuration
+    loglevel = "INFO"
+    try:
+        conf_file_default = os.path.join(app_path, "default", "thehive_cortex_settings.conf")
+        conf_file_local = os.path.join(app_path, "local", "thehive_cortex_settings.conf")
+        
+        def get_loglevel_from_file(path):
+            if os.path.isfile(path):
+                with open(path, "r") as f:
+                    in_logging_stanza = False
+                    for line in f:
+                        line = line.strip()
+                        if line == "[logging]":
+                            in_logging_stanza = True
+                        elif line.startswith("["):
+                            in_logging_stanza = False
+                        elif in_logging_stanza and line.startswith("loglevel ="):
+                            return line.split("=")[1].strip()
+            return None
+
+        # Local has priority
+        level = get_loglevel_from_file(conf_file_local) or get_loglevel_from_file(conf_file_default)
+        if level:
+            loglevel = level
+    except Exception:
+        pass
+
+    logger.setLevel(getattr(logging, loglevel.upper(), logging.INFO))
     return logger

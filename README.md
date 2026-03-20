@@ -90,7 +90,7 @@ Sourcetypes have been normalized in v4.0.0 for better consistency. The new namin
 | **Alerts** | `thehive:alerts:createdAt`, `thehive:alerts:updatedAt`, `thehive:alerts:occuredDate` |
 | **Observables** | `thehive:observables:createdAt`, `thehive:observables:updatedAt` |
 | **Audit Logs** | `thehive:audit` |
-| **Tasks** | `thehive:tasks:createdAt`, `thehive:tasks:updatedAt`, `thehive:tasks:startDate` |
+| **Tasks** | `thehive:tasks` (Modular Input), `thehive:cases:tasks:createdAt`, `thehive:cases:tasks:updatedAt`, `thehive:cases:tasks:startDate` (Linked to cases) |
 | **Timeline** | `thehive:timeline` |
 | **Instance Status** | `thehive:status` |
 

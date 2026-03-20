@@ -141,6 +141,20 @@ You can configure those parameters:
 - **Max size for values**: Indicates the maximum size for each value of the JSON log.
 - **Fields removal**: Indicates if you want to get rid of several keys within the JSON logs. Several values can be provided separated by a comma. Example: "description,object.case"
 
+#### Tasks
+
+This input is used to collect tasks from Cases.
+You can configure those parameters:
+
+- **Name**: Provide a unique name for your input
+- **Interval**: Define the periodicity of the log collection in seconds. Default set to '300' (5 minutes)
+- **Index**: Indicates in which index the data will be saved to. Default set to 'default'
+- **Instance ID**: Indicates the instance ID to be used to contact TheHive.
+- **Date field**: Select the field used for incremental polling. Options: `updatedAt` (Default), `createdAt`, `startDate`.
+- **Extra data**: Select additional information to retrieve for each task (e.g., `case`, `caseId`, `isOwner`, `actionRequired`, etc.).
+- **Max size for values**: Indicates the maximum size for each value of the JSON log.
+- **Fields removal**: Indicates if you want to get rid of several keys within the JSON logs. Several values can be provided separated by a comma. Example: "description,object.case"
+
 #### Instance Status
 
 This input is used to collect health and status information from TheHive instance (version, license, connectors status, etc.).
