@@ -49,7 +49,7 @@ This TA has been designed in such a way that :
 
 - **Data Pull**: Periodically retrieve events (Cases, Alerts, Observables, Tasks, Audit Logs) from TheHive.
 - **Interaction**: Manually query data or trigger actions using custom search commands and dedicated dashboards.
-- **Automation**: Automatically create alerts, cases, add observables, or run Cortex jobs/TheHive functions as Splunk Alert Actions or Adaptive Responses.
+- **Automation**: Automatically create alerts, cases, add observables, add timeline events, or run Cortex jobs/TheHive functions as Splunk Alert Actions or Adaptive Responses.
 - **Enterprise Security**: Native integration with Splunk ES via Adaptive Responses.
 - **Cortex Jobs**: Monitor and trigger Cortex jobs directly from Splunk.
 

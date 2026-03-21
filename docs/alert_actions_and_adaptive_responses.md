@@ -316,7 +316,7 @@ In this example, alert title will be the value of field `myfield` from result se
 ### Add observable(s) overall description
 
 - TheHive instance: one of the instances defined in the instances dashboard. You can use "&lt;default&gt;" to use the default instance defined in the configuration page.
-- Target Alert/Case ID(s): A field name or static value (comma-separated) that contains the internal ID(s) of the target alert(s) or case(s). Format must be ~[0-9]+ (e.g., ~12345).
+- Target Alert/Case ID(s): A field name or static value (comma-separated) that contains the internal ID(s) of the target alert(s) or case(s) (format: ~[0-9]+). **For cases**, you can also provide the case number (e.g., 1234), and the app will automatically resolve its internal ID.
 - Target Type: A field name or static value ("alert" or "case") indicating the type of the target.
 - Tags: A field name or static value (comma-separated) for observable tags.
 - TLP: A field name or static value (WHITE, GREEN, AMBER, AMBER+STRICT, RED) for observable TLP.
@@ -325,6 +325,21 @@ In this example, alert title will be the value of field `myfield` from result se
 - Sighted: A field name or static value (true/false) indicating if the observable has been sighted.
 - Sighted Date: A field name containing the sighting date (Splunk epoch time). If Sighted is enabled and no date is found, it defaults to the current time.
 - Scope: you can choose to (option 1) include **only listed** fields in thehive_datatypes.csv or (option 2) include **all fields** (default datatype is 'other').
+
+**Note for Adaptive Responses (Splunk ES):**
+When used as an Adaptive Response, the Splunk **Finding** must contain fields named exactly after the TheHive datatypes (as defined in `thehive_datatypes.csv`) to be automatically interpreted by the script as observables.
+
+### Add timeline event overall description
+
+- TheHive instance: one of the instances defined in the instances dashboard. You can use "&lt;default&gt;" to use the default instance defined in the configuration page.
+- Target Case ID: A field name or static value that contains the internal ID of the target case (~[0-9]+) or the case number (e.g. 1234).
+- Event Title: A field name or static value for the timeline event title. Use `<inheritance>` to use the search name.
+- Event Description: A field name or static value for the timeline event description.
+- Event Date: A field name or static value for the event date (Splunk epoch time). Defaults to now if empty.
+- Event End Date: A field name or static value for the event end date (Splunk epoch time).
+
+**Note for Adaptive Responses (Splunk ES):**
+You can dynamically pass field names issued from the Splunk **Finding** into the Adaptive Response parameters to map them correctly to the timeline event fields.
 
 ### Manage fields to become observables
 
