@@ -88,7 +88,8 @@ class THEHIVE_OBSERVABLES(smi.Script):
             date_mode = date_field.lstrip("_")
             interval = int(input_item.get("interval", 60))
             now = time.time()
-            d2 = now - now % 60
+            # Floor now to the interval to avoid seconds shift
+            d2 = now - (now % interval)
             d1 = d2 - interval
 
             # Robust filter logic

@@ -73,6 +73,8 @@ class THEHIVE_TASKS(smi.Script):
         # Logic for incremental polling
         interval = int(input_item.get("interval", 300))
         now = time.time()
+        # Floor now to the minute (or interval) to avoid seconds shift
+        now = now - (now % interval)
         d2 = int(now * 1000)
         d1 = int((now - interval) * 1000)
 

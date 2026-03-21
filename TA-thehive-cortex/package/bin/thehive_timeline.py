@@ -74,6 +74,8 @@ class THEHIVE_TIMELINE(smi.Script):
         # We poll cases updated in the interval
         interval = int(input_item.get("interval", 60))
         now = time.time()
+        # Floor now to the minute (or interval) to avoid seconds shift
+        now = now - (now % interval)
         d2 = int(now * 1000)
         d1 = int((now - interval) * 1000)
         
