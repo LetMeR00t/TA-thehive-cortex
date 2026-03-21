@@ -988,6 +988,81 @@ class TheHive4Splunk(TheHiveApi):
 
         return processed_events
 
+    def get_tasks_events(
+        self, filters: _FilterBase = None, sortby: SortExpr = None, **kwargs
+    ) -> list:
+        """This is used to get tasks from TheHive
+
+        Args:
+            filters (_FilterBase): Filters to be used. Defaults to None.
+            sortby (SortExpr, optional): Sort expression to be used for results. Defaults to None.
+
+        Returns:
+            list: List of events processed
+        """
+        self.logger_file.info(id="TH190", message="Retrieving tasks...")
+        
+        extra_data = []
+        if "extra_data" in kwargs and kwargs["extra_data"] is not None:
+            extra_data = kwargs["extra_data"].split(",")
+
+        # get_tasks in thehive4py already handles pagination
+        raw_events = self.task.get_tasks(filters=filters, extra_data=extra_data)
+        
+        self.logger_file.info(
+            id="TH191",
+            message=f"Got {len(raw_events)} tasks.",
+        )
+        processed_events = []
+
+        for event in raw_events:
+            # Post processing before indexing
+
+            ### Generic for all inputs
+            event["_createdAt"] = event["_createdAt"] / 1000
+            if "_updatedAt" in event and event["_updatedAt"] is not None:
+                event["_updatedAt"] = event["_updatedAt"] / 1000
+            if "_startDate" in event and event["_startDate"] is not None:
+                event["_startDate"] = event["_startDate"] / 1000
+
+            # Set the _time of the event to the created/updated/start time
+            # Use the date field specified in kwargs or default to createdAt
+            date_field = kwargs.get("date_field", "createdAt")
+            if date_field == "updatedAt" and "_updatedAt" in event:
+                event["_time"] = int(event["_updatedAt"])
+            elif date_field == "startDate" and "_startDate" in event:
+                event["_time"] = int(event["_startDate"])
+            else:
+                event["_time"] = int(event["_createdAt"])
+
+            # Remove underscore at the beginning
+            for field in [
+                "_createdAt",
+                "_createdBy",
+                "_id",
+                "_startDate",
+                "_time",
+                "_type",
+                "_updatedAt",
+                "_updatedBy",
+            ]:
+                if field in event:
+                    event[field.replace("_", "")] = event.pop(field)
+
+            # Sanitize the event from the configuration
+            if "fields_removal" in kwargs and kwargs["fields_removal"] is not None:
+                event = self._utils.remove_unwanted_keys_from_dict(
+                    d=event, l=kwargs["fields_removal"].split(",")
+                )
+            if "max_size_value" in kwargs and kwargs["max_size_value"] is not None:
+                event = self._utils.check_and_reduce_values_size(
+                    d=event, max_size=kwargs["max_size_value"]
+                )
+            
+            processed_events.append(event)
+
+        return processed_events
+
     def get_case_timeline_events(
         self, filters: _FilterBase = None, sortby: SortExpr = None, **kwargs
     ) -> list:

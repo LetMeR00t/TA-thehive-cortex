@@ -20,6 +20,8 @@
   - [Custom alert actions (Splunk Enterprise) and adaptative responses (Splunk Enterprise Security)](#custom-alert-actions-splunk-enterprise-and-adaptative-responses-splunk-enterprise-security)
     - [Fields and datatypes](#fields-and-datatypes)
   - [Commands usable in Splunk searches](#commands-usable-in-splunk-searches)
+    - [TheHive Commands](#thehive-commands)
+    - [Cortex Commands](#cortex-commands)
   - [Dashboards](#dashboards)
 - [Support](#support)
 - [Credits](#credits)
@@ -90,7 +92,8 @@ Sourcetypes have been normalized in v4.0.0 for better consistency. The new namin
 | **Alerts** | `thehive:alerts:createdAt`, `thehive:alerts:updatedAt`, `thehive:alerts:occuredDate` |
 | **Observables** | `thehive:observables:createdAt`, `thehive:observables:updatedAt` |
 | **Audit Logs** | `thehive:audit` |
-| **Tasks** | `thehive:tasks:createdAt`, `thehive:tasks:updatedAt`, `thehive:tasks:startDate` |
+| **Tasks (dedicated input)** | `thehive:tasks` |
+| **Tasks (linked to Cases)** | `thehive:cases:tasks:createdAt`, `thehive:cases:tasks:updatedAt`, `thehive:cases:tasks:startDate` |
 | **Timeline** | `thehive:timeline` |
 | **Instance Status** | `thehive:status` |
 
