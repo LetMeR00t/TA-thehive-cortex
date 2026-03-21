@@ -1,0 +1,73 @@
+<form class="form-horizontal form-complex">
+
+    <div class="control-group">
+        <label class="control-label" for="thehive_instance_id">Instance <span class="required">*</span> </label>
+        
+        <div class="controls">
+            <span class="help-block"> 
+                    Indicate which instance to use (Set the 'id' provided under 'Instances'). You can use '&lt;default&gt;' to set automatically the ID to the default set parameter in the configuration page.
+            </span>
+            <splunk-search-dropdown name="action.thehive_add_timeline_event.param.thehive_instance_id" id="thehive_instance_id"
+                allow-custom-value=true
+                search="| rest /servicesNS/nobody/TA-thehive-cortex/thehive_cortex_instances splunk_server=local | rename title as id | where type=&quot;TheHive5&quot; | eval instance_label = id+&quot; (&quot;+environment+&quot;)&quot; | append [| makeresults | eval id=&quot;&lt;default&gt;&quot;, instance_label=&quot;&lt;default&gt;&quot;] | sort -id"
+                label-field="instance_label"
+                value-field="id" />
+        </div>
+    </div>
+
+    <div class="control-group">
+        <label class="control-label" for="case_id">Target Case ID <span class="required">*</span> </label>
+
+        <div class="controls">
+            <span class="help-block"> 
+                    A field name or static value that contains the internal ID of the target case. Format must be ~[0-9]+ (e.g., ~12345).
+            </span>
+            <input type="text" class="input-xlarge" name="action.thehive_add_timeline_event.param.case_id" id="case_id" placeholder="e.g. ~12345 or case_id" />
+        </div>
+    </div>
+
+    <div class="control-group">
+        <label class="control-label" for="event_title">Event Title <span class="required">*</span> </label>
+
+        <div class="controls">
+            <span class="help-block"> 
+                    A field name or static value for the timeline event title. Use &lt;inheritance&gt; to use the search name.
+            </span>
+            <input type="text" class="input-xlarge" name="action.thehive_add_timeline_event.param.event_title" id="event_title" placeholder="e.g. Investigated or &lt;inheritance&gt;" />
+        </div>
+    </div>
+
+    <div class="control-group">
+        <label class="control-label" for="event_description">Event Description</label>
+
+        <div class="controls">
+            <span class="help-block"> 
+                    A field name or static value for the timeline event description.
+            </span>
+            <input type="text" class="input-xlarge" name="action.thehive_add_timeline_event.param.event_description" id="event_description" placeholder="e.g. Added some info" />
+        </div>
+    </div>
+
+    <div class="control-group">
+        <label class="control-label" for="event_date">Event Date</label>
+
+        <div class="controls">
+            <span class="help-block"> 
+                    A field name or static value for the event date (Splunk epoch time). Defaults to now if empty.
+            </span>
+            <input type="text" class="input-xlarge" name="action.thehive_add_timeline_event.param.event_date" id="event_date" placeholder="" />
+        </div>
+    </div>
+
+    <div class="control-group">
+        <label class="control-label" for="event_endDate">Event End Date</label>
+
+        <div class="controls">
+            <span class="help-block"> 
+                    A field name or static value for the event end date (Splunk epoch time).
+            </span>
+            <input type="text" class="input-xlarge" name="action.thehive_add_timeline_event.param.event_endDate" id="event_endDate" placeholder="" />
+        </div>
+    </div>
+
+</form>

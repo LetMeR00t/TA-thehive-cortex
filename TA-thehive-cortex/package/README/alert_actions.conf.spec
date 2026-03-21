@@ -58,6 +58,15 @@ param.sighted_field = <string>
 param.sighted_date_field = <string>
 param.scope = <string>
 
+[thehive_add_timeline_event]
+python.version = python3
+param.thehive_instance_id = <string>
+param.case_id = <string>
+param.event_title = <string>
+param.event_description = <string>
+param.event_date = <string>
+param.event_endDate = <string>
+
 [cortex_run_a_new_job]
 python.version = python3
 param.data_field_name = <string>
