@@ -85,6 +85,10 @@ def process_event(helper, *args, **kwargs):
             logger_file.warning(id="THAO-20", message=f"Invalid target type '{target_type}', defaulting to 'alert'")
             target_type = "alert"
 
+        # Resolve case IDs if needed
+        if target_type == "case":
+            target_ids = [thehive.resolve_case_id(tid) for tid in target_ids]
+
         # Resolve metadata
         tags_raw = helper.get_param("tags_field")
         tags_str = extract_field(row, tags_raw) if tags_raw else ""

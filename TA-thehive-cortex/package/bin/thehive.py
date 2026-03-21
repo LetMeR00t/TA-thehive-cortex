@@ -424,6 +424,40 @@ class TheHive4Splunk(TheHiveApi):
     def logger_file(self):
         return self._logger_file
 
+    def resolve_case_id(self, case_id_or_number: str) -> str:
+        """This is used to resolve a case ID from either an internal ID (~123) or a case number (456)
+
+        Args:
+            case_id_or_number (str): The ID or number to resolve
+
+        Returns:
+            str: The resolved internal case ID (~...)
+        """
+        val = str(case_id_or_number).strip()
+        
+        # 1. If it starts with ~, it's already an internal ID
+        if val.startswith("~"):
+            return val
+            
+        # 2. If it's a number, resolve it via API
+        if val.isdigit():
+            self.logger_file.info(id="TH112", message=f"Resolving internal ID for case number {val}...")
+            try:
+                cases = self.case.find(filters=Eq("number", int(val)))
+                if cases:
+                    resolved_id = cases[0].get("_id")
+                    self.logger_file.info(id="TH113", message=f"Case number {val} resolved to {resolved_id}")
+                    return resolved_id
+                else:
+                    self.logger_file.warning(id="TH114", message=f"No case found with number {val}")
+                    return val # Return original if not found, API call will fail later with 404
+            except Exception as e:
+                self.logger_file.error(id="TH115", message=f"Error resolving case number {val}: {str(e)}")
+                return val
+
+        # 3. Otherwise return as is
+        return val
+
     def get_instance_status(self) -> dict:
         """This is used to recover the status of TheHive instance
 
@@ -1176,3 +1210,51 @@ class TheHive4Splunk(TheHiveApi):
             )
 
         return processed_timeline_events
+
+    def create_custom_timeline_event(
+        self,
+        case_id: str,
+        title: str,
+        description: str = None,
+        date: int = None,
+        endDate: int = None,
+    ) -> dict:
+        """This is used to create a custom timeline event in a TheHive case
+
+        Args:
+            case_id (str): The ID of the case where the event will be created
+            title (str): The title of the event
+            description (str, optional): The description of the event. Defaults to None.
+            date (int, optional): The date of the event (ms). Defaults to None.
+            endDate (int, optional): The end date of the event (ms). Defaults to None.
+
+        Returns:
+            dict: The created custom event
+        """
+        self.logger_file.info(
+            id="TH200", message=f"Creating custom timeline event for case {case_id}..."
+        )
+
+        event = {"title": title}
+        if description:
+            event["description"] = description
+        if date:
+            event["date"] = date
+        else:
+            event["date"] = int(time.time() * 1000)
+        if endDate:
+            event["endDate"] = endDate
+
+        try:
+            created_event = self.timeline.create_event(case_id, event)
+            self.logger_file.info(
+                id="TH201",
+                message=f"Custom timeline event created successfully for case {case_id}",
+            )
+            return created_event
+        except Exception as e:
+            self.logger_file.error(
+                id="TH202",
+                message=f"FAILED_TO_CREATE_TIMELINE_EVENT - Error: {str(e)}",
+            )
+            raise e
