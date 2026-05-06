@@ -343,8 +343,8 @@ def parse_events(helper, thehive: TheHive4Splunk, alert_args):
             # Find the most accurate information for the title
             if "search_name" in row:
                 # Use this information coming from Splunk ES
-                del row_sanitized["search_name"]
                 alert["title"] = row["search_name"]
+                del row_sanitized["search_name"]
             else:
                 # Take the name of the savedsearch itself
                 alert["title"] = helper.settings["search_name"]
@@ -409,7 +409,6 @@ def parse_events(helper, thehive: TheHive4Splunk, alert_args):
         # and strip it from the row
         arg_timestamp = alert_args.get("timestamp")
         if arg_timestamp and arg_timestamp in row:
-            del row_sanitized[arg_timestamp]
             newTimestamp = str(int(float(row.pop(arg_timestamp))))
             thehive.logger_file.debug(
                 id="THC-80", message="new Timestamp from row: {} ".format(newTimestamp)
