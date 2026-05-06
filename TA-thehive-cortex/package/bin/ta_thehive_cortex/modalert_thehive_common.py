@@ -697,7 +697,7 @@ def parse_events(helper, thehive: TheHive4Splunk, alert_args):
             if not isinstance(mitre_technics, list):
                 mitre_technics = [mitre_technics]
 
-            date = datetime.datetime.fromtimestamp(int(row.get("_time", time.time()))).strftime(
+            date = datetime.datetime.fromtimestamp(int(float(row.get("_time", time.time())))).strftime(
                 "%Y-%m-%d"
             )
             alert["ttps"] = []
