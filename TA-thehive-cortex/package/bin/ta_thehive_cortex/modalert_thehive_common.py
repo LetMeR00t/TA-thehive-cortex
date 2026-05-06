@@ -423,7 +423,12 @@ def parse_events(helper, thehive: TheHive4Splunk, alert_args):
                 id="THC-85", message="alert timestamp: {} ".format(alert["timestamp"])
             )
         else:
-            alert["timestamp"] = arg_timestamp if arg_timestamp else int(time.time() * 1000)
+            if arg_timestamp:
+                thehive.logger_file.warn(
+                    id="THC-86",
+                    message=f"timestamp_field '{arg_timestamp}' missing; falling back to current time",
+                )
+            alert["timestamp"] = int(time.time() * 1000)
 
         observables_data = dict()
         # now we take those KV pairs to add to dict
