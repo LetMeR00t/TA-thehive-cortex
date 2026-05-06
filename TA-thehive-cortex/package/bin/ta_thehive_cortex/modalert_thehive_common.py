@@ -612,7 +612,7 @@ def parse_events(helper, thehive: TheHive4Splunk, alert_args):
                 if "value" in data:
                     # Multi-value support: split by comma, semicolon, pipe or newline
                     raw_val_str = str(data["value"])
-                    raw_values = [v.strip() for v in re.split(r'[,;|\\n]+', raw_val_str) if v.strip()]
+                    raw_values = [v.strip() for v in re.split(r'[,;|\n]+', raw_val_str) if v.strip()]
                     
                     thehive.logger_file.debug(
                         id="THC-112",
