@@ -2,7 +2,7 @@
     "meta": {
         "name": "TA-thehive-cortex",
         "displayName": "TheHive-Cortex",
-        "version": "4.1.0",
+        "version": "4.2.0",
         "restRoot": "thehive_cortex",
         "schemaVersion": "0.0.10",
         "supportedThemes": [

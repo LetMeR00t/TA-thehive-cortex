@@ -14,7 +14,7 @@ The Add-on uses the [Splunk UCC Generator](https://splunk.github.io/addonfactory
 To build the application:
 ```powershell
 # Recommended build command
-ucc-gen build --source TA-thehive-cortex/package --config TA-thehive-cortex/globalConfig.json --output output --ta-version 4.0.0 --overwrite -v --python-binary-name python
+ucc-gen build --source TA-thehive-cortex/package --config TA-thehive-cortex/globalConfig.json --output output --ta-version 4.2.0 --overwrite -v --python-binary-name python
 ```
 *Note: You may need to specify `--python-binary-name` (e.g., `python3.9` or the full path) if your default Python is not compatible.*
 
@@ -54,5 +54,6 @@ Deployment must be performed directly via shell commands (PowerShell) by strictl
 *This section is for sharing generic technical lessons learned during development. Do not include setup-specific or sensitive information.*
 
 - **Python Compatibility**: Always use Splunk's internal Python version (3.9+) for builds and local testing to ensure library compatibility.
-- **UCC Framework**: All UI changes MUST be made in `globalConfig.json`. Manual changes to `default/data/ui` will be overwritten during the next build.
+- **UCC Framework**: All UI changes MUST be made in `globalConfig.json`. Manual changes to `default/data/ui` will be overwritten during the next build. Note: custom XML views are stored in `package/default/data/ui/views`.
+- **Splunk Tokens Evaluation**: When checking if a dashboard token is defined in an SPL `eval`, always escape the comparison token with `$$` (e.g., `"$token$" == "$$token$$"`). This prevents the condition from becoming always true after token substitution (e.g., `"-1d" == "-1d"`).
 - **Library Isolation**: Third-party libraries must be placed in `package/bin/ta_thehive_cortex/libs` to avoid conflicts with other Splunk apps.

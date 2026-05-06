@@ -15,7 +15,7 @@
 
   <search id="format_date">
     <query>| makeresults
-| eval earliest = if(trim("$filter_date.earliest$") == "" OR "$filter_date.earliest$" == "$filter_date.earliest$", "-7d@h", "$filter_date.earliest$"), latest = if(trim("$filter_date.latest$") == "" OR "$filter_date.latest$" == "$filter_date.latest$", "now", "$filter_date.latest$")
+| eval earliest = if(trim("$filter_date.earliest$") == "" OR "$filter_date.earliest$" == "$$filter_date.earliest$$", "-7d@h", "$filter_date.earliest$"), latest = if(trim("$filter_date.latest$") == "" OR "$filter_date.latest$" == "$$filter_date.latest$$", "now", "$filter_date.latest$")
 | eval filter_date_d1 = round(relative_time(now(), earliest)*1000), filter_date_d2 = round(relative_time(now(), latest)*1000)
 | eval filter_date_d1 = if(isnull(filter_date_d1), "*", filter_date_d1), filter_date_d2 = if(isnull(filter_date_d2), "*", filter_date_d2)
 | table filter_date_d1, filter_date_d2</query>
