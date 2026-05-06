@@ -671,7 +671,7 @@ def parse_events(helper, thehive: TheHive4Splunk, alert_args):
         else:
             alert["observables"] = []
             thehive.logger_file.debug(
-                id="THC-116", message=f"No observable found in current row (sourceRef={srcRef})."
+                id="THC-116", message=f"No observable found in current row (sourceRef={sourceRef})."
             )
         # Process customFields
         alert["customFields"] = [InputCustomField(cf) for cf in customFields]
