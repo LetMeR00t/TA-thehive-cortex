@@ -234,6 +234,38 @@ def extract_field(row, field):
     return result
 
 
+def str_to_bool(value, default):
+    """Coerce a search-result value (always a string after sanitization) into a
+    real boolean. TheHive expects native booleans for fields such as `ioc`,
+    `sighted` and `ignoreSimilarity`; sending the raw string "1"/"0" makes the
+    API reject the whole payload with "Invalid json". Accepts the same truthy/
+    falsy tokens as the custom-field boolean parsing."""
+    if value is None:
+        return default
+    if isinstance(value, bool):
+        return value
+    s = str(value).strip()
+    if re.match(r"^(1|y|Y|t|T|true|True)$", s):
+        return True
+    if re.match(r"^(0|n|N|f|F|false|False)$", s):
+        return False
+    return default
+
+
+def str_to_epoch_millis(value):
+    """Convert a Splunk epoch value (seconds, possibly a float string such as
+    "1700000000.000000") into epoch milliseconds expected by TheHive. Returns
+    None when the value is missing or cannot be parsed."""
+    if value in (None, ""):
+        return None
+    try:
+        ts = int(float(value))
+    except (ValueError, TypeError):
+        return None
+    # Seconds-range epoch -> milliseconds; values already in millis are kept.
+    return ts * 1000 if ts < 10_000_000_000 else ts
+
+
 def parse_events(helper, thehive: TheHive4Splunk, alert_args):
     # iterate through each row, cleaning multivalue fields
     # and then adding the attributes under same alert key
@@ -639,10 +671,16 @@ def parse_events(helper, thehive: TheHive4Splunk, alert_args):
                         
                         obs_tlp = TLP.get(str(data.get("tlp")), TLP["AMBER"])
                         obs_pap = PAP.get(str(data.get("pap")), PAP["AMBER"])
-                        obs_is_ioc = data["ioc"] if "ioc" in data else False
-                        obs_sighted = data["sighted"] if "sighted" in data else True
-                        obs_sighted_at = int(data["sightedAt"]) if "sightedAt" in data else None
-                        obs_ignore_similarity = data["ignoreSimilarity"] if "ignoreSimilarity" in data else False
+                        # Sub-field names follow the documented snake_case
+                        # convention (is_ioc / sighted / sighted_at /
+                        # ignore_similarity) and arrive as strings, so they must
+                        # be coerced to the native types TheHive expects.
+                        obs_is_ioc = str_to_bool(data.get("is_ioc"), False)
+                        obs_sighted = str_to_bool(data.get("sighted"), True)
+                        obs_sighted_at = str_to_epoch_millis(data.get("sighted_at"))
+                        obs_ignore_similarity = str_to_bool(
+                            data.get("ignore_similarity"), False
+                        )
 
                         observable = dict(
                             dataType=obs_datatype,
