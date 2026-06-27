@@ -343,8 +343,8 @@ def parse_events(helper, thehive: TheHive4Splunk, alert_args):
             # Find the most accurate information for the title
             if "search_name" in row:
                 # Use this information coming from Splunk ES
-                del row_sanitized["search_name"]
                 alert["title"] = row["search_name"]
+                del row_sanitized["search_name"]
             else:
                 # Take the name of the savedsearch itself
                 alert["title"] = helper.settings["search_name"]
@@ -409,7 +409,6 @@ def parse_events(helper, thehive: TheHive4Splunk, alert_args):
         # and strip it from the row
         arg_timestamp = alert_args.get("timestamp")
         if arg_timestamp and arg_timestamp in row:
-            del row_sanitized[arg_timestamp]
             newTimestamp = str(int(float(row.pop(arg_timestamp))))
             thehive.logger_file.debug(
                 id="THC-80", message="new Timestamp from row: {} ".format(newTimestamp)
@@ -424,7 +423,12 @@ def parse_events(helper, thehive: TheHive4Splunk, alert_args):
                 id="THC-85", message="alert timestamp: {} ".format(alert["timestamp"])
             )
         else:
-            alert["timestamp"] = arg_timestamp if arg_timestamp else int(time.time() * 1000)
+            if arg_timestamp:
+                thehive.logger_file.warn(
+                    id="THC-86",
+                    message=f"timestamp_field '{arg_timestamp}' missing; falling back to current time",
+                )
+            alert["timestamp"] = int(time.time() * 1000)
 
         observables_data = dict()
         # now we take those KV pairs to add to dict
@@ -608,7 +612,7 @@ def parse_events(helper, thehive: TheHive4Splunk, alert_args):
                 if "value" in data:
                     # Multi-value support: split by comma, semicolon, pipe or newline
                     raw_val_str = str(data["value"])
-                    raw_values = [v.strip() for v in re.split(r'[,;|\\n]+', raw_val_str) if v.strip()]
+                    raw_values = [v.strip() for v in re.split(r'[,;|\n]+', raw_val_str) if v.strip()]
                     
                     thehive.logger_file.debug(
                         id="THC-112",
@@ -672,7 +676,7 @@ def parse_events(helper, thehive: TheHive4Splunk, alert_args):
         else:
             alert["observables"] = []
             thehive.logger_file.debug(
-                id="THC-116", message=f"No observable found in current row (sourceRef={srcRef})."
+                id="THC-116", message=f"No observable found in current row (sourceRef={sourceRef})."
             )
         # Process customFields
         alert["customFields"] = [InputCustomField(cf) for cf in customFields]
@@ -693,7 +697,7 @@ def parse_events(helper, thehive: TheHive4Splunk, alert_args):
             if not isinstance(mitre_technics, list):
                 mitre_technics = [mitre_technics]
 
-            date = datetime.datetime.fromtimestamp(int(row.get("_time", time.time()))).strftime(
+            date = datetime.datetime.fromtimestamp(int(float(row.get("_time", time.time())))).strftime(
                 "%Y-%m-%d"
             )
             alert["ttps"] = []
