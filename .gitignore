@@ -136,6 +136,9 @@ GEMINI.md
 tasks/
 output/
 .gemini/
+# AI assistant local files (must exist locally, never pushed to GitHub)
+CLAUDE.md
+.claude/
 tests/
 *.spl
 # release_notes/
