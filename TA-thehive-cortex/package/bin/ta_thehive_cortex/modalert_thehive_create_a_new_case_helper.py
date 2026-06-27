@@ -357,7 +357,14 @@ def create_case(
                     id="141", message=f"Processing results file: {results_file}"
                 )
                 results_file_name = os.path.basename(results_file).split(".")[0]
-                tmp_directory = tempfile.gettempdir()
+                # Use a dedicated, uniquely-named temporary directory per
+                # invocation. The system temp dir is shared across all alert
+                # action workers (on Windows it resolves to C:\WINDOWS\TEMP for
+                # the splunkd SYSTEM service), so reusing a fixed file name such
+                # as "results.json" caused collisions between concurrent or
+                # overlapping runs (Errno 13 Permission denied / Errno 2 No such
+                # file). mkdtemp guarantees an isolated path.
+                tmp_directory = tempfile.mkdtemp(prefix="thc_attach_")
                 file_ext = ".csv.gz"
                 raw_results_filepath_before_rename = None
 
@@ -505,10 +512,10 @@ def create_case(
                         ),
                     )
 
-                # Remove tmp file
-                os.remove(raw_results_filepath_after_rename)
+                # Remove the dedicated temporary directory (and its content)
+                shutil.rmtree(tmp_directory, ignore_errors=True)
 
-                if "_id" in attachment_result[0]:
+                if attachment_result is not None and "_id" in attachment_result[0]:
                     # log response status
                     thehive.logger_file.info(
                         id="170",
