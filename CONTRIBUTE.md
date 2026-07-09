@@ -22,11 +22,17 @@ ucc-gen build --source TA-thehive-cortex/package --config TA-thehive-cortex/glob
 For the agent's environment, the following cleanup is applied to the `output/` folder before packaging:
 
 ```powershell
+# Cleanup compiled-Python artifacts. ucc-gen copies the source bin/ as-is, so any
+# stale __pycache__/*.pyc left in package/bin (e.g. from running tests locally)
+# would ship inside the .spl and fail Splunk Cloud AppInspect.
+Get-ChildItem "output/TA-thehive-cortex" -Recurse -Include *.pyc, *.pyo -File | Remove-Item -Force -ErrorAction SilentlyContinue;
+Get-ChildItem "output/TA-thehive-cortex" -Recurse -Directory | Where-Object { $_.Name -eq "__pycache__" } | Remove-Item -Recurse -Force -ErrorAction SilentlyContinue;
+
 # Cleanup Windows binaries (keep Mako templates as they are required for UI)
-Get-ChildItem "output/TA-thehive-cortex/lib" -Recurse -Include *.exe, *.pyd | Remove-Item -Force -ErrorAction SilentlyContinue;
+Get-ChildItem "output/TA-thehive-cortex/lib" -Recurse -Include *.exe, *.pyd -File | Remove-Item -Force -ErrorAction SilentlyContinue;
 
 # Create the .spl file
-tar -cvzf TA-thehive-cortex.spl -C output TA-thehive-cortex
+tar -czf TA-thehive-cortex.spl -C output TA-thehive-cortex
 ```
 
 ---
@@ -57,3 +63,4 @@ Deployment must be performed directly via shell commands (PowerShell) by strictl
 - **UCC Framework**: All UI changes MUST be made in `globalConfig.json`. Manual changes to `default/data/ui` will be overwritten during the next build. Note: custom XML views are stored in `package/default/data/ui/views`.
 - **Splunk Tokens Evaluation**: When checking if a dashboard token is defined in an SPL `eval`, always escape the comparison token with `$$` (e.g., `"$token$" == "$$token$$"`). This prevents the condition from becoming always true after token substitution (e.g., `"-1d" == "-1d"`).
 - **Library Isolation**: Third-party libraries must be placed in `package/bin/ta_thehive_cortex/libs` to avoid conflicts with other Splunk apps.
+- **Clean `.spl` (no compiled Python)**: `ucc-gen` installs pip deps with `--no-compile`, but it copies the source `bin/` verbatim. Running tests or scripts locally leaves `__pycache__`/`*.pyc` in `package/bin`, which then get embedded in `output/` and the `.spl`, failing Splunk Cloud AppInspect. Always strip `*.pyc`, `*.pyo` and `__pycache__` (in addition to `*.exe`/`*.pyd`) before `tar`-ing the package, and verify the archive itself with `tar -tzf TA-thehive-cortex.spl` rather than just checking `output/`.
