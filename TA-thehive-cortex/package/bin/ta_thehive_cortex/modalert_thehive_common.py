@@ -99,7 +99,11 @@ dataTypeList = [
 
 
 def create_datatype_lookup(thehive: TheHive4Splunk, force=False):
-    """This function is used to create or refresh a datatype lookup"""
+    """This function is used to create or refresh a datatype lookup.
+
+    A refresh is non-destructive: every existing row (including user-defined
+    custom field mappings) is preserved, only datatypes newly reported by
+    TheHive are appended."""
 
     dataType_dict = dict()
     # if it does not exist, create thehive_datatypes.csv
@@ -110,9 +114,28 @@ def create_datatype_lookup(thehive: TheHive4Splunk, force=False):
     th_dt_filename = os.path.join(directory, "thehive_datatypes.csv")
 
     if force or not os.path.exists(th_dt_filename):
-        # file th_dt_filename.csv doesn't exist or force refresh. Create/Update the file
-        observables = list()
-        observables.append(["field_name", "field_type", "datatype", "description"])
+        header = ["field_name", "field_type", "datatype", "description"]
+        existing_rows = list()
+        known_field_names = set()
+
+        # Preserve all rows of an existing lookup (user customizations included)
+        if os.path.exists(th_dt_filename):
+            try:
+                with open(th_dt_filename, "rt", newline="") as file_object:
+                    for row in csv.DictReader(file_object):
+                        if row.get("field_name"):
+                            existing_rows.append(
+                                [row.get(column) or "" for column in header]
+                            )
+                            known_field_names.add(row["field_name"])
+            except IOError:
+                thehive.logger_file.error(
+                    id="THC-4",
+                    message="{} exists but could not be read, refresh aborted to avoid losing its content".format(
+                        th_dt_filename
+                    ),
+                )
+                return dataType_dict
 
         # Get the list of datatypes from TheHive itself
         try:
@@ -121,19 +144,25 @@ def create_datatype_lookup(thehive: TheHive4Splunk, force=False):
                 id="THC-2", message="Datatypes recovered from TheHive: " + str(th_datatypes)
             )
 
-            # Parse the response
+            # Parse the response, keeping only datatypes not already in the lookup
+            new_rows = list()
             for dt in th_datatypes:
-                observables.append([dt["name"], "observable", dt["name"], ""])
                 dataType_dict[dt["name"]] = dt["name"]
+                if dt["name"] not in known_field_names:
+                    new_rows.append([dt["name"], "observable", dt["name"], ""])
 
-            # Write the file
+            # Write the merged file atomically so a crash or a concurrent alert
+            # action can never leave a truncated lookup behind
             try:
                 if not os.path.exists(directory):
                     os.makedirs(directory)
-                with open(th_dt_filename, "w", newline="") as file_object:
+                tmp_filename = "{}.{}.tmp".format(th_dt_filename, os.getpid())
+                with open(tmp_filename, "w", newline="") as file_object:
                     csv_writer = csv.writer(file_object, delimiter=",")
-                    for observable in observables:
+                    csv_writer.writerow(header)
+                    for observable in existing_rows + new_rows:
                         csv_writer.writerow(observable)
+                os.replace(tmp_filename, th_dt_filename)
             except IOError:
                 thehive.logger_file.error(
                     id="THC-5",
@@ -171,7 +200,7 @@ def get_datatype_dict(thehive: TheHive4Splunk):
         if file_age > 86400:  # 24 hours
             thehive.logger_file.info(
                 id="THC-11",
-                message=f"File {th_dt_filename} is older than 24h ({int(file_age)}s). Refreshing from API..."
+                message=f"File {th_dt_filename} is older than 24h ({int(file_age)}s). Merging new datatypes from API (existing rows are preserved)..."
             )
             refresh_needed = True
     else:
@@ -218,6 +247,8 @@ def get_datatype_dict(thehive: TheHive4Splunk):
                     id="THC-16",
                     message=f"file {th_dt_filename} empty, malformed or not readable",
                 )
+            finally:
+                fh.close()
     return dataType_dict
 
 
