@@ -141,6 +141,25 @@ Output:
 
 ### Splunk screenshots
 
+> **The screenshots below predate the UCC rework (v4.0.0) and no longer match the
+> dialog.** Two fields were renamed and turned into dropdowns: *TheHive instance
+> ID* is now **Instance**, and *Alert mode* is now a dropdown list. The values to
+> set for this use case are the ones in the table, not the ones in the images.
+
+| Field in the "TheHive - Create a new alert" dialog | Value for UC2 |
+| :--- | :--- |
+| Instance | your instance id, or `<default>` |
+| Alert mode | Alert action |
+| Unique ID field | `unique` |
+| Title | `name` |
+| Description | `info` |
+| Timestamp field | `cert-alerted-on` |
+| Severity | `risk` |
+| [Description] Append sanitized results | enabled |
+
+`Description` takes the **name of the field** holding the text, which is `info`
+in the search above — not the description itself.
+
 ![UC2 - Saved search configuration 1](images/../../images/uc2_ss1.png)
 ![UC2 - Saved search configuration 2](images/../../images/uc2_ss2.png)
 ![UC2 - Saved search configuration 3](images/../../images/uc2_ss3.png)
