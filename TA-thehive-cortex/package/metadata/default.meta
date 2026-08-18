@@ -6,8 +6,10 @@ owner = admin
 access = read : [ * ], write : [ admin, sc_admin ]
 export = system
 
+# In Splunk Cloud the administrator role is sc_admin, not admin: a knowledge
+# object writable by admin alone is unreachable for a Cloud customer.
 [views]
-access = read : [ * ], write : [ admin ]
+access = read : [ * ], write : [ admin, sc_admin ]
 
 [nav]
-access = read : [ * ], write : [ admin ]
+access = read : [ * ], write : [ admin, sc_admin ]
