@@ -35,6 +35,22 @@ Get-ChildItem "output/TA-thehive-cortex/lib" -Recurse -Include *.exe, *.pyd -Fil
 tar -czf TA-thehive-cortex.spl -C output TA-thehive-cortex
 ```
 
+### 3. AppInspect (Splunk Cloud vetting)
+
+Run the cloud checks on the `.spl` itself, never on `output/` -- the archive is
+what Splunk receives.
+
+```powershell
+# Requires splunk-appinspect (Python 3.11; it does not install on 3.9).
+splunk-appinspect inspect TA-thehive-cortex.spl --mode precert --included-tags cloud `
+  --data-format json --output-file appinspect.json
+```
+
+Read the `summary` block of the JSON rather than the console log. Only
+`failure` and `error` block a submission; `future_failure` announces a break in
+a future Splunk release, and the `warning` entries here are informational
+(frontend telemetry, deprecated SplunkJS, IPs inside vendored libraries).
+
 ---
 
 ## Autonomous Safe Deployment (CRITICAL)
@@ -63,4 +79,8 @@ Deployment must be performed directly via shell commands (PowerShell) by strictl
 - **UCC Framework**: All UI changes MUST be made in `globalConfig.json`. Manual changes to `default/data/ui` will be overwritten during the next build. Note: custom XML views are stored in `package/default/data/ui/views`.
 - **Splunk Tokens Evaluation**: When checking if a dashboard token is defined in an SPL `eval`, always escape the comparison token with `$$` (e.g., `"$token$" == "$$token$$"`). This prevents the condition from becoming always true after token substitution (e.g., `"-1d" == "-1d"`).
 - **Library Isolation**: Third-party libraries must be placed in `package/bin/ta_thehive_cortex/libs` to avoid conflicts with other Splunk apps.
+- **Mako `appserver/templates/base.html` is emitted by `ucc-gen` itself**: AppInspect flags it as a `future_failure` (removed in Splunk 10.4) and advises "regenerate the app with UCC framework version 6.3.0 or later". That advice is not actionable -- UCC **6.5.3** still generates the file, and the source tree has no `package/appserver/templates/` at all. Nothing can be done from this repository; wait for an UCC release that stops emitting it. Do **not** delete the template by hand: it backs the configuration UI.
+- **`requirements.txt` is a source file, not a virtualenv**: the standard Python `.gitignore` carries a bare `lib/` rule, which silently swallowed `package/lib/requirements.txt` -- the file pinning every runtime dependency of the add-on. A fresh clone could not rebuild the same TA. The `.gitignore` now re-includes it explicitly. When a build reads a file, check `git check-ignore -v` on that file before assuming it is versioned.
+- **`python.required` is a version list, not an interpreter name**: `python.version = python3` (still required by current checks) and `python.required = 3.9, 3.13` are two different keys. Declaring `python.required` asserts compatibility with those interpreters, third-party libraries included -- set it deliberately, and mirror it in `globalConfig.json` under `meta.supportedPythonVersion`.
+- **`ucc-gen` pins its own floor for `splunktaucclib`**: upgrading the generator can fail the build with "found but has the wrong version" long before any code changes. Bump the pin in `package/lib/requirements.txt` to match the generator's minimum.
 - **Clean `.spl` (no compiled Python)**: `ucc-gen` installs pip deps with `--no-compile`, but it copies the source `bin/` verbatim. Running tests or scripts locally leaves `__pycache__`/`*.pyc` in `package/bin`, which then get embedded in `output/` and the `.spl`, failing Splunk Cloud AppInspect. Always strip `*.pyc`, `*.pyo` and `__pycache__` (in addition to `*.exe`/`*.pyd`) before `tar`-ing the package, and verify the archive itself with `tar -tzf TA-thehive-cortex.spl` rather than just checking `output/`.
