@@ -14,9 +14,27 @@ The Add-on uses the [Splunk UCC Generator](https://splunk.github.io/addonfactory
 To build the application:
 ```powershell
 # Recommended build command
-ucc-gen build --source TA-thehive-cortex/package --config TA-thehive-cortex/globalConfig.json --output output --ta-version 4.2.0 --overwrite -v --python-binary-name python
+ucc-gen build --source TA-thehive-cortex/package --config TA-thehive-cortex/globalConfig.json --output output --ta-version 4.2.2 --overwrite -v --python-binary-name python
 ```
 *Note: You may need to specify `--python-binary-name` (e.g., `python3.9` or the full path) if your default Python is not compatible.*
+
+### Who decides the version
+
+**`ucc-gen` does, and it writes the answer back into your sources.**
+
+- `--ta-version` is the source of truth. The build stamps it into `app.conf`,
+  `app.manifest`, `VERSION` — **and into `globalConfig.json` itself**
+  (`meta.version` is rewritten, then saved). Editing `meta.version` by hand
+  before a build is redundant: the build overwrites it either way.
+- **Omit `--ta-version` and the version comes from the latest git tag.** With no
+  usable tag, the build refuses to run rather than guess.
+- `package/app.manifest` carries a stale `4.0.0` in the sources. It is **inert**
+  — the generated manifest is rewritten from `--ta-version`. Do not trust it,
+  and do not bother fixing it.
+
+Practical consequence: after a build, `git status` shows `globalConfig.json` as
+modified even if you changed nothing. That is the generator writing into its own
+input, not a stray edit.
 
 ### 2. Packaging (.spl)
 For the agent's environment, the following cleanup is applied to the `output/` folder before packaging:

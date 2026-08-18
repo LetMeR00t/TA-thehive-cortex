@@ -2,7 +2,7 @@
     "meta": {
         "name": "TA-thehive-cortex",
         "displayName": "TheHive-Cortex",
-        "version": "4.2.1",
+        "version": "4.2.2",
         "supportedPythonVersion": [
             "3.9",
             "3.13"
