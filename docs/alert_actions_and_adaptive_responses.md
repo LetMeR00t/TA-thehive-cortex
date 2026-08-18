@@ -146,19 +146,29 @@ Output:
 > ID* is now **Instance**, and *Alert mode* is now a dropdown list. The values to
 > set for this use case are the ones in the table, not the ones in the images.
 
-| Field in the "TheHive - Create a new alert" dialog | Value for UC2 |
-| :--- | :--- |
-| Instance | your instance id, or `<default>` |
-| Alert mode | Alert action |
-| Unique ID field | `unique` |
-| Title | `name` |
-| Description | `info` |
-| Timestamp field | `cert-alerted-on` |
-| Severity | `risk` |
-| [Description] Append sanitized results | enabled |
+| Field in the "TheHive - Create a new alert" dialog | Value for UC2 | Kind |
+| :--- | :--- | :--- |
+| Instance | `<default>` | dropdown |
+| Alert mode | Alert action mode | dropdown |
+| Unique ID field | `unique` | field name |
+| Case Template | *(empty)* | text |
+| Type | `alert` | text |
+| Source | `splunk` | text |
+| Timestamp field | *(empty)* | field name |
+| Title | `name` | field name |
+| Description | `info` | field name |
+| Tags | `malicious,external,steganography` | text |
+| Scope | Include only listed fields in the results | dropdown |
+| Severity | Medium | dropdown |
+| TLP / PAP | AMBER / AMBER | dropdown |
+| [Description] Append sanitized results | Yes | dropdown |
+| [Description] Keep observables in the results | Yes | dropdown |
 
+Two points the screenshots get wrong beyond the renaming: `Severity`, `TLP`,
+`PAP` and `Scope` are **dropdowns**, they do not take a field name; and
 `Description` takes the **name of the field** holding the text, which is `info`
-in the search above — not the description itself.
+in the search above — the screenshot shows `$description$`, a token the UC2
+search never produces.
 
 ![UC2 - Saved search configuration 1](images/../../images/uc2_ss1.png)
 ![UC2 - Saved search configuration 2](images/../../images/uc2_ss2.png)
