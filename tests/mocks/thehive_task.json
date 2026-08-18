@@ -1,0 +1,18 @@
+{
+  "_id": "~40968",
+  "_type": "case_task",
+  "_createdBy": "admin",
+  "_createdAt": 1672531200000,
+  "_updatedBy": "admin",
+  "_updatedAt": 1672534800000,
+  "title": "Investigate suspicious login",
+  "description": "Please check the logs for user 'john.doe'",
+  "status": "InProgress",
+  "flag": false,
+  "group": "Investigation",
+  "order": 1,
+  "caseId": "~12345",
+  "isOwner": true,
+  "shareCount": 0,
+  "actionRequired": false
+}

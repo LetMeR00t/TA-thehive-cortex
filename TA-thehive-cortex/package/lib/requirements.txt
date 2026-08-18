@@ -1,0 +1,13 @@
+splunktaucclib==8.2.0
+splunk-sdk==2.1.1
+solnlib==7.0.0
+urllib3==1.26.20
+certifi==2026.2.25
+packaging==26.0
+deprecation==2.1.0
+typing-extensions==4.15.0
+requests==2.32.3
+idna==3.10
+chardet==5.2.0
+charset-normalizer==3.4.1
+tomark==0.1.4

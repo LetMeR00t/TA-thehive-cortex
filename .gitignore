@@ -139,7 +139,18 @@ output/
 # AI assistant local files (must exist locally, never pushed to GitHub)
 CLAUDE.md
 .claude/
-tests/
 *.spl
 # release_notes/
 !release_notes/
+
+# The add-on's dependency pins are a source file, not a virtualenv: the generic
+# `lib/` rule above would otherwise leave package/lib/requirements.txt out of
+# the repository, making the build unreproducible from a fresh clone.
+!TA-thehive-cortex/package/lib/
+TA-thehive-cortex/package/lib/*
+!TA-thehive-cortex/package/lib/requirements.txt
+
+# Tests are part of the project: the unit tests mock every Splunk/network
+# module and run anywhere. Integration tests read their endpoints and
+# credentials from `.env`, which stays ignored -- never hardcode a host here.
+tests/__pycache__/
