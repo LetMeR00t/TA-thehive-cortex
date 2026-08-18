@@ -109,8 +109,20 @@
         <default>False</default>
         <initialValue>False</initialValue>
       </input>
-      <input type="text" token="create_sid">
-        <label>Job SID (input data)</label>
+      <input type="text" token="create_sid" searchWhenChanged="true">
+        <label>Job SID (input data) *</label>
+        <!-- Mandatory. Simple XML has no "required" attribute, so the token
+             below gates the action panel: an empty SID would otherwise reach
+             `| loadjob` and fail deep inside the alert action (FileNotFoundError,
+             then UnboundLocalError on 'rf') instead of here. -->
+        <change>
+          <condition match="isnull($value$) OR $value$==&quot;&quot;">
+            <unset token="create_sid_set"></unset>
+          </condition>
+          <condition>
+            <set token="create_sid_set">"True"</set>
+          </condition>
+        </change>
       </input>
       <input type="radio" token="create_case_mode">
         <label>Case mode</label>
@@ -200,7 +212,7 @@
     </panel>
   </row>
   <row>
-    <panel depends="$launch_create_case$">
+    <panel depends="$launch_create_case$,$create_sid_set$">
       <table>
         <search>
           <query>| loadjob $create_sid$
