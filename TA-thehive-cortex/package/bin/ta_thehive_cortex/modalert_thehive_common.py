@@ -555,7 +555,11 @@ def parse_events(helper, thehive: TheHive4Splunk, alert_args):
                     )
                     custom_field_check = False
                     custom_field = {"name": key}
-                    if custom_type == "string":
+                    # "url" (TheHive >= 5.1) carries a plain string value, so it
+                    # is handled exactly like "string". Any type missing from
+                    # this chain leaves custom_field_check False and the field
+                    # is dropped without an error.
+                    if custom_type in ("string", "url"):
                         custom_field_check = True
                         custom_field["value"] = str(value)
                     elif custom_type == "boolean":
@@ -592,6 +596,11 @@ def parse_events(helper, thehive: TheHive4Splunk, alert_args):
                             custom_field["value"] = int(value) * 1000
                     if custom_field_check is True:
                         customFields += [custom_field]
+                    else:
+                        thehive.logger_file.warn(
+                            id="THC-117",
+                            message=f"custom field '{key}' was dropped: type '{custom_type}' is not handled, or value '{value}' does not match it",
+                        )
                 elif key == "ttp":
                     del row_sanitized["ttp"]
                     # Expected pattern is: tactic::patternId::occurDate
