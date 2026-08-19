@@ -34,8 +34,9 @@ mocks = [
     'requests.auth', 'urllib3', 'splunk', 'splunk.Intersplunk', 'globals',
 ]
 
-for mod in mocks:
-    sys.modules.setdefault(mod, MagicMock())
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from _isolation import mocks_temporaires  # noqa: E402
 
 APP_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 BIN = os.path.join(APP_ROOT, 'TA-thehive-cortex', 'package', 'bin')
@@ -45,7 +46,8 @@ for p in (BIN,
     if p not in sys.path:
         sys.path.insert(0, p)
 
-import cortex as cortex_module  # noqa: E402
+with mocks_temporaires(mocks):
+    import cortex as cortex_module  # noqa: E402
 
 
 class TestInitializeCortexInstanceCallSites(unittest.TestCase):

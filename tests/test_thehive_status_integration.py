@@ -6,6 +6,9 @@ from unittest.mock import MagicMock, patch
 
 # Selective mocking to avoid recursion
 mocks = [
+    'thehive',
+    'thehive4py',
+    'thehive4py.client',
     'splunk', 'splunk.entity', 'splunklib', 'splunklib.client', 
     'splunklib.modularinput', 'solnlib', 'solnlib.log', 
     'solnlib.modular_input', 'solnlib.utils', 
@@ -13,19 +16,18 @@ mocks = [
     'requests', 'globals'
 ]
 
-for mod in mocks:
-    sys.modules[mod] = MagicMock()
 
 # Mock thehive and thehive4py more simply
-sys.modules['thehive'] = MagicMock()
-sys.modules['thehive4py'] = MagicMock()
-sys.modules['thehive4py.client'] = MagicMock()
 
 # Add bin to path
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from _isolation import mocks_temporaires  # noqa: E402
+
 APP_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(APP_ROOT, 'TA-thehive-cortex', 'package', 'bin'))
 
-import thehive_instance_status
+with mocks_temporaires(mocks):
+    import thehive_instance_status
 
 class TestTheHiveStatusIntegration(unittest.TestCase):
     def setUp(self):

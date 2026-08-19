@@ -14,14 +14,16 @@ mocks = [
     'thehive4py.query.filters', 'thehive4py.query.sort'
 ]
 
-for mod in mocks:
-    sys.modules[mod] = MagicMock()
 
 # Add bin to path
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from _isolation import mocks_temporaires  # noqa: E402
+
 APP_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(APP_ROOT, 'TA-thehive-cortex', 'package', 'bin'))
 
-import thehive_tasks
+with mocks_temporaires(mocks):
+    import thehive_tasks
 
 class TestTheHiveTasksIntegration(unittest.TestCase):
     def setUp(self):

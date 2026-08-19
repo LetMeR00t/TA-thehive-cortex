@@ -22,15 +22,19 @@ import unittest
 from unittest.mock import MagicMock
 
 mocks = ['splunk', 'splunk.Intersplunk', 'splunklib', 'splunklib.client']
-for mod in mocks:
-    sys.modules.setdefault(mod, MagicMock())
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from _isolation import mocks_temporaires  # noqa: E402
 
 APP_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 BIN = os.path.join(APP_ROOT, 'TA-thehive-cortex', 'package', 'bin')
 if BIN not in sys.path:
     sys.path.insert(0, BIN)
 
-import ta_logging  # noqa: E402
+# The REAL module: this file is the one that tests it. If another test
+# module leaked a MagicMock for it, we would be asserting on the mock.
+with mocks_temporaires(mocks):
+    import ta_logging  # noqa: E402
 
 
 class CollecteurDAvertissements(logging.Handler):
@@ -97,11 +101,19 @@ class TestResolutionDuNiveau(unittest.TestCase):
                         "falling back to INFO on an unknown level must be said, "
                         "otherwise the user never learns why DEBUG had no effect")
 
+    @unittest.skipIf(os.geteuid() == 0, "root reads everything, the case cannot exist")
     def test_une_configuration_illisible_est_signalee(self):
-        # A directory where a file is expected: open() raises IsADirectoryError.
-        chemin = os.path.join(self.app, "local", "thehive_cortex_settings.conf")
-        os.makedirs(chemin, exist_ok=True)
-        logger, collecteur = self._configurer()
+        # A real file that open() cannot read: this is what reaches the except.
+        # A DIRECTORY would not do -- os.path.isfile() returns False for it, so
+        # the code takes the ordinary "no local settings" path and must NOT warn.
+        chemin = self._ecrire_reglages("[logging]\nloglevel = DEBUG\n")
+        os.chmod(chemin, 0o000)
+        try:
+            logger, collecteur = self._configurer()
+        finally:
+            # Restored here, not via addCleanup: cleanups run AFTER tearDown,
+            # which has already removed the temporary tree.
+            os.chmod(chemin, 0o600)
         self.assertEqual(logging.INFO, logger.level)
         self.assertTrue(collecteur.au_moins_un_avertissement(),
                         "an unreadable configuration must leave a trace")

@@ -12,16 +12,18 @@ mocks = [
     'requests.auth', 'urllib3'
 ]
 
-for mod in mocks:
-    sys.modules[mod] = MagicMock()
 
 # Add bin and libs to path
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from _isolation import mocks_temporaires  # noqa: E402
+
 APP_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(APP_ROOT, 'TA-thehive-cortex', 'package', 'bin'))
 sys.path.insert(0, os.path.join(APP_ROOT, 'TA-thehive-cortex', 'package', 'bin', 'ta_thehive_cortex', 'libs'))
 
 # Import TheHive4Splunk AFTER path setup
-import thehive
+with mocks_temporaires(mocks):
+    import thehive
 
 class TestTheHiveTasks(unittest.TestCase):
     def setUp(self):
