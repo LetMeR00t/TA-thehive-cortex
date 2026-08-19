@@ -43,7 +43,10 @@ Z = "\033[0m"
 RACINE = Path(__file__).resolve().parents[2]
 LIBS = RACINE / "TA-thehive-cortex" / "package" / "bin" / "ta_thehive_cortex" / "libs"
 VENDORISE = LIBS / "thehive4py"
-PATCHES = LIBS / "patches" / "thehive4py"
+# ⚠️ OUTSIDE package/. `ucc-gen` copies package/bin verbatim, so a patch series
+# left in there ships inside the .spl -- development material delivered to every
+# user, and extra surface for AppInspect to chew on.
+PATCHES = RACINE / "tools" / "vendoring" / "patches" / "thehive4py"
 
 #: Upstream release the series is written against.
 BASE = "2.1.0"

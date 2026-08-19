@@ -72,6 +72,9 @@ refuser '\.pyc$|/__pycache__/' "compiled Python"
 refuser '\.(exe|pyd|dll)$' "Windows binaries"
 # UCC scaffold left in production: get_data_from_api() returned {"line1": "hello"}.
 refuser 'bin/thehive_cortex_helper\.py$' "UCC scaffold residue"
+# Development material. The vendoring patch series lived under package/bin for a
+# while, which meant ucc-gen copied it straight into the archive.
+refuser '/patches/|\.patch$' "vendoring patch series"
 
 # ⚠️ Zero bytes, and load-bearing. Without it cortex4py becomes a namespace
 # package and another add-on can shadow its root modules -- which is exactly
