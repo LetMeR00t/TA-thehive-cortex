@@ -99,7 +99,7 @@ def create_cortex_instance(instance_id, settings, logger, acronym, exec_id=None)
         sys.exit(7)
     elif (cortex_authentication_type == "api_key"):
         logger_file.debug(id="C8",message="Cortex instance will be initialized with an API Key (not a password)")
-        cortex = Cortex(url=cortex_url, apiKey=cortex_secret, sid=settings["sid"], proxies=cortex_proxies, verify=True, cert=cortex_cert, logger=logger_file)
+        cortex = Cortex(url=cortex_url, apiKey=cortex_secret, sid=settings["sid"], proxies=cortex_proxies, verify=True, cert=cortex_cert, logger_file=logger_file, timeout=int(configuration.getHttpTimeout()))
     else:
         logger_file.error(id="C9",message="WRONG_AUTHENTICATION_TYPE - Authentication type is not one of the expected values (password or api_key), given value: "+str(cortex_authentication_type))
         sys.exit(20)
@@ -110,7 +110,7 @@ def create_cortex_instance(instance_id, settings, logger, acronym, exec_id=None)
 class Cortex(Api):
     """ This class is used to represent a Cortex instance"""
 
-    def __init__(self, url = None, apiKey = None, sid = "", proxies = {}, cert = None , verify = True, logger_file = None):
+    def __init__(self, url = None, apiKey = None, sid = "", proxies = {}, cert = None , verify = True, logger_file = None, timeout = 60):
         self.logger_file = logger_file
         try :
             if apiKey is None:
@@ -118,7 +118,7 @@ class Cortex(Api):
                 sys.exit(15)
 
             self.logger_file.debug(id="C19",message=f"Cortex object will be instanciated with url '{url}'")
-            super().__init__(str(url),str(apiKey),proxies=proxies,verify_cert=verify,cert=cert)
+            super().__init__(str(url),str(apiKey),proxies=proxies,verify_cert=verify,cert=cert,timeout=timeout)
             self.logger_file.debug(id="C20",message="Cortex object instanciated")
 
             # Try to connect to the API by recovering all enabled analyzers
