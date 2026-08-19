@@ -1,5 +1,4 @@
 <nav search_view="search" color="#0049D4">
-  <view name="instances"/>
   <view name="configuration"/>
   <view name="inputs"/>
   <collection label="TheHive">

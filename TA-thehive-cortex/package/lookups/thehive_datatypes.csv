@@ -1,0 +1,17 @@
+field_name,field_type,datatype,description
+uri_path,observable,uri_path,
+hostname,observable,hostname,
+fqdn,observable,fqdn,
+registry,observable,registry,
+regexp,observable,regexp,
+autonomous-system,observable,autonomous-system,
+mail,observable,mail,
+user-agent,observable,user-agent,
+hash,observable,hash,
+ip,observable,ip,
+file,observable,file,
+filename,observable,filename,
+domain,observable,domain,
+url,observable,url,
+other,observable,other,
+mail-subject,observable,mail-subject

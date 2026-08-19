@@ -112,6 +112,7 @@ because each one comes from a defect that shipped.
 python -m unittest discover -s tests -p "test_*.py"
 python tools/checks/no_bare_except.py
 python tools/checks/requests_timeout.py
+python tools/checks/declared_files_exist.py
 PYTHON=python3.9 tools/checks/pins_match_build.sh
 tools/checks/tests_on_both_pythons.sh
 ```
@@ -283,3 +284,24 @@ namespace package and another Splunk add-on shipping the same name can shadow
 its root modules, which is exactly what `cortex.py` imports. It was already lost
 once, in the UCC migration, and nobody noticed for years. Nothing about a 0-byte
 file suggests it matters, so the check says it instead.
+
+## A declaration must resolve, and neither file can shout on its own
+
+`transforms.conf` declared `filename = thehive_datatypes.csv` while the package
+had no `lookups/` directory at all. Both files were individually valid -- a
+well-formed declaration, and a file that is simply absent -- so nothing
+complained. The break lived **between** them, and it surfaced only on a fresh
+installation, where `| inputlookup thehive_datatypes.csv` failed until an alert
+action happened to create the file at runtime.
+
+`tools/checks/declared_files_exist.py` closes the gap: every `filename =`
+resolves inside `package/lookups/`, every kvstore lookup has its collection in
+`collections.conf`, and every `<view name=…>` in the nav is provided by
+something.
+
+⚠️ It distinguishes what it can PROVE from what it merely suspects. `instances`
+is declared as a configuration TAB in `globalConfig.json`, so a nav entry
+pointing at it as a view is provably wrong and fails the check. `jobs` is
+reported and does **not** fail: Splunk ships views this repository cannot
+enumerate, and failing on a name we cannot resolve is how a guard starts crying
+wolf -- after which it gets switched off and protects nothing.
