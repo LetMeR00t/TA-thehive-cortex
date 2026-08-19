@@ -31,7 +31,9 @@ if __name__ == '__main__':
     results,dummyresults,settings = splunk.Intersplunk.getOrganizedResults()
 
     # Initialize this script and return a cortex instance object, a configuration object and defaults values
-    (cortex, configuration, defaults, logger_file) = initialize_cortex_instance(keywords, settings ,logger_name="cortex_refresh_analyzers")
+    # `acronym` is positional and mandatory (cortex.py). It is what prefixes
+    # every log id of this command, as CRJ/CSJ do for the two other ones.
+    (cortex, configuration, defaults, logger_file) = initialize_cortex_instance(keywords, settings, acronym="CRA", logger_name="cortex_refresh_analyzers")
 
     logger_file.debug(id="CRA1",message="Input keywords: "+str(keywords))
     logger_file.debug(id="CRA2",message="Input results: "+str(results))
