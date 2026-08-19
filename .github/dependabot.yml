@@ -1,0 +1,38 @@
+# Dependabot does not know what a Splunk add-on runs on.
+#
+# ⚠️ Measured on 2026-08-19: of the three security updates open at that moment,
+# TWO would have broken the add-on, and both looked like ordinary good practice.
+# That is why the bounds below are written down instead of being remembered.
+#
+# The envelope this add-on must stay inside:
+#   * Python 3.9 AND 3.13 — `globalConfig.json` declares
+#     `supportedPythonVersion: ["3.9","3.13"]`, and `commands.conf` carries
+#     `python.required = 3.9, 3.13`. Splunk <= 10.1 serves 3.9 only, and 10.2
+#     keeps 3.9 as its default while offering 3.13 as an opt-in.
+#   * urllib3 < 2 — required by splunktaucclib.
+#
+# Every `ignore` below is justified by a version's own metadata, not by caution.
+
+version: 2
+updates:
+  - package-ecosystem: "pip"
+    directory: "/TA-thehive-cortex/package/lib"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 5
+    ignore:
+      # `Requires-Dist: urllib3 (<2)` in the splunktaucclib 8.2.0 wheel, and
+      # unchanged in 7.0.0, 8.0.0 and 8.1.0. UCC's pyproject.toml on main still
+      # carries it, so no future UCC release lifts this on its own.
+      - dependency-name: "urllib3"
+        versions: [">=2.0.0"]
+
+      # requests 2.33.0 declares `Requires-Python: >=3.10`. Taking it would drop
+      # every Splunk below 10.2, and 10.2 itself unless the admin opts into 3.13.
+      - dependency-name: "requests"
+        versions: [">=2.33.0"]
+
+      # splunk-sdk 3.0.0 declares `Requires-Python: >=3.13`. Same reasoning: it
+      # would make the add-on uninstallable on the runtime Splunk defaults to.
+      - dependency-name: "splunk-sdk"
+        versions: [">=3.0.0"]
