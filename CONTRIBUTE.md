@@ -188,3 +188,26 @@ than the connection.
 turns any exception into a readable SPL error
 (`Intersplunk.generateErrorResults`); calling `sys.exit()` instead gives the
 user a search that stops without a word, and gives the tests nothing to catch.
+
+## Never delete a value before knowing how to handle it
+
+`parse_events()` removed a key from the row and only THEN looked at its type.
+When the type was one the chain did not know, the field was not added and the
+value was gone from the raw table reinjected into the description as well.
+Losing it twice is what made GitHub #133 expensive: the alert reached TheHive,
+it looked right, and the analyst had nowhere left to read the missing value.
+
+The rule is one line: **consume, then delete.** Removal belongs on the success
+path, never before the branch that decides. When a value cannot be mapped, keep
+it where a human can still see it and say so with a named warning.
+
+⚠️ And a dispatch chain needs a terminal branch. The composite-key branch had
+`if mainkey in data_type:` with no `else` at all, so a prefix naming no known
+datatype vanished without even a warning -- indistinguishable from a field that
+was never sent.
+
+The protection that matters is not a test per branch, it is the INVARIANT:
+whatever key a row carries, its value must be findable somewhere in what
+reaches TheHive -- observable, custom field, TTP, or the raw table. See
+`tests/test_parse_events_losses_unit.py`; reinstating a single premature `del`
+turns it red on its own.

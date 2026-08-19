@@ -454,16 +454,42 @@ def parse_events(helper, thehive: TheHive4Splunk, alert_args):
         # and strip it from the row
         arg_timestamp = alert_args.get("timestamp")
         if arg_timestamp and arg_timestamp in row:
-            newTimestamp = str(int(float(row.pop(arg_timestamp))))
-            thehive.logger_file.debug(
-                id="THC-80", message="new Timestamp from row: {} ".format(newTimestamp)
-            )
-            epoch10 = re.match("^[0-9]{10}$", newTimestamp)
-            epoch13 = re.match("^[0-9]{13}$", newTimestamp)
-            if epoch13 is not None:
-                alert["timestamp"] = int(float(newTimestamp))
-            elif epoch10 is not None:
-                alert["timestamp"] = int(float(newTimestamp)) * 1000
+            brut = row.pop(arg_timestamp)
+            # Two shapes used to fail the WHOLE alert, not just this field:
+            #   - a non-numeric value ("2026-01-01", which is what a Splunk
+            #     strftime produces) raised ValueError on float();
+            #   - a numeric value that is neither ten nor thirteen digits left
+            #     alert["timestamp"] unassigned, and the log line right below
+            #     read it -> KeyError on a key the code had just failed to write.
+            # An unusable timestamp is a reason to fall back, never a reason to
+            # lose the alert.
+            newTimestamp = None
+            try:
+                newTimestamp = str(int(float(brut)))
+            except (TypeError, ValueError):
+                thehive.logger_file.warn(
+                    id="THC-87",
+                    message=f"timestamp_field '{arg_timestamp}' holds a non-numeric value "
+                    f"('{brut}'); falling back to current time",
+                )
+            if newTimestamp is not None:
+                thehive.logger_file.debug(
+                    id="THC-80", message="new Timestamp from row: {} ".format(newTimestamp)
+                )
+                epoch10 = re.match("^[0-9]{10}$", newTimestamp)
+                epoch13 = re.match("^[0-9]{13}$", newTimestamp)
+                if epoch13 is not None:
+                    alert["timestamp"] = int(float(newTimestamp))
+                elif epoch10 is not None:
+                    alert["timestamp"] = int(float(newTimestamp)) * 1000
+                else:
+                    thehive.logger_file.warn(
+                        id="THC-88",
+                        message=f"timestamp_field '{arg_timestamp}' is neither a 10 nor a "
+                        f"13 digit epoch ('{newTimestamp}'); falling back to current time",
+                    )
+            if "timestamp" not in alert:
+                alert["timestamp"] = int(time.time() * 1000)
             thehive.logger_file.debug(
                 id="THC-85", message="alert timestamp: {} ".format(alert["timestamp"])
             )
@@ -486,7 +512,11 @@ def parse_events(helper, thehive: TheHive4Splunk, alert_args):
                     thehive.logger_file.debug(
                         id="THC-91", message=f"composite fieldvalue detected: {key}"
                     )
-                    del row_sanitized[key]
+                    # ⚠️ NOT removed here. It used to be, and the branch below
+                    # had no `else` at all: a composite key whose prefix is not
+                    # a datatype disappeared without even a warning -- the
+                    # sneakiest of the losses, because nothing distinguished it
+                    # from a field that was never sent.
                     # Extract information
                     compositekey = key.split(":", 1)
                     mainkey = str(compositekey[0])
@@ -509,6 +539,17 @@ def parse_events(helper, thehive: TheHive4Splunk, alert_args):
                                 mainkey, subkey, value
                             ),
                         )
+                        # Consumed: now it may leave the raw table.
+                        del row_sanitized[key]
+                    else:
+                        # The terminal branch that was missing. The prefix names
+                        # no known datatype, so we cannot build an observable --
+                        # but the value stays readable in the description table.
+                        thehive.logger_file.warn(
+                            id="THC-93",
+                            message=f"composite key '{key}' was NOT mapped: '{mainkey}' is "
+                            f"not a known datatype. The raw value is kept in the description table.",
+                        )
                 elif key in data_type:
                     # Check if observables must be kept in the sanitized results or not
                     if not alert_args["description_results_keep_observable"]:
@@ -527,7 +568,12 @@ def parse_events(helper, thehive: TheHive4Splunk, alert_args):
                         observables_data[key]["value"] = value
                         observables_data[key]["datatype"] = observable_datatype
                 elif key in custom_fields:
-                    del row_sanitized[key]
+                    # ⚠️ The key is NOT removed here. It used to be, before the
+                    # type was even read, so a type this chain does not know
+                    # lost the value TWICE: absent from customFields, and gone
+                    # from the raw table reinjected into the description. The
+                    # analyst had nowhere left to see it. Deletion now happens
+                    # only where the field was actually consumed -- see below.
                     custom_type = custom_fields[key]["type"]
                     thehive.logger_file.debug(
                         id="THC-96",
@@ -578,10 +624,15 @@ def parse_events(helper, thehive: TheHive4Splunk, alert_args):
                             custom_field["value"] = int(value) * 1000
                     if custom_field_check is True:
                         customFields += [custom_field]
+                        # Consumed: now it may leave the raw table.
+                        del row_sanitized[key]
                     else:
+                        # Kept in row_sanitized ON PURPOSE: the field could not
+                        # be mapped, so the reinjected table is the only place
+                        # the analyst can still read the value.
                         thehive.logger_file.warn(
                             id="THC-117",
-                            message=f"custom field '{key}' was dropped: type '{custom_type}' is not handled, or value '{value}' does not match it",
+                            message=f"custom field '{key}' was NOT mapped: type '{custom_type}' is not handled, or value '{value}' does not match it. The raw value is kept in the description table.",
                         )
                 elif key == "ttp":
                     del row_sanitized["ttp"]
