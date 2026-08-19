@@ -2,7 +2,7 @@ import requests
 import ssl
 from requests.adapters import HTTPAdapter
 from urllib3.poolmanager import PoolManager
-from test_helper import TestContext
+from diag_helper import TestContext
 
 def test_version(protocol, name, ctx):
     class TLSAdapter(HTTPAdapter):

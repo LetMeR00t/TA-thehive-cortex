@@ -1,6 +1,6 @@
 ﻿import sys
 import os
-from test_helper import TestContext
+from diag_helper import TestContext
 import json
 
 # Initialize test context

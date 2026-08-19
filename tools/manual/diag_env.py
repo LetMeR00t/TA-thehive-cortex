@@ -1,7 +1,7 @@
 ﻿import requests
 import os
 import certifi
-from test_helper import TestContext
+from diag_helper import TestContext
 
 # Initialize test context
 ctx = TestContext()
