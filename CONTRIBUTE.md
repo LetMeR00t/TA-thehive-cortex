@@ -211,3 +211,20 @@ whatever key a row carries, its value must be findable somewhere in what
 reaches TheHive -- observable, custom field, TTP, or the raw table. See
 `tests/test_parse_events_losses_unit.py`; reinstating a single premature `del`
 turns it red on its own.
+
+## A test that shares its table of truth with production is a copy, not a guard
+
+`tests/test_custom_fields_unit.py` enumerated the TheHive custom field types --
+the same list the production chain carried. The test was green, and it would
+have stayed green **on the very day TheHive introduced a new type**, which is
+the only day it would have mattered. It reproduced the assumption it was
+supposed to challenge.
+
+The list of custom field types belongs to TheHive, not to this add-on. What the
+add-on may legitimately hold is the list of types it knows how to **convert**
+(`TYPES_CONNUS`); anything outside it is forwarded as text and TheHive decides.
+
+So a guard must exercise something production does not already know:
+an **invented** type, a value that does not fit its declared type, a shape the
+code was never written for. If the test can only be red when production is
+wrong about something it already lists, it is a mirror.

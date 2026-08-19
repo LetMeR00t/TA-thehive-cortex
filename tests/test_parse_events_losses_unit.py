@@ -99,21 +99,26 @@ def analyser(ligne, custom_fields=None, data_type=None, **surcharges):
 
 class TestAucuneCleNeDisparaitEnSilence(unittest.TestCase):
 
-    def test_r07_type_inconnu_la_valeur_survit_dans_la_description(self):
-        """⚠️ The DOUBLE loss. TheHive 5 exposes `number`; the chain does not
-        know it, so the field is dropped -- acceptable. What is not acceptable
-        is that the value also vanished from the raw table, because the `del`
-        had already run before the type was even read."""
+    def test_r07_un_champ_non_transmissible_garde_sa_valeur_visible(self):
+        """⚠️ The DOUBLE loss, on the case that remains after R11.
+
+        An unknown TYPE is now forwarded as text, so it no longer falls here.
+        What still cannot be forwarded is a KNOWN type whose value does not fit
+        it -- `date` expecting an epoch or an ISO string, given "hier". The
+        field is legitimately absent from customFields; what would not be
+        legitimate is the value disappearing from the raw table too, which is
+        what the premature `del` used to do.
+        """
         alerte, avertissements = analyser(
-            {"unique": "ref-1", "montant": "42"},
-            custom_fields=[{"name": "montant", "type": "number"}],
+            {"unique": "ref-1", "quand": "hier"},
+            custom_fields=[{"name": "quand", "type": "date"}],
         )
         self.assertEqual(0, len(alerte["customFields"]),
-                         "an unmappable type may be dropped from customFields")
-        self.assertIn("montant", avertissements, "the drop must be named")
-        self.assertIn("42", alerte["description"],
-                      "the VALUE must survive in the reinjected table: dropping it "
-                      "from both places is how the analyst loses it entirely")
+                         "a value that does not fit its declared type cannot be sent")
+        self.assertIn("quand", avertissements, "the drop must be named")
+        self.assertIn("hier", alerte["description"],
+                      "the VALUE must survive in the reinjected table: losing it from "
+                      "both places is how the analyst loses it entirely")
 
     def test_r08_cle_composite_sans_datatype_ne_disparait_pas_muette(self):
         """The sneakiest: deleted at :507, then `if mainkey in data_type` with
@@ -162,6 +167,33 @@ class TestAucuneCleNeDisparaitEnSilence(unittest.TestCase):
                 self.assertIn(valeur, rendu,
                               f"the value of '{cle}' is reachable nowhere: neither in the "
                               f"alert, nor in the raw table, nor in a warning")
+
+    def test_r11_un_type_inconnu_est_transmis_en_chaine(self):
+        """A type this add-on does not know is not a reason to drop the field.
+
+        The list of TheHive custom field types is not ours to freeze: TheHive
+        adds types, and every one it adds used to vanish here. Sending the raw
+        value as a string lets TheHive itself accept or refuse it -- which is
+        the only authority on its own schema. `url` cost a day of
+        troubleshooting for exactly this reason.
+        """
+        alerte, avertissements = analyser(
+            {"unique": "ref-1", "montant": "42"},
+            custom_fields=[{"name": "montant", "type": "number"}],
+        )
+        self.assertEqual(1, len(alerte["customFields"]),
+                         "an unknown type must be forwarded, not dropped")
+        self.assertEqual("42", alerte["customFields"][0]["value"])
+        self.assertIn("montant", avertissements, "forwarding as text must be said")
+
+    def test_r11_une_date_iso_est_acceptee(self):
+        """ISO-8601 is what a Splunk `strftime` produces; only epochs were taken."""
+        alerte, _ = analyser(
+            {"unique": "ref-1", "quand": "2026-01-15T10:30:00"},
+            custom_fields=[{"name": "quand", "type": "date"}],
+        )
+        self.assertEqual(1, len(alerte["customFields"]))
+        self.assertIsInstance(alerte["customFields"][0]["value"], int)
 
     def test_r10_entier_invalide_avertit_et_conserve(self):
         alerte, avertissements = analyser(

@@ -30,8 +30,13 @@ class TestCustomFieldTypes(unittest.TestCase):
     "url" (TheHive >= 5.1) was such a type (GitHub issue #133).
     """
 
-    #: The types TheHive 5 exposes for a custom field. Every one of them must
-    #: survive parse_events; a type that silently vanishes is the bug.
+    #: The types this add-on knows how to CONVERT, with a valid value for each.
+    #: ⚠️ It is NOT "the types TheHive supports" -- that list belongs to TheHive
+    #: and it grows. Keeping a copy of it here would make this table a mirror of
+    #: production rather than a guard: it would stay green on the very day a new
+    #: type appeared. What guards that case is
+    #: test_unknown_type_is_forwarded_as_text_and_logged, which uses an invented
+    #: type on purpose.
     ALL_TYPES = {
         "string": ("a string", "a string"),
         "url": ("https://example.org/path", "https://example.org/path"),
@@ -82,9 +87,20 @@ class TestCustomFieldTypes(unittest.TestCase):
                 )
                 self.assertEqual(fields[0]["value"], expected)
 
-    def test_unknown_type_is_dropped_but_logged(self):
-        """Dropping is acceptable for a type we cannot map -- doing it silently
-        is not. This is what made #133 cost a day of troubleshooting."""
+    def test_unknown_type_is_forwarded_as_text_and_logged(self):
+        """⚠️ Contract CHANGED: an unknown type is forwarded, not dropped.
+
+        Dropping was the old behaviour, and it is what made #133 cost a day of
+        troubleshooting. The list of custom field types belongs to TheHive, not
+        to this add-on: TheHive adds types, and every one it added vanished
+        here. Sending the raw value as text lets TheHive -- the only authority
+        on its own schema -- accept or refuse it.
+
+        The type used below is INVENTED on purpose. A test that draws its types
+        from the same table as production is a copy of production, not a guard:
+        it stays green precisely on the day TheHive introduces something new,
+        which is the only day it would have mattered.
+        """
         thehive = MagicMock()
         thehive.custom_field.list.return_value = [{"name": "weird", "type": "quantum"}]
         helper = MagicMock()
@@ -101,7 +117,9 @@ class TestCustomFieldTypes(unittest.TestCase):
             parsed = modalert_thehive_common.parse_events(helper, thehive, alert_args)
 
         alert = next(iter(parsed.values()))
-        self.assertEqual(len(alert["customFields"]), 0)
+        self.assertEqual(len(alert["customFields"]), 1,
+                         "an unknown type must reach TheHive, not vanish here")
+        self.assertEqual(alert["customFields"][0]["value"], "whatever")
         thehive.logger_file.warn.assert_called()
         message = thehive.logger_file.warn.call_args.kwargs["message"]
         self.assertIn("weird", message)

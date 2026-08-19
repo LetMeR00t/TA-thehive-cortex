@@ -279,6 +279,13 @@ def str_to_epoch_millis(value):
     return ts * 1000 if ts < 10_000_000_000 else ts
 
 
+#: The custom field types this add-on knows how to CONVERT. It is deliberately
+#: not "the types TheHive supports" -- that list is TheHive's, it grows, and
+#: freezing a copy of it is exactly what made GitHub #133. Anything outside this
+#: set is forwarded as text rather than dropped.
+TYPES_CONNUS = ("string", "url", "boolean", "integer", "float", "date")
+
+
 def parse_events(helper, thehive: TheHive4Splunk, alert_args):
     # iterate through each row, cleaning multivalue fields
     # and then adding the attributes under same alert key
@@ -622,6 +629,33 @@ def parse_events(helper, thehive: TheHive4Splunk, alert_args):
                         elif epoch10 is not None:
                             custom_field_check = True
                             custom_field["value"] = int(value) * 1000
+                        else:
+                            # ISO-8601 is what a Splunk strftime produces, so it
+                            # is the most likely shape after an epoch -- and it
+                            # was the one shape rejected.
+                            try:
+                                iso = datetime.datetime.fromisoformat(
+                                    str(value).replace("Z", "+00:00")
+                                )
+                                custom_field_check = True
+                                custom_field["value"] = int(iso.timestamp() * 1000)
+                            except ValueError:
+                                pass  # silent-except: reported by THC-117 below
+                    if custom_field_check is False and custom_type not in TYPES_CONNUS:
+                        # ⚠️ The type is one WE do not know -- not one TheHive
+                        # refuses. Freezing the list of TheHive custom field
+                        # types is what made #133: every type TheHive added
+                        # vanished here. Forward the raw value as text and let
+                        # TheHive, the only authority on its own schema, accept
+                        # or refuse it.
+                        custom_field_check = True
+                        custom_field["value"] = str(value)
+                        thehive.logger_file.warn(
+                            id="THC-118",
+                            message=f"custom field '{key}' has type '{custom_type}', which this "
+                            f"add-on does not map; forwarding the raw value as text",
+                        )
+
                     if custom_field_check is True:
                         customFields += [custom_field]
                         # Consumed: now it may leave the raw table.
