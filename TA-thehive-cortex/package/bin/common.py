@@ -600,6 +600,19 @@ class Settings(object):
         )
         return param
 
+    def getHttpTimeout(self):
+        """This function returns the HTTP timeout, in seconds, for TheHive and Cortex calls"""
+        param = (
+            self.__additional_parameters["thehive_cortex_http_timeout"]
+            if "thehive_cortex_http_timeout" in self.__additional_parameters
+            else "60"
+        )
+        self.logger_file.debug(
+            id="S57",
+            message="Getting this parameter: thehive_cortex_http_timeout=" + str(param),
+        )
+        return param
+
     def getTheHiveCreationMaxRetry(self):
         """This function returns the maximum creation retry of a TheHive instance"""
         param = (

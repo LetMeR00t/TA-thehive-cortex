@@ -137,6 +137,7 @@ def create_thehive_instance(instance_id, settings, logger, acronym, exec_id=None
             version=thehive_version,
             sid=settings["sid"],
             logger_file=logger_file,
+            timeout=int(configuration.getHttpTimeout()),
         )
     elif thehive_authentication_type == "api_key":
         logger_file.debug(
@@ -153,6 +154,7 @@ def create_thehive_instance(instance_id, settings, logger, acronym, exec_id=None
             version=thehive_version,
             sid=settings["sid"],
             logger_file=logger_file,
+            timeout=int(configuration.getHttpTimeout()),
         )
     else:
         logger_file.error(
@@ -241,6 +243,7 @@ def create_thehive_instance_modular_input(instance_id, helper, acronym, logger=N
             version=thehive_version,
             sid=None,
             logger_file=logger_file,
+            timeout=int(configuration.getHttpTimeout()),
         )
     elif thehive_authentication_type == "api_key":
         logger_file.debug(
@@ -257,6 +260,7 @@ def create_thehive_instance_modular_input(instance_id, helper, acronym, logger=N
             version=thehive_version,
             sid=None,
             logger_file=logger_file,
+            timeout=int(configuration.getHttpTimeout()),
         )
     else:
         logger_file.error(
@@ -287,6 +291,7 @@ class TheHive4Splunk(TheHiveApi):
         version=None,
         sid=None,
         logger_file=None,
+        timeout=60,
     ):
 
         self._logger_file = logger_file
@@ -309,6 +314,8 @@ class TheHive4Splunk(TheHiveApi):
                     verify=verify,
                     cert=cert,
                     organisation=organisation,
+                    # LOCAL PATCH relay (libs/LOCAL_PATCHES.md, G1)
+                    timeout=timeout,
                 )
             elif password is not None:
                 super().__init__(
@@ -319,6 +326,8 @@ class TheHive4Splunk(TheHiveApi):
                     verify=verify,
                     cert=cert,
                     organisation=organisation,
+                    # LOCAL PATCH relay (libs/LOCAL_PATCHES.md, G1)
+                    timeout=timeout,
                 )
             else:
                 self.logger_file.error(

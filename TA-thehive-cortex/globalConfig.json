@@ -593,6 +593,23 @@
                                     "maxLength": 20
                                 }
                             ]
+                        },
+                        {
+                            "field": "thehive_cortex_http_timeout",
+                            "label": "HTTP Timeout (seconds)",
+                            "help": "How long a single call to TheHive or Cortex may wait before giving up. Generous on purpose: a slow Cortex analyzer is normal. Without it, a server that accepts the connection and never answers holds a Splunk worker until the OS gives up.",
+                            "type": "text",
+                            "defaultValue": "60",
+                            "validators": [
+                                {
+                                    "type": "number",
+                                    "range": [
+                                        1,
+                                        600
+                                    ],
+                                    "errorMsg": "Must be between 1 and 600 seconds"
+                                }
+                            ]
                         }
                     ]
                 },
