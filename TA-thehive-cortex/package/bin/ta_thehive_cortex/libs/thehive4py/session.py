@@ -44,8 +44,14 @@ class TheHiveSession(requests.Session):
         proxies={},
         cert=None,
         max_retries: RetryValue = DEFAULT_RETRY,
+        timeout: float = 60,
     ):
         super().__init__()
+        # LOCAL PATCH (see libs/LOCAL_PATCHES.md): upstream never passes a
+        # timeout. Held on the session and injected by the request() override
+        # below, so EVERY call is covered -- including any the add-on does not
+        # make today. Patching make_request() alone would leave a hole open.
+        self.timeout = timeout
         self.hive_url = self._sanitize_hive_url(url)
         self.proxies = proxies
         self.verify = verify
@@ -107,6 +113,11 @@ class TheHiveSession(requests.Session):
         )
 
         return self._process_response(response, download_path=download_path)
+
+    def request(self, method, url, **kwargs):  # type: ignore[override]
+        """LOCAL PATCH: apply the session timeout unless the caller set one."""
+        kwargs.setdefault("timeout", self.timeout)
+        return super().request(method, url, **kwargs)
 
     def _process_response(
         self,

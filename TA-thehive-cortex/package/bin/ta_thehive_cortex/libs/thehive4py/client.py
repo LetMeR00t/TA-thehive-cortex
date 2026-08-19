@@ -34,6 +34,7 @@ class TheHiveApi:
         cert=None,
         verify: VerifyValue = True,
         max_retries: RetryValue = DEFAULT_RETRY,
+        timeout: float = 60,
     ):
         """Create a client of TheHive API.
 
@@ -62,6 +63,8 @@ class TheHiveApi:
             verify=verify,
             cert=cert,
             max_retries=max_retries,
+            # LOCAL PATCH (libs/LOCAL_PATCHES.md, G1)
+            timeout=timeout,
         )
         self.session_organisation = organisation
 

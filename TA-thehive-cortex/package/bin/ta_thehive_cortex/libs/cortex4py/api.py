@@ -28,6 +28,11 @@ class Api(object):
         self.__proxies = kwargs.get('proxies', {})
         self.__cert = kwargs.get('cert',None)
         self.__verify_cert = kwargs.get('verify_cert', True)
+        # LOCAL PATCH (see libs/LOCAL_PATCHES.md): upstream passes no timeout,
+        # so a Cortex that accepts the connection and never answers holds a
+        # Splunk worker until the OS gives up on the socket. Generous by
+        # default: a slow analyzer is normal, an infinite one is not.
+        self.__timeout = kwargs.get('timeout', 60)
 
         self.organizations = OrganizationsController(self)
         self.users = UsersController(self)
@@ -64,7 +69,8 @@ class Api(object):
                                     params=params,
                                     proxies=self.__proxies,
                                     cert=self.__cert,
-                                    verify=self.__verify_cert)
+                                    verify=self.__verify_cert,
+                                    timeout=self.__timeout)
 
             response.raise_for_status()
             return response
@@ -75,6 +81,10 @@ class Api(object):
         headers = {
             'Authorization': 'Bearer {}'.format(self.__api_key)
         }
+
+        # LOCAL PATCH: `**kwargs` could carry a timeout, but no caller passes
+        # one. Setting the default here bounds the call whatever the caller does.
+        kwargs.setdefault('timeout', self.__timeout)
 
         try:
             response = requests.post('{}{}'.format(self.__base_url, endpoint),
@@ -94,6 +104,10 @@ class Api(object):
             'Authorization': 'Bearer {}'.format(self.__api_key),
             'Content-Type': 'application/json'
         }
+
+        # LOCAL PATCH: `**kwargs` could carry a timeout, but no caller passes
+        # one. Setting the default here bounds the call whatever the caller does.
+        kwargs.setdefault('timeout', self.__timeout)
 
         try:
             response = requests.post('{}{}'.format(self.__base_url, endpoint),
@@ -122,7 +136,8 @@ class Api(object):
                                       json=data,
                                       params=params,
                                       cert=self.__cert,
-                                      verify=self.__verify_cert)
+                                      verify=self.__verify_cert,
+                                    timeout=self.__timeout)
             response.raise_for_status()
             return response
         except Exception as ex:
@@ -138,7 +153,8 @@ class Api(object):
                                        headers=headers,
                                        proxies=self.__proxies,
                                        cert=self.__cert,
-                                       verify=self.__verify_cert)
+                                       verify=self.__verify_cert,
+                                    timeout=self.__timeout)
             response.raise_for_status()
             return True
         except Exception as ex:
