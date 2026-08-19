@@ -1,11 +1,8 @@
 # encoding = utf-8
 import ta_thehive_cortex_declare
-import os
 import sys
-import time
 import datetime
 import json
-import logging
 import uuid
 
 from splunklib import modularinput as smi

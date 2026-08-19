@@ -118,6 +118,7 @@ python tools/checks/rule_not_duplicated.py
 python tools/checks/duplication_threshold.py
 python tools/checks/log_ids_unique.py
 python tools/checks/vendored_path_bootstrap.py
+python tools/checks/unused_imports.py
 PYTHON=python3.9 tools/checks/pins_match_build.sh
 tools/checks/tests_on_both_pythons.sh
 ```

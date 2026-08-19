@@ -13,7 +13,6 @@ __email__ = "letmer00t@gmail.com"
 import ta_thehive_cortex_declare
 
 # Standard library imports
-import json
 import time
 from copy import deepcopy
 

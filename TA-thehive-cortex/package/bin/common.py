@@ -13,9 +13,6 @@ __email__ = "letmer00t@gmail.com"
 import ta_thehive_cortex_declare
 
 # Standard library imports
-import base64
-import csv
-import datetime
 import json
 import logging
 import os
@@ -26,7 +23,6 @@ from typing import Union
 # Third-party imports
 import splunklib.client as client
 from solnlib import conf_manager, log
-from solnlib.utils import is_true
 from thehive4py.query.sort import Asc, Desc
 
 # Local application/library specific imports

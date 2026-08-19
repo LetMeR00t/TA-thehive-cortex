@@ -13,9 +13,7 @@ __email__ = "letmer00t@gmail.com"
 import ta_thehive_cortex_declare
 
 # Standard library imports
-import os
 import re
-import time
 
 # Local application/library specific imports
 import globals

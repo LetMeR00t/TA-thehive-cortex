@@ -107,6 +107,9 @@ jobs:
         # a side effect of a later import.
         run: python tools/checks/vendored_path_bootstrap.py
 
+      - name: No import for nothing
+        run: python tools/checks/unused_imports.py
+
       - name: Coverage floors on the critical paths
         # Per-path floors, never a global one: a global floor over 8,685 lines
         # is either trivially met or unreachable, and says nothing either way.

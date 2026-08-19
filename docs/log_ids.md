@@ -14,84 +14,84 @@ module** -- which is exactly what the check enforces.
 
 | id | line | level | message |
 | :--- | ---: | :--- | :--- |
-| `MI-ERR-DATES` | 97 | error | … |
-| `70` | 145 | info | {…} events (type: {…}, date: {…}) were recovered. |
-| `MI-ERR-COLLECT` | 147 | error | Error: {…} |
+| `MI-ERR-DATES` | 94 | error | … |
+| `70` | 142 | info | {…} events (type: {…}, date: {…}) were recovered. |
+| `MI-ERR-COLLECT` | 144 | error | Error: {…} |
 
 ## `backfill_audit.py`
 
 | id | line | level | message |
 | :--- | ---: | :--- | :--- |
-| `MI-ERR-DATES` | 92 | error | … |
-| `70` | 106 | info | {…} events were recovered. |
-| `MI-ERR-COLLECT` | 108 | error | Error: {…} |
+| `MI-ERR-DATES` | 89 | error | … |
+| `70` | 103 | info | {…} events were recovered. |
+| `MI-ERR-COLLECT` | 105 | error | Error: {…} |
 
 ## `backfill_observables.py`
 
 | id | line | level | message |
 | :--- | ---: | :--- | :--- |
-| `70` | 127 | info | {…} events (date: {…}) were recovered. |
+| `70` | 124 | info | {…} events (date: {…}) were recovered. |
 
 ## `backfill_tasks.py`
 
 | id | line | level | message |
 | :--- | ---: | :--- | :--- |
-| `MI-BTSK-ERR-DATE` | 88 | error | … |
-| `1` | 104 | info | Starting backfill tasks collection for interval [from {…} to {…}] using {…} |
-| `2` | 122 | info | Successfully backfilled {…} tasks. |
-| `ERR` | 125 | error | Error during backfill tasks collection: {…} |
+| `MI-BTSK-ERR-DATE` | 85 | error | … |
+| `1` | 101 | info | Starting backfill tasks collection for interval [from {…} to {…}] using {…} |
+| `2` | 119 | info | Successfully backfilled {…} tasks. |
+| `ERR` | 122 | error | Error during backfill tasks collection: {…} |
 
 ## `backfill_timeline.py`
 
 | id | line | level | message |
 | :--- | ---: | :--- | :--- |
-| `MI-BTL-ERR-DATE` | 86 | error | … |
-| `1` | 101 | info | Starting backfill timeline collection for interval [from {…} to {…}] |
-| `2` | 118 | info | Successfully backfilled {…} timeline events. |
-| `ERR` | 121 | error | Error during backfill timeline collection: {…} |
+| `MI-BTL-ERR-DATE` | 83 | error | … |
+| `1` | 98 | info | Starting backfill timeline collection for interval [from {…} to {…}] |
+| `2` | 115 | info | Successfully backfilled {…} timeline events. |
+| `ERR` | 118 | error | Error during backfill timeline collection: {…} |
 
 ## `common.py`
 
 | id | line | level | message |
 | :--- | ---: | :--- | :--- |
-| `S1` | 217 | debug | Python version detected: … |
-| `S2` | 236 | debug | Logging mode set to … |
-| `S3` | 254 | debug | Accounts retrieved: {…} |
-| `S3_SKIP` | 263 | debug | Skipping unusable stored value for account {…} |
-| `S3_ERROR` | 268 | error | Failed to access storage_passwords: {…} |
-| `S4` | 271 | debug | Passwords retrieved for accounts: {…} |
-| `S5` | 284 | debug | New instance detected, getting … |
-| `S13` | 317 | warn | Be aware that a client certificate for instance " … … … |
-| `S13b` | 339 | warn | Be aware that a CA certificate for instance " … … … |
-| `S14` | 390 | debug | New instance parsed, adding key " … … … |
-| `S15` | 406 | debug | Getting these additional parameters: … |
-| `S26` | 449 | debug | Configuration … … … … … |
-| `S27` | 459 | debug | Configuration … … … … |
-| `S28` | 474 | debug | Configuration retrieved for the filename ' … … … |
-| `S29` | 495 | debug | This account ( … … |
-| `S30` | 516 | error | … |
-| `S32` | 522 | debug | This instance ID ( … … … |
-| `S31` | 544 | error | … |
-| `S35` | 552 | debug | This instance ID ( … … … |
-| `S40` | 569 | debug | this instance id ( … … … … … |
-| `S41` | 579 | warn | Can't recover the setting " … … … … |
-| `S45` | 600 | debug | Getting this parameter : thehive_default_instance= … |
-| `S46` | 613 | debug | Getting this parameter : thehive_max_cases= … |
-| `S50` | 626 | debug | Getting this parameter: thehive_sort_cases= … |
-| `S51` | 638 | debug | Getting this parameter: thehive_max_alerts= … |
-| `S52` | 651 | debug | Getting this parameter: thehive_sort_alerts= … |
-| `S53` | 664 | debug | Getting this parameter: thehive_ttp_catalog_name= … |
-| `S54` | 677 | debug | Getting this parameter: thehive_creation_attachment_prefix= … |
-| `S57` | 691 | debug | Getting this parameter: thehive_cortex_http_timeout= … |
-| `S58` | 704 | debug | Getting this parameter: thehive_creation_max_retry= … |
-| `S55` | 717 | debug | Getting this parameter: … |
-| `S56` | 729 | debug | Getting this parameter: … |
-| `S60` | 737 | debug | Found parameter " … … … |
-| `S66` | 744 | error | … |
-| `S67` | 747 | debug | Parameter " … … … … |
-| `U1` | 765 | debug | Utils class initiated |
-| `U5` | 784 | debug | Event before processing (remove_unwanted_keys_from_dict): {…} |
-| `U10` | 791 | debug | Event after processing (remove_unwanted_keys_from_dict): {…} |
+| `S1` | 213 | debug | Python version detected: … |
+| `S2` | 232 | debug | Logging mode set to … |
+| `S3` | 250 | debug | Accounts retrieved: {…} |
+| `S3_SKIP` | 259 | debug | Skipping unusable stored value for account {…} |
+| `S3_ERROR` | 264 | error | Failed to access storage_passwords: {…} |
+| `S4` | 267 | debug | Passwords retrieved for accounts: {…} |
+| `S5` | 280 | debug | New instance detected, getting … |
+| `S13` | 313 | warn | Be aware that a client certificate for instance " … … … |
+| `S13b` | 335 | warn | Be aware that a CA certificate for instance " … … … |
+| `S14` | 386 | debug | New instance parsed, adding key " … … … |
+| `S15` | 402 | debug | Getting these additional parameters: … |
+| `S26` | 445 | debug | Configuration … … … … … |
+| `S27` | 455 | debug | Configuration … … … … |
+| `S28` | 470 | debug | Configuration retrieved for the filename ' … … … |
+| `S29` | 491 | debug | This account ( … … |
+| `S30` | 512 | error | … |
+| `S32` | 518 | debug | This instance ID ( … … … |
+| `S31` | 540 | error | … |
+| `S35` | 548 | debug | This instance ID ( … … … |
+| `S40` | 565 | debug | this instance id ( … … … … … |
+| `S41` | 575 | warn | Can't recover the setting " … … … … |
+| `S45` | 596 | debug | Getting this parameter : thehive_default_instance= … |
+| `S46` | 609 | debug | Getting this parameter : thehive_max_cases= … |
+| `S50` | 622 | debug | Getting this parameter: thehive_sort_cases= … |
+| `S51` | 634 | debug | Getting this parameter: thehive_max_alerts= … |
+| `S52` | 647 | debug | Getting this parameter: thehive_sort_alerts= … |
+| `S53` | 660 | debug | Getting this parameter: thehive_ttp_catalog_name= … |
+| `S54` | 673 | debug | Getting this parameter: thehive_creation_attachment_prefix= … |
+| `S57` | 687 | debug | Getting this parameter: thehive_cortex_http_timeout= … |
+| `S58` | 700 | debug | Getting this parameter: thehive_creation_max_retry= … |
+| `S55` | 713 | debug | Getting this parameter: … |
+| `S56` | 725 | debug | Getting this parameter: … |
+| `S60` | 733 | debug | Found parameter " … … … |
+| `S66` | 740 | error | … |
+| `S67` | 743 | debug | Parameter " … … … … |
+| `U1` | 761 | debug | Utils class initiated |
+| `U5` | 780 | debug | Event before processing (remove_unwanted_keys_from_dict): {…} |
+| `U10` | 787 | debug | Event after processing (remove_unwanted_keys_from_dict): {…} |
 
 ## `cortex.py`
 
@@ -190,22 +190,22 @@ module** -- which is exactly what the check enforces.
 
 | id | line | level | message |
 | :--- | ---: | :--- | :--- |
-| `THAO-20` | 87 | warning | Invalid target type '{…}', defaulting to 'alert' |
-| `THAO-25` | 125 | warning | Invalid sighted date value '{…}', defaulting to now(). |
-| `THAO-30` | 143 | info | No observables found in current row, skipping. |
-| `THAO-35` | 150 | error | Invalid target ID format: '{…}'. Must match ^~[0-9]+$. Skipping this ID. |
-| `THAO-40` | 175 | info | Adding observable to {…} {…}: Type={…}, Data={…}, TLP={…}, PAP={…}, IOC={…}, … |
-| `THAO-50` | 182 | info | Successfully added observable to {…} {…} |
-| `THAO-60` | 187 | warning | Observable already exists in {…} {…} (Status={…}). Skipping. |
-| `THAO-70` | 193 | error | Failed to add observable to {…} {…}: {…}{…} |
+| `THAO-20` | 85 | warning | Invalid target type '{…}', defaulting to 'alert' |
+| `THAO-25` | 123 | warning | Invalid sighted date value '{…}', defaulting to now(). |
+| `THAO-30` | 141 | info | No observables found in current row, skipping. |
+| `THAO-35` | 148 | error | Invalid target ID format: '{…}'. Must match ^~[0-9]+$. Skipping this ID. |
+| `THAO-40` | 173 | info | Adding observable to {…} {…}: Type={…}, Data={…}, TLP={…}, PAP={…}, IOC={…}, … |
+| `THAO-50` | 180 | info | Successfully added observable to {…} {…} |
+| `THAO-60` | 185 | warning | Observable already exists in {…} {…} (Status={…}). Skipping. |
+| `THAO-70` | 191 | error | Failed to add observable to {…} {…}: {…}{…} |
 
 ## `ta_thehive_cortex/modalert_thehive_add_timeline_event_helper.py`
 
 | id | line | level | message |
 | :--- | ---: | :--- | :--- |
-| `THTE-20` | 53 | warning | No case ID resolved for result, skipping. |
-| `THTE-30` | 88 | warning | Invalid date format for {…}: {…} |
-| `THTE-ERR` | 103 | error | Failed to create timeline event for case {…}: {…} |
+| `THTE-20` | 51 | warning | No case ID resolved for result, skipping. |
+| `THTE-30` | 86 | warning | Invalid date format for {…}: {…} |
+| `THTE-ERR` | 101 | error | Failed to create timeline event for case {…}: {…} |
 
 ## `ta_thehive_cortex/modalert_thehive_common.py`
 
@@ -382,13 +382,13 @@ module** -- which is exactly what the check enforces.
 
 | id | line | level | message |
 | :--- | ---: | :--- | :--- |
-| `MI-ERR` | 126 | error | Error: {…} |
+| `MI-ERR` | 123 | error | Error: {…} |
 
 ## `thehive_audit.py`
 
 | id | line | level | message |
 | :--- | ---: | :--- | :--- |
-| `MI-ERR` | 89 | error | Error: {…} |
+| `MI-ERR` | 86 | error | Error: {…} |
 
 ## `thehive_get_alert.py`
 
@@ -409,34 +409,34 @@ module** -- which is exactly what the check enforces.
 
 | id | line | level | message |
 | :--- | ---: | :--- | :--- |
-| `1` | 46 | debug | Input keywords: … |
-| `2` | 47 | debug | Input results: … |
-| `3` | 48 | info | Start processing with the instance: … |
-| `10` | 55 | debug | Getting this case number: … |
-| `25` | 68 | debug | Getting this alert: … |
-| `26` | 71 | debug | Get alert ID " … … |
-| `30` | 76 | debug | Event before post processing: … |
-| `31` | 81 | debug | Found custom fields: … |
-| `35` | 91 | debug | TheHive - Custom fields: … |
-| `45` | 104 | debug | thehive - observables: … |
-| `46` | 109 | debug | thehive - ttps: … |
-| `50` | 112 | debug | Event after post processing: … |
+| `1` | 44 | debug | Input keywords: … |
+| `2` | 45 | debug | Input results: … |
+| `3` | 46 | info | Start processing with the instance: … |
+| `10` | 53 | debug | Getting this case number: … |
+| `25` | 66 | debug | Getting this alert: … |
+| `26` | 69 | debug | Get alert ID " … … |
+| `30` | 74 | debug | Event before post processing: … |
+| `31` | 79 | debug | Found custom fields: … |
+| `35` | 89 | debug | TheHive - Custom fields: … |
+| `45` | 102 | debug | thehive - observables: … |
+| `46` | 107 | debug | thehive - ttps: … |
+| `50` | 110 | debug | Event after post processing: … |
 
 ## `thehive_get_case.py`
 
 | id | line | level | message |
 | :--- | ---: | :--- | :--- |
-| `1` | 46 | debug | Input keywords: … |
-| `2` | 47 | debug | Input results: … |
-| `3` | 48 | info | Start processing with the instance: … |
-| `10` | 55 | debug | Getting this case number: … |
-| `15` | 61 | debug | Event before post processing: … |
-| `30` | 66 | debug | Found custom fields: … |
-| `35` | 76 | debug | TheHive - Custom fields: … |
-| `40` | 96 | debug | TheHive - Tasks: … |
-| `45` | 101 | debug | thehive - observables: … |
-| `46` | 106 | debug | thehive - ttps: … |
-| `47` | 108 | debug | Event after post processing: … |
+| `1` | 44 | debug | Input keywords: … |
+| `2` | 45 | debug | Input results: … |
+| `3` | 46 | info | Start processing with the instance: … |
+| `10` | 53 | debug | Getting this case number: … |
+| `15` | 59 | debug | Event before post processing: … |
+| `30` | 64 | debug | Found custom fields: … |
+| `35` | 74 | debug | TheHive - Custom fields: … |
+| `40` | 94 | debug | TheHive - Tasks: … |
+| `45` | 99 | debug | thehive - observables: … |
+| `46` | 104 | debug | thehive - ttps: … |
+| `47` | 106 | debug | Event after post processing: … |
 
 ## `thehive_get_stats.py`
 
@@ -455,27 +455,27 @@ module** -- which is exactly what the check enforces.
 
 | id | line | level | message |
 | :--- | ---: | :--- | :--- |
-| `1` | 68 | info | Starting instance status collection |
-| `2` | 97 | info | Successfully indexed instance status. |
-| `ERR` | 100 | error | Error during instance status collection: {…} |
+| `1` | 64 | info | Starting instance status collection |
+| `2` | 93 | info | Successfully indexed instance status. |
+| `ERR` | 96 | error | Error during instance status collection: {…} |
 
 ## `thehive_search_alerts.py`
 
 | id | line | level | message |
 | :--- | ---: | :--- | :--- |
-| `1` | 57 | debug | Input keywords: … |
-| `2` | 58 | debug | Input results: … |
-| `3` | 59 | info | Start processing with the instance: … |
-| `5` | 79 | debug | Filters are: filterType: … … … … … … … … … … … … … … … … … |
-| `15` | 132 | debug | Query is: … |
-| `25` | 139 | debug | Getting this alert: … |
-| `26` | 142 | debug | Get alert ID " … … |
-| `30` | 147 | debug | Event before post processing: … |
-| `31` | 152 | debug | Found custom fields: … |
-| `35` | 162 | debug | TheHive - Custom fields: … |
-| `45` | 175 | debug | thehive - observables: … |
-| `46` | 180 | debug | thehive - ttps: … |
-| `50` | 183 | debug | Event after post processing: … |
+| `1` | 56 | debug | Input keywords: … |
+| `2` | 57 | debug | Input results: … |
+| `3` | 58 | info | Start processing with the instance: … |
+| `5` | 78 | debug | Filters are: filterType: … … … … … … … … … … … … … … … … … |
+| `15` | 131 | debug | Query is: … |
+| `25` | 138 | debug | Getting this alert: … |
+| `26` | 141 | debug | Get alert ID " … … |
+| `30` | 146 | debug | Event before post processing: … |
+| `31` | 151 | debug | Found custom fields: … |
+| `35` | 161 | debug | TheHive - Custom fields: … |
+| `45` | 174 | debug | thehive - observables: … |
+| `46` | 179 | debug | thehive - ttps: … |
+| `50` | 182 | debug | Event after post processing: … |
 
 ## `thehive_search_cases.py`
 
@@ -500,16 +500,16 @@ module** -- which is exactly what the check enforces.
 
 | id | line | level | message |
 | :--- | ---: | :--- | :--- |
-| `1` | 95 | info | Starting tasks collection for interval [from {…} to {…}] using {…} |
-| `2` | 114 | info | Successfully indexed {…} tasks. |
-| `ERR` | 117 | error | Error during tasks collection: {…} |
+| `1` | 92 | info | Starting tasks collection for interval [from {…} to {…}] using {…} |
+| `2` | 111 | info | Successfully indexed {…} tasks. |
+| `ERR` | 114 | error | Error during tasks collection: {…} |
 
 ## `thehive_timeline.py`
 
 | id | line | level | message |
 | :--- | ---: | :--- | :--- |
-| `1` | 95 | info | Starting timeline collection for interval [from {…} to {…}] |
-| `2` | 113 | info | Successfully indexed {…} timeline events. |
-| `ERR` | 116 | error | Error during timeline collection: {…} |
+| `1` | 92 | info | Starting timeline collection for interval [from {…} to {…}] |
+| `2` | 110 | info | Successfully indexed {…} timeline events. |
+| `ERR` | 113 | error | Error during timeline collection: {…} |
 
 *337 call sites.*

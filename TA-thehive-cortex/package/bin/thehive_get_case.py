@@ -13,13 +13,11 @@ __email__ = "letmer00t@gmail.com"
 import ta_thehive_cortex_declare
 
 # Standard library imports
-import sys
 import time
 from copy import deepcopy
 
 # Third-party imports
 import splunk.Intersplunk
-from thehive4py.query.filters import Eq
 
 # Local application/library specific imports
 import globals

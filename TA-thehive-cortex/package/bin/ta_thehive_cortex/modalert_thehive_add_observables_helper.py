@@ -15,18 +15,16 @@ import ta_thehive_cortex_declare
 from service_errors import is_duplicate, response_detail, status_code
 
 # Standard library imports
-import os
 import re
 import time
 
 # Third-party imports
-from thehive4py.errors import TheHiveError
 from thehive4py.types.observable import InputObservable
 
 # Local application/library specific imports
 import globals
 from modalert_thehive_common import parse_events, TLP, PAP, extract_field
-from thehive import TheHive4Splunk, create_thehive_instance
+from thehive import create_thehive_instance
 
 __author__ = "Alexandre Demeyer"
 __maintainer__ = "Alexandre Demeyer"
