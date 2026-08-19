@@ -81,11 +81,21 @@
   </row>
   <row>
     <panel depends="$run_refresh$">
-      <viz type="status_indicator_app.status_indicator">
+      <!-- Native `single`, deliberately. The panel only confirms that the
+           refresh ran; the previous version used the third-party visualization
+           `status_indicator_app.status_indicator`, which was NOT declared as a
+           dependency anywhere. Two ways that went wrong: an add-on that does
+           not have it renders an empty box with no explanation, and AppInspect
+           flags an undeclared dependency. Forcing every user to install a
+           third-party app for a confirmation banner is out of proportion, and
+           dropping the panel would lose the feedback, which only became
+           meaningful once cortexrefreshanalyzers was repaired and could
+           actually run. -->
+      <single>
         <search>
           <query>| makeresults
-| eval time = strftime(now(),"%T"), status = "Analyzers refresh - $status$ at "+time, color = "$status_color$"
-| table status, color</query>
+| eval time = strftime(now(),"%T"), status = "Analyzers refresh - $status$ at "+time
+| table status</query>
           <earliest>-24h@h</earliest>
           <latest>now</latest>
           <sampleRatio>1</sampleRatio>
@@ -93,16 +103,10 @@
         <option name="drilldown">none</option>
         <option name="height">53</option>
         <option name="refresh.display">progressbar</option>
-        <option name="status_indicator_app.status_indicator.colorBy">field_value</option>
-        <option name="status_indicator_app.status_indicator.fillTarget">background</option>
-        <option name="status_indicator_app.status_indicator.fixIcon">warning</option>
-        <option name="status_indicator_app.status_indicator.icon">field_value</option>
-        <option name="status_indicator_app.status_indicator.precision">0</option>
-        <option name="status_indicator_app.status_indicator.showOption">3</option>
-        <option name="status_indicator_app.status_indicator.staticColor">#555</option>
-        <option name="status_indicator_app.status_indicator.useColors">true</option>
-        <option name="status_indicator_app.status_indicator.useThousandSeparator">true</option>
-      </viz>
+        <option name="colorMode">block</option>
+        <option name="rangeColors">["$status_color$","$status_color$"]</option>
+        <option name="useColors">1</option>
+      </single>
     </panel>
   </row>
   <row>

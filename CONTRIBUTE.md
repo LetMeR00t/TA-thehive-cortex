@@ -113,6 +113,13 @@ python -m unittest discover -s tests -p "test_*.py"
 python tools/checks/no_bare_except.py
 python tools/checks/requests_timeout.py
 PYTHON=python3.9 tools/checks/pins_match_build.sh
+tools/checks/tests_on_both_pythons.sh
+```
+
+**And before every tag, on the ARCHIVE:**
+
+```bash
+tools/checks/package_contents.sh <app>.spl
 ```
 
 ### `no_bare_except.py`
@@ -258,3 +265,21 @@ from birth, and a guard that is red from birth gets switched off -- after which
 it guards nothing. The **target** is reported next to it and never enforced;
 raising the floor towards it is a deliberate act, taken once the tests that
 justify it exist.
+
+## What the package contains is not what the folder shows
+
+`ucc-gen` copies `package/bin` verbatim. A `__pycache__` left by a local test
+run therefore ships inside the `.spl` and fails Splunk Cloud vetting -- while
+`output/` and the source tree both look perfectly clean. That is why §3 says to
+check the archive, and `tools/checks/package_contents.sh` is that check.
+
+⚠️ It **refuses to run** when it finds no `.spl`, rather than passing. A check
+that goes green because it had nothing to inspect is worse than no check: it
+reports a verification that never happened.
+
+It also **requires** one file to be present: `libs/cortex4py/__init__.py`. It is
+zero bytes and it is load-bearing -- without it `cortex4py` becomes an implicit
+namespace package and another Splunk add-on shipping the same name can shadow
+its root modules, which is exactly what `cortex.py` imports. It was already lost
+once, in the UCC migration, and nobody noticed for years. Nothing about a 0-byte
+file suggests it matters, so the check says it instead.
