@@ -85,6 +85,12 @@ jobs:
         # files carried no sourcetype and nothing was red.
         run: python tools/checks/log_sourcetype_covered.py
 
+      - name: No rule lives in two places
+        # The UCC credential arbitration existed inline AND copied into a
+        # diagnostic script that asserted nothing. The copy is always the one
+        # nobody tests.
+        run: python tools/checks/rule_not_duplicated.py
+
       - name: Coverage floors on the critical paths
         # Per-path floors, never a global one: a global floor over 8,685 lines
         # is either trivially met or unreachable, and says nothing either way.

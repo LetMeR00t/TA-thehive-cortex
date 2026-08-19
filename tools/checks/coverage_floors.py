@@ -43,6 +43,13 @@ PLANCHERS = [
     # the Splunk process and that nothing could reach.
     ("common.py", "getInstanceURL", 90, 90),
     ("common.py", "getInstanceUsernameApiKey", 90, 90),
+
+    # The arbitration of SECRETS. It was at 0 % while existing in two copies,
+    # so its floor is the only one set at 100: a pure function with no I/O has
+    # no excuse for an unreached branch, and a rule that decides which password
+    # authenticates deserves the strictest ratchet in this table.
+    ("common.py", "pick_password", 100, 100),
+    ("common.py", "account_from_ucc_username", 100, 100),
 ]
 
 

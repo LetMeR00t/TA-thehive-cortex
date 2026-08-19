@@ -114,6 +114,7 @@ python tools/checks/no_bare_except.py
 python tools/checks/requests_timeout.py
 python tools/checks/declared_files_exist.py
 python tools/checks/log_sourcetype_covered.py
+python tools/checks/rule_not_duplicated.py
 PYTHON=python3.9 tools/checks/pins_match_build.sh
 tools/checks/tests_on_both_pythons.sh
 ```
@@ -340,3 +341,36 @@ models stops existing -- if `ta_logging.py` builds its name differently, the
 check refuses to answer rather than keep certifying an obsolete pattern. A
 guard validating a rule that no longer holds is worse than no guard: it reports
 a coverage that means nothing.
+
+### A test that restates the production rule guards nothing
+
+The clearest case in this repository was not a weak test, it was a **copy**.
+The rule deciding *which stored value becomes the password an account
+authenticates with* lived inline in `Instances.__init__` and, verbatim, inside
+a manual diagnostic script. The script queried a real Splunk, was never
+collected by the runner (a bare module-level function, no `TestCase`), asserted
+**nothing**, and printed the first characters of a real API key to stdout.
+
+It cost more than a missing test. It made the rule *look* exercised, so its
+actual coverage -- **0 %** -- went unnoticed, on the one function in the add-on
+that arbitrates secrets.
+
+Two rules follow, and they are not the same rule:
+
+* **Extract before testing.** A decision buried in a 234-line constructor that
+  talks to Splunk cannot be tested without testing the connection. Pull it out
+  as a pure function -- `common.pick_password()` is the pattern: it takes
+  plain objects, returns a mapping plus the names it discarded, and **takes no
+  logger**. A value that must never reach a log file is never handed to one.
+* **Derive constants, never restate them.** `tests/test_pick_password_unit.py`
+  reads `common.CRED_SEP` rather than spelling the separator out. A test that
+  copies a constant keeps passing on the day production changes it.
+
+`tools/checks/rule_not_duplicated.py` enforces the first half mechanically: a
+marker literal belongs to exactly one file. ⚠️ It fails **both** ways -- an
+extra carrier, and the owner losing the marker. A guard whose anchor has
+quietly moved passes forever after and protects nothing.
+
+⚠️ It also skips its own source. A check that spells a pattern out in its table
+and then scans itself reports itself on its first run, and a guard that is red
+from birth gets switched off.

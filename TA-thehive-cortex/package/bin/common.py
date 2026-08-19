@@ -46,6 +46,109 @@ class MissingParameterError(Exception):
     """A mandatory parameter is absent. Same reasoning as above."""
 
 
+# --- UCC credential arbitration ---------------------------------------------
+#
+# ⚠️ This rule decides WHICH password the add-on ends up using when Splunk's
+# storage/passwords holds several entries for the same account -- and it used
+# to live in two places, inline in Instances.__init__ and copied verbatim into
+# a manual diagnostic script. Neither copy was covered by a single assertion.
+# A rule duplicated is a rule that drifts, and this one arbitrates secrets.
+#
+# It is a pure function on purpose: no Splunk, no I/O, no logging. That is what
+# makes the arbitration -- which is genuinely subtle -- testable at all.
+
+CRED_SEP = "``splunk_cred_sep``"
+
+# Splunk returns these instead of the value when the caller may not read it.
+MASQUES = ("******", "********")
+
+
+def account_from_ucc_username(username):
+    """`<account>``splunk_cred_sep``<field>` -> `<account>`."""
+    if CRED_SEP in username:
+        return username.split(CRED_SEP)[0]
+    return username
+
+
+def pick_password(entries, app_name="TA-thehive-cortex"):
+    """Decide, per account, which stored value is the real password.
+
+    `entries` is any iterable of objects carrying `realm`, `username` and
+    `clear_password` -- `client.storage_passwords` satisfies it as is.
+
+    Returns `(passwords, ignorees)`:
+      * `passwords`  {account: value}
+      * `ignorees`   accounts whose entry was discarded as garbage, for the
+                     caller to log. The function itself never logs: a value
+                     that must not reach a log file must not be handed to a
+                     logger in the first place.
+
+    The arbitration, in order:
+      1. only realms naming this app are considered;
+      2. a JSON object is unwrapped to its `password` member -- but only when
+         that member DIFFERS from the raw text, which is what marks the entry
+         as genuinely JSON-encoded;
+      3. masked values are ignored, they carry no secret;
+      4. a value containing the UCC separator is Splunk internal garbage;
+      5. between two candidates, a JSON-sourced value beats a raw one, and at
+         equal provenance the LONGEST wins -- a truncated entry never
+         supersedes a whole one.
+    """
+    passwords = {}
+    provenance_json = {}
+    ignorees = []
+
+    for entree in entries:
+        realm = entree.realm
+        compte = account_from_ucc_username(entree.username)
+        if not realm or app_name not in realm:
+            continue
+
+        brut = entree.clear_password
+        vient_du_json = False
+        try:
+            decode = json.loads(brut)
+            if isinstance(decode, dict):
+                valeur = decode.get("password", brut)
+                if valeur != brut:
+                    vient_du_json = True
+            else:
+                valeur = brut
+        except Exception:
+            # A stored password is very often not JSON at all. Not an error.
+            valeur = brut
+
+        if valeur in MASQUES:
+            continue
+
+        # ⚠️ A JSON payload can carry a non-string `password` (a number, a
+        # nested object). Before this guard the next line raised TypeError
+        # INSIDE the caller's blanket try/except, which abandoned every
+        # remaining credential: one malformed entry silently cost the
+        # passwords of all the other accounts. It is now discarded like any
+        # other garbage, and named.
+        if not isinstance(valeur, str):
+            ignorees.append(compte)
+            continue
+
+        if CRED_SEP in valeur:
+            ignorees.append(compte)
+            continue
+
+        json_courant = provenance_json.get(compte, False)
+        valeur_courante = passwords.get(compte, "")
+
+        if (
+            compte not in passwords
+            or (vient_du_json and not json_courant)
+            or (vient_du_json == json_courant and len(valeur) > len(valeur_courante))
+        ):
+            passwords[compte] = valeur
+            provenance_json[compte] = vient_du_json
+
+    return passwords, ignorees
+
+
 class LoggerFile(object):
 
     def __init__(self, logger=None, command_id="", exec_id=""):
@@ -150,52 +253,17 @@ class Settings(object):
             accounts = account_cfm.get_all()
             self.logger_file.debug(id="S3", message=f"Accounts retrieved: {list(accounts.keys())}")
 
-            # Get storage passwords
+            # Get storage passwords -- the arbitration itself lives in
+            # pick_password(), a pure function, so it can be tested without a
+            # Splunk instance. See its docstring for the rule.
             self._passwords = {}
-            self._was_json = {}
             try:
-                for credential in self.client.storage_passwords:
-                    realm = credential.realm
-                    username_ucc = credential.username
-                    # UCC format: account_name``splunk_cred_sep``field_name
-                    if "``splunk_cred_sep``" in username_ucc:
-                        account_name = username_ucc.split("``splunk_cred_sep``")[0]
-                    else:
-                        account_name = username_ucc
-
-                    if realm and "TA-thehive-cortex" in realm:
-                        clear_password = credential.clear_password
-                        was_json = False
-                        # Try to parse JSON first (new UCC format)
-                        try:
-                            cp_json = json.loads(clear_password)
-                            if isinstance(cp_json, dict):
-                                val = cp_json.get("password", clear_password)
-                                if val != clear_password:
-                                    was_json = True
-                            else:
-                                val = clear_password
-                        except Exception:
-                            val = clear_password
-
-                        # Only store if it's not the masked value and we don't have a better one yet
-                        if val != "******" and val != "********":
-                            # Avoid garbage values containing splunk_cred_sep (Splunk internal stuff)
-                            if "``splunk_cred_sep``" in val:
-                                self.logger_file.debug(id="S3_SKIP", message=f"Skipping potential garbage value for account {account_name}")
-                                continue
-
-                            # If we have multiple entries for same account, prioritize the one with actual key
-                            # Prioritize JSON-extracted values, or take longest if same status
-                            current_was_json = self._was_json.get(account_name, False)
-                            current_val = self._passwords.get(account_name, "")
-
-                            if (account_name not in self._passwords) or \
-                               (was_json and not current_was_json) or \
-                               (was_json == current_was_json and len(val) > len(current_val)):
-                                
-                                self._passwords[account_name] = val
-                                self._was_json[account_name] = was_json
+                self._passwords, ignorees = pick_password(self.client.storage_passwords)
+                for compte in ignorees:
+                    self.logger_file.debug(
+                        id="S3_SKIP",
+                        message=f"Skipping unusable stored value for account {compte}",
+                    )
             except Exception as e:
                 self.logger_file.error(
                     id="S3_ERROR", message=f"Failed to access storage_passwords: {e}"
