@@ -102,3 +102,35 @@ Deployment must be performed directly via shell commands (PowerShell) by strictl
 - **`python.required` is a version list, not an interpreter name**: `python.version = python3` (still required by current checks) and `python.required = 3.9, 3.13` are two different keys. Declaring `python.required` asserts compatibility with those interpreters, third-party libraries included -- set it deliberately, and mirror it in `globalConfig.json` under `meta.supportedPythonVersion`.
 - **`ucc-gen` pins its own floor for `splunktaucclib`**: upgrading the generator can fail the build with "found but has the wrong version" long before any code changes. Bump the pin in `package/lib/requirements.txt` to match the generator's minimum.
 - **Clean `.spl` (no compiled Python)**: `ucc-gen` installs pip deps with `--no-compile`, but it copies the source `bin/` verbatim. Running tests or scripts locally leaves `__pycache__`/`*.pyc` in `package/bin`, which then get embedded in `output/` and the `.spl`, failing Splunk Cloud AppInspect. Always strip `*.pyc`, `*.pyo` and `__pycache__` (in addition to `*.exe`/`*.pyd`) before `tar`-ing the package, and verify the archive itself with `tar -tzf TA-thehive-cortex.spl` rather than just checking `output/`.
+
+## Repository checks
+
+Run before opening a pull request. They are cheap, offline, and they exist
+because each one comes from a defect that shipped.
+
+```bash
+python -m unittest discover -s tests -p "test_*.py"
+python tools/checks/no_bare_except.py
+```
+
+### `no_bare_except.py`
+
+Refuses `except:` and `except ...: pass` in `TA-thehive-cortex/package/bin`.
+Both shapes make a failure indistinguishable from correct behaviour, and this
+add-on has paid for it: `except Exception: pass` around the log level
+resolution meant a user could configure DEBUG, keep getting INFO, and find no
+explanation anywhere.
+
+A silent handler is legitimate when the surrounding code reports the failure
+anyway — a best-effort detail added to a message that is logged just below.
+Say so **on the line**, with the reason:
+
+```python
+except ValueError:  # silent-except: reported by THC-117 below
+    pass
+```
+
+A bare `except:` is never waivable: it also swallows `KeyboardInterrupt` and
+`SystemExit`. Generated files (`cim_actions.py`, `alert_actions_base.py`, …)
+are skipped — they are rewritten by `ucc-gen` at every build, so a finding
+there cannot be acted upon in this repository.
