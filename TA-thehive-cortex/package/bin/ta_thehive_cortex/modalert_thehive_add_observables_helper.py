@@ -12,6 +12,8 @@ __email__ = "letmer00t@gmail.com"
 
 import ta_thehive_cortex_declare
 
+from service_errors import is_duplicate, response_detail, status_code
+
 # Standard library imports
 import os
 import re
@@ -179,25 +181,19 @@ def process_event(helper, *args, **kwargs):
                         thehive.case.create_observable(case_id=tid, observable=obs)
                     logger_file.info(id="THAO-50", message=f"Successfully added observable to {target_type} {tid}")
                 except Exception as e:
-                    # Catch 400 "already exists" and log as WARNING
-                    # We check: message text, status_code attribute, or response object status_code
-                    status_code = getattr(e, 'status_code', None)
-                    if status_code is None and hasattr(e, 'response'):
-                        status_code = getattr(e.response, 'status_code', None)
-                    
-                    error_msg = str(e).lower()
-                    is_duplicate = "already exists" in error_msg or "duplicate" in error_msg or status_code in [400, 409]
-                    
-                    if is_duplicate:
-                        logger_file.warning(id="THAO-60", message=f"Observable already exists in {target_type} {tid} (Status={status_code}). Skipping.")
+                    # Same classification as everywhere else -- see
+                    # service_errors, which replaced three pasted copies.
+                    if is_duplicate(e):
+                        logger_file.warning(
+                            id="THAO-60",
+                            message=f"Observable already exists in {target_type} {tid} "
+                                    f"(Status={status_code(e)}). Skipping.",
+                        )
                     else:
-                        # Log the full error context for debugging
-                        response_text = ""
-                        if hasattr(e, 'response'):
-                            try:
-                                response_text = f" | Response: {e.response.text}"
-                            except Exception:  # silent-except: best-effort detail, the error itself is logged just below
-                                pass
-                        logger_file.error(id="THAO-70", message=f"Failed to add observable to {target_type} {tid}: {str(e)}{response_text}")
+                        logger_file.error(
+                            id="THAO-70",
+                            message=f"Failed to add observable to {target_type} {tid}: "
+                                    f"{e}{response_detail(e)}",
+                        )
 
     return 0

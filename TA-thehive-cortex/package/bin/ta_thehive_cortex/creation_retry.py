@@ -21,6 +21,8 @@ The condition is now `if not created`, which is the question actually being
 asked, and nothing outside an except block reaches the exception.
 """
 
+from service_errors import is_duplicate, status_code as _code_de_statut
+
 
 def create_with_retry(create, max_retry, logger_file, ids, contexte):
     """Call `create()` until it returns, at most `max_retry + 1` times.
@@ -49,12 +51,7 @@ def create_with_retry(create, max_retry, logger_file, ids, contexte):
             # this loop used it afterwards.
             derniere_erreur = e
             code = _code_de_statut(e)
-            texte = str(e).lower()
-            doublon = (
-                "already exists" in texte
-                or "duplicate" in texte
-                or code in (400, 409)
-            )
+            doublon = is_duplicate(e)
             if doublon and ids.get("duplicate"):
                 logger_file.warning(
                     id=ids["duplicate"],
@@ -79,12 +76,3 @@ def create_with_retry(create, max_retry, logger_file, ids, contexte):
             ),
         )
     return cree
-
-
-def _code_de_statut(e):
-    """TheHiveError carries its status either directly or on a response."""
-    code = getattr(e, "status_code", None)
-    if code is None:
-        reponse = getattr(e, "response", None)
-        code = getattr(reponse, "status_code", None)
-    return code

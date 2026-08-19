@@ -22,6 +22,7 @@ from attachment_builder import AttachmentError, build_attachment
 from creation_retry import create_with_retry
 from modalert_args import common_args, prepare_instances, si_vide
 from post_creation import attach_procedures, upload_attachment
+from service_errors import is_duplicate, response_detail, status_code
 
 # Local application/library specific imports
 from modalert_thehive_common import parse_events
@@ -160,29 +161,18 @@ def create_case(
                                 ),
                             )
                     except Exception as e:
-                        # Catch 400 "already exists" and log as WARNING
-                        status_code = getattr(e, 'status_code', None)
-                        if status_code is None and hasattr(e, 'response'):
-                            status_code = getattr(e.response, 'status_code', None)
-                        
-                        error_msg = str(e).lower()
-                        is_duplicate = "already exists" in error_msg or "duplicate" in error_msg or status_code in [400, 409]
-                        
-                        if is_duplicate:
+                        # The duplicate/error classification lives in
+                        # service_errors: it was pasted verbatim in three
+                        # places, comment included.
+                        if is_duplicate(e):
                             thehive.logger_file.warning(
                                 id="136",
                                 message="Observable already exists in case {} (Status={}). Skipping. url={}, data={}".format(
-                                    new_case["_id"], status_code, thehive.session.hive_url, str(observable)
+                                    new_case["_id"], status_code(e),
+                                    thehive.session.hive_url, str(observable)
                                 ),
                             )
                         else:
-                            # Log the full error context for debugging
-                            response_text = ""
-                            if hasattr(e, 'response'):
-                                try:
-                                    response_text = f" | Response: {e.response.text}"
-                                except Exception:  # silent-except: best-effort detail, the error itself is logged just below
-                                    pass
                             thehive.logger_file.error(
                                 id="137",
                                 message="TheHive observable update on recent case creation has failed. "
@@ -191,7 +181,7 @@ def create_case(
                                     str(case),
                                     str(observable),
                                     str(e),
-                                    response_text
+                                    response_detail(e),
                                 ),
                             )
 
