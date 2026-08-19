@@ -17,12 +17,16 @@ mocks = [
 
 # Add bin to path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from _isolation import mocks_temporaires  # noqa: E402
+from _isolation import mocks_temporaires, stub_splunklib  # noqa: E402
 
 APP_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(APP_ROOT, 'TA-thehive-cortex', 'package', 'bin'))
 
-with mocks_temporaires(mocks):
+# ⚠️ splunklib.modularinput gets a REAL stub, not a MagicMock: the module
+# under test does `class X(smi.Script)`, and inheriting from a mock makes
+# the class statement itself return a mock. The test would then exercise
+# nothing at all while reporting success.
+with mocks_temporaires(mocks, stub_splunklib()):
     import thehive_tasks
 
 class TestTheHiveTasksIntegration(unittest.TestCase):
