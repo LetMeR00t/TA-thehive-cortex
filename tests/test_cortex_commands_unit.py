@@ -61,8 +61,18 @@ class TestInitializeCortexInstanceCallSites(unittest.TestCase):
     #: keyword NAMES decide whether the call binds.
     JETON = object()
 
+    #: Every locally-defined callable whose call sites must bind. Adding a name
+    #: here is cheaper than discovering the mismatch in production: a keyword
+    #: that does not exist is a TypeError on the FIRST call, not an edge case.
+    CIBLES = ("initialize_cortex_instance", "create_cortex_instance", "Cortex")
+
     def _call_sites(self):
-        signature = inspect.signature(cortex_module.initialize_cortex_instance)
+        signatures = {}
+        for nom in self.CIBLES:
+            objet = getattr(cortex_module, nom, None)
+            if objet is None:
+                continue
+            signatures[nom] = inspect.signature(objet)
         for nom in sorted(os.listdir(BIN)):
             if not nom.endswith('.py'):
                 continue
@@ -73,25 +83,25 @@ class TestInitializeCortexInstanceCallSites(unittest.TestCase):
                 if not isinstance(noeud, ast.Call):
                     continue
                 cible = noeud.func
-                if isinstance(cible, ast.Name) and cible.id == 'initialize_cortex_instance':
-                    yield nom, noeud, signature
+                if isinstance(cible, ast.Name) and cible.id in signatures:
+                    yield nom, noeud, signatures[cible.id], cible.id
 
     def test_every_call_binds(self):
         trouves = 0
         fautifs = []
-        for nom, noeud, signature in self._call_sites():
+        for nom, noeud, signature, appele in self._call_sites():
             trouves += 1
             positionnels = [self.JETON] * len(noeud.args)
             nommes = {kw.arg: self.JETON for kw in noeud.keywords if kw.arg}
             try:
                 signature.bind(*positionnels, **nommes)
             except TypeError as err:
-                fautifs.append(f"{nom}:{noeud.lineno} -> {err}")
+                fautifs.append(f"{nom}:{noeud.lineno} {appele}(): {err}")
 
         self.assertGreater(trouves, 0, "no call site found -- the test is blind")
         self.assertEqual(
             [], fautifs,
-            "call sites that do not match initialize_cortex_instance():\n  "
+            "call sites that do not bind against their signature:\n  "
             + "\n  ".join(fautifs),
         )
 
