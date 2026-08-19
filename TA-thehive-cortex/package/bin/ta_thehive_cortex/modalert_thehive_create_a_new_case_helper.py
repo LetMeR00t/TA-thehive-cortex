@@ -139,7 +139,7 @@ def create_case(
                         if "failure" in response:
                             # somehow we got a bad response code from thehive
                             thehive.logger_file.error(
-                                id="135",
+                                id="132",
                                 message="TheHive observable update on recent case creation has failed. "
                                 "url={}, data={}, content={}, observable={}, error={}".format(
                                     thehive.session.hive_url,
@@ -153,7 +153,7 @@ def create_case(
                             response = response[0]
                             # log response status
                             thehive.logger_file.info(
-                                id="130",
+                                id="131",
                                 message="TheHive case {} was successfully updated with the observable {} on url={}".format(
                                     new_case["_id"],
                                     response["data"].replace(".", "[.]"),

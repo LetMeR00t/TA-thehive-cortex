@@ -98,9 +98,14 @@ def create_thehive_instance(instance_id, settings, logger, acronym, exec_id=None
     (thehive_username, thehive_secret) = configuration.getInstanceUsernameApiKey(
         instance_id_final
     )
+    # ⚠️ The LENGTH only. This line used to append the last four characters of
+    # the API key -- a real secret fragment, written to a log file that is
+    # indexed by Splunk and read by anyone with access to the index. A length
+    # is enough to tell "empty" from "truncated" from "looks right", which is
+    # the whole reason the line exists.
     logger_file.debug(
-        id="TH_DEBUG_SECRET",
-        message=f"Secret length: {len(thehive_secret) if thehive_secret else 0}, ends with: {str(thehive_secret)[-4:] if thehive_secret else 'N/A'}",
+        id="TH11",
+        message=f"Secret length: {len(thehive_secret) if thehive_secret else 0}",
     )
     thehive_url = configuration.getInstanceURL(instance_id_final)
     thehive_authentication_type = configuration.getInstanceSetting(
@@ -296,13 +301,13 @@ class TheHive4Splunk(TheHiveApi):
 
         self._logger_file = logger_file
 
-        self.logger_file.debug(id="TH1", message="Version is: " + version)
+        self.logger_file.debug(id="TH2", message="Version is: " + version)
 
         self._utils = Utils(logger_file=logger_file)
 
         try:
             self.logger_file.debug(
-                id="TH_DEBUG_VERIFY",
+                id="TH119",
                 message=f"Verification of CA cert path: {verify}. Exists? {os.path.exists(verify) if isinstance(verify, str) else 'N/A'}",
             )
             if apiKey is not None:
@@ -331,13 +336,13 @@ class TheHive4Splunk(TheHiveApi):
                 )
             else:
                 self.logger_file.error(
-                    id="TH30",
+                    id="TH31",
                     message="THE_HIVE_AUTHENTICATION - Password AND API Key are null values",
                 )
                 exit(30)
 
             self.logger_file.debug(
-                id="TH40",
+                id="TH41",
                 message="TheHive instance is initialized, try a request to {}".format(
                     url
                 ),
@@ -361,7 +366,7 @@ class TheHive4Splunk(TheHiveApi):
                 )
             elif apiKey is not None:
                 self.logger_file.debug(
-                    id="TH50",
+                    id="TH51",
                     message='TheHive API connection to (URL="'
                     + url
                     + '") is successful',
@@ -461,7 +466,7 @@ class TheHive4Splunk(TheHiveApi):
                     self.logger_file.warning(id="TH114", message=f"No case found with number {val}")
                     return val # Return original if not found, API call will fail later with 404
             except Exception as e:
-                self.logger_file.error(id="TH115", message=f"Error resolving case number {val}: {str(e)}")
+                self.logger_file.error(id="TH118", message=f"Error resolving case number {val}: {str(e)}")
                 return val
 
         # 3. Otherwise return as is
@@ -789,7 +794,7 @@ class TheHive4Splunk(TheHiveApi):
             if filters["_between"]["_field"] in ["_createdAt", "_updatedAt"]:
                 tasks = self.task.get_tasks(filters=filters)
                 self.logger_file.info(
-                    id="TH139",
+                    id="TH141",
                     message=f"Tasks recovery detected. Got {len(tasks)} tasks with filters: {filters}.",
                 )
                 for task in tasks:
@@ -823,7 +828,7 @@ class TheHive4Splunk(TheHiveApi):
                             d=event, max_size=kwargs["max_size_value"]
                         )
                     self.logger_file.debug(
-                        id="TH140",
+                        id="TH142",
                         message=f"Event after processing (check_and_reduce_values_size): {event}",
                     )
 

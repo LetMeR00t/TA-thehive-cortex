@@ -94,7 +94,7 @@ class BACKFILL_ALERTS_CASES(smi.Script):
             d1 = parse_date(backfill_start)
             d2 = parse_date(backfill_end, is_end=True)
         except ValueError as e:
-            logger_file.error(id="MI-ERR", message=str(e))
+            logger_file.error(id="MI-ERR-DATES", message=str(e))
             return
 
         types = helper.get_arg("type")
@@ -144,7 +144,7 @@ class BACKFILL_ALERTS_CASES(smi.Script):
                         ew.write_event(smi.Event(source="thehive:"+stanza, host=thehive.session.hive_url[8:], index=helper.get_output_index(), sourcetype="thehive:"+input_type+":"+date_mode, data=json.dumps(event)))
                     logger_file.info(id="70", message=f"{str(len(new_events))} events (type: {input_type}, date: {date_mode}) were recovered.")
                 except Exception as e:
-                    logger_file.error(id="MI-ERR", message=f"Error: {str(e)}")
+                    logger_file.error(id="MI-ERR-COLLECT", message=f"Error: {str(e)}")
 
 if __name__ == '__main__':
     exit_code = BACKFILL_ALERTS_CASES().run(sys.argv)

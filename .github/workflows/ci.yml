@@ -96,6 +96,11 @@ jobs:
         # nobody reads them side by side. Only a measurement sees it.
         run: python tools/checks/duplication_threshold.py
 
+      - name: Every log identifier designates one place
+        # An identifier that names two call sites names none -- and it is what
+        # someone reaches for when an incident must be traced back to a line.
+        run: python tools/checks/log_ids_unique.py
+
       - name: Coverage floors on the critical paths
         # Per-path floors, never a global one: a global floor over 8,685 lines
         # is either trivially met or unreachable, and says nothing either way.

@@ -116,6 +116,7 @@ python tools/checks/declared_files_exist.py
 python tools/checks/log_sourcetype_covered.py
 python tools/checks/rule_not_duplicated.py
 python tools/checks/duplication_threshold.py
+python tools/checks/log_ids_unique.py
 PYTHON=python3.9 tools/checks/pins_match_build.sh
 tools/checks/tests_on_both_pythons.sh
 ```
@@ -402,3 +403,38 @@ path, where the message exists precisely to explain what went wrong. It was
 already latent (the name was only bound when the object happened to carry
 TTPs); the extraction made it unconditional. The fix is not to rebind it: it
 is to make the message name the thing it reports.
+
+### A log identifier is an address, and the registry is generated
+
+A rendered line reads `[serial][<command_id>-<id>]`. **An identifier that names
+two call sites names none** -- and it is exactly what someone reaches for when
+a production incident has to be traced back to a line. Fifteen were ambiguous,
+across five modules.
+
+Two decisions worth keeping:
+
+* **Uniqueness is required within a MODULE, not across the add-on.**
+  `command_id` already namespaces the identifier per command, so a bare `id="45"`
+  is unambiguous in context. Demanding global uniqueness would mean renumbering
+  ~340 call sites and breaking every saved search built on one, to close an
+  ambiguity that does not exist. Scope follows the defect, not the symmetry.
+* **`docs/log_ids.md` is GENERATED** (`--write`), and the CI fails when it stops
+  matching the code. A registry maintained by hand drifts within a release, and
+  then documents a past state while looking authoritative -- which is worse
+  than having none, because people trust it.
+
+⚠️ Renumbering needs the same care as any rename: resolving `135` to `137`
+created a **new** collision with an existing `137` three lines away. The check
+caught it immediately, which is the point -- but the lesson is to re-run the
+measurement after the fix, never to reason that the fix must have worked.
+
+### A debug line is a log line
+
+`thehive.py` logged `Secret length: N, ends with: XXXX` -- the last four
+characters of a real API key, written to a file Splunk then indexes and anyone
+with access to the index can read. The length alone tells "empty" from
+"truncated" from "looks right", which is the entire reason the line exists.
+
+Verifications print **lengths or counts, never values**. That holds for a
+temporary debug line as much as for anything else: `TH_DEBUG_SECRET` was
+plainly written as a one-off, and it shipped in four releases.

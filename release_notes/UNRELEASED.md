@@ -57,3 +57,54 @@ v4.2.2 all linked to it with a **relative** link — which resolves inside the
 current tag, where the file no longer existed. Those instructions are labelled
 *mandatory*, so the file is restored rather than the link rewritten: a relative
 link to an absent file would break again at the next tag.
+
+
+## ⚠️ Breaking: some log identifiers changed
+
+Fifteen identifiers designated **two call sites at once**, which makes them
+useless for the one thing they exist for: tracing an incident back to a line.
+`135` labelled a TTPs success *and* an observable failure in the same file;
+`140` a TTPs failure *and* the start of attachment processing.
+
+Only the **second** occurrence of each was renumbered, so a search built on the
+first still matches. Scope was kept minimal on purpose: gaps in the numbering
+are left alone -- a gap bothers nobody, a collision does.
+
+If you have saved searches or alerts keyed on one of these, update them:
+
+| module | was | now | that site is |
+| :--- | :--- | :--- | :--- |
+| `backfill_alerts_cases.py` | `MI-ERR` | `MI-ERR-DATES` | the date range could not be parsed |
+| `backfill_alerts_cases.py` | `MI-ERR` | `MI-ERR-COLLECT` | the collection itself failed |
+| `backfill_audit.py` | `MI-ERR` | `MI-ERR-DATES` | the date range could not be parsed |
+| `backfill_audit.py` | `MI-ERR` | `MI-ERR-COLLECT` | the collection itself failed |
+| `common.py` | `S30` | `S32` | the resolved instance is returned |
+| `common.py` | `S45` | `S46` | reading `thehive_max_cases` |
+| `common.py` | `S54` | `S58` | reading `thehive_creation_max_retry` |
+| `thehive.py` | `TH1` | `TH2` | the detected TheHive version |
+| `thehive.py` | `TH30` | `TH31` | password AND API key are both empty |
+| `thehive.py` | `TH40` | `TH41` | the connection test request |
+| `thehive.py` | `TH50` | `TH51` | the connection succeeded |
+| `thehive.py` | `TH115` | `TH118` | a case number could not be resolved |
+| `thehive.py` | `TH139` | `TH141` | tasks recovered, with their filters |
+| `thehive.py` | `TH140` | `TH142` | an event after size reduction |
+| `thehive.py` | `TH_DEBUG_VERIFY` | `TH119` | the CA certificate path check |
+| create-a-new-case | `130` | `131` | the observable was added |
+| create-a-new-case | `135` | `132` | the case creation failed |
+| create-a-new-case | `135` | `137` | the observable update failed |
+| create-a-new-case | `140` | `139` | the TTPs update failed |
+| create-a-new-case | `141` | `146` | the attachment format is unsupported |
+
+`docs/log_ids.md` lists every identifier the add-on can emit. It is generated
+from the source and the CI fails when it stops matching, so it cannot quietly
+describe a past release.
+
+## 🔒 A secret fragment no longer reaches the logs
+
+`thehive.py` logged `Secret length: N, ends with: XXXX` at debug level -- the
+last four characters of the API key, into a file Splunk indexes and anyone with
+access to the index can read. It now logs the length alone, which is what
+distinguishes "empty" from "truncated" from "looks right".
+
+If you have run this add-on at debug level, those lines are in your index. They
+expire with your retention; purging them earlier is a local decision.

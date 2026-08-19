@@ -520,7 +520,7 @@ class Settings(object):
         uri = str(instance["uri"]) if str(instance["uri"]) != "/" else ""
 
         self.logger_file.debug(
-            id="S30",
+            id="S32",
             message="This instance ID ("
             + str(instance_id_resolved)
             + ") returns: "
@@ -611,7 +611,7 @@ class Settings(object):
             else 100
         )
         self.logger_file.debug(
-            id="S45", message="Getting this parameter : thehive_max_cases=" + str(param)
+            id="S46", message="Getting this parameter : thehive_max_cases=" + str(param)
         )
         return param
 
@@ -702,7 +702,7 @@ class Settings(object):
             else "5"
         )
         self.logger_file.debug(
-            id="S54",
+            id="S58",
             message="Getting this parameter: thehive_creation_max_retry=" + str(param),
         )
         return param
