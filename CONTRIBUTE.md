@@ -228,3 +228,33 @@ So a guard must exercise something production does not already know:
 an **invented** type, a value that does not fit its declared type, a shape the
 code was never written for. If the test can only be red when production is
 wrong about something it already lists, it is a mirror.
+
+## Name the interpreter, never inherit it
+
+`ucc-gen` wants Python 3.9, AppInspect refuses to install below 3.11, and a
+machine's bare `python3` is whatever that machine happens to ship -- the
+workspace pod has no `python` binary at all and its `python3` is 3.11. An
+implicit interpreter produces a build that works on one machine and nowhere
+else, and the failure surfaces far from its cause.
+
+So `.github/workflows/ci.yml` names 3.9 for the build and 3.9 **and** 3.13 for
+the tests. ⚠️ Both test runs must be green: this add-on declares
+`python.required = 3.9, 3.13`, Splunk <= 10.1 serves 3.9 only, and 10.2 keeps
+3.9 as its default. Testing one of the two proves nothing about most of the
+installed base -- and the vendored `thehive4py` is heading for a release that
+declares `Requires-Python >=3.10`.
+
+## Coverage floors are a ratchet, not an ambition
+
+`tools/checks/coverage_floors.py` enforces floors **per path**, never a global
+one. A global floor over 8,685 lines is either trivially met or unreachable,
+and says nothing either way: this repository sat at a respectable-looking
+overall figure while instance resolution and credential arbitration were at
+**0 %**.
+
+Each floor sits at or just below what is measured today, so the build goes red
+on a regression and only on that. ⚠️ A floor set above reality makes CI red
+from birth, and a guard that is red from birth gets switched off -- after which
+it guards nothing. The **target** is reported next to it and never enforced;
+raising the floor towards it is a deliberate act, taken once the tests that
+justify it exist.

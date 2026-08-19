@@ -1,0 +1,121 @@
+name: CI
+
+# ⚠️ The point of this workflow is that a tag can no longer be pushed on red.
+# Before it existed, nothing at all ran: no lint, no tests, no build. The test
+# suite was red on `main` and the repository could still be tagged and released.
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  tests:
+    name: Tests (Python ${{ matrix.python }})
+    runs-on: ubuntu-latest
+    strategy:
+      # ⚠️ BOTH interpreters, and both must be green.
+      #
+      # This add-on declares `supportedPythonVersion: ["3.9","3.13"]` and ships
+      # `python.required = 3.9, 3.13`. Splunk <= 10.1 serves 3.9 only, and 10.2
+      # keeps 3.9 as its default while offering 3.13 as an opt-in. Testing one
+      # of the two proves nothing about most of the installed base.
+      #
+      # It also guards a real, dated risk: the vendored thehive4py is heading
+      # for 2.1.0, which DECLARES `Requires-Python >=3.10`. It runs on 3.9
+      # today -- measured -- but upstream does not promise it. Without this
+      # matrix, the day a library upgrade genuinely breaks 3.9, CI would be
+      # green on 3.13 and the Splunk fleet would fall silently.
+      fail-fast: false
+      matrix:
+        python: ['3.9', '3.13']
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+
+      - name: Install runtime dependencies
+        run: python -m pip install --quiet -r TA-thehive-cortex/package/lib/requirements.txt
+
+      - name: Unit tests
+        # Only `tests/` -- the end-to-end campaign lives elsewhere, needs a real
+        # Splunk and a real TheHive, and MUST NOT run here: this repository is
+        # public and real credentials have no business in its secrets.
+        run: python -m unittest discover -s tests -p "test_*.py" --verbose
+
+  checks:
+    name: Repository checks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          # 3.9 is the floor Splunk defaults to, and dependency resolution
+          # DEPENDS on it: splunk-sdk 3.0.0 requires >=3.13 and requests 2.33
+          # requires >=3.10, so a 3.13 run and a 3.9 run do not produce the
+          # same closure. The pins must be judged against 3.9.
+          python-version: '3.9'
+
+      - name: No silent exception handler
+        run: python tools/checks/no_bare_except.py
+
+      - name: Every HTTP call is bounded
+        run: python tools/checks/requests_timeout.py
+
+      - name: Pinned set equals shipped set
+        env:
+          PYTHON: python
+        run: bash tools/checks/pins_match_build.sh
+
+      - name: Coverage floors on the critical paths
+        # Per-path floors, never a global one: a global floor over 8,685 lines
+        # is either trivially met or unreachable, and says nothing either way.
+        run: |
+          python -m pip install --quiet coverage
+          python tools/checks/coverage_floors.py
+
+  build:
+    name: UCC build
+    runs-on: ubuntu-latest
+    needs: [tests, checks]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          # ⚠️ Named explicitly and NOT inherited: ucc-gen wants 3.9, while a
+          # machine's bare `python3` is usually something else entirely -- the
+          # workspace pod has no `python` binary at all and its `python3` is
+          # 3.11. An implicit interpreter here is a build that works on one
+          # machine and nowhere else.
+          python-version: '3.9'
+
+      - name: Install ucc-gen
+        run: python -m pip install --quiet splunk-add-on-ucc-framework==6.5.3
+
+      - name: Build the add-on
+        # Reads the version from globalConfig.json. ⚠️ ucc-gen REWRITES that
+        # file with whatever --ta-version says, so the flag is deliberately not
+        # passed here: CI builds what the repository declares, it does not
+        # decide the version.
+        run: ucc-gen build --source TA-thehive-cortex/package
+
+      - name: Refuse compiled artefacts in the output
+        # ucc-gen copies package/bin verbatim. A stale __pycache__ left by a
+        # local test run would ship inside the .spl and fail Splunk Cloud
+        # vetting -- a defect that only ever appears on someone else's machine.
+        run: |
+          trouves=$(find output -name '__pycache__' -o -name '*.pyc' | head -20)
+          if [ -n "$trouves" ]; then
+            echo "compiled Python artefacts in the build output:"
+            echo "$trouves"
+            exit 1
+          fi
+          echo "no compiled artefact in the build output."
