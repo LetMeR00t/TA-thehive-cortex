@@ -83,8 +83,22 @@ def setup_logging(name):
         level = get_loglevel_from_file(conf_file_local) or get_loglevel_from_file(conf_file_default)
         if level:
             loglevel = level
-    except Exception:
-        pass
+    except Exception as e:
+        # Never silent: falling back to INFO while the user asked for DEBUG is
+        # indistinguishable from a working feature unless we say so.
+        logger.warning(
+            "Could not read the log level from the settings file, "
+            "falling back to %s: %s", loglevel, str(e)
+        )
 
-    logger.setLevel(getattr(logging, loglevel.upper(), logging.INFO))
+    niveau = getattr(logging, loglevel.upper(), None)
+    if niveau is None:
+        # Same reasoning for a level name Python does not know -- a typo, or a
+        # value written by a newer version of the add-on.
+        logger.warning(
+            "Unknown log level '%s' in the settings file, falling back to INFO",
+            loglevel,
+        )
+        niveau = logging.INFO
+    logger.setLevel(niveau)
     return logger
