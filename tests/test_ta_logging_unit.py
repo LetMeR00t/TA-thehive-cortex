@@ -21,6 +21,13 @@ import tempfile
 import unittest
 from unittest.mock import MagicMock
 
+#: ⚠️ `os.geteuid` does NOT exist on Windows, and a decorator is evaluated at
+#: IMPORT time -- writing `os.geteuid() == 0` inline made the whole module fail
+#: to load on the PC while staying green on the pod. This suite runs on both.
+#: `chmod 000` is also meaningless on Windows: the file stays readable, so the
+#: case this test needs simply cannot be built there.
+PEUT_RENDRE_ILLISIBLE = hasattr(os, "geteuid") and os.geteuid() != 0
+
 mocks = ['splunk', 'splunk.Intersplunk', 'splunklib', 'splunklib.client']
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -101,7 +108,9 @@ class TestResolutionDuNiveau(unittest.TestCase):
                         "falling back to INFO on an unknown level must be said, "
                         "otherwise the user never learns why DEBUG had no effect")
 
-    @unittest.skipIf(os.geteuid() == 0, "root reads everything, the case cannot exist")
+    @unittest.skipUnless(PEUT_RENDRE_ILLISIBLE,
+                         "needs POSIX permissions: chmod 000 does not make a file "
+                         "unreadable on Windows, and root reads everything anyway")
     def test_une_configuration_illisible_est_signalee(self):
         # A real file that open() cannot read: this is what reaches the except.
         # A DIRECTORY would not do -- os.path.isfile() returns False for it, so
