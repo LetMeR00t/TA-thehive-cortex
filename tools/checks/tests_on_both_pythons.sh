@@ -42,14 +42,27 @@ set -u
 RACINE="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 REQUIREMENTS="$RACINE/TA-thehive-cortex/package/lib/requirements.txt"
 
-# ⚠️ Sandboxed shells reach PyPI through a proxy whose CA sits in the OS trust
-# store only, and uv ships its own bundle. Without these two the install dies
-# on `invalid peer certificate: UnknownIssuer`, which reads as a network outage
-# and is not one.
-if [ -z "${SSL_CERT_FILE:-}" ] && [ -r /etc/ssl/certs/ca-certificates.crt ]; then
-	export SSL_CERT_FILE=/etc/ssl/certs/ca-certificates.crt
+# ⚠️ Certificates, and the trap inside the trap.
+#
+# uv ships its own CA bundle, so an internal proxy makes every install die on
+# `invalid peer certificate: UnknownIssuer` -- which reads as a network outage
+# and is not one. Pointing it at the OS trust store fixes that.
+#
+# But this environment ALREADY sets SSL_CERT_FILE, to the internal CA alone.
+# A "set it only if unset" guard therefore preserved exactly the value that
+# cannot reach PyPI, and the script reported a network failure while a plain
+# `uv run` in the same shell succeeded. The two stores are not alternatives:
+# one signs the internal hosts, the other the public index. They are
+# CONCATENATED, and neither is lost.
+FAISCEAU_CA="${TMPDIR:-/tmp}/thc_ca_bundle.pem"
+: > "$FAISCEAU_CA"
+for magasin in /etc/ssl/certs/ca-certificates.crt "${SSL_CERT_FILE:-}"; do
+	[ -n "$magasin" ] && [ -r "$magasin" ] && cat "$magasin" >> "$FAISCEAU_CA"
+done
+if [ -s "$FAISCEAU_CA" ]; then
+	export SSL_CERT_FILE="$FAISCEAU_CA"
+	export UV_SYSTEM_CERTS="${UV_SYSTEM_CERTS:-1}"
 fi
-export UV_SYSTEM_CERTS="${UV_SYSTEM_CERTS:-1}"
 V=$'\033[32m'; R=$'\033[31m'; B=$'\033[1m'; D=$'\033[2m'; Z=$'\033[0m'
 
 trouver() {
@@ -118,7 +131,10 @@ done
 
 echo
 if [ "$total_sautes" -eq 2 ]; then
-	echo "${R}Aucun interpréteur trouvé : rien n'a été vérifié.${Z}"
+	# ⚠️ A skip now has two causes -- interpreter absent, dependencies
+	# unobtainable -- so this line must not name one of them. Each skip has
+	# already said why, above.
+	echo "${R}Aucune version n'a été exécutée : rien n'a été vérifié.${Z}"
 	exit 1
 fi
 if [ "$total_sautes" -gt 0 ]; then
