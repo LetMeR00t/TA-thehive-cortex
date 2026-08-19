@@ -115,6 +115,29 @@ class TestResolutionDInstance(unittest.TestCase):
         nom, secret = s.getInstanceUsernameApiKey("connue")
         self.assertEqual("-", nom)
 
+    def test_instance_sans_nom_dutilisateur_retombe_sur_le_tiret(self):
+        """No username at all: both fields fall back to the placeholder.
+
+        This branch is what an instance authenticated by API key looks like
+        before the account is joined -- it existed and nothing ever ran it.
+        """
+        sans = {k: v for k, v in INSTANCE.items() if k not in ("username", "password")}
+        s = reglages(instances={"connue": sans})
+        nom, secret = s.getInstanceUsernameApiKey("connue")
+        self.assertEqual(("-", "-"), (nom, secret))
+
+    def test_instance_avec_nom_mais_sans_secret_rend_none(self):
+        """A username without a secret must yield None, not the string "-".
+
+        The distinction matters downstream: "-" is a value the client would
+        try to authenticate with, None is the absence of one.
+        """
+        sans = {k: v for k, v in INSTANCE.items() if k != "password"}
+        s = reglages(instances={"connue": sans})
+        nom, secret = s.getInstanceUsernameApiKey("connue")
+        self.assertEqual("-", nom)
+        self.assertIsNone(secret)
+
     def test_un_reglage_absent_ne_leve_pas(self):
         """Distinct on purpose: a missing SETTING is not a missing INSTANCE.
 

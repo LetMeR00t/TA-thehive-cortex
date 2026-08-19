@@ -162,3 +162,29 @@ single one, so a server that accepts the connection and then says nothing held
 a Splunk worker until the kernel gave up. The libraries are patched (see
 `package/bin/ta_thehive_cortex/libs/LOCAL_PATCHES.md`); this check exists so the
 next upgrade cannot quietly undo the patch.
+
+## Mocking a module wholesale makes all of it untestable
+
+Every unit test in this repository used to start with
+
+```python
+sys.modules['common'] = MagicMock()
+```
+
+so that the module under test could be imported outside Splunk. The side effect
+went unnoticed for a long time: **`common.py` itself could never be tested.**
+Its instance resolution sat at 0 % coverage while calling `sys.exit()` on an
+unknown id -- a code path that ends the Splunk process, and that nothing could
+reach to prove it.
+
+Mock the **dependencies**, never the module you are testing, and mock them only
+for the duration of the import (`tests/_isolation.py`). When a constructor is
+too entangled to call -- `Settings.__init__` is 234 lines and talks to Splunk's
+configuration manager -- build the object with `object.__new__(Cls)` and set the
+attributes the method under test actually reads. That tests the method rather
+than the connection.
+
+⚠️ And prefer a **named exception** to `sys.exit()`. A search command already
+turns any exception into a readable SPL error
+(`Intersplunk.generateErrorResults`); calling `sys.exit()` instead gives the
+user a search that stops without a word, and gives the tests nothing to catch.

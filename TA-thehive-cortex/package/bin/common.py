@@ -33,6 +33,19 @@ from thehive4py.query.sort import Asc, Desc
 import globals
 
 
+class InstanceResolutionError(Exception):
+    """An instance id does not match anything in the configuration.
+
+    Raised instead of sys.exit(). A search command already turns any exception
+    into a readable SPL error (Intersplunk.generateErrorResults); ending the
+    process instead gave the user a search that stopped without a word.
+    """
+
+
+class MissingParameterError(Exception):
+    """A mandatory parameter is absent. Same reasoning as above."""
+
+
 class LoggerFile(object):
 
     def __init__(self, logger=None, command_id="", exec_id=""):
@@ -426,14 +439,14 @@ class Settings(object):
         
         try:
             instance = self.__instances[instance_id_resolved]
-        except KeyError as e:
-            self.logger_file.error(
-                id="S30",
-                message="This instance ID ("
-                + instance_id_resolved
-                + ") doesn't exist in your configuration",
+        except KeyError:
+            message = (
+                "This instance ID ("
+                + str(instance_id_resolved)
+                + ") doesn't exist in your configuration"
             )
-            sys.exit(30)
+            self.logger_file.error(id="S30", message=message)
+            raise InstanceResolutionError(message)
 
         # Empty the root URI as it will be filled by the API library directly
         uri = str(instance["uri"]) if str(instance["uri"]) != "/" else ""
@@ -454,14 +467,14 @@ class Settings(object):
 
         try:
             instance = self.__instances[instance_id_resolved]
-        except KeyError as e:
-            self.logger_file.error(
-                id="S31",
-                message="This instance ID ("
-                + instance_id_resolved
-                + ") doesn't exist in your configuration",
+        except KeyError:
+            message = (
+                "This instance ID ("
+                + str(instance_id_resolved)
+                + ") doesn't exist in your configuration"
             )
-            sys.exit(31)
+            self.logger_file.error(id="S31", message=message)
+            raise InstanceResolutionError(message)
 
         if "username" not in instance:
             instance["username"] = "-"
@@ -659,11 +672,9 @@ class Settings(object):
             return d[name]
         else:
             if is_mandatory:
-                self.logger_file.debug(
-                    id="S66",
-                    message='Missing parameter (no "' + str(name) + '" field found)',
-                )
-                sys.exit(66)
+                message = 'Missing parameter (no "' + str(name) + '" field found)'
+                self.logger_file.error(id="S66", message=message)
+                raise MissingParameterError(message)
             else:
                 self.logger_file.debug(
                     id="S67",
