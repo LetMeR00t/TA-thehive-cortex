@@ -22,6 +22,7 @@ from thehive4py.errors import TheHiveError
 from thehive4py.types.case import InputCase
 
 from attachment_builder import AttachmentError, build_attachment
+from creation_retry import create_with_retry
 
 # Local application/library specific imports
 import globals
@@ -197,30 +198,13 @@ def create_case(
 
         thehive.logger_file.debug(id="120", message="Processing case: " + str(case))
         # Get API and create the case
-        new_case = None
-        alert_created = False
-        retry_count = 0
-        while retry_count <= max_retry and not alert_created:
-            try:
-                new_case = thehive.case.create(case)
-                alert_created = True
-            except TheHiveError as e:
-                thehive.logger_file.warning(
-                    id="126",
-                    message="TheHive case creation has failed. Will retry... "
-                    "url={}, data={}, content={}, error={}".format(
-                        thehive.session.hive_url, str(case), str(new_case), str(e)
-                    ),
-                )
-            retry_count += 1
-        if retry_count == max_retry:
-            thehive.logger_file.error(
-                id="127",
-                message="TheHive case creation has failed, after {max_retry} retries. "
-                "url={}, data={}, content={}, error={}".format(
-                    thehive.session.hive_url, str(case), str(new_case), str(e)
-                ),
-            )
+        new_case = create_with_retry(
+            create=lambda: thehive.case.create(case),
+            max_retry=max_retry,
+            logger_file=thehive.logger_file,
+            ids={"retry": "126", "exhausted": "127"},
+            contexte=lambda: f"TheHive case url={thehive.session.hive_url}, data={case}",
+        )
 
         if new_case is not None:
             if "_id" in new_case:

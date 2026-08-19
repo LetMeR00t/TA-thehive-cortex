@@ -22,6 +22,7 @@ from thehive4py.errors import TheHiveError
 from thehive4py.types.alert import InputAlert
 
 from attachment_builder import AttachmentError, build_attachment
+from creation_retry import create_with_retry
 
 # Local application/library specific imports
 import globals
@@ -219,47 +220,13 @@ def create_alert(
 
         thehive.logger_file.debug(id="120", message="Processing alert: " + str(alert))
         # Get API and create the alert
-        new_alert = None
-        alert_created = False
-        retry_count = 0
-        while retry_count <= max_retry and not alert_created:
-            try:
-                new_alert = thehive.alert.create(alert)
-                alert_created = True
-            except TheHiveError as e:
-                # Catch 400/409 "already exists" and log as WARNING
-                status_code = getattr(e, 'status_code', None)
-                if status_code is None and hasattr(e, 'response'):
-                    status_code = getattr(e.response, 'status_code', None)
-                
-                error_msg = str(e).lower()
-                is_duplicate = "already exists" in error_msg or "duplicate" in error_msg or status_code in [400, 409]
-
-                if is_duplicate:
-                    thehive.logger_file.warning(
-                        id="122",
-                        message="TheHive alert creation has failed (Duplicate found, Status={}). Will retry... "
-                        "url={}, data={}, error={}".format(
-                            status_code, thehive.session.hive_url, str(alert), str(e)
-                        ),
-                    )
-                else:
-                    thehive.logger_file.warning(
-                        id="123",
-                        message="TheHive alert creation has failed. Will retry... "
-                        "url={}, data={}, content={}, error={}".format(
-                            thehive.session.hive_url, str(alert), str(new_alert), str(e)
-                        ),
-                    )
-            retry_count += 1
-        if retry_count == max_retry:
-            thehive.logger_file.error(
-                id="125",
-                message="TheHive alert creation has failed, after {max_retry} retries. "
-                "url={}, data={}, content={}, error={}".format(
-                    thehive.session.hive_url, str(alert), str(new_alert), str(e)
-                ),
-            )
+        new_alert = create_with_retry(
+            create=lambda: thehive.alert.create(alert),
+            max_retry=max_retry,
+            logger_file=thehive.logger_file,
+            ids={"duplicate": "122", "retry": "123", "exhausted": "125"},
+            contexte=lambda: f"TheHive alert url={thehive.session.hive_url}, data={alert}",
+        )
 
         if new_alert is not None:
             if "_id" in new_alert:
