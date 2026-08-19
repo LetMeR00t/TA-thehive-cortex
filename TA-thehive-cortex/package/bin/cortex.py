@@ -147,11 +147,15 @@ class Cortex(Api):
         """ This function add a new job to do """
         job = None
         ## Init and check data information
-        if (dataType.lower() in dataTypeList):
-            dataType = dataType.lower()
-        else:
-            self.logger_file.error(id="C35",message="WRONG DATA TYPE - This data type ("+dataType+") is not allowed")
-            sys.exit(35)
+        dataType = dataType.lower()
+        if dataType not in dataTypeList:
+            # Cortex is the authority on its own data types, not this frozen
+            # copy. Killing the search on an unknown value made cortexrun fail
+            # on perfectly valid observables such as "hostname" -- absent here
+            # while present in the OTHER hardcoded list this add-on carried.
+            # We warn and let Cortex answer: a real rejection then surfaces as
+            # a readable error instead of a silent process exit.
+            self.logger_file.warn(id="C35",message="UNKNOWN DATA TYPE - This data type ("+dataType+") is not in the known list, letting Cortex decide")
 
         analyzersObj = []
         # If all analyzers are chosen, we recover them using the datatype
@@ -198,11 +202,10 @@ class CortexJob(object):
         self.logger_file = logger_file
         ## Init and check data information
         self.data = data
-        if (dataType.lower() in dataTypeList):
-            self.dataType = dataType.lower()
-        else:
-            self.logger_file.error(id="CJ1",message="WRONG DATA TYPE - This data type ("+dataType+") is not allowed")
-            sys.exit(1)
+        self.dataType = dataType.lower()
+        if self.dataType not in dataTypeList:
+            # Same reasoning as Cortex.addJob: warn, do not kill the search.
+            self.logger_file.warn(id="CJ1",message="UNKNOWN DATA TYPE - This data type ("+dataType+") is not in the known list, letting Cortex decide")
 
         self.tlp = tlp
         self.pap = pap
