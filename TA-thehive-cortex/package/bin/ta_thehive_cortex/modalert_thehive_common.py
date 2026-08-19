@@ -78,24 +78,6 @@ SEVERITY = {
     "4": 4,
 }
 
-# All available data types
-dataTypeList = [
-    "autonomous-system",
-    "domain",
-    "file",
-    "filename",
-    "fqdn",
-    "hash",
-    "hostname",
-    "ip",
-    "mail",
-    "mail-subject",
-    "other",
-    "regexp",
-    "registry",
-    "uri_path",
-    "url",
-]
 
 
 def create_datatype_lookup(thehive: TheHive4Splunk, force=False):
