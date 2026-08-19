@@ -1,22 +1,25 @@
-from typing import Dict
+from typing import TypedDict
+
+from typing_extensions import NotRequired
 
 
-class InputComment(Dict):
+class InputComment(TypedDict):
     message: str
+    external: NotRequired[bool]
 
 
-class OutputCommentRequired(Dict):
+class OutputComment(TypedDict):
     _id: str
     _type: str
     createdBy: str
     createdAt: int
+    updatedAt: NotRequired[int]
+    updatedBy: NotRequired[str]
     message: str
     isEdited: bool
+    extraData: dict
+    external: bool
 
 
-class OutputComment(OutputCommentRequired):
-    updatedAt: str
-
-
-class InputUpdateComment(Dict):
+class InputUpdateComment(TypedDict):
     message: str

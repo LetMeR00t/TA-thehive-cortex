@@ -1,36 +1,32 @@
-from typing import List, Dict
+from typing import List, TypedDict
+
+from typing_extensions import NotRequired
 
 from thehive4py.types.attachment import OutputAttachment
 
 
-class InputTaskLogRequired(Dict):
+class InputTaskLog(TypedDict):
     message: str
+    startDate: NotRequired[int]
+    includeInTimeline: NotRequired[int]
+    attachments: NotRequired[List[str]]
 
 
-class InputTaskLog(InputTaskLogRequired):
-    startDate: int
-    includeInTimeline: int
-    attachments: List[str]
-
-
-class OutputTaskLogRequired(Dict):
+class OutputTaskLog(TypedDict):
     _id: str
     _type: str
     _createdBy: str
+    _updatedBy: NotRequired[str]
     _createdAt: int
+    _updatedAt: NotRequired[int]
     message: str
     date: int
+    attachments: NotRequired[List[OutputAttachment]]
     owner: str
+    includeInTimeline: NotRequired[int]
     extraData: dict
 
 
-class OutputTaskLog(OutputTaskLogRequired):
-    _updatedBy: str
-    _updatedAt: int
-    attachments: List[OutputAttachment]
-    includeInTimeline: int
-
-
-class InputUpdateTaskLog(Dict):
+class InputUpdateTaskLog(TypedDict, total=False):
     message: str
     includeInTimeline: int

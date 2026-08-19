@@ -1,22 +1,21 @@
-from typing import List, Dict
+from typing import List, TypedDict
+
+from typing_extensions import NotRequired
 
 
-class InputOrganisationLink(Dict):
+class InputOrganisationLink(TypedDict, total=False):
     linkType: str
     otherLinkType: str
 
 
-class InputBulkOrganisationLinkRequired(Dict):
+class InputBulkOrganisationLink(TypedDict):
     toOrganisation: str
+    avatar: NotRequired[str]
     linkType: str
     otherLinkType: str
 
 
-class InputBulkOrganisationLink(InputBulkOrganisationLinkRequired):
-    avatar: str
-
-
-class OutputSharingProfile(Dict):
+class OutputSharingProfile(TypedDict):
     name: str
     description: str
     autoShare: bool
@@ -26,38 +25,32 @@ class OutputSharingProfile(Dict):
     observableRule: str
 
 
-class InputOrganisationRequired(Dict):
+class InputOrganisation(TypedDict):
     name: str
     description: str
+    taskRule: NotRequired[str]
+    observableRule: NotRequired[str]
+    locked: NotRequired[bool]
 
 
-class InputOrganisation(InputOrganisationRequired):
-    taskRule: str
-    observableRule: str
-    locked: bool
-
-
-class OutputOrganisationRequired(Dict):
+class OutputOrganisation(TypedDict):
     _id: str
     _type: str
     _createdBy: str
+    _updatedBy: NotRequired[str]
     _createdAt: int
+    _updatedAt: NotRequired[int]
     name: str
     description: str
     taskRule: str
     observableRule: str
+    links: NotRequired[List[InputOrganisationLink]]
+    avatar: NotRequired[str]
     locked: bool
     extraData: dict
 
 
-class OutputOrganisation(OutputOrganisationRequired):
-    _updatedBy: str
-    _updatedAt: int
-    links: List[InputOrganisationLink]
-    avatar: str
-
-
-class InputUpdateOrganisation(Dict):
+class InputUpdateOrganisation(TypedDict, total=False):
     name: str
     description: str
     taskRule: str
@@ -66,7 +59,7 @@ class InputUpdateOrganisation(Dict):
     avatar: str
 
 
-class OutputOrganisationLink(Dict):
+class OutputOrganisationLink(TypedDict):
     linkType: str
     otherLinkType: str
     organisation: OutputOrganisation

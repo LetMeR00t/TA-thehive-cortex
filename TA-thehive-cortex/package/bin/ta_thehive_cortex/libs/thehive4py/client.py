@@ -17,7 +17,9 @@ from thehive4py.endpoints import (
 )
 from thehive4py.endpoints.cortex import CortexEndpoint
 from thehive4py.endpoints.custom_field import CustomFieldEndpoint
+from thehive4py.endpoints.misp import MISPEndpoint
 from thehive4py.endpoints.observable_type import ObservableTypeEndpoint
+from thehive4py.endpoints.page_template import PageTemplateEndpoint
 from thehive4py.endpoints.query import QueryEndpoint
 from thehive4py.session import DEFAULT_RETRY, RetryValue, TheHiveSession, VerifyValue
 
@@ -74,6 +76,7 @@ class TheHiveApi:
         self.case_template = CaseTemplateEndpoint(self.session)
         self.comment = CommentEndpoint(self.session)
         self.observable = ObservableEndpoint(self.session)
+        self.page_template = PageTemplateEndpoint(self.session)
         self.procedure = ProcedureEndpoint(self.session)
         self.task = TaskEndpoint(self.session)
         self.task_log = TaskLogEndpoint(self.session)
@@ -91,6 +94,7 @@ class TheHiveApi:
 
         # connector endpoints
         self.cortex = CortexEndpoint(self.session)
+        self.misp = MISPEndpoint(self.session)
 
         # standard endpoints
         self.query = QueryEndpoint(self.session)

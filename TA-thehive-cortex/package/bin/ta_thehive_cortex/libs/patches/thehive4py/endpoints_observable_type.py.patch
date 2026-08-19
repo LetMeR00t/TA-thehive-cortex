@@ -1,0 +1,20 @@
+--- a/endpoints/observable_type.py
++++ b/endpoints/observable_type.py
+@@ -75,3 +75,17 @@
+             params={"name": "observableTypes"},
+             json={"query": query},
+         )
++
++    
++    def list(self, sortby: Optional[SortExpr] = None) -> List[OutputObservableType]:
++        query: QueryExpr = [
++            {"_name": "listObservableType"},
++            *self._build_subquery(sortby=sortby)
++        ]
++
++        return self._session.make_request(
++            "POST",
++            path="/api/v1/query",
++            params={"name": "get-all-observable-types"},
++            json={"query": query},
++        )

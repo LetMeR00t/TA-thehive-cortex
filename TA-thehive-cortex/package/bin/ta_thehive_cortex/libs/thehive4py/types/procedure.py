@@ -1,34 +1,32 @@
-from typing import Dict
+from typing import TypedDict
+
+from typing_extensions import NotRequired
 
 
-class InputProcedureRequired(Dict):
+class InputProcedure(TypedDict):
     occurDate: int
     patternId: str
+    tactic: NotRequired[str]
+    description: NotRequired[str]
 
 
-class InputProcedure(InputProcedureRequired):
-    tactic: str
-    description: str
-
-
-class OutputProcedureRequired(Dict):
+class OutputProcedure(TypedDict):
     _id: str
     _createdAt: int
     _createdBy: str
+    _updatedAt: NotRequired[int]
+    _updatedBy: NotRequired[str]
+    description: NotRequired[str]
     occurDate: int
-    tactic: str
-    tacticLabel: str
+    patternId: NotRequired[str]
+    patternName: NotRequired[str]
+    tactic: NotRequired[str]
+    tacticLabel: NotRequired[str]
     extraData: dict
 
 
-class OutputProcedure(OutputProcedureRequired):
-    _updatedAt: int
-    _updatedBy: str
-    description: str
-    patternId: str
-    patternName: str
-
-
-class InputUpdateProcedure(Dict):
+class InputUpdateProcedure(TypedDict, total=False):
     description: str
     occurDate: int
+    patternId: str
+    tactic: str

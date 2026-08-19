@@ -1,4 +1,6 @@
-from typing import List, Dict
+from typing import List, TypedDict, Union
+
+from typing_extensions import NotRequired
 
 from thehive4py.types.custom_field import InputCustomFieldValue, OutputCustomFieldValue
 from thehive4py.types.observable import InputObservable
@@ -8,76 +10,70 @@ from thehive4py.types.share import InputShare
 from thehive4py.types.task import InputTask
 
 
-class InputAlertRequired(Dict):
+class InputAlert(TypedDict):
     type: str
     source: str
     sourceRef: str
+    externalLink: NotRequired[str]
     title: str
     description: str
+    severity: NotRequired[int]
+    date: NotRequired[int]
+    tags: NotRequired[List[str]]
+    flag: NotRequired[bool]
+    tlp: NotRequired[int]
+    pap: NotRequired[int]
+    customFields: NotRequired[Union[List[InputCustomFieldValue], dict]]
+    summary: NotRequired[str]
+    status: NotRequired[str]
+    assignee: NotRequired[str]
+    caseTemplate: NotRequired[str]
+    observables: NotRequired[List[InputObservable]]
+    procedures: NotRequired[List[InputProcedure]]
 
 
-class InputAlert(InputAlertRequired):
-    date: int
-    externalLink: str
-    severity: int
-    tags: List[str]
-    flag: bool
-    tlp: int
-    pap: int
-    customFields: List[InputCustomFieldValue]
-    summary: str
-    status: str
-    assignee: str
-    caseTemplate: str
-    observables: List[InputObservable]
-    procedures: List[InputProcedure]
-
-
-class OutputAlertRequired(Dict):
+class OutputAlert(TypedDict):
     _id: str
     _type: str
     _createdBy: str
+    _updatedBy: NotRequired[str]
     _createdAt: int
+    _updatedAt: NotRequired[int]
     type: str
     source: str
     sourceRef: str
+    externalLink: NotRequired[str]
     title: str
     description: str
     severity: int
     severityLabel: str
     date: int
+    tags: NotRequired[List[str]]
     tlp: int
     tlpLabel: str
     pap: int
     papLabel: str
     follow: bool
+    customFields: NotRequired[List[OutputCustomFieldValue]]
+    caseTemplate: NotRequired[str]
     observableCount: int
+    caseId: NotRequired[str]
     status: str
     stage: str
+    assignee: NotRequired[str]
+    summary: NotRequired[str]
     extraData: dict
     newDate: int
+    inProgressDate: NotRequired[int]
+    closedDate: NotRequired[int]
+    importedDate: NotRequired[int]
     timeToDetect: int
+    timeToTriage: NotRequired[int]
+    timeToQualify: NotRequired[int]
+    timeToAcknowledge: NotRequired[int]
 
 
-class OutputAlert(OutputAlertRequired):
-    _updatedBy: str
-    _updatedAt: int
-    externalLink: str
-    tags: List[str]
-    customFields: List[OutputCustomFieldValue]
-    caseTemplate: str
-    caseId: str
-    assignee: str
-    summary: str
-    inProgressDate: int
-    closedDate: int
-    importedDate: int
-    timeToTriage: int
-    timeToQualify: int
-    timeToAcknowledge: int
-
-
-class InputUpdateAlert(Dict):
+class InputUpdateAlert(TypedDict, total=False):
     type: str
     source: str
     sourceRef: str
@@ -91,7 +87,7 @@ class InputUpdateAlert(Dict):
     tlp: int
     pap: int
     follow: bool
-    customFields: List[InputCustomFieldValue]
+    customFields: Union[List[InputCustomFieldValue], dict]
     status: str
     summary: str
     assignee: str
@@ -103,7 +99,7 @@ class InputBulkUpdateAlert(InputUpdateAlert):
     ids: List[str]
 
 
-class InputPromoteAlert(Dict):
+class InputPromoteAlert(TypedDict, total=False):
     title: str
     description: str
     severity: int
@@ -116,7 +112,7 @@ class InputPromoteAlert(Dict):
     status: str
     summary: str
     assignee: str
-    customFields: List[InputCustomFieldValue]
+    customFields: Union[List[InputCustomFieldValue], dict]
     caseTemplate: str
     tasks: List[InputTask]
     pages: List[InputCasePage]

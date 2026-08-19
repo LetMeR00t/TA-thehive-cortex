@@ -1,0 +1,43 @@
+--- a/client.py
++++ b/client.py
+@@ -5,6 +5,7 @@
+     CaseEndpoint,
+     CaseTemplateEndpoint,
+     CommentEndpoint,
++    FunctionEndpoint,
+     ObservableEndpoint,
+     OrganisationEndpoint,
+     ProcedureEndpoint,
+@@ -31,8 +32,11 @@
+         username: Optional[str] = None,
+         password: Optional[str] = None,
+         organisation: Optional[str] = None,
++        proxies={},
++        cert=None,
+         verify: VerifyValue = True,
+         max_retries: RetryValue = DEFAULT_RETRY,
++        timeout: float = 60,
+     ):
+         """Create a client of TheHive API.
+ 
+@@ -57,8 +61,12 @@
+             apikey=apikey,
+             username=username,
+             password=password,
++            proxies=proxies,
+             verify=verify,
++            cert=cert,
+             max_retries=max_retries,
++            # LOCAL PATCH (libs/LOCAL_PATCHES.md, G1)
++            timeout=timeout,
+         )
+         self.session_organisation = organisation
+ 
+@@ -73,6 +81,7 @@
+         self.task = TaskEndpoint(self.session)
+         self.task_log = TaskLogEndpoint(self.session)
+         self.timeline = TimelineEndpoint(self.session)
++        self.function = FunctionEndpoint(self.session)
+ 
+         # user management endpoints
+         self.user = UserEndpoint(self.session)
