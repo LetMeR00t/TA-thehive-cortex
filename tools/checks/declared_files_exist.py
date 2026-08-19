@@ -127,12 +127,43 @@ def verifier_vues_de_nav() -> list[str]:
     return manquants
 
 
+def verifier_liens_de_notes() -> list[str]:
+    """A relative link in the release notes must resolve inside the same tag.
+
+    ⚠️ `release_notes/v4.0.0.md` was deleted in v4.2.0 while three release
+    notes still linked to it with `./v4.0.0.md`. A relative link resolves in
+    the CURRENT tag, so the file was 404 for everyone -- and those very
+    instructions are labelled *mandatory*. Nothing in either file was wrong:
+    the link was well formed and the deletion was deliberate.
+    """
+    dossier = RACINE / "release_notes"
+    if not dossier.is_dir():
+        return []
+    import re
+    manquants = []
+    for note in sorted(dossier.glob("*.md")):
+        texte = note.read_text(encoding="utf-8")
+        for cible in re.findall(r"\]\((\./[^)]+)\)", texte):
+            if not (dossier / cible[2:]).exists():
+                manquants.append(
+                    f"release_notes/{note.name} links to {cible}, which does not "
+                    f"exist at this tag -- a relative link resolves here, not in "
+                    f"the tag where the file still lived"
+                )
+    return manquants
+
+
 def main() -> int:
     if not PAQUET.is_dir():
         print(f"package not found: {PAQUET}", file=sys.stderr)
         return 1
 
-    constats = verifier_lookups() + verifier_collections() + verifier_vues_de_nav()
+    constats = (
+        verifier_lookups()
+        + verifier_collections()
+        + verifier_vues_de_nav()
+        + verifier_liens_de_notes()
+    )
     for c in constats:
         print(f"  {c}")
 
@@ -143,7 +174,7 @@ def main() -> int:
         print("why nobody notices until a fresh installation fails.")
         return 1
 
-    print("every declared file, collection and view resolves.")
+    print("every declared file, collection, view and release-note link resolves.")
     return 0
 
 
