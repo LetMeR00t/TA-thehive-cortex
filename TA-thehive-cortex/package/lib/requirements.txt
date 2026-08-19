@@ -1,3 +1,13 @@
+# Pinned dependencies shipped inside the .spl.
+#
+# ⚠️ This list must equal EXACTLY what `pip install -r` produces. A package that
+# is installed but not pinned floats: two builds a month apart ship different
+# code and nothing says so. Checked by tools/checks/pins_match_build.sh.
+#
+# ⚠️ urllib3 stays below 2 because splunktaucclib requires it -- verified by
+# reading Requires-Dist in the 8.2.0 wheel, and unchanged across 7.0.0, 8.0.0,
+# 8.1.0 and 8.2.0. It is not a precaution: the constraint is still in UCC's
+# pyproject.toml on main, so waiting for a newer UCC will not lift it.
 splunktaucclib==8.2.0
 splunk-sdk==2.1.1
 solnlib==7.0.0
@@ -5,9 +15,20 @@ urllib3==1.26.20
 certifi==2026.2.25
 packaging==26.0
 deprecation==2.1.0
-typing-extensions==4.15.0
 requests==2.32.3
 idna==3.10
-chardet==5.2.0
 charset-normalizer==3.4.1
 tomark==0.1.4
+
+# Transitive, pinned at the versions the resolver currently produces. They were
+# shipped WITHOUT being listed, which is precisely the floating case above.
+PySocks==1.7.1
+defusedxml==0.7.1
+sortedcontainers==2.4.0
+
+# ⚠️ Not imported by anything today -- neither the add-on, nor the vendored
+# libraries, nor splunktaucclib/solnlib/splunklib. Kept on purpose all the same:
+# thehive4py 2.1.0, the agreed upgrade target for the vendored copy, declares
+# `typing_extensions==4.*` as a HARD dependency. Removing it now would mean
+# putting it back with that upgrade, and forgetting would fail at import time.
+typing-extensions==4.15.0
