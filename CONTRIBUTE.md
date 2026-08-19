@@ -113,6 +113,7 @@ python -m unittest discover -s tests -p "test_*.py"
 python tools/checks/no_bare_except.py
 python tools/checks/requests_timeout.py
 python tools/checks/declared_files_exist.py
+python tools/checks/log_sourcetype_covered.py
 PYTHON=python3.9 tools/checks/pins_match_build.sh
 tools/checks/tests_on_both_pythons.sh
 ```
@@ -305,3 +306,37 @@ pointing at it as a view is provably wrong and fails the check. `jobs` is
 reported and does **not** fail: Splunk ships views this repository cannot
 enumerate, and failing on a name we cannot resolve is how a guard starts crying
 wolf -- after which it gets switched off and protects nothing.
+
+### A rename on one side of a gap, and a symptom that lies
+
+The same family, and the most expensive instance of it in this repository:
+v4.0.0 changed the log file names in `ta_logging.py`, and `props.conf` kept
+enumerating the v3.x ones. **23 of the 27 log files carried no sourcetype** for
+three minor versions.
+
+What made it survive was not the size of the gap, it was the shape of the
+symptom. The four `*_modalert` stanzas kept matching -- their suffix had not
+changed -- so `props.conf` still produced events and still looked alive. A
+defect that breaks *everything* gets found in a day; one that breaks most
+things while a visible part keeps working gets rationalised as intended
+behaviour. The user who reported it wondered whether it was a bug at all.
+
+Two rules came out of it:
+
+* **Match the shape of a generated name, never the list of today's names.**
+  Enumerating the commands signs a regression at every command added. The
+  stanzas now key on `TA-thehive-cortex_*` and `*_modalert`.
+* **Model every producer, not the one you remember.** Search commands go
+  through `ta_logging.setup_logging()`; alert actions go through solnlib's
+  `Logs().get_logger()`, which sets **no namespace** here and therefore writes
+  an *unprefixed* file. Assuming a single scheme is what left
+  `thehive_create_a_new_alert` and `thehive_run_function` uncovered -- two
+  files nobody had noticed in the original report either.
+
+`tools/checks/log_sourcetype_covered.py` derives both schemes from the source
+(AST for the call sites, `alert_actions.conf` for the alert names) and fails
+when a produced name matches no stanza. ⚠️ It also fails when the **shape** it
+models stops existing -- if `ta_logging.py` builds its name differently, the
+check refuses to answer rather than keep certifying an obsolete pattern. A
+guard validating a rule that no longer holds is worse than no guard: it reports
+a coverage that means nothing.
