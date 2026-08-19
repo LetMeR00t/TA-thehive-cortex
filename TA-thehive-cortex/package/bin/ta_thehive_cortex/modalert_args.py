@@ -113,12 +113,17 @@ def prepare_instances(helper, acronym):
     four-letter acronym woven into two log prefixes. Six copies of a preamble
     is six places to forget when the bootstrap changes.
 
-    `create_thehive_instance` is imported lazily: importing it at module level
-    would drag the whole TheHive stack into this module, which the tests read
-    for its pure defaulting rules alone.
+    ⚠️ `create_thehive_instance` lives in `thehive`, NOT in
+    `modalert_thehive_common`. Getting that wrong is an ImportError raised on
+    the first useful line of both creation alert actions -- and no test caught
+    it, because none of them executed this function at all.
+
+    It is imported lazily: importing it at module level would drag the whole
+    TheHive stack into this module, which the tests read for its pure
+    defaulting rules alone.
     """
     import globals
-    from modalert_thehive_common import create_thehive_instance
+    from thehive import create_thehive_instance
 
     globals.initialize_globals()
 

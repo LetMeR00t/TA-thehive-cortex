@@ -119,6 +119,7 @@ python tools/checks/duplication_threshold.py
 python tools/checks/log_ids_unique.py
 python tools/checks/vendored_path_bootstrap.py
 python tools/checks/unused_imports.py
+python tools/checks/local_imports_resolve.py
 PYTHON=python3.9 tools/checks/pins_match_build.sh
 tools/checks/tests_on_both_pythons.sh
 ```
@@ -469,3 +470,45 @@ unused import -- nothing references the name -- so an unused-import sweep would
 have DELETED it, breaking the modules outright instead of leaving them fragile.
 A side-effect import is never unused; check what an import *does* before
 concluding it does nothing.
+
+### A green suite proves the paths it RUNS, and nothing about the rest
+
+The sharpest lesson of the refactor, and it was self-inflicted. Extracting the
+shared bootstrap left `modalert_args.py` importing `create_thehive_instance`
+from `modalert_thehive_common`, which does not define it -- the function lives
+in `thehive`. That is an `ImportError` on the first useful line of **both**
+creation alert actions: `thehive_create_a_new_case` and
+`thehive_create_a_new_alert`, dead on arrival.
+
+**123 tests were green.** Not one of them entered the extracted function, so
+the suite was structurally unable to see it. The failure is not that a test was
+weak; it is that a new function shipped with **no** test executing it, and a
+suite cannot report on a path it never takes.
+
+Two guards now cover the two halves:
+
+* `tools/checks/local_imports_resolve.py` -- static, so it needs neither Splunk
+  nor solnlib: every `from <local module> import <name>` must name something
+  that module defines. It reports where the name actually lives, which turns a
+  five-minute hunt into a one-line fix.
+* a test that **executes** `prepare_instances` with a stand-in helper, so the
+  lazy import is really performed. ⚠️ Note the shape: the modules are replaced
+  in `sys.modules` rather than the function patched, precisely so the import
+  statement runs. Patching the function would have kept the test green.
+
+⚠️ Rule of thumb from this: **when you extract a function, write the test that
+calls it before you write anything else.** An extraction moves code out of the
+paths the suite already covers, so the moment of extraction is exactly the
+moment coverage silently drops.
+
+### An identifier can travel as DATA
+
+`log_ids_unique.py` first read only `id=` on logger calls, and was blind to the
+identifiers passed in the `ids={...}` mapping the shared helpers take. It
+therefore missed `125` used both as the `exhausted` identifier and as a success
+line in the same file -- a collision **shipped in v4.2.2**, not introduced by
+the refactor, but carried forward by it.
+
+A guard that scans call sites misses everything passed as an argument. When a
+value moves from a literal to a parameter, every check that watched the literal
+goes quiet without failing.

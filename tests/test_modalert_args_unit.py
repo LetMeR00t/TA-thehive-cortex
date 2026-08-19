@@ -23,6 +23,9 @@ for p in (BIN, os.path.join(BIN, 'ta_thehive_cortex')):
     if p not in sys.path:
         sys.path.insert(0, p)
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from _isolation import mocks_temporaires  # noqa: E402
+
 import modalert_args  # noqa: E402
 from modalert_args import common_args, entier, etiquettes, horodatage, si_absent, si_vide  # noqa: E402
 
@@ -199,6 +202,71 @@ class LesDeuxAppelantsPartagentLAssemblage(unittest.TestCase):
                 self.assertIn("common_args(helper, logger_file)", source)
                 self.assertNotIn('alert_args["severity"]', source)
                 self.assertNotIn('alert_args["tlp"]', source)
+
+
+class L_amorcageDesInstances(unittest.TestCase):
+    """⚠️ La fonction que 123 tests verts n'exécutaient pas.
+
+    `prepare_instances` portait `from modalert_thehive_common import
+    create_thehive_instance` — la fonction vit dans `thehive`. C'est un
+    ImportError sur la première ligne utile des DEUX actions de création, et la
+    suite ne pouvait pas le voir : aucun test n'entrait dans cette fonction.
+
+    Un test prouve les chemins qu'il PARCOURT. Celui-ci parcourt l'import.
+    """
+
+    def test_la_fonction_s_execute_vraiment(self):
+        from unittest.mock import MagicMock
+
+        helper = HelperDeTest({"thehive_instance_id": "local,distant"})
+        helper.log_info = lambda m: None
+        helper.log_debug = lambda m: None
+        helper.set_log_level = lambda n: None
+        helper.log_level = "INFO"
+        helper.settings = {"sessionKey": "(SANITIZED)"}
+        helper._logger = MagicMock()
+        helper.exec_id = "abcd1234"
+
+        faux_globals = MagicMock()
+        fabriquees = []
+
+        def fausse_fabrique(instance_id, settings, logger, acronym, exec_id):
+            fabriquees.append((instance_id, acronym))
+            return ("thehive", "conf", "defaults", "logger", instance_id)
+
+        # ⚠️ On remplace les deux modules que la fonction importe PARESSEUSEMENT,
+        # donc l'import a bien lieu — c'est lui qu'on teste.
+        faux_thehive = MagicMock()
+        faux_thehive.create_thehive_instance = fausse_fabrique
+        with mocks_temporaires(["globals", "thehive"],
+                               {"globals": faux_globals, "thehive": faux_thehive}):
+            instances = modalert_args.prepare_instances(helper, acronym="THCC")
+
+        self.assertEqual(len(instances), 2)
+        self.assertEqual(fabriquees, [("local", "THCC"), ("distant", "THCC")])
+        faux_globals.initialize_globals.assert_called_once()
+
+    def test_l_acronyme_est_tisse_dans_les_deux_prefixes(self):
+        from unittest.mock import MagicMock
+
+        traces = []
+        helper = HelperDeTest({"thehive_instance_id": "local"})
+        helper.log_info = lambda m: traces.append(m)
+        helper.log_debug = lambda m: traces.append(m)
+        helper.set_log_level = lambda n: None
+        helper.log_level = "DEBUG"
+        helper.settings = {}
+        helper._logger = MagicMock()
+        helper.exec_id = "z"
+
+        faux_thehive = MagicMock()
+        faux_thehive.create_thehive_instance = lambda **k: ("t", "c", "d", "l", "i")
+        with mocks_temporaires(["globals", "thehive"],
+                               {"globals": MagicMock(), "thehive": faux_thehive}):
+            modalert_args.prepare_instances(helper, acronym="THCA")
+
+        self.assertTrue(any("[CAA-THCA-35]" in m for m in traces))
+        self.assertTrue(any("[CAA-THCA-40]" in m for m in traces))
 
 
 if __name__ == "__main__":

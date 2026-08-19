@@ -259,10 +259,17 @@ module** -- which is exactly what the check enforces.
 | `58` | 60 | debug | Processing following instance ID: … |
 | `1` | 92 | warn | Cannot determine external link url={}, results_link={} |
 | `120` | 119 | debug | Processing alert: … |
+| `122` | 121 | via helper | passed as `duplicate` to create_with_retry |
+| `123` | 121 | via helper | passed as `retry` to create_with_retry |
+| `124` | 121 | via helper | passed as `exhausted` to create_with_retry |
 | `125` | 132 | info | TheHive alert {} is successfully created on url={} |
 | `126` | 141 | error | TheHive alert creation has failed. url={}, data={}, content={} |
 | `140` | 165 | info | Processing attachment of the Splunk search results to the alert... |
 | `151` | 184 | error | The search results could not be prepared for attachment: {…} |
+| `149` | 195 | via helper | passed as `uploading` to upload_attachment |
+| `150` | 195 | via helper | passed as `failed` to upload_attachment |
+| `155` | 195 | via helper | passed as `attached` to upload_attachment |
+| `160` | 195 | via helper | passed as `not_attached` to upload_attachment |
 
 ## `ta_thehive_cortex/modalert_thehive_create_a_new_case_helper.py`
 
@@ -273,6 +280,8 @@ module** -- which is exactly what the check enforces.
 | `57` | 53 | debug | TheHive URL instance used after retrieving the configuration: … |
 | `58` | 58 | debug | Processing following instance ID: … |
 | `120` | 101 | debug | Processing case: … |
+| `126` | 103 | via helper | passed as `retry` to create_with_retry |
+| `127` | 103 | via helper | passed as `exhausted` to create_with_retry |
 | `130` | 114 | info | TheHive case #{} is successfully created on url={} |
 | `135` | 123 | error | TheHive case creation has failed. url={}, data={}, content={} |
 | `132` | 141 | error | TheHive observable update on recent case creation has failed. url={}, data={}… |
@@ -281,6 +290,10 @@ module** -- which is exactly what the check enforces.
 | `137` | 176 | error | TheHive observable update on recent case creation has failed. url={}, data={}… |
 | `140` | 204 | info | Processing attachment of the Splunk search results to the case... |
 | `151` | 223 | error | The search results could not be prepared for attachment: {…} |
+| `149` | 234 | via helper | passed as `uploading` to upload_attachment |
+| `150` | 234 | via helper | passed as `failed` to upload_attachment |
+| `170` | 234 | via helper | passed as `attached` to upload_attachment |
+| `180` | 234 | via helper | passed as `not_attached` to upload_attachment |
 
 ## `ta_thehive_cortex/modalert_thehive_run_function_helper.py`
 
@@ -512,4 +525,4 @@ module** -- which is exactly what the check enforces.
 | `2` | 110 | info | Successfully indexed {…} timeline events. |
 | `ERR` | 113 | error | Error during timeline collection: {…} |
 
-*337 call sites.*
+*350 call sites.*

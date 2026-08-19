@@ -8,6 +8,14 @@ five modules, including `135` labelling a TTPs success AND an observable
 failure in the same file, and `140` labelling a TTPs failure AND the start of
 attachment processing.
 
+⚠️ An identifier can also travel as DATA. Since the shared helpers
+(`create_with_retry`, `upload_attachment`) take an `ids={...}` mapping, a
+literal sitting in that dict is a log identifier too -- and the first version
+of this check, which only read `id=` on logger calls, was blind to it. It
+missed `125` used both as the `exhausted` id and as a success line in the same
+file, a collision shipped in v4.2.2 and carried forward. A guard that scans
+call sites misses everything passed as an argument.
+
 Scope, deliberately: a rendered line reads `[serial][<command_id>-<id>]`, and
 `command_id` already namespaces the identifier per command. So uniqueness is
 required **within a module**, not across the whole add-on. Demanding global
@@ -46,6 +54,17 @@ def sites(module: Path):
     for noeud in ast.walk(arbre):
         if not isinstance(noeud, ast.Call):
             continue
+
+        # ⚠️ Les identifiants passés en DONNÉE aux aides partagées.
+        for kw in noeud.keywords:
+            if kw.arg == "ids" and isinstance(kw.value, ast.Dict):
+                for cle, valeur in zip(kw.value.keys, kw.value.values):
+                    if isinstance(valeur, ast.Constant) and isinstance(cle, ast.Constant):
+                        trouves.append(
+                            (noeud.lineno, str(valeur.value), "via helper",
+                             f"passed as `{cle.value}` to {_nom_appele(noeud)}")
+                        )
+
         niveau = getattr(noeud.func, "attr", None)
         if niveau not in NIVEAUX:
             continue
@@ -58,6 +77,11 @@ def sites(module: Path):
         if identifiant is not None:
             trouves.append((noeud.lineno, identifiant, niveau, message or ""))
     return sorted(trouves)
+
+
+def _nom_appele(noeud) -> str:
+    fonction = noeud.func
+    return getattr(fonction, "id", None) or getattr(fonction, "attr", None) or "?"
 
 
 def _resume(noeud) -> str:

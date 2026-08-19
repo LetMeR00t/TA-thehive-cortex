@@ -122,7 +122,7 @@ def create_alert(
             create=lambda: thehive.alert.create(alert),
             max_retry=max_retry,
             logger_file=thehive.logger_file,
-            ids={"duplicate": "122", "retry": "123", "exhausted": "125"},
+            ids={"duplicate": "122", "retry": "123", "exhausted": "124"},
             contexte=lambda: f"TheHive alert url={thehive.session.hive_url}, data={alert}",
         )
 

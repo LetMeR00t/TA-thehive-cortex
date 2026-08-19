@@ -110,6 +110,12 @@ jobs:
       - name: No import for nothing
         run: python tools/checks/unused_imports.py
 
+      - name: Every local import resolves
+        # A test proves the paths it RUNS; this proves the paths that exist.
+        # A moved function left both creation alert actions dead on arrival,
+        # with 123 tests green.
+        run: python tools/checks/local_imports_resolve.py
+
       - name: Coverage floors on the critical paths
         # Per-path floors, never a global one: a global floor over 8,685 lines
         # is either trivially met or unreachable, and says nothing either way.
