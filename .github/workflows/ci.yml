@@ -101,6 +101,12 @@ jobs:
         # someone reaches for when an incident must be traced back to a line.
         run: python tools/checks/log_ids_unique.py
 
+      - name: Vendored libraries are reachable
+        # Two sys.path bootstraps exist and only one adds the vendored libs.
+        # Two modular inputs used the wrong one and survived by accident, via
+        # a side effect of a later import.
+        run: python tools/checks/vendored_path_bootstrap.py
+
       - name: Coverage floors on the critical paths
         # Per-path floors, never a global one: a global floor over 8,685 lines
         # is either trivially met or unreachable, and says nothing either way.

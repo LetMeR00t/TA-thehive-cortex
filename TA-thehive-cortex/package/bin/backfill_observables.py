@@ -1,5 +1,5 @@
 # encoding = utf-8
-import import_declare_test
+import ta_thehive_cortex_declare
 import os
 import sys
 import time
