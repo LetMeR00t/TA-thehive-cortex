@@ -15,19 +15,18 @@ import ta_thehive_cortex_declare
 # Standard library imports
 import re
 import shutil
-import time
 
 # Third-party imports
-from thehive4py.errors import TheHiveError
 from thehive4py.types.alert import InputAlert
 
 from attachment_builder import AttachmentError, build_attachment
 from creation_retry import create_with_retry
+from modalert_args import common_args, prepare_instances, si_vide
+from post_creation import attach_procedures, upload_attachment
 
 # Local application/library specific imports
-import globals
 from modalert_thehive_common import parse_events
-from thehive import TheHive4Splunk, create_thehive_instance
+from thehive import TheHive4Splunk
 
 __author__ = "Alexandre Demeyer, Remi Seguy"
 __maintainer__ = "Alexandre Demeyer"
@@ -36,118 +35,17 @@ __email__ = "letmer00t@gmail.com"
 
 def process_event(helper, *args, **kwargs):
 
-    globals.initialize_globals()
-
-    # Set the current LOG level
-    helper.log_info("[CAA-THCA-35] LOG level to: " + helper.log_level)
-    helper.set_log_level(helper.log_level)
-
-    # Get the instance connection and initialize settings
-    instances_id = helper.get_param("thehive_instance_id").split(",")
-    helper.log_debug("[CAA-THCA-40] TheHive instances found: " + str(instances_id))
-
-    instances = []
-    for instance_id in instances_id:
-        instances.append(
-            create_thehive_instance(
-                instance_id=instance_id,
-                settings=helper.settings,
-                logger=helper._logger,
-                acronym="THCA",
-                exec_id=helper.exec_id,
-            )
-        )
+    # The bootstrap is shared by every alert action: it differed only by the
+    # four-letter acronym woven into two log prefixes.
+    instances = prepare_instances(helper, acronym="THCA")
 
     for thehive, configuration, defaults, logger_file, instance_id in instances:
-        # Get alert arguments
-        alert_args = {}
-        # Get string values from alert form
-        alert_args["alert_mode"] = (
-            helper.get_param("alert_mode")
-            if helper.get_param("alert_mode")
-            else "es_mode"
-        )
-        alert_args["unique_id_field"] = (
-            helper.get_param("unique_id_field")
-            if helper.get_param("unique_id_field")
-            else "oneEvent"
-        )
-        alert_args["caseTemplate"] = (
-            helper.get_param("case_template")
-            if helper.get_param("case_template")
-            else None
-        )
-        alert_args["type"] = (
-            helper.get_param("type") if helper.get_param("type") else "alert"
-        )
-        alert_args["source"] = (
-            helper.get_param("source") if helper.get_param("source") else "splunk"
-        )
-        if not helper.get_param("timestamp_field"):
-            alert_args["timestamp"] = int(time.time() * 1000)
-        else:
-            alert_args["timestamp"] = helper.get_param("timestamp_field")
-            epoch10 = re.match("^[0-9]{10}$", alert_args["timestamp"])
-            if epoch10 is not None:
-                alert_args["timestamp"] = int(alert_args["timestamp"]) * 1000
-
-        alert_args["splunk_sanitize_backslashes"] = (
-            helper.get_global_setting("splunk_sanitize_backslashes")
-            if helper.get_global_setting("splunk_sanitize_backslashes") is not None
-            else "ENABLED"
-        )
-        alert_args["title"] = (
-            helper.get_param("title") if helper.get_param("title") else None
-        )
-        alert_args["description"] = (
-            helper.get_param("description")
-            if helper.get_param("description")
-            else "No description provided"
-        )
-        # Check if we need to sanitize backslashes
-        if alert_args["splunk_sanitize_backslashes"] == "ENABLED":
-            alert_args["description"] = (
-                alert_args["description"].replace("\\n", "\n").replace("\\r", "\r")
-            )
-        alert_args["dashboard"] = (
-            helper.get_param("dashboard") if helper.get_param("dashboard") else None
-        )
-        alert_args["tags"] = (
-            list(dict.fromkeys(helper.get_param("tags").split(",")))
-            if helper.get_param("tags")
-            else []
-        )
-        logger_file.debug(
-            id="50", message="scope: {} ".format(helper.get_param("scope"))
-        )
-        alert_args["scope"] = True if int(helper.get_param("scope")) == 0 else False
-        # Get numeric values from alert form
-        alert_args["severity"] = (
-            int(helper.get_param("severity"))
-            if helper.get_param("severity") is not None
-            else 2
-        )
-        alert_args["tlp"] = (
-            int(helper.get_param("tlp")) if helper.get_param("tlp") is not None else 2
-        )
-        alert_args["pap"] = (
-            int(helper.get_param("pap")) if helper.get_param("pap") is not None else 2
-        )
-        alert_args["splunk_es_alerts_index"] = (
-            helper.get_global_setting("splunk_es_alerts_index")
-            if helper.get_global_setting("splunk_es_alerts_index") is not None
-            else "summary"
-        )
-        alert_args["description_results_enable"] = (
-            True if int(helper.get_param("description_results_enable")) == 1 else False
-        )
-        alert_args["description_results_keep_observable"] = (
-            True
-            if int(helper.get_param("description_results_keep_observable")) == 1
-            else False
-        )
-        alert_args["attach_results"] = int(helper.get_param("attach_results"))
-        alert_args["attach_format"] = int(helper.get_param("attach_format"))
+        # Get alert arguments -- everything shared lives in modalert_args,
+        # which used to be ~110 lines duplicated with the case helper.
+        alert_args = common_args(helper, logger_file)
+        alert_args["alert_mode"] = si_vide(helper.get_param("alert_mode"), "es_mode")
+        alert_args["type"] = si_vide(helper.get_param("type"), "alert")
+        alert_args["dashboard"] = si_vide(helper.get_param("dashboard"), None)
         logger_file.debug(id="55", message="Arguments recovered: " + str(alert_args))
 
         # Create the alert
@@ -248,34 +146,18 @@ def create_alert(
                     ),
                 )
 
-            # Processing TTPs if any
+            # Processing TTPs if any -- shared with the case
+            # helper, which carried the same ~35 lines and the same ambiguous
+            # log identifiers.
             if "ttps" in alerts[srcRef]:
-
-                response = thehive.alert.create_procedures(
-                    alert_id=new_alert["_id"], procedures=alerts[srcRef]["ttps"]
-                )[0]
-
-                if "_id" in response:
-                    # log response status
-                    thehive.logger_file.info(
-                        id="130",
-                        message="TheHive alert {} was successfully updated with the TTPs on url={}".format(
-                            new_alert["_id"], thehive.session.hive_url
-                        ),
-                    )
-
-                else:
-                    # somehow we got a bad response code from thehive
-                    thehive.logger_file.warn(
-                        id="135",
-                        message="TheHive TTPs update on recent alert creation has failed. "
-                        "url={}, data={}, content={}, ttp={}".format(
-                            thehive.session.hive_url,
-                            str(alert),
-                            str(response),
-                            str(alerts[srcRef]["ttps"]),
-                        ),
-                    )
+                attach_procedures(
+                    endpoint=thehive.alert,
+                    object_id=new_alert["_id"],
+                    ttps=alerts[srcRef]["ttps"],
+                    logger_file=thehive.logger_file,
+                    url=thehive.session.hive_url,
+                    contexte=lambda: f"data={alert}",
+                )
 
             # Attach the Splunk search results if needed
             if alert_args["attach_results"] > 0:
@@ -309,45 +191,17 @@ def create_alert(
                     # previous code raised here and abandoned the whole batch.
                     continue
 
-                attachment_result = None
                 try:
-                    thehive.logger_file.info(
-                        id="149",
-                        message=f"Processing name for the attachment from the options, result is: {raw_results_filepath_after_rename}",
+                    upload_attachment(
+                        endpoint=thehive.alert,
+                        object_id=new_alert["_id"],
+                        chemin=raw_results_filepath_after_rename,
+                        logger_file=thehive.logger_file,
+                        url=thehive.session.hive_url,
+                        ids={"uploading": "149", "failed": "150", "attached": "155", "not_attached": "160"},
+                        contexte=lambda: f"data={alert}",
                     )
-                    attachment_result = thehive.alert.add_attachment(
-                        new_alert["_id"], [raw_results_filepath_after_rename]
-                    )
-                except TheHiveError as e:
-                    thehive.logger_file.error(
-                        id="150",
-                        message="TheHive attachment creation has failed. "
-                        "url={}, data={}, content={}, error={}".format(
-                            thehive.session.hive_url, str(alert), str(new_alert), str(e)
-                        ),
-                    )
-
-                # Remove the dedicated temporary directory (and its content)
-                shutil.rmtree(tmp_directory, ignore_errors=True)
-
-                if attachment_result is not None and "_id" in attachment_result[0]:
-                    # log response status
-                    thehive.logger_file.info(
-                        id="155",
-                        message="TheHive alert {} search results were successfully attached to the alert on url={}".format(
-                            new_alert["_id"], thehive.session.hive_url
-                        ),
-                    )
-
-                else:
-                    # somehow we got a bad response code from thehive
-                    thehive.logger_file.error(
-                        id="160",
-                        message="TheHive attachment creation on recent alert creation has failed. "
-                        "url={}, data={}, content={}, attachment={}".format(
-                            thehive.session.hive_url,
-                            str(alert),
-                            str(response),
-                            str(helper.results_file),
-                        ),
-                    )
+                finally:
+                    # The upload reads FROM this directory, so it is removed
+                    # only once the upload is over -- success or not.
+                    shutil.rmtree(tmp_directory, ignore_errors=True)

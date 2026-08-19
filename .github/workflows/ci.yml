@@ -91,6 +91,11 @@ jobs:
         # nobody tests.
         run: python tools/checks/rule_not_duplicated.py
 
+      - name: Duplication has not grown back
+        # 86 % of common code between two files is invisible in a diff review:
+        # nobody reads them side by side. Only a measurement sees it.
+        run: python tools/checks/duplication_threshold.py
+
       - name: Coverage floors on the critical paths
         # Per-path floors, never a global one: a global floor over 8,685 lines
         # is either trivially met or unreachable, and says nothing either way.

@@ -115,6 +115,7 @@ python tools/checks/requests_timeout.py
 python tools/checks/declared_files_exist.py
 python tools/checks/log_sourcetype_covered.py
 python tools/checks/rule_not_duplicated.py
+python tools/checks/duplication_threshold.py
 PYTHON=python3.9 tools/checks/pins_match_build.sh
 tools/checks/tests_on_both_pythons.sh
 ```
@@ -374,3 +375,30 @@ quietly moved passes forever after and protects nothing.
 ⚠️ It also skips its own source. A check that spells a pattern out in its table
 and then scans itself reports itself on its first run, and a guard that is red
 from birth gets switched off.
+
+### Duplication is a measurement, not a review finding
+
+The case and the alert helpers had drifted to **419 shared lines out of
+~1 050** -- 86 % -- and every review had passed. That is not carelessness:
+nobody reads two files side by side, so a duplication of that size is
+structurally invisible to the process meant to catch it.
+
+What it cost, concretely: ~190 lines of attachment handling existed twice
+**with the same log identifiers**, so a `[141]` in production designated two
+places at once. And each copy carried the same latent crashes, so fixing one
+left the other.
+
+`tools/checks/duplication_threshold.py` compares the two files after folding
+`case`/`alert` vocabulary onto a neutral name, so what it counts is structural
+sameness. Its ceiling is a **ratchet** at today's measurement, exactly like a
+coverage floor -- and it fails in both directions: too high catches a regrowth,
+too low means the ceiling has stopped guarding and should be lowered
+deliberately.
+
+⚠️ When extracting shared code, watch for a variable the extracted block used
+to bind. Removing the TTPs loop from the alert helper left `str(response)`
+reading a name nothing assigned any more -- and reading it on the *failure*
+path, where the message exists precisely to explain what went wrong. It was
+already latent (the name was only bound when the object happened to carry
+TTPs); the extraction made it unconditional. The fix is not to rebind it: it
+is to make the message name the thing it reports.
