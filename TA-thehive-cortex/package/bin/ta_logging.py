@@ -35,7 +35,9 @@ def setup_logging(name):
     if not os.path.exists(base_log_path):
         try:
             os.makedirs(base_log_path)
-        except:
+        except OSError:
+            # Named on purpose: a bare `except` would also swallow
+            # KeyboardInterrupt. The fallback below IS the report.
             base_log_path = os.path.dirname(os.path.abspath(__file__))
 
     logger_name = ta_name + "_" + name

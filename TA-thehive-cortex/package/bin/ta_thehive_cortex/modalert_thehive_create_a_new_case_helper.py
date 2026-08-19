@@ -300,7 +300,8 @@ def create_case(
                             if hasattr(e, 'response'):
                                 try:
                                     response_text = f" | Response: {e.response.text}"
-                                except: pass
+                                except Exception:  # silent-except: best-effort detail, the error itself is logged just below
+                                    pass
                             thehive.logger_file.error(
                                 id="137",
                                 message="TheHive observable update on recent case creation has failed. "

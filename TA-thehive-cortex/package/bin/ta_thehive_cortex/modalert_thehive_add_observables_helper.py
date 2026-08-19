@@ -196,7 +196,8 @@ def process_event(helper, *args, **kwargs):
                         if hasattr(e, 'response'):
                             try:
                                 response_text = f" | Response: {e.response.text}"
-                            except: pass
+                            except Exception:  # silent-except: best-effort detail, the error itself is logged just below
+                                pass
                         logger_file.error(id="THAO-70", message=f"Failed to add observable to {target_type} {tid}: {str(e)}{response_text}")
 
     return 0

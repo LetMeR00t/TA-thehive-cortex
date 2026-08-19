@@ -558,14 +558,14 @@ def parse_events(helper, thehive: TheHive4Splunk, alert_args):
                             number = int(value)
                             custom_field_check = True
                             custom_field["value"] = number
-                        except ValueError:
+                        except ValueError:  # silent-except: reported by THC-117 below
                             pass
                     elif custom_type == "float":  # for TheHive4 only
                         try:
                             number = float(value)
                             custom_field_check = True
                             custom_field["value"] = number
-                        except ValueError:
+                        except ValueError:  # silent-except: reported by THC-117 below
                             pass
                     elif custom_type == "date":
                         epoch10 = re.match("^[0-9]{10}$", value)
