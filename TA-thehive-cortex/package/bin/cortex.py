@@ -167,7 +167,7 @@ class Cortex(Api):
                     sys.exit(40)
         self.logger_file.debug(id="C41",message="Analyzers recovered: "+str(analyzersObj))
 
-        job = CortexJob(data, dataType, tlp, pap, analyzersObj, self.logger)
+        job = CortexJob(data, dataType, tlp, pap, analyzersObj, self.logger_file)
         self.logger_file.debug(id="C42",message="Job instance created")
 
         self.__jobs.append(job)
@@ -192,8 +192,10 @@ class Cortex(Api):
 
 class CortexJob(object):
 
-    def __init__(self, data, dataType, tlp=2, pap=2, analyzers="all", logger = None):
-        self.logger = logger
+    def __init__(self, data, dataType, tlp=2, pap=2, analyzers="all", logger_file = None):
+        # The attribute is named after what the whole class already reads:
+        # every log call below goes through `self.logger_file`.
+        self.logger_file = logger_file
         ## Init and check data information
         self.data = data
         if (dataType.lower() in dataTypeList):
