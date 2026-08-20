@@ -121,6 +121,7 @@ python tools/checks/vendored_path_bootstrap.py
 python tools/checks/unused_imports.py
 python tools/checks/local_imports_resolve.py
 python tools/checks/views_are_reachable.py
+python tools/checks/settings_are_used.py
 PYTHON=python3.9 tools/checks/pins_match_build.sh
 tools/checks/tests_on_both_pythons.sh
 ```
@@ -596,3 +597,43 @@ double dash is illegal inside an XML comment** and makes the whole view
 unparseable. Worse, the naive fix hits it again — a substitution replacing `--`
 everywhere destroys the `<!--` and `-->` delimiters themselves. Sanitise the
 comment *body*, never the whole match.
+
+### A setting read and dropped looks wired from every angle
+
+`thehive_ttp_catalog_name` was on the Settings page, had a getter, the getter
+was called, and the value was placed into the `defaults` dictionary. Every hop
+existed except the last: **nothing read it back**. A user could change it, save,
+and see nothing happen.
+
+Meanwhile a TTP's MITRE `patternId` was validated by `startswith("T")` — which
+accepts `T`, `TOTO` and `T99999`. The setting that did nothing existed precisely
+for the check that was missing; each hid the other.
+
+`tools/checks/settings_are_used.py` enforces the narrow decidable rule: every
+key placed into a `defaults` dictionary must be read as `defaults["KEY"]`
+somewhere. That dictionary is the add-on's own hand-off between "I read the
+configuration" and "I use it", so a key that enters and never leaves is a value
+dropped on the floor.
+
+⚠️ And when the check *cannot* be performed, do not turn it into a rejection.
+An unreachable catalogue forwards the ids with a warning: refusing would let an
+outage on our side silently drop legitimate data — punishing the user for our
+own failure. `None` ("I could not check") and the empty set ("the catalogue is
+empty") are different answers, and the code says so explicitly.
+
+### `X | Y` in an annotation is an expression, evaluated at import
+
+`set | None` needs Python 3.10. Splunk ≤ 10.1 serves 3.9 only, so a module
+using it raises `TypeError` **while loading** — and it does not fall alone:
+everything importing it goes down too. One new file broke four test modules and
+both creation alert actions.
+
+`from __future__ import annotations` makes annotations strings and the problem
+disappears. The 3.9/3.13 matrix caught this in seconds, which is exactly what it
+exists for — no separate check was added, because one guard finding it reliably
+is enough.
+
+⚠️ Related, and self-inflicted twice in one session: **new code written after a
+translation pass arrives in French again.** The rule is not "translate once", it
+is "the repository is English"; check the file you just created, not only the
+ones you swept.

@@ -25,6 +25,7 @@ from tomark import Tomark
 
 # Local application/library specific imports
 from thehive import TheHive4Splunk
+from ttp_catalogue import is_known, pattern_ids
 from thehive4py.types.custom_field import InputCustomField
 from thehive4py.types.observable import InputObservable
 from thehive4py.types.procedure import InputProcedure
@@ -292,6 +293,12 @@ def parse_events(helper, thehive: TheHive4Splunk, alert_args):
     # this builds the dict parsed_events
     data_type = get_datatype_dict(thehive)
     custom_fields = {cf["name"]: cf for cf in thehive.custom_field.list()}
+    # ⚠️ Once per execution, never per row: the catalogue does not change while
+    # a batch is being sent, and re-reading it per row would be one HTTP
+    # round-trip per row.
+    catalogue = pattern_ids(
+        thehive, getattr(thehive, "ttp_catalog_name", None), thehive.logger_file
+    )
     alert_reference_time = str(int(time.time()))
     parsed_events = dict()
     events = helper.get_events()
@@ -678,10 +685,17 @@ def parse_events(helper, thehive: TheHive4Splunk, alert_args):
                         date_check = True
                     except ValueError as e:
                         date_check = False
+                    # ⚠️ `startswith("T")` accepts `T`, `TOTO` and `T99999`
+                    # alike. A wrong id used to be accepted here and rejected by
+                    # TheHive later, in a message naming neither the row nor the
+                    # field it came from. The catalogue is what makes the check
+                    # possible, and it is the setting that did nothing until now.
+                    known = is_known(values[1], catalogue) if len(values) == 3 else False
                     if (
                         len(values) == 3
                         and values[1].startswith("T")
                         and date_check is True
+                        and known
                     ):
                         new_ttp = {
                             "tactic": values[0],
@@ -703,6 +717,18 @@ def parse_events(helper, thehive: TheHive4Splunk, alert_args):
                                     value
                                 ),
                             )
+                    elif len(values) == 3 and values[1].startswith("T") and date_check and not known:
+                        # Well formed, but the id is not in the catalogue. Say
+                        # WHICH one: otherwise the user goes hunting for a typo
+                        # across the whole row.
+                        thehive.logger_file.error(
+                            id="THC-122",
+                            message=(
+                                f"ttp '{values[1]}' is not in the MITRE catalogue "
+                                f"'{getattr(thehive, 'ttp_catalog_name', '')}'; the TTP is "
+                                f"dropped rather than sent for TheHive to reject. Full value: {value}"
+                            ),
+                        )
                     else:
                         helper.error(
                             '[CAA-THC-110-ERROR] ttp field was detected but malformed, expected one value with the pattern "tactic::patternId::occurDate" with occurDate as "YYYY-mm-dd", got: {}'.format(

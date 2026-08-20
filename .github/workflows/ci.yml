@@ -121,6 +121,11 @@ jobs:
         # search. Two views were dead for four releases that way.
         run: python tools/checks/views_are_reachable.py
 
+      - name: Every setting is consumed
+        # A setting read from the configuration and then dropped looks wired
+        # from every angle. Only the last hop is missing.
+        run: python tools/checks/settings_are_used.py
+
       - name: Coverage floors on the critical paths
         # Per-path floors, never a global one: a global floor over 8,685 lines
         # is either trivially met or unreachable, and says nothing either way.

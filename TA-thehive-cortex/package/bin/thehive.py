@@ -169,6 +169,12 @@ def create_thehive_instance(instance_id, settings, logger, acronym, exec_id=None
         )
         exit(20)
 
+    # ⚠️ The MITRE catalogue travels ON the instance, because parse_events
+    # receives the instance and not the defaults dictionary. Until 4.2.3 this
+    # value was read from the configuration, placed in `defaults`, and consumed
+    # by nobody: the setting existed on the page and did strictly nothing.
+    thehive.ttp_catalog_name = defaults["TTP_CATALOG_NAME"]
+
     return (thehive, configuration, defaults, logger_file, instance_id)
 
 

@@ -218,3 +218,28 @@ The defaults are now MEDIUM, AMBER and AMBER — TheHive's own.
 🖥️ **If you rely on the old behaviour**, set the values explicitly in your
 saved searches: an alert action that never named `param.severity` will now
 create MEDIUM cases where it used to create CRITICAL ones.
+
+
+## ✅ The MITRE catalogue setting finally does something
+
+`thehive_ttp_catalog_name` was exposed on the Settings page, read by the code,
+handed over — and consumed by nobody. Changing it did nothing at all.
+
+Meanwhile a TTP's `patternId` was validated by checking it starts with `T`,
+which accepts `T`, `TOTO` and `T99999` alike. A wrong id was accepted by the
+add-on and rejected by TheHive afterwards, in a message naming neither the row
+nor the field it came from.
+
+The setting that was doing nothing existed precisely for the check that was
+missing. A `patternId` absent from the configured catalogue is now dropped with
+a message naming **which id** (`THC-122`), instead of being sent for TheHive to
+refuse.
+
+⚠️ **An unreachable catalogue does not block anything.** If it cannot be read,
+the ids are forwarded unchecked and a warning says so (`THC-120`). Refusing
+would mean an outage on our side silently dropping legitimate TTPs — punishing
+you for our own failure. The catalogue is read **once per execution**, not once
+per row.
+
+🖥️ If you use TTPs and have never set a catalogue name, nothing changes: with no
+catalogue configured there is nothing to check against.
