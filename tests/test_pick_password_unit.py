@@ -45,14 +45,14 @@ REALM = "__REST_CREDENTIAL__#TA-thehive-cortex#configs/conf-thehive_cortex_accou
 # storage_passwords entries are objects; the function only ever reads three
 # attributes, so a namedtuple is a FAITHFUL substitute -- not a mock that
 # answers to any name it is asked for.
-Entree = namedtuple("Entree", "realm username clear_password")
+Entry = namedtuple("Entry", "realm username clear_password")
 
 
-def entree(compte, valeur, realm=REALM, champ="api_key"):
-    return Entree(realm, f"{compte}{SEP}{champ}", valeur)
+def entry(account, value, realm=REALM, champ="api_key"):
+    return Entry(realm, f"{account}{SEP}{champ}", value)
 
 
-class DecoupageDuNomDeCompte(unittest.TestCase):
+class UccUsernameSplitting(unittest.TestCase):
 
     def test_le_separateur_ucc_est_retire(self):
         self.assertEqual(
@@ -62,150 +62,150 @@ class DecoupageDuNomDeCompte(unittest.TestCase):
         self.assertEqual(common.account_from_ucc_username("local"), "local")
 
 
-class ChoixDuMotDePasse(unittest.TestCase):
+class PasswordSelection(unittest.TestCase):
 
     def test_une_seule_entree_brute(self):
-        mots, ignorees = common.pick_password([entree("local", "abcdef")])
-        self.assertEqual(mots, {"local": "abcdef"})
-        self.assertEqual(ignorees, [])
+        passwords, discarded = common.pick_password([entry("local", "abcdef")])
+        self.assertEqual(passwords, {"local": "abcdef"})
+        self.assertEqual(discarded, [])
 
     def test_un_objet_json_est_deballe(self):
-        mots, _ = common.pick_password([entree("local", '{"password": "abcdef"}')])
-        self.assertEqual(mots, {"local": "abcdef"})
+        passwords, _ = common.pick_password([entry("local", '{"password": "abcdef"}')])
+        self.assertEqual(passwords, {"local": "abcdef"})
 
     def test_un_json_sans_membre_password_garde_le_texte_brut(self):
-        # `.get("password", brut)` returns the raw text, which equals `brut`,
+        # `.get("password", raw)` returns the raw text, which equals `raw`,
         # so the entry is NOT considered JSON-sourced. That equality is the
         # whole marker of provenance.
-        brut = '{"username": "alice"}'
-        mots, _ = common.pick_password([entree("local", brut)])
-        self.assertEqual(mots, {"local": brut})
+        raw = '{"username": "alice"}'
+        passwords, _ = common.pick_password([entry("local", raw)])
+        self.assertEqual(passwords, {"local": raw})
 
     def test_un_json_qui_n_est_pas_un_objet_reste_brut(self):
-        mots, _ = common.pick_password([entree("local", '["abcdef"]')])
-        self.assertEqual(mots, {"local": '["abcdef"]'})
+        passwords, _ = common.pick_password([entry("local", '["abcdef"]')])
+        self.assertEqual(passwords, {"local": '["abcdef"]'})
 
     def test_un_texte_non_json_ne_leve_rien(self):
-        mots, _ = common.pick_password([entree("local", "pas du json")])
-        self.assertEqual(mots, {"local": "pas du json"})
+        passwords, _ = common.pick_password([entry("local", "pas du json")])
+        self.assertEqual(passwords, {"local": "pas du json"})
 
     def test_un_realm_etranger_est_ignore(self):
-        mots, _ = common.pick_password(
-            [entree("local", "abcdef", realm="__REST_CREDENTIAL__#autre-app#x")])
-        self.assertEqual(mots, {})
+        passwords, _ = common.pick_password(
+            [entry("local", "abcdef", realm="__REST_CREDENTIAL__#autre-app#x")])
+        self.assertEqual(passwords, {})
 
     def test_un_realm_vide_est_ignore(self):
-        mots, _ = common.pick_password([entree("local", "abcdef", realm="")])
-        self.assertEqual(mots, {})
+        passwords, _ = common.pick_password([entry("local", "abcdef", realm="")])
+        self.assertEqual(passwords, {})
 
     def test_un_realm_absent_est_ignore(self):
-        mots, _ = common.pick_password([Entree(None, "local", "abcdef")])
-        self.assertEqual(mots, {})
+        passwords, _ = common.pick_password([Entry(None, "local", "abcdef")])
+        self.assertEqual(passwords, {})
 
     def test_les_valeurs_masquees_sont_ignorees(self):
-        for masque in common.MASQUES:
-            with self.subTest(masque=masque):
-                mots, ignorees = common.pick_password([entree("local", masque)])
-                self.assertEqual(mots, {})
+        for mask in common.MASQUES:
+            with self.subTest(mask=mask):
+                passwords, discarded = common.pick_password([entry("local", mask)])
+                self.assertEqual(passwords, {})
                 # A mask is not garbage: Splunk simply refused to show it.
-                self.assertEqual(ignorees, [])
+                self.assertEqual(discarded, [])
 
     def test_une_valeur_contenant_le_separateur_est_du_rebut(self):
-        mots, ignorees = common.pick_password([entree("local", f"aa{SEP}bb")])
-        self.assertEqual(mots, {})
-        self.assertEqual(ignorees, ["local"])
+        passwords, discarded = common.pick_password([entry("local", f"aa{SEP}bb")])
+        self.assertEqual(passwords, {})
+        self.assertEqual(discarded, ["local"])
 
     def test_un_nom_de_compte_sans_separateur_fonctionne(self):
-        mots, _ = common.pick_password([Entree(REALM, "local", "abcdef")])
-        self.assertEqual(mots, {"local": "abcdef"})
+        passwords, _ = common.pick_password([Entry(REALM, "local", "abcdef")])
+        self.assertEqual(passwords, {"local": "abcdef"})
 
 
-class Arbitrage(unittest.TestCase):
+class Arbitration(unittest.TestCase):
     """Two entries for the same account. Which one wins, and why."""
 
     def test_le_json_bat_le_brut_meme_plus_court(self):
-        mots, _ = common.pick_password([
-            entree("local", "une-tres-longue-valeur-brute"),
-            entree("local", '{"password": "court"}', champ="password"),
+        passwords, _ = common.pick_password([
+            entry("local", "une-tres-longue-value-brute"),
+            entry("local", '{"password": "court"}', champ="password"),
         ])
-        self.assertEqual(mots, {"local": "court"})
+        self.assertEqual(passwords, {"local": "court"})
 
     def test_le_json_gagne_aussi_quand_il_arrive_en_premier(self):
         # ⚠️ Order matters in a fold. A rule that only holds in one direction
         # is a rule that depends on how Splunk happens to enumerate.
-        mots, _ = common.pick_password([
-            entree("local", '{"password": "court"}', champ="password"),
-            entree("local", "une-tres-longue-valeur-brute"),
+        passwords, _ = common.pick_password([
+            entry("local", '{"password": "court"}', champ="password"),
+            entry("local", "une-tres-longue-value-brute"),
         ])
-        self.assertEqual(mots, {"local": "court"})
+        self.assertEqual(passwords, {"local": "court"})
 
     def test_a_provenance_egale_la_plus_longue_gagne(self):
-        mots, _ = common.pick_password([
-            entree("local", "court"),
-            entree("local", "beaucoup-plus-longue"),
+        passwords, _ = common.pick_password([
+            entry("local", "court"),
+            entry("local", "beaucoup-plus-longue"),
         ])
-        self.assertEqual(mots, {"local": "beaucoup-plus-longue"})
+        self.assertEqual(passwords, {"local": "beaucoup-plus-longue"})
 
     def test_a_provenance_egale_la_plus_courte_ne_supplante_pas(self):
-        mots, _ = common.pick_password([
-            entree("local", "beaucoup-plus-longue"),
-            entree("local", "court"),
+        passwords, _ = common.pick_password([
+            entry("local", "beaucoup-plus-longue"),
+            entry("local", "court"),
         ])
-        self.assertEqual(mots, {"local": "beaucoup-plus-longue"})
+        self.assertEqual(passwords, {"local": "beaucoup-plus-longue"})
 
     def test_deux_json_a_longueur_egale_le_premier_reste(self):
-        mots, _ = common.pick_password([
-            entree("local", '{"password": "aaaaaa"}'),
-            entree("local", '{"password": "bbbbbb"}'),
+        passwords, _ = common.pick_password([
+            entry("local", '{"password": "aaaaaa"}'),
+            entry("local", '{"password": "bbbbbb"}'),
         ])
-        self.assertEqual(mots, {"local": "aaaaaa"})
+        self.assertEqual(passwords, {"local": "aaaaaa"})
 
     def test_les_comptes_sont_arbitres_separement(self):
-        mots, _ = common.pick_password([
-            entree("local", "aaaa"),
-            entree("distant", '{"password": "bb"}'),
-            entree("local", "aaaaaaaa"),
+        passwords, _ = common.pick_password([
+            entry("local", "aaaa"),
+            entry("distant", '{"password": "bb"}'),
+            entry("local", "aaaaaaaa"),
         ])
-        self.assertEqual(mots, {"local": "aaaaaaaa", "distant": "bb"})
+        self.assertEqual(passwords, {"local": "aaaaaaaa", "distant": "bb"})
 
 
-class UneEntreeMalformeeNeCouteQuElleMeme(unittest.TestCase):
+class AMalformedEntryCostsOnlyItself(unittest.TestCase):
     """⚠️ The defect this extraction fixes, and the reason it is worth naming.
 
     A JSON payload can carry a non-string `password`. The garbage test then ran
-    `SEP in valeur` on an int and raised TypeError -- inside the caller's
+    `SEP in value` on an int and raised TypeError -- inside the caller's
     blanket `try/except`, which abandoned the whole loop. One malformed entry
     cost the passwords of **every other account**, and the only trace was a
     single S3_ERROR line mentioning an unrelated-looking type error.
     """
 
     def test_un_mot_de_passe_non_textuel_est_ecarte_seul(self):
-        mots, ignorees = common.pick_password([
-            entree("local", '{"password": 1234}'),
-            entree("distant", "abcdef"),
+        passwords, discarded = common.pick_password([
+            entry("local", '{"password": 1234}'),
+            entry("distant", "abcdef"),
         ])
-        self.assertEqual(mots, {"distant": "abcdef"})
-        self.assertEqual(ignorees, ["local"])
+        self.assertEqual(passwords, {"distant": "abcdef"})
+        self.assertEqual(discarded, ["local"])
 
     def test_un_password_objet_est_ecarte_seul(self):
-        mots, ignorees = common.pick_password([
-            entree("local", '{"password": {"k": "v"}}'),
-            entree("distant", "abcdef"),
+        passwords, discarded = common.pick_password([
+            entry("local", '{"password": {"k": "v"}}'),
+            entry("distant", "abcdef"),
         ])
-        self.assertEqual(mots, {"distant": "abcdef"})
-        self.assertEqual(ignorees, ["local"])
+        self.assertEqual(passwords, {"distant": "abcdef"})
+        self.assertEqual(discarded, ["local"])
 
 
-class LaFonctionNeJournaliseRien(unittest.TestCase):
+class TheFunctionLogsNothing(unittest.TestCase):
     """A value that must never reach a log file is never handed to a logger."""
 
     def test_aucune_dependance_a_un_logger(self):
         # The signature takes no logger, and the module's own logger is not
         # touched: the caller decides what to say about the accounts named in
-        # `ignorees` -- account NAMES, never values.
+        # `discarded` -- account NAMES, never values.
         import inspect
-        parametres = inspect.signature(common.pick_password).parameters
-        self.assertEqual(list(parametres), ["entries", "app_name"])
+        parameters = inspect.signature(common.pick_password).parameters
+        self.assertEqual(list(parameters), ["entries", "app_name"])
 
 
 if __name__ == "__main__":

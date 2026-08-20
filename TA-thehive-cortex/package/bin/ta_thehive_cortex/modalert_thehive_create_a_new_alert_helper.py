@@ -21,7 +21,7 @@ from thehive4py.types.alert import InputAlert
 
 from attachment_builder import AttachmentError, build_attachment
 from creation_retry import create_with_retry
-from modalert_args import common_args, prepare_instances, si_vide
+from modalert_args import common_args, prepare_instances, default_if_blank
 from post_creation import attach_procedures, upload_attachment
 
 # Local application/library specific imports
@@ -43,9 +43,9 @@ def process_event(helper, *args, **kwargs):
         # Get alert arguments -- everything shared lives in modalert_args,
         # which used to be ~110 lines duplicated with the case helper.
         alert_args = common_args(helper, logger_file)
-        alert_args["alert_mode"] = si_vide(helper.get_param("alert_mode"), "es_mode")
-        alert_args["type"] = si_vide(helper.get_param("type"), "alert")
-        alert_args["dashboard"] = si_vide(helper.get_param("dashboard"), None)
+        alert_args["alert_mode"] = default_if_blank(helper.get_param("alert_mode"), "es_mode")
+        alert_args["type"] = default_if_blank(helper.get_param("type"), "alert")
+        alert_args["dashboard"] = default_if_blank(helper.get_param("dashboard"), None)
         logger_file.debug(id="55", message="Arguments recovered: " + str(alert_args))
 
         # Create the alert
@@ -123,7 +123,7 @@ def create_alert(
             max_retry=max_retry,
             logger_file=thehive.logger_file,
             ids={"duplicate": "122", "retry": "123", "exhausted": "124"},
-            contexte=lambda: f"TheHive alert url={thehive.session.hive_url}, data={alert}",
+            context=lambda: f"TheHive alert url={thehive.session.hive_url}, data={alert}",
         )
 
         if new_alert is not None:
@@ -156,7 +156,7 @@ def create_alert(
                     ttps=alerts[srcRef]["ttps"],
                     logger_file=thehive.logger_file,
                     url=thehive.session.hive_url,
-                    contexte=lambda: f"data={alert}",
+                    context=lambda: f"data={alert}",
                 )
 
             # Attach the Splunk search results if needed
@@ -195,11 +195,11 @@ def create_alert(
                     upload_attachment(
                         endpoint=thehive.alert,
                         object_id=new_alert["_id"],
-                        chemin=raw_results_filepath_after_rename,
+                        path=raw_results_filepath_after_rename,
                         logger_file=thehive.logger_file,
                         url=thehive.session.hive_url,
                         ids={"uploading": "149", "failed": "150", "attached": "155", "not_attached": "160"},
-                        contexte=lambda: f"data={alert}",
+                        context=lambda: f"data={alert}",
                     )
                 finally:
                     # The upload reads FROM this directory, so it is removed

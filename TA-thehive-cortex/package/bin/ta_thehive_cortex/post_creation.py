@@ -18,7 +18,7 @@ single implementation below uses `138` and `139`, free on both sides.
 """
 
 
-def attach_procedures(endpoint, object_id, ttps, logger_file, url, contexte):
+def attach_procedures(endpoint, object_id, ttps, logger_file, url, context):
     """Create the MITRE procedures on a freshly created case or alert.
 
     `endpoint` is `thehive.case` or `thehive.alert`. Both declare
@@ -27,9 +27,9 @@ def attach_procedures(endpoint, object_id, ttps, logger_file, url, contexte):
     positionally: naming it would reintroduce the very split this function
     exists to remove.
     """
-    reponse = endpoint.create_procedures(object_id, procedures=ttps)[0]
+    response = endpoint.create_procedures(object_id, procedures=ttps)[0]
 
-    if "_id" in reponse:
+    if "_id" in response:
         logger_file.info(
             id="138",
             message=f"Object {object_id} was successfully updated with the TTPs on url={url}",
@@ -39,13 +39,13 @@ def attach_procedures(endpoint, object_id, ttps, logger_file, url, contexte):
             id="139",
             message=(
                 f"TTPs update on recent creation has failed. url={url}, "
-                f"{contexte()}, content={reponse}, ttp={ttps}"
+                f"{context()}, content={response}, ttp={ttps}"
             ),
         )
-    return reponse
+    return response
 
 
-def upload_attachment(endpoint, object_id, chemin, logger_file, url, ids, contexte):
+def upload_attachment(endpoint, object_id, path, logger_file, url, ids, context):
     """Upload the prepared file and report what actually happened.
 
     ⚠️ The two copies of this block ended on `str(response)` -- a variable
@@ -56,23 +56,23 @@ def upload_attachment(endpoint, object_id, chemin, logger_file, url, ids, contex
 
     Returns the result, or None when the upload failed.
     """
-    resultat = None
+    result = None
     try:
         logger_file.info(
             id=ids["uploading"],
-            message=f"Processing name for the attachment from the options, result is: {chemin}",
+            message=f"Processing name for the attachment from the options, result is: {path}",
         )
-        resultat = endpoint.add_attachment(object_id, [chemin])
+        result = endpoint.add_attachment(object_id, [path])
     except Exception as e:
         logger_file.error(
             id=ids["failed"],
             message=(
-                f"Attachment creation has failed. url={url}, {contexte()}, "
+                f"Attachment creation has failed. url={url}, {context()}, "
                 f"error={e}"
             ),
         )
 
-    if resultat is not None and "_id" in resultat[0]:
+    if result is not None and "_id" in result[0]:
         logger_file.info(
             id=ids["attached"],
             message=(
@@ -85,7 +85,7 @@ def upload_attachment(endpoint, object_id, chemin, logger_file, url, ids, contex
             id=ids["not_attached"],
             message=(
                 f"Attachment creation on recent creation has failed. url={url}, "
-                f"{contexte()}, content={resultat}"
+                f"{context()}, content={result}"
             ),
         )
-    return resultat
+    return result

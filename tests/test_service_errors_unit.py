@@ -20,13 +20,13 @@ for p in (BIN, os.path.join(BIN, 'ta_thehive_cortex')):
 from service_errors import is_duplicate, response_detail, status_code  # noqa: E402
 
 
-class Reponse:
+class Response:
     def __init__(self, code=None, text=""):
         self.status_code = code
         self.text = text
 
 
-class ReponseMuette:
+class UnreadableResponse:
     status_code = 500
 
     @property
@@ -34,7 +34,7 @@ class ReponseMuette:
         raise RuntimeError("le corps n'est pas lisible")
 
 
-class LeCodeDeStatut(unittest.TestCase):
+class StatusCode(unittest.TestCase):
 
     def test_porte_par_l_erreur(self):
         e = Exception("x")
@@ -43,14 +43,14 @@ class LeCodeDeStatut(unittest.TestCase):
 
     def test_porte_par_la_reponse(self):
         e = Exception("x")
-        e.response = Reponse(400)
+        e.response = Response(400)
         self.assertEqual(status_code(e), 400)
 
     def test_absent_des_deux(self):
         self.assertIsNone(status_code(Exception("x")))
 
 
-class LaDetectionDeDoublon(unittest.TestCase):
+class DuplicateDetection(unittest.TestCase):
 
     def test_par_le_texte_quelle_que_soit_la_casse(self):
         self.assertTrue(is_duplicate(Exception("Alert ALREADY EXISTS")))
@@ -76,11 +76,11 @@ class LaDetectionDeDoublon(unittest.TestCase):
         self.assertTrue(is_duplicate(e))
 
 
-class LeDetailDeLaReponse(unittest.TestCase):
+class ResponseDetail(unittest.TestCase):
 
     def test_le_corps_est_ajoute_quand_il_existe(self):
         e = Exception("x")
-        e.response = Reponse(500, "details du serveur")
+        e.response = Response(500, "details du serveur")
         self.assertEqual(response_detail(e), " | Response: details du serveur")
 
     def test_rien_quand_il_n_y_a_pas_de_reponse(self):
@@ -89,18 +89,18 @@ class LeDetailDeLaReponse(unittest.TestCase):
     def test_un_corps_illisible_ne_remplace_pas_la_vraie_erreur(self):
         # This only ever ENRICHES a message that is being logged anyway.
         e = Exception("x")
-        e.response = ReponseMuette()
+        e.response = UnreadableResponse()
         self.assertEqual(response_detail(e), "")
 
 
-class LesTroisSitesConvergent(unittest.TestCase):
+class TheThreeSitesConverge(unittest.TestCase):
 
     def test_plus_aucune_copie_de_la_regle(self):
-        dossier = os.path.join(BIN, "ta_thehive_cortex")
-        for nom in sorted(os.listdir(dossier)):
+        folder = os.path.join(BIN, "ta_thehive_cortex")
+        for nom in sorted(os.listdir(folder)):
             if not nom.endswith(".py") or nom == "service_errors.py":
                 continue
-            with open(os.path.join(dossier, nom), encoding="utf-8") as f:
+            with open(os.path.join(folder, nom), encoding="utf-8") as f:
                 source = f.read()
             with self.subTest(fichier=nom):
                 self.assertNotIn('"already exists" in', source)

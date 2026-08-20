@@ -20,7 +20,7 @@ from thehive4py.types.case import InputCase
 
 from attachment_builder import AttachmentError, build_attachment
 from creation_retry import create_with_retry
-from modalert_args import common_args, prepare_instances, si_vide
+from modalert_args import common_args, prepare_instances, default_if_blank
 from post_creation import attach_procedures, upload_attachment
 from service_errors import is_duplicate, response_detail, status_code
 
@@ -43,7 +43,7 @@ def process_event(helper, *args, **kwargs):
         # Get alert arguments -- everything shared lives in modalert_args,
         # which used to be ~110 lines duplicated with the alert helper.
         alert_args = common_args(helper, logger_file)
-        alert_args["case_mode"] = si_vide(helper.get_param("case_mode"), "es_mode")
+        alert_args["case_mode"] = default_if_blank(helper.get_param("case_mode"), "es_mode")
         logger_file.debug(id="55", message="Arguments recovered: " + str(alert_args))
 
         # Create the case
@@ -105,7 +105,7 @@ def create_case(
             max_retry=max_retry,
             logger_file=thehive.logger_file,
             ids={"retry": "126", "exhausted": "127"},
-            contexte=lambda: f"TheHive case url={thehive.session.hive_url}, data={case}",
+            context=lambda: f"TheHive case url={thehive.session.hive_url}, data={case}",
         )
 
         if new_case is not None:
@@ -195,7 +195,7 @@ def create_case(
                     ttps=cases[srcRef]["ttps"],
                     logger_file=thehive.logger_file,
                     url=thehive.session.hive_url,
-                    contexte=lambda: f"data={case}",
+                    context=lambda: f"data={case}",
                 )
 
             # Attach the Splunk search results if needed
@@ -234,11 +234,11 @@ def create_case(
                     upload_attachment(
                         endpoint=thehive.case,
                         object_id=new_case["_id"],
-                        chemin=raw_results_filepath_after_rename,
+                        path=raw_results_filepath_after_rename,
                         logger_file=thehive.logger_file,
                         url=thehive.session.hive_url,
                         ids={"uploading": "149", "failed": "150", "attached": "170", "not_attached": "180"},
-                        contexte=lambda: f"data={case}",
+                        context=lambda: f"data={case}",
                     )
                 finally:
                     # The upload reads FROM this directory, so it is removed

@@ -28,15 +28,15 @@ import attachment_builder  # noqa: E402
 from attachment_builder import AttachmentError, build_attachment  # noqa: E402
 
 
-class JournalDeTest:
+class RecordingLogger:
     """Records what was logged. A real object, not a MagicMock: an assertion
     against a mock's repr is an assertion that cannot fail."""
 
     def __init__(self):
-        self.lignes = []
+        self.rows = []
 
     def _note(self, niveau, id, message):
-        self.lignes.append((niveau, id, message))
+        self.rows.append((niveau, id, message))
 
     def debug(self, id="?", message=""):
         self._note("debug", id, message)
@@ -50,8 +50,8 @@ class JournalDeTest:
     def error(self, id="?", message=""):
         self._note("error", id, message)
 
-    def identifiants(self):
-        return [id for _, id, _ in self.lignes]
+    def ids(self):
+        return [id for _, id, _ in self.rows]
 
 
 ENTETES = ["_time", "host", "count"]
@@ -61,145 +61,145 @@ LIGNES = [["1700000000", "srv-01", "3"], ["1700000060", "srv-02", "7"]]
 class Base(unittest.TestCase):
 
     def setUp(self):
-        self.journal = JournalDeTest()
-        self.atelier = tempfile.mkdtemp(prefix="thc_test_")
-        self.resultats = os.path.join(self.atelier, "results_1234_5.csv.gz")
-        with gzip.open(self.resultats, "wt", newline="") as f:
+        self.recorder = RecordingLogger()
+        self.workshop = tempfile.mkdtemp(prefix="thc_test_")
+        self.results = os.path.join(self.workshop, "results_1234_5.csv.gz")
+        with gzip.open(self.results, "wt", newline="") as f:
             w = csv.writer(f)
             w.writerow(ENTETES)
             w.writerows(LIGNES)
-        self.nettoyer = [self.atelier]
+        self.to_clean = [self.workshop]
 
     def tearDown(self):
-        for d in self.nettoyer:
+        for d in self.to_clean:
             shutil.rmtree(d, ignore_errors=True)
 
-    def construire(self, attach_results=1, attach_format=0, prefix="events_",
+    def build(self, attach_results=1, attach_format=0, prefix="events_",
                    object_id="~123~456"):
-        tmp, chemin = build_attachment(
-            results_file=self.resultats,
+        tmp, path = build_attachment(
+            results_file=self.results,
             attach_results=attach_results,
             attach_format=attach_format,
             attachment_prefix=prefix,
             object_id=object_id,
-            logger_file=self.journal,
+            logger_file=self.recorder,
         )
-        self.nettoyer.append(tmp)
-        return tmp, chemin
+        self.to_clean.append(tmp)
+        return tmp, path
 
 
-class LesTroisModes(Base):
+class TheThreeModes(Base):
 
     def test_mode_1_recopie_le_gzip_sans_le_toucher(self):
-        _, chemin = self.construire(attach_results=1)
-        self.assertTrue(chemin.endswith(".csv.gz"))
-        with gzip.open(chemin, "rt") as f:
+        _, path = self.build(attach_results=1)
+        self.assertTrue(path.endswith(".csv.gz"))
+        with gzip.open(path, "rt") as f:
             self.assertEqual(list(csv.reader(f)), [ENTETES] + LIGNES)
 
     def test_mode_2_produit_un_csv_lisible(self):
-        _, chemin = self.construire(attach_results=2)
-        self.assertTrue(chemin.endswith(".csv"))
-        with open(chemin, newline="") as f:
+        _, path = self.build(attach_results=2)
+        self.assertTrue(path.endswith(".csv"))
+        with open(path, newline="") as f:
             self.assertEqual(list(csv.reader(f)), [ENTETES] + LIGNES)
 
     def test_mode_3_produit_un_json_de_dictionnaires(self):
-        _, chemin = self.construire(attach_results=3)
-        self.assertTrue(chemin.endswith(".json"))
-        with open(chemin) as f:
-            charge = json.load(f)
-        self.assertEqual(charge, [dict(zip(ENTETES, l)) for l in LIGNES])
+        _, path = self.build(attach_results=3)
+        self.assertTrue(path.endswith(".json"))
+        with open(path) as f:
+            payload = json.load(f)
+        self.assertEqual(payload, [dict(zip(ENTETES, l)) for l in LIGNES])
 
     def test_mode_3_avec_une_seule_ligne_ecrit_un_OBJET_pas_un_tableau(self):
         # ⚠️ Inconsistent, and preserved on purpose: every downstream consumer
         # written against the current shape would break silently otherwise.
-        with gzip.open(self.resultats, "wt", newline="") as f:
+        with gzip.open(self.results, "wt", newline="") as f:
             w = csv.writer(f)
             w.writerow(ENTETES)
             w.writerow(LIGNES[0])
-        _, chemin = self.construire(attach_results=3)
-        with open(chemin) as f:
+        _, path = self.build(attach_results=3)
+        with open(path) as f:
             self.assertEqual(json.load(f), dict(zip(ENTETES, LIGNES[0])))
 
     def test_un_mode_inconnu_est_nomme_au_lieu_de_planter_plus_loin(self):
         # Before: fell through the if/elif chain and died on open(None, "rb").
         with self.assertRaises(AttachmentError) as ctx:
-            self.construire(attach_results=7)
+            self.build(attach_results=7)
         self.assertIn("7", str(ctx.exception))
 
 
-class LesQuatreNomsDeFichier(Base):
+class TheFourFileNames(Base):
 
     def test_format_0_prefixe_plus_identifiant_sans_tilde(self):
-        _, chemin = self.construire(attach_format=0, prefix="events_")
-        self.assertEqual(os.path.basename(chemin), "events_123456.csv.gz")
+        _, path = self.build(attach_format=0, prefix="events_")
+        self.assertEqual(os.path.basename(path), "events_123456.csv.gz")
 
     def test_format_1_identifiant_seul(self):
-        _, chemin = self.construire(attach_format=1)
-        self.assertEqual(os.path.basename(chemin), "123456.csv.gz")
+        _, path = self.build(attach_format=1)
+        self.assertEqual(os.path.basename(path), "123456.csv.gz")
 
     def test_format_2_prefixe_plus_sha256(self):
-        _, chemin = self.construire(attach_format=2, prefix="ev_")
-        nom = os.path.basename(chemin)
+        _, path = self.build(attach_format=2, prefix="ev_")
+        nom = os.path.basename(path)
         self.assertTrue(nom.startswith("ev_"))
         self.assertEqual(len(nom), len("ev_") + 64 + len(".csv.gz"))
 
     def test_format_3_sha256_seul(self):
-        _, chemin = self.construire(attach_format=3)
-        self.assertEqual(len(os.path.basename(chemin)), 64 + len(".csv.gz"))
+        _, path = self.build(attach_format=3)
+        self.assertEqual(len(os.path.basename(path)), 64 + len(".csv.gz"))
 
     def test_le_sha256_est_celui_du_CONTENU_produit(self):
         import hashlib
-        _, chemin = self.construire(attach_results=2, attach_format=3)
-        with open(chemin, "rb") as f:
+        _, path = self.build(attach_results=2, attach_format=3)
+        with open(path, "rb") as f:
             attendu = hashlib.sha256(f.read()).hexdigest()
-        self.assertEqual(os.path.basename(chemin), attendu + ".csv")
+        self.assertEqual(os.path.basename(path), attendu + ".csv")
 
     def test_un_format_inconnu_a_son_PROPRE_identifiant_de_log(self):
         # ⚠️ This branch used to log id="141", already taken by the
         # results-file trace a hundred lines above -- in BOTH helpers.
         with self.assertRaises(AttachmentError):
-            self.construire(attach_format=9)
-        self.assertIn("146", self.journal.identifiants())
-        self.assertNotIn("141", [id for niv, id, _ in self.journal.lignes
+            self.build(attach_format=9)
+        self.assertIn("146", self.recorder.ids())
+        self.assertNotIn("141", [id for niv, id, _ in self.recorder.rows
                                  if niv == "error"])
 
 
-class CeQuiTombeMal(Base):
+class WhatGoesWrong(Base):
 
     def test_un_fichier_de_resultats_illisible_est_nomme_et_non_subi(self):
         # Before: headers stayed None and the failure surfaced as a TypeError
         # inside csv.writerow -- blaming the writer for a read that had already
         # failed and been logged.
-        with open(self.resultats, "wb") as f:
+        with open(self.results, "wb") as f:
             f.write(b"ceci n'est pas du gzip")
         with self.assertRaises(AttachmentError):
-            self.construire(attach_results=2)
-        self.assertIn("148", self.journal.identifiants())
+            self.build(attach_results=2)
+        self.assertIn("148", self.recorder.ids())
 
     def test_chaque_appel_a_son_propre_repertoire(self):
         # ⚠️ The system temp dir is shared by every alert action worker; a
         # fixed file name collided between overlapping runs.
-        tmp1, _ = self.construire()
-        tmp2, _ = self.construire()
+        tmp1, _ = self.build()
+        tmp2, _ = self.build()
         self.assertNotEqual(tmp1, tmp2)
         self.assertTrue(os.path.isdir(tmp1) and os.path.isdir(tmp2))
 
     def test_le_repertoire_survit_a_l_appel(self):
         # The caller uploads FROM it, then removes it. Cleaning up here would
         # delete the file before it is read.
-        tmp, chemin = self.construire()
-        self.assertTrue(os.path.isfile(chemin))
-        self.assertTrue(chemin.startswith(tmp))
+        tmp, path = self.build()
+        self.assertTrue(os.path.isfile(path))
+        self.assertTrue(path.startswith(tmp))
 
 
-class LesDeuxAppelantsPartagentLeMemeCode(unittest.TestCase):
+class BothCallersShareTheCode(unittest.TestCase):
     """The point of the ticket: one implementation, not two."""
 
     def test_les_deux_helpers_appellent_le_constructeur_partage(self):
         for nom in ("modalert_thehive_create_a_new_case_helper.py",
                     "modalert_thehive_create_a_new_alert_helper.py"):
-            chemin = os.path.join(BIN, "ta_thehive_cortex", nom)
-            with open(chemin, encoding="utf-8") as f:
+            path = os.path.join(BIN, "ta_thehive_cortex", nom)
+            with open(path, encoding="utf-8") as f:
                 source = f.read()
             with self.subTest(helper=nom):
                 self.assertIn("build_attachment(", source)

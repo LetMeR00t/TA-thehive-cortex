@@ -72,9 +72,9 @@ def pick_password(entries, app_name="TA-thehive-cortex"):
     `entries` is any iterable of objects carrying `realm`, `username` and
     `clear_password` -- `client.storage_passwords` satisfies it as is.
 
-    Returns `(passwords, ignorees)`:
+    Returns `(passwords, discarded)`:
       * `passwords`  {account: value}
-      * `ignorees`   accounts whose entry was discarded as garbage, for the
+      * `discarded`   accounts whose entry was discarded as garbage, for the
                      caller to log. The function itself never logs: a value
                      that must not reach a log file must not be handed to a
                      logger in the first place.
@@ -91,30 +91,30 @@ def pick_password(entries, app_name="TA-thehive-cortex"):
          supersedes a whole one.
     """
     passwords = {}
-    provenance_json = {}
-    ignorees = []
+    from_json_by_account = {}
+    discarded = []
 
     for entree in entries:
         realm = entree.realm
-        compte = account_from_ucc_username(entree.username)
+        account = account_from_ucc_username(entree.username)
         if not realm or app_name not in realm:
             continue
 
-        brut = entree.clear_password
-        vient_du_json = False
+        raw = entree.clear_password
+        from_json = False
         try:
-            decode = json.loads(brut)
-            if isinstance(decode, dict):
-                valeur = decode.get("password", brut)
-                if valeur != brut:
-                    vient_du_json = True
+            decoded = json.loads(raw)
+            if isinstance(decoded, dict):
+                value = decoded.get("password", raw)
+                if value != raw:
+                    from_json = True
             else:
-                valeur = brut
+                value = raw
         except Exception:
             # A stored password is very often not JSON at all. Not an error.
-            valeur = brut
+            value = raw
 
-        if valeur in MASQUES:
+        if value in MASQUES:
             continue
 
         # ⚠️ A JSON payload can carry a non-string `password` (a number, a
@@ -123,26 +123,26 @@ def pick_password(entries, app_name="TA-thehive-cortex"):
         # remaining credential: one malformed entry silently cost the
         # passwords of all the other accounts. It is now discarded like any
         # other garbage, and named.
-        if not isinstance(valeur, str):
-            ignorees.append(compte)
+        if not isinstance(value, str):
+            discarded.append(account)
             continue
 
-        if CRED_SEP in valeur:
-            ignorees.append(compte)
+        if CRED_SEP in value:
+            discarded.append(account)
             continue
 
-        json_courant = provenance_json.get(compte, False)
-        valeur_courante = passwords.get(compte, "")
+        current_from_json = from_json_by_account.get(account, False)
+        current_value = passwords.get(account, "")
 
         if (
-            compte not in passwords
-            or (vient_du_json and not json_courant)
-            or (vient_du_json == json_courant and len(valeur) > len(valeur_courante))
+            account not in passwords
+            or (from_json and not current_from_json)
+            or (from_json == current_from_json and len(value) > len(current_value))
         ):
-            passwords[compte] = valeur
-            provenance_json[compte] = vient_du_json
+            passwords[account] = value
+            from_json_by_account[account] = from_json
 
-    return passwords, ignorees
+    return passwords, discarded
 
 
 class LoggerFile(object):
@@ -254,11 +254,11 @@ class Settings(object):
             # Splunk instance. See its docstring for the rule.
             self._passwords = {}
             try:
-                self._passwords, ignorees = pick_password(self.client.storage_passwords)
-                for compte in ignorees:
+                self._passwords, discarded = pick_password(self.client.storage_passwords)
+                for account in discarded:
                     self.logger_file.debug(
                         id="S3_SKIP",
-                        message=f"Skipping unusable stored value for account {compte}",
+                        message=f"Skipping unusable stored value for account {account}",
                     )
             except Exception as e:
                 self.logger_file.error(

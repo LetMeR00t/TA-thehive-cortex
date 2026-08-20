@@ -25,21 +25,21 @@ import re
 import time
 
 
-def si_vide(valeur, defaut):
+def default_if_blank(value, defaut):
     """Form field: an empty string means "not filled in"."""
-    return valeur if valeur else defaut
+    return value if value else defaut
 
 
-def si_absent(valeur, defaut):
+def default_if_none(value, defaut):
     """Global setting: only None means "not set"; "" is a real value."""
-    return defaut if valeur is None else valeur
+    return defaut if value is None else value
 
 
-def entier(valeur, defaut):
-    return int(valeur) if valeur is not None else defaut
+def as_int(value, defaut):
+    return int(value) if value is not None else defaut
 
 
-def horodatage(champ):
+def event_timestamp(champ):
     """The event date, in milliseconds.
 
     ⚠️ Preserved exactly, including its rough edge: a value that is neither
@@ -55,9 +55,9 @@ def horodatage(champ):
     return champ
 
 
-def etiquettes(brut):
+def split_tags(raw):
     """Comma separated, order preserved, duplicates removed."""
-    return list(dict.fromkeys(brut.split(","))) if brut else []
+    return list(dict.fromkeys(raw.split(","))) if raw else []
 
 
 def common_args(helper, logger_file):
@@ -67,28 +67,28 @@ def common_args(helper, logger_file):
     `type` and `dashboard` on the other.
     """
     args = {}
-    args["unique_id_field"] = si_vide(helper.get_param("unique_id_field"), "oneEvent")
-    args["caseTemplate"] = si_vide(helper.get_param("case_template"), None)
-    args["source"] = si_vide(helper.get_param("source"), "splunk")
-    args["timestamp"] = horodatage(helper.get_param("timestamp_field"))
-    args["splunk_sanitize_backslashes"] = si_absent(
+    args["unique_id_field"] = default_if_blank(helper.get_param("unique_id_field"), "oneEvent")
+    args["caseTemplate"] = default_if_blank(helper.get_param("case_template"), None)
+    args["source"] = default_if_blank(helper.get_param("source"), "splunk")
+    args["timestamp"] = event_timestamp(helper.get_param("timestamp_field"))
+    args["splunk_sanitize_backslashes"] = default_if_none(
         helper.get_global_setting("splunk_sanitize_backslashes"), "ENABLED"
     )
-    args["title"] = si_vide(helper.get_param("title"), None)
-    args["description"] = si_vide(
+    args["title"] = default_if_blank(helper.get_param("title"), None)
+    args["description"] = default_if_blank(
         helper.get_param("description"), "No description provided"
     )
     if args["splunk_sanitize_backslashes"] == "ENABLED":
         args["description"] = (
             args["description"].replace("\\n", "\n").replace("\\r", "\r")
         )
-    args["tags"] = etiquettes(helper.get_param("tags"))
+    args["tags"] = split_tags(helper.get_param("tags"))
     logger_file.debug(id="50", message="scope: {} ".format(helper.get_param("scope")))
     args["scope"] = True if int(helper.get_param("scope")) == 0 else False
-    args["severity"] = entier(helper.get_param("severity"), 2)
-    args["tlp"] = entier(helper.get_param("tlp"), 2)
-    args["pap"] = entier(helper.get_param("pap"), 2)
-    args["splunk_es_alerts_index"] = si_absent(
+    args["severity"] = as_int(helper.get_param("severity"), 2)
+    args["tlp"] = as_int(helper.get_param("tlp"), 2)
+    args["pap"] = as_int(helper.get_param("pap"), 2)
+    args["splunk_es_alerts_index"] = default_if_none(
         helper.get_global_setting("splunk_es_alerts_index"), "summary"
     )
     args["description_results_enable"] = (
@@ -130,8 +130,8 @@ def prepare_instances(helper, acronym):
     helper.log_info(f"[CAA-{acronym}-35] LOG level to: " + helper.log_level)
     helper.set_log_level(helper.log_level)
 
-    instances_id = helper.get_param("thehive_instance_id").split(",")
-    helper.log_debug(f"[CAA-{acronym}-40] TheHive instances found: " + str(instances_id))
+    instance_ids = helper.get_param("thehive_instance_id").split(",")
+    helper.log_debug(f"[CAA-{acronym}-40] TheHive instances found: " + str(instance_ids))
 
     return [
         create_thehive_instance(
@@ -141,5 +141,5 @@ def prepare_instances(helper, acronym):
             acronym=acronym,
             exec_id=helper.exec_id,
         )
-        for instance_id in instances_id
+        for instance_id in instance_ids
     ]

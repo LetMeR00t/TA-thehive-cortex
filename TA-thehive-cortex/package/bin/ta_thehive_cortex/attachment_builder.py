@@ -77,41 +77,41 @@ def build_attachment(
     results_file_name = os.path.basename(results_file).split(".")[0]
     tmp_directory = tempfile.mkdtemp(prefix="thc_attach_")
     file_ext = MODES[attach_results]
-    avant_renommage = os.path.join(tmp_directory, results_file_name + file_ext)
+    before_rename = os.path.join(tmp_directory, results_file_name + file_ext)
 
     if attach_results == 1:
         # Copy the gzip Splunk produced, without touching it.
-        shutil.copyfile(results_file, avant_renommage)
+        shutil.copyfile(results_file, before_rename)
     else:
         logger_file.warn(
             id="145",
             message=f"Uncompressing Splunk search results file located at {results_file}...",
         )
-        entetes, lignes = _lire_les_resultats(results_file, logger_file)
+        headers, rows = _read_results(results_file, logger_file)
         if attach_results == 2:
-            _ecrire_csv(avant_renommage, entetes, lignes)
+            _write_csv(before_rename, headers, rows)
         else:
-            _ecrire_json(results_file, entetes, avant_renommage)
+            _write_json(results_file, headers, before_rename)
 
-    with open(avant_renommage, "rb") as f:
+    with open(before_rename, "rb") as f:
         sha256 = hashlib.sha256(f.read())
 
-    apres_renommage = os.path.join(
+    after_rename = os.path.join(
         tmp_directory,
-        _nom_final(attach_format, attachment_prefix, object_id, sha256, file_ext,
+        _final_name(attach_format, attachment_prefix, object_id, sha256, file_ext,
                    logger_file),
     )
-    os.rename(avant_renommage, apres_renommage)
-    return tmp_directory, apres_renommage
+    os.rename(before_rename, after_rename)
+    return tmp_directory, after_rename
 
 
-def _lire_les_resultats(results_file, logger_file):
+def _read_results(results_file, logger_file):
     """Read the gzip CSV Splunk wrote. Returns (headers, rows)."""
     try:
         with gzip.open(results_file, "rt") as f:
             csvreader = csv.reader(f)
-            entetes = next(csvreader)
-            return entetes, [row for row in csvreader]
+            headers = next(csvreader)
+            return headers, [row for row in csvreader]
     except Exception as e:
         logger_file.error(id="148", message=f"Error during uncompressing process: {e}")
         # ⚠️ The previous code carried on with headers=None and rows=None, and
@@ -120,35 +120,35 @@ def _lire_les_resultats(results_file, logger_file):
         raise AttachmentError(f"could not read the Splunk results file: {e}")
 
 
-def _ecrire_csv(chemin, entetes, lignes):
-    with open(chemin, "wt", newline="") as f:
+def _write_csv(path, headers, rows):
+    with open(path, "wt", newline="") as f:
         csvwriter = csv.writer(f)
-        csvwriter.writerow(entetes)
-        csvwriter.writerows(lignes)
+        csvwriter.writerow(headers)
+        csvwriter.writerows(rows)
 
 
-def _ecrire_json(results_file, entetes, chemin):
+def _write_json(results_file, headers, path):
     """Re-read as dicts, because a CSV row is positional and JSON is not."""
     with gzip.open(results_file, "rt") as f:
-        reader = csv.DictReader(f, entetes)
+        reader = csv.DictReader(f, headers)
         next(reader)  # the header line, which DictReader would hand back as data
-        lignes = [row for row in reader]
+        rows = [row for row in reader]
 
     # ⚠️ Preserved as-is: a single row is written as an OBJECT, several as an
     # ARRAY. Inconsistent, and changing it would silently break every
     # downstream consumer written against the current shape.
-    charge = json.dumps(lignes, indent=2) if len(lignes) > 1 else json.dumps(lignes[0], indent=2)
-    with open(chemin, "w") as f:
-        f.write(charge)
+    payload = json.dumps(rows, indent=2) if len(rows) > 1 else json.dumps(rows[0], indent=2)
+    with open(path, "w") as f:
+        f.write(payload)
 
 
-def _nom_final(attach_format, attachment_prefix, object_id, sha256, file_ext,
+def _final_name(attach_format, attachment_prefix, object_id, sha256, file_ext,
                logger_file):
-    identifiant = str(object_id).replace("~", "")
+    identifier = str(object_id).replace("~", "")
     if attach_format == 0:
-        return attachment_prefix + identifiant + file_ext
+        return attachment_prefix + identifier + file_ext
     if attach_format == 1:
-        return identifiant + file_ext
+        return identifier + file_ext
     if attach_format == 2:
         return attachment_prefix + sha256.hexdigest() + file_ext
     if attach_format == 3:

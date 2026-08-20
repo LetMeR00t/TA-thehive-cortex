@@ -17,8 +17,8 @@ def status_code(e):
     """TheHive carries its status either on the error or on its response."""
     code = getattr(e, "status_code", None)
     if code is None:
-        reponse = getattr(e, "response", None)
-        code = getattr(reponse, "status_code", None)
+        response = getattr(e, "response", None)
+        code = getattr(response, "status_code", None)
     return code
 
 
@@ -29,9 +29,9 @@ def is_duplicate(e):
     also answers 400. Preserved deliberately -- narrowing it is a behaviour
     change that belongs to its own ticket, with a way to tell the two apart.
     """
-    texte = str(e).lower()
+    text = str(e).lower()
     code = status_code(e)
-    return "already exists" in texte or "duplicate" in texte or code in (400, 409)
+    return "already exists" in text or "duplicate" in text or code in (400, 409)
 
 
 def response_detail(e):
@@ -40,10 +40,10 @@ def response_detail(e):
     Best effort on purpose: this only ever ENRICHES a message that is being
     logged anyway, so failing to read the body must not replace the real error.
     """
-    reponse = getattr(e, "response", None)
-    if reponse is None:
+    response = getattr(e, "response", None)
+    if response is None:
         return ""
     try:
-        return f" | Response: {reponse.text}"
+        return f" | Response: {response.text}"
     except Exception:  # silent-except: the real error is logged by the caller
         return ""

@@ -24,21 +24,21 @@ for p in (BIN, os.path.join(BIN, 'ta_thehive_cortex')):
 from creation_retry import create_with_retry  # noqa: E402
 
 
-class JournalDeTest:
+class RecordingLogger:
     def __init__(self):
-        self.lignes = []
+        self.rows = []
 
     def warning(self, id="?", message=""):
-        self.lignes.append(("warning", id, message))
+        self.rows.append(("warning", id, message))
 
     def error(self, id="?", message=""):
-        self.lignes.append(("error", id, message))
+        self.rows.append(("error", id, message))
 
-    def identifiants(self, niveau=None):
-        return [i for n, i, _ in self.lignes if niveau is None or n == niveau]
+    def ids(self, niveau=None):
+        return [i for n, i, _ in self.rows if niveau is None or n == niveau]
 
 
-class ErreurDeService(Exception):
+class ServiceError(Exception):
     def __init__(self, message, status_code=None):
         super().__init__(message)
         self.status_code = status_code
@@ -47,122 +47,122 @@ class ErreurDeService(Exception):
 IDS = {"duplicate": "122", "retry": "123", "exhausted": "125"}
 
 
-def contexte():
+def context():
     return "url=https://thehive.invalid, data=<payload>"
 
 
 class Base(unittest.TestCase):
     def setUp(self):
-        self.journal = JournalDeTest()
+        self.recorder = RecordingLogger()
 
-    def lancer(self, resultats, max_retry=2, ids=IDS):
-        """`resultats` is what each successive attempt does."""
-        appels = {"n": 0}
+    def launch(self, results, max_retry=2, ids=IDS):
+        """`results` is what each successive attempt does."""
+        calls = {"n": 0}
 
         def create():
-            i = appels["n"]
-            appels["n"] += 1
-            r = resultats[i]
+            i = calls["n"]
+            calls["n"] += 1
+            r = results[i]
             if isinstance(r, Exception):
                 raise r
             return r
 
-        rendu = create_with_retry(create, max_retry, self.journal, ids, contexte)
-        return rendu, appels["n"]
+        rendu = create_with_retry(create, max_retry, self.recorder, ids, context)
+        return rendu, calls["n"]
 
 
-class UneCreationQuiFinitParReussir(Base):
+class ACreationThatEventuallySucceeds(Base):
 
     def test_reussite_du_premier_coup_ne_journalise_rien(self):
-        rendu, appels = self.lancer([{"_id": "~1"}])
+        rendu, calls = self.launch([{"_id": "~1"}])
         self.assertEqual(rendu, {"_id": "~1"})
-        self.assertEqual(appels, 1)
-        self.assertEqual(self.journal.lignes, [])
+        self.assertEqual(calls, 1)
+        self.assertEqual(self.recorder.rows, [])
 
     def test_reussite_a_la_DEUXIEME_tentative_n_est_pas_un_echec(self):
         # ⚠️ THE defect. max_retry=2, success on attempt 2 => retry_count == 2
         # in the old code => "creation has failed, after retries" logged as an
         # ERROR, on an object that exists. And then NameError on str(e).
-        rendu, appels = self.lancer([ErreurDeService("boom"), {"_id": "~1"}])
+        rendu, calls = self.launch([ServiceError("boom"), {"_id": "~1"}])
         self.assertEqual(rendu, {"_id": "~1"})
-        self.assertEqual(appels, 2)
-        self.assertEqual(self.journal.identifiants("error"), [])
-        self.assertEqual(self.journal.identifiants("warning"), ["123"])
+        self.assertEqual(calls, 2)
+        self.assertEqual(self.recorder.ids("error"), [])
+        self.assertEqual(self.recorder.ids("warning"), ["123"])
 
     def test_reussite_a_la_derniere_tentative_autorisee(self):
-        rendu, appels = self.lancer(
-            [ErreurDeService("a"), ErreurDeService("b"), {"_id": "~1"}])
+        rendu, calls = self.launch(
+            [ServiceError("a"), ServiceError("b"), {"_id": "~1"}])
         self.assertEqual(rendu, {"_id": "~1"})
-        self.assertEqual(appels, 3)  # max_retry + 1 attempts
-        self.assertEqual(self.journal.identifiants("error"), [])
+        self.assertEqual(calls, 3)  # max_retry + 1 attempts
+        self.assertEqual(self.recorder.ids("error"), [])
 
 
-class UneCreationQuiEchoueVraiment(Base):
+class ACreationThatTrulyFails(Base):
 
     def test_toutes_les_tentatives_echouent(self):
-        rendu, appels = self.lancer([ErreurDeService("x")] * 3)
+        rendu, calls = self.launch([ServiceError("x")] * 3)
         self.assertIsNone(rendu)
-        self.assertEqual(appels, 3)
-        self.assertEqual(self.journal.identifiants("error"), ["125"])
+        self.assertEqual(calls, 3)
+        self.assertEqual(self.recorder.ids("error"), ["125"])
 
     def test_le_message_final_porte_la_DERNIERE_erreur(self):
         # ⚠️ Not `str(e)` read after the except block, which is a NameError in
         # Python 3. The exception is bound outside the handler on purpose.
-        self.lancer([ErreurDeService("premiere"), ErreurDeService("derniere"),
-                     ErreurDeService("derniere")])
-        final = [m for n, i, m in self.journal.lignes if n == "error"][0]
+        self.launch([ServiceError("premiere"), ServiceError("derniere"),
+                     ServiceError("derniere")])
+        final = [m for n, i, m in self.recorder.rows if n == "error"][0]
         self.assertIn("derniere", final)
 
     def test_le_nombre_de_reprises_est_dans_le_message(self):
         # The old message carried the literal "{max_retry}": an f-string
         # placeholder inside a NON-f string, so the number never appeared.
-        self.lancer([ErreurDeService("x")] * 4, max_retry=3)
-        final = [m for n, i, m in self.journal.lignes if n == "error"][0]
+        self.launch([ServiceError("x")] * 4, max_retry=3)
+        final = [m for n, i, m in self.recorder.rows if n == "error"][0]
         self.assertIn("3 retries", final)
         self.assertNotIn("{max_retry}", final)
 
 
-class LeCasDuDoublon(Base):
+class TheDuplicateCase(Base):
 
     def test_un_doublon_annonce_par_le_texte(self):
-        self.lancer([ErreurDeService("Alert already exists"), {"_id": "~1"}])
-        self.assertEqual(self.journal.identifiants("warning"), ["122"])
+        self.launch([ServiceError("Alert already exists"), {"_id": "~1"}])
+        self.assertEqual(self.recorder.ids("warning"), ["122"])
 
     def test_un_doublon_annonce_par_le_code_409(self):
-        self.lancer([ErreurDeService("nope", status_code=409), {"_id": "~1"}])
-        self.assertEqual(self.journal.identifiants("warning"), ["122"])
+        self.launch([ServiceError("nope", status_code=409), {"_id": "~1"}])
+        self.assertEqual(self.recorder.ids("warning"), ["122"])
 
     def test_le_code_lu_sur_la_reponse_quand_il_n_est_pas_sur_l_erreur(self):
-        class Reponse:
+        class Response:
             status_code = 400
 
         e = Exception("nope")
-        e.response = Reponse()
-        self.lancer([e, {"_id": "~1"}])
-        self.assertEqual(self.journal.identifiants("warning"), ["122"])
+        e.response = Response()
+        self.launch([e, {"_id": "~1"}])
+        self.assertEqual(self.recorder.ids("warning"), ["122"])
 
     def test_sans_identifiant_de_doublon_on_retombe_sur_celui_de_reprise(self):
         # The case helper has no dedicated duplicate identifier, and must not
         # crash for lack of one.
-        self.lancer([ErreurDeService("already exists"), {"_id": "~1"}],
+        self.launch([ServiceError("already exists"), {"_id": "~1"}],
                     ids={"retry": "126", "exhausted": "127"})
-        self.assertEqual(self.journal.identifiants("warning"), ["126"])
+        self.assertEqual(self.recorder.ids("warning"), ["126"])
 
 
-class LeContexteN_estCalculeQueSiOnJournalise(Base):
+class ContextIsBuiltOnlyWhenLogging(Base):
 
     def test_aucun_appel_quand_tout_va_bien(self):
-        appels = {"n": 0}
+        calls = {"n": 0}
 
         def contexte_compte():
-            appels["n"] += 1
+            calls["n"] += 1
             return "ctx"
 
-        create_with_retry(lambda: {"_id": "~1"}, 2, self.journal, IDS,
+        create_with_retry(lambda: {"_id": "~1"}, 2, self.recorder, IDS,
                           contexte_compte)
         # Serialising a payload nobody will read is a cost that only shows up
         # under load.
-        self.assertEqual(appels["n"], 0)
+        self.assertEqual(calls["n"], 0)
 
 
 if __name__ == "__main__":

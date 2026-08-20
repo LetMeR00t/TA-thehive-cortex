@@ -512,3 +512,23 @@ the refactor, but carried forward by it.
 A guard that scans call sites misses everything passed as an argument. When a
 value moves from a literal to a parameter, every check that watched the literal
 goes quiet without failing.
+
+### The code is English, including the identifiers
+
+Comments and docstrings were English from the start; the identifiers were not.
+`si_vide`, `etiquettes`, `horodatage`, `contexte`, `derniere_erreur` shipped in
+`package/bin/`. An independent review named it for what it is: a **permanent**
+maintenance cost in a public, English-speaking repository, for no benefit -- the
+next contributor has to translate before they can read.
+
+278 identifiers were renamed. Two things worth keeping from how it went:
+
+⚠️ **Translate identifiers, never prose.** A word-boundary substitution over a
+file will happily turn "la valeur attendue" into "la value attendue" inside a
+comment. Check the diff for damaged sentences, not just for a green suite.
+
+⚠️ **Some names belong to the framework.** Renaming a test helper to `run`
+silently overrode `unittest.TestCase.run`, so `setUp` never executed and the
+failure surfaced as a missing attribute three frames away. `run`, `id`, `debug`,
+`fail` and friends are reserved on a `TestCase`; a rename that lands on one
+replaces the framework's own method without a word.
