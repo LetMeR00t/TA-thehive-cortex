@@ -148,3 +148,55 @@ The panel is now gated on the action that asks for it. ⚠️ **The Debug contro
 removed**: with the gate corrected it drove nothing at all, and a switch a user
 can flip with no visible effect is worse than no switch. The panel's sub-title
 also claimed the search "is used to add a new instance", which it never did.
+
+
+## 🖥️ `Audit Logs` — three panels out of five showed nothing
+
+They searched `sourcetype="modular_alerts:thehive_*"`, a sourcetype **this
+add-on has never produced**. `props.conf` assigns `tathehivecortex:log` to those
+very files, and has since v4.0.0. The panels returned "No results found" on
+every installation, and the action filter above them was permanently empty.
+
+⚠️ Two smaller faults went with it. The base read
+`(index=_* OR index=cim_*) sourcetype="A" OR sourcetype="B"` — where the
+implicit AND binds tighter than the OR, so the second branch carried **no index
+constraint at all** and scanned the user's default indexes. And the success
+series had no colour, because the palette mapped a label the search never
+produced.
+
+The "commands versus modular inputs" split was also wrong: it guessed from the
+file name, testing for `search`, `get` or `run`. `cortex_refresh_analyzers`
+contains none of them and was filed under modular inputs, where the label table
+did not know it and showed a raw file name. The split now keys on the `MI-`
+prefix the code itself writes into every modular input's log line.
+
+Finally, the event-code chart only extracted codes starting with `CAA-`, which
+covers the alert-action framework and nothing else — every code from the add-on
+proper (`THCA`, `THAO`, `THSC`, `MI-THAC`, `CRA`…) was invisible, while the
+sub-title promised "the complete list of event codes".
+
+## 🔧 Every dashboard search now goes through a macro
+
+The five existing macros never named an index, deliberately: which index holds
+TheHive data differs from one deployment to the next. That convention now covers
+the add-on's own logs too, through a sixth macro, `thehive_cortex_logs`, and
+every panel of the Audit view uses it.
+
+**What this means for you.** If a log panel comes back empty while the files
+exist on disk, add your index to the macro once:
+
+```
+[thehive_cortex_logs]
+definition = index=_internal sourcetype="tathehivecortex:log"
+```
+
+⚠️ The add-on's logs land in `_internal`, which is not among the default search
+indexes of every role. Naming the index in nine separate panels — as the view
+did before — means re-editing the view at every upgrade, which is how local
+changes get lost.
+
+## 🔧 `thehive_tasks` was missing the tasks collected per case
+
+The macro covered `thehive:tasks:*` but not `thehive:cases:tasks:*`, which
+`props.conf` defines and the modular input writes. A search built on it returned
+results — just not all of them, which is the kind of gap nobody notices.
