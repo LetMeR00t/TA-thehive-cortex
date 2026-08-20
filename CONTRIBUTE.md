@@ -605,6 +605,17 @@ and the "restore" wiped an hour of uncommitted work in the same file. Prove a
 guard red on a COPY, or commit first — a demonstration must not be able to
 destroy what it demonstrates.
 
+### The frontier of what the suite can prove
+
+`docs/live_instance_checklist.md` lists everything that only a running Splunk
+can answer: sourcetype assignment, view rendering, token resolution, a remote
+API's response shape, the contents of a built archive.
+
+⚠️ Keep it current as work lands. A claim made in a release note is an assertion
+about behaviour; if nothing here can check it, it belongs on that list. The
+alternative is discovering the gap the way this repository already has — a
+dashboard dead for four releases, logging nothing.
+
 ### Auto-refresh belongs to panels reading the index, never to inputs
 
 A refreshing panel is useful. A refreshing **dropdown** makes the analyst's
