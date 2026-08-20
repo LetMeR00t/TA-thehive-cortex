@@ -200,3 +200,21 @@ changes get lost.
 The macro covered `thehive:tasks:*` but not `thehive:cases:tasks:*`, which
 `props.conf` defines and the modular input writes. A search built on it returned
 results — just not all of them, which is the kind of gap nobody notices.
+
+
+## ⚠️ Breaking (and a good thing): Severity, TLP and PAP now default sensibly
+
+The Severity, TLP and PAP dropdowns of the create-a-case and create-an-alert
+forms carried **no `<default>`**. Splunk then selects the first `<choice>` —
+which was `CRITICAL (!!) - 4` for severity and `WHITE - 0` for TLP and PAP.
+
+Every case and every alert created without touching those three fields was
+therefore **critical, and marked shareable with anyone**. The asterisk in the
+labels ("Severity*") suggested the field mattered but forced no conscious
+choice.
+
+The defaults are now MEDIUM, AMBER and AMBER — TheHive's own.
+
+🖥️ **If you rely on the old behaviour**, set the values explicitly in your
+saved searches: an alert action that never named `param.severity` will now
+create MEDIUM cases where it used to create CRITICAL ones.

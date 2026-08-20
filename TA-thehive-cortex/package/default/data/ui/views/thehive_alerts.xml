@@ -194,6 +194,10 @@
         <choice value="3">HIGH - 3</choice>
         <choice value="2">MEDIUM - 2</choice>
         <choice value="1">LOW - 1</choice>
+              <!-- Splunk selects the first choice when no default is given.
+             That made every object CRITICAL and TLP:WHITE unless the
+             analyst noticed. These match TheHive's own defaults. -->
+        <default>2</default>
       </input>
       <input type="dropdown" token="create_tlp" depends="$show_inputs_create$">
         <label>TLP*</label>
@@ -201,6 +205,10 @@
         <choice value="1">GREEN - 1</choice>
         <choice value="2">AMBER - 2</choice>
         <choice value="3">RED - 3</choice>
+              <!-- Splunk selects the first choice when no default is given.
+             That made every object CRITICAL and TLP:WHITE unless the
+             analyst noticed. These match TheHive's own defaults. -->
+        <default>2</default>
       </input>
       <input type="dropdown" token="create_pap" depends="$show_inputs_create$">
         <label>PAP*</label>
@@ -208,6 +216,10 @@
         <choice value="1">GREEN - 1</choice>
         <choice value="2">AMBER - 2</choice>
         <choice value="3">RED - 3</choice>
+              <!-- Splunk selects the first choice when no default is given.
+             That made every object CRITICAL and TLP:WHITE unless the
+             analyst noticed. These match TheHive's own defaults. -->
+        <default>2</default>
       </input>
       <table>
         <search>
