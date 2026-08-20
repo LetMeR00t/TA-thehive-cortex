@@ -39,20 +39,10 @@
         </done>
       </search>
     </input>
-    <input type="radio" token="global_debug">
-      <label>Debug</label>
-      <choice value="0">No</choice>
-      <choice value="1">Yes</choice>
-      <default>0</default>
-      <change>
-        <condition value="0">
-          <unset token="show_debug"></unset>
-        </condition>
-        <condition value="1">
-          <set token="show_debug">1</set>
-        </condition>
-      </change>
-    </input>
+    <!-- The Debug radio used to gate the refresh panel, which is why choosing
+         REFRESH alone did nothing. Now that the panel is gated on the action
+         that asks for it, this control drove nothing at all: a switch a user
+         can flip with no visible effect is worse than no switch. -->
   </fieldset>
   <row>
     <panel>
@@ -110,10 +100,18 @@
     </panel>
   </row>
   <row>
-    <panel depends="$show_debug$">
-      <title>[DEBUG] Refresh analyzers for the given instance "$instance_id$"</title>
+    <!-- This is the ONLY panel that runs cortexrefreshanalyzers and writes the
+         lookup, and it used to be gated on show_debug. Choosing Action =
+         REFRESH therefore set the status banner to a red "Waiting for input"
+         and did nothing else: the refresh only ran for whoever also switched
+         Debug to Yes. The gate now matches the action that asks for it.
+
+         The old sub-title claimed the search "is used to add a new instance",
+         which it never did. It rewrites the analyzer lookup. -->
+    <panel depends="$run_refresh$">
+      <title>Refresh analyzers for the given instance "$instance_id$"</title>
       <table>
-        <title>This search is used to add a new instance</title>
+        <title>Queries Cortex for its analyzer list and rewrites the lookup</title>
         <search>
           <progress>
             <set token="status">Ongoing</set>

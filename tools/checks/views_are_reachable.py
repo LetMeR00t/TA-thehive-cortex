@@ -130,6 +130,18 @@ def main() -> int:
         poses = jetons_poses(texte)
         absents_au_chargement = jetons_absents_au_chargement(texte)
 
+        # ⚠️ Une règle « un input dont personne ne lit le jeton » a été écrite
+        # ici puis RETIRÉE le jour même : elle rendait 21 constats dont une
+        # vingtaine décrivaient un fonctionnement correct. Un jeton de mode
+        # (`action`, `view_mode`) n'est jamais lu par un `$jeton$` — c'est son
+        # propre `<change>` qui l'exploite — et un `depths` porté PAR un input
+        # disparaît quand on retire les inputs pour chercher les lecteurs.
+        #
+        # Le constat de départ reste vrai : un contrôle qui ne pilote rien est
+        # pire qu'un contrôle absent, parce que l'utilisateur croit avoir agi.
+        # Mais on ne le détecte pas à ce prix-là, et un garde qui crie au loup
+        # finit débranché — ce qui coûte les trois règles ci-dessus avec lui.
+
         for attribut in ("depends", "rejects"):
             for expression in re.findall(rf'{attribut}="([^"]+)"', texte):
                 for jeton in re.findall(r"\$([^$,]+)\$", expression):

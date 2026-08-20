@@ -108,3 +108,43 @@ distinguishes "empty" from "truncated" from "looks right".
 
 If you have run this add-on at debug level, those lines are in your index. They
 expire with your retention; purging them earlier is a local decision.
+
+
+## 🖥️ Three dashboards now do what they always claimed
+
+### `TheHive: Statistics` displayed nothing at all
+
+Two panels carried `depends="$always_hidden$"`, a token nothing ever set. A
+hidden panel does not run its search — and those two searches were the only
+producers of the tokens the main chart consumed. The chart waited for input
+forever: no error, no "no results", just a pie that never filled. This has been
+the case since **v4.0.0**, when the other two views were migrated and this one
+was overlooked.
+
+⚠️ A side effect worth knowing: the old date handling compared against the
+literal `1970-01-01T01:00:00.000+01:00`. That sentinel only matched on a server
+in UTC+1 outside summer time, so the "all time" branch was unreachable
+elsewhere. The view now derives its range from the time picker directly, like
+the Cases and Alerts views.
+
+### `TheHive: Alerts` opened empty
+
+The results panel was gated on a token that only the Action input's *change*
+handler produces — and a change handler does not fire for the value an input
+already carries at load. The Action selector said "LIST" while no list existed:
+you had to pick another mode and come back. Its twin, the Cases view, has no
+such gate, which is how two nearly identical views ended up behaving in
+opposite ways.
+
+### `Cortex: Analyzers` — REFRESH now refreshes
+
+The only panel that runs `cortexrefreshanalyzers` and rewrites the analyzer
+lookup was gated on **Debug = Yes**. Choosing Action = REFRESH turned the status
+banner red on "Waiting for input" and did nothing else — the refresh ran only
+for someone who also switched Debug on, with no indication anywhere that the two
+were linked.
+
+The panel is now gated on the action that asks for it. ⚠️ **The Debug control is
+removed**: with the gate corrected it drove nothing at all, and a switch a user
+can flip with no visible effect is worse than no switch. The panel's sub-title
+also claimed the search "is used to add a new instance", which it never did.
