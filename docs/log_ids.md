@@ -43,7 +43,7 @@ index=_internal sourcetype=tathehivecortex:log exec_id=a1b2c3d4   ← one run
 ```
 
 ⚠️ If that returns nothing on an installation upgraded from 4.0.0–4.2.2, the
-sourcetype was never assigned — see `release_notes/UNRELEASED.md`, which
+sourcetype was never assigned — see `release_notes/v5.0.0.md`, which
 explains the manual purge of `etc/apps/learned/local/props.conf`. Fall back to
 `index=_internal source=*TA-thehive-cortex_*.log`.
 

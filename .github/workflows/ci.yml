@@ -126,6 +126,11 @@ jobs:
         # from every angle. Only the last hop is missing.
         run: python tools/checks/settings_are_used.py
 
+      - name: Alert actions declare what they read
+        # The .conf, the hand-written form and the code are three independent
+        # statements about the same parameter, and nothing else compares them.
+        run: python tools/checks/alert_action_params.py
+
       - name: Coverage floors on the critical paths
         # Per-path floors, never a global one: a global floor over 8,685 lines
         # is either trivially met or unreachable, and says nothing either way.

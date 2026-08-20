@@ -122,6 +122,7 @@ python tools/checks/unused_imports.py
 python tools/checks/local_imports_resolve.py
 python tools/checks/views_are_reachable.py
 python tools/checks/settings_are_used.py
+python tools/checks/alert_action_params.py
 PYTHON=python3.9 tools/checks/pins_match_build.sh
 tools/checks/tests_on_both_pythons.sh
 ```
