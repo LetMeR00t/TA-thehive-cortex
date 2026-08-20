@@ -1,5 +1,40 @@
 <form version="1.1">
   <label>TheHive: Statistics</label>
+
+  <!-- These two searches used to live in panels carrying
+       depends="$always_hidden$" — a token nothing ever set. A hidden panel
+       does not dispatch its search, so the tokens below were never produced
+       and the chart waited for input forever, without an error. cases.xml and
+       thehive_alerts.xml were migrated to view-level searches in v4.0.0; this
+       view was overlooked. -->
+
+  <search id="get_instance_info">
+    <query>| rest /servicesNS/nobody/TA-thehive-cortex/thehive_cortex_instances splunk_server=local | rename title as id | where id="$instance_id$" | eval case_uri = if(type=="TheHive5","cases","case") | eval case_uri = if(uri!="/","/"+case_uri,case_uri)</query>
+    <done>
+      <condition match="$job.resultCount$ &gt; 0">
+        <set token="global_thehive_host">$result.host$</set>
+        <set token="global_thehive_port">$result.port$</set>
+        <set token="global_thehive_uri">$result.uri$</set>
+        <set token="global_thehive_case_uri">$result.case_uri$</set>
+      </condition>
+    </done>
+  </search>
+
+  <!-- Derived straight from the time picker, like cases.xml. The previous
+       version read tokens set from another panel's job.earliestTime, and
+       compared them to the literal 1970-01-01T01:00:00.000+01:00 — a UTC+1
+       sentinel, wrong anywhere else and unreachable in summer. -->
+  <search id="format_date">
+    <query>| makeresults
+| eval earliest = if(trim("$filter_date.earliest$") == "" OR "$filter_date.earliest$" == "$$filter_date.earliest$$", "-7d@h", "$filter_date.earliest$"), latest = if(trim("$filter_date.latest$") == "" OR "$filter_date.latest$" == "$$filter_date.latest$$", "now", "$filter_date.latest$")
+| eval filter_date_d1 = round(relative_time(now(), earliest)*1000), filter_date_d2 = round(relative_time(now(), latest)*1000)
+| eval filter_date_d1 = if(isnull(filter_date_d1), "*", filter_date_d1), filter_date_d2 = if(isnull(filter_date_d2), "*", filter_date_d2)
+| table filter_date_d1, filter_date_d2</query>
+    <done>
+      <set token="filter_date_d1">$result.filter_date_d1$</set>
+      <set token="filter_date_d2">$result.filter_date_d2$</set>
+    </done>
+  </search>
   <init>
     <set token="filter"></set>
   </init>
@@ -103,9 +138,6 @@
       <chart>
         <title>*: You can specify several values separated by ";"</title>
         <search>
-          <done>
-            <set token="job_thehive_search_cases">$job.sid$</set>
-          </done>
           <query>| makeresults
 | eval model="$model$", field="$field$", $date_field$ = "$filter_date_d1$ TO $filter_date_d2$" $filter$
 | thehivegetstats "$instance_id$"
@@ -138,54 +170,6 @@
           <condition></condition>
         </drilldown>
       </chart>
-    </panel>
-  </row>
-  <row>
-    <panel depends="$always_hidden$">
-      <title>[Instance] Get information</title>
-      <table>
-        <search>
-          <progress>
-            <set token="d1">$job.earliestTime$</set>
-            <set token="d2">$job.latestTime$</set>
-          </progress>
-          <done>
-            <set token="global_thehive_host">$result.host$</set>
-            <set token="global_thehive_port">$result.port$</set>
-            <set token="global_thehive_uri">$result.uri$</set>
-            <set token="global_thehive_case_uri">$result.case_uri$</set>
-          </done>
-          <query>| rest /servicesNS/nobody/TA-thehive-cortex/thehive_cortex_instances splunk_server=local | rename title as id | where id="$instance_id$" | eval case_uri = if(type=="TheHive5","cases","case") | eval case_uri = if(uri!="/","/"+case_uri,case_uri)</query>
-          <earliest>$filter_date.earliest$</earliest>
-          <latest>$filter_date.latest$</latest>
-          <sampleRatio>1</sampleRatio>
-        </search>
-        <option name="count">20</option>
-        <option name="dataOverlayMode">none</option>
-        <option name="refresh.display">progressbar</option>
-      </table>
-    </panel>
-  </row>
-  <row>
-    <panel depends="$always_hidden$">
-      <title>[Date] Format filters</title>
-      <table>
-        <search>
-          <done>
-            <set token="filter_date_d1">$result.filter_date_d1$</set>
-            <set token="filter_date_d2">$result.filter_date_d2$</set>
-          </done>
-          <query>| makeresults
-| eval filter_date_d1 = if("$d1$" != "1970-01-01T01:00:00.000+01:00",round(relative_time(strptime("$d1$","%F"),"@d")*1000),"*"), filter_date_d2 = if("$d1$" != "1970-01-01T01:00:00.000+01:00",round(relative_time(strptime("$d2$","%F"),"@d+1d")*1000),"*")
-| table filter_date_d1 ,filter_date_d2</query>
-          <earliest>-24h@h</earliest>
-          <latest>now</latest>
-          <sampleRatio>1</sampleRatio>
-        </search>
-        <option name="count">20</option>
-        <option name="dataOverlayMode">none</option>
-        <option name="refresh.display">progressbar</option>
-      </table>
     </panel>
   </row>
   <row depends="$alwaysHideCSSPanel$">

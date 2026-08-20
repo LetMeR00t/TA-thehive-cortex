@@ -116,6 +116,11 @@ jobs:
         # with 123 tests green.
         run: python tools/checks/local_imports_resolve.py
 
+      - name: Every gated panel can appear
+        # A panel gated on a token nothing sets never shows and never runs its
+        # search. Two views were dead for four releases that way.
+        run: python tools/checks/views_are_reachable.py
+
       - name: Coverage floors on the critical paths
         # Per-path floors, never a global one: a global floor over 8,685 lines
         # is either trivially met or unreachable, and says nothing either way.

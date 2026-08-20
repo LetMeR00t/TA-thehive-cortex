@@ -1,4 +1,18 @@
 <form version="1.1">
+
+  <!-- The Action input defaults to "list", and its change handler is what sets
+       show_dashboards_list. But a change handler does not fire for the value an
+       input already carries at load, so the results panel was absent on
+       arrival: the user had to pick another mode and come back to see it. Its
+       twin cases.xml has no such gate at all, which is how two files 86 %
+       identical ended up behaving in opposite ways.
+
+       An init block states the load-time truth once, next to the default it
+       mirrors. tools/checks/views_are_reachable.py fails if the two drift
+       apart again. -->
+  <init>
+    <set token="show_dashboards_list">1</set>
+  </init>
   <label>TheHive: Alerts</label>
 
   <search id="get_instance_info">

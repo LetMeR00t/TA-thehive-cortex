@@ -120,6 +120,7 @@ python tools/checks/log_ids_unique.py
 python tools/checks/vendored_path_bootstrap.py
 python tools/checks/unused_imports.py
 python tools/checks/local_imports_resolve.py
+python tools/checks/views_are_reachable.py
 PYTHON=python3.9 tools/checks/pins_match_build.sh
 tools/checks/tests_on_both_pythons.sh
 ```
@@ -556,3 +557,42 @@ returned no id" in the other, and the first draft conflated them. A code without
 its component prefix designates nothing — which is why the check accepts
 `THCC-135` as covering `135` for that module, and why the document is written
 that way.
+
+### A panel that cannot appear says nothing about it
+
+Two views shipped dead for four releases, and neither logged a thing.
+
+`thehive_statistics.xml` hid two panels behind `depends="$always_hidden$"`, a
+token nothing ever set. ⚠️ **A hidden panel does not dispatch its search** — and
+those two searches were the only producers of the tokens the main chart
+consumed. The chart waited for input forever: no error, no "no results", just a
+pie that never filled.
+
+`thehive_alerts.xml` gated its results panel on a token set by
+`<condition value="list">`, while the input's own `<default>` is already
+`list`. A `<change>` does not fire for the value an input already carries at
+load, so the panel was absent on arrival and appeared only after the user
+picked another mode and came back. Its twin `cases.xml` has no such gate — two
+files 86 % identical, behaving in opposite ways.
+
+Two rules:
+
+* **A token consumed by a panel must be produced by something that always
+  runs.** A view-level `<search id=…>` runs; a panel's search runs only if the
+  panel is visible. Putting a producer inside a hidden panel is a cycle.
+* **State the load-time truth in `<init>`, next to the default it mirrors.** A
+  `<change>` describes transitions, never the starting point.
+
+`tools/checks/views_are_reachable.py` enforces both, plus the XML comment trap
+below. ⚠️ Note how narrowly the second rule is expressed: a token set inside a
+`<change>` is normally deliberate — a panel that appears once you pick "CREATE"
+is the whole point of a mode form. The check reports **only** the mismatch with
+the input's default value. Its first, broader version produced 22 findings of
+which 21 were correct behaviour, which is a guard on its way to being switched
+off.
+
+⚠️ And the third trap, hit twice in one hour while writing those fixes: **a
+double dash is illegal inside an XML comment** and makes the whole view
+unparseable. Worse, the naive fix hits it again — a substitution replacing `--`
+everywhere destroys the `<!--` and `-->` delimiters themselves. Sanitise the
+comment *body*, never the whole match.
