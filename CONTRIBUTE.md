@@ -532,3 +532,27 @@ silently overrode `unittest.TestCase.run`, so `setUp` never executed and the
 failure surfaced as a missing attribute three frames away. `run`, `id`, `debug`,
 `fail` and friends are reserved on a `TestCase`; a rename that lands on one
 replaces the framework's own method without a word.
+
+### A registry a machine writes, an interpretation a human writes
+
+`docs/log_ids.md` has two halves and the split is deliberate:
+
+* **generated**, between the `INVENTAIRE` markers: every code the source emits.
+  A machine keeps this exhaustive, because a hand-maintained inventory drifts
+  within a release and then documents a past state while looking authoritative.
+* **hand-written**, above the markers: what a code *means*, and for the ones
+  that signal a problem, what to do next. No generator can produce that — the
+  message text says what happened, not what to check.
+
+⚠️ The check closes the gap: **every code logged at error or warning level must
+be explained by name in the hand-written part.** A new code shipped without an
+explanation turns the build red. So the document is allowed to be incomplete —
+it is not allowed to quietly stop matching reality.
+
+It earned its keep on the first run, twice. It found five error codes that were
+emitted and explained nowhere. And it caught a mistake in the interpretation
+itself: `126` means "creation failed, will retry" in one helper and "the server
+returned no id" in the other, and the first draft conflated them. A code without
+its component prefix designates nothing — which is why the check accepts
+`THCC-135` as covering `135` for that module, and why the document is written
+that way.

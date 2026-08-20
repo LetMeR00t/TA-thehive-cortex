@@ -1,14 +1,167 @@
-# Log identifiers
+# Log identifiers — what each code means, and what to do about it
 
-> ⚠️ **Generated file — do not edit.**
-> `python tools/checks/log_ids_unique.py --write` rebuilds it, and the CI
-> fails when it no longer matches the code. A registry maintained by hand
-> drifts within a release, and then documents a past state while looking
-> authoritative.
+Every line this add-on writes carries a code. This document says what each one
+means, and for the ones that signal a problem, what to do next.
 
-A rendered line reads `[serial][<command_id>-<id>]`. `command_id` namespaces
-the identifier per command, so an identifier must be unique **within its
-module** -- which is exactly what the check enforces.
+> ⚠️ **The interpretation below is written by hand.** The inventory at the end
+> is generated from the source, and `tools/checks/log_ids_unique.py` fails when
+> a code exists in the code but not here. So this file can be incomplete — it
+> cannot silently stop matching reality.
+
+## Anatomy of a line
+
+```
+[000123][THCC-140] exec_id=a1b2c3d4 - Processing attachment of the Splunk search results…
+   │       │  │        │
+   │       │  │        └── one execution of one command or alert action
+   │       │  └─────────── the code documented here
+   │       └────────────── which component is speaking
+   └────────────────────── a serial number, unique per line
+```
+
+⚠️ **The code is unique within its module, not across the add-on.** The
+component prefix is what disambiguates: `[THCC-140]` and `[THCA-140]` are two
+different events. Reading a code without its prefix tells you nothing.
+
+| Prefix | Component |
+| :--- | :--- |
+| `THCC` / `THCA` | alert actions "create a new case" / "create a new alert" |
+| `THAO` / `THTE` | alert actions "add observables" / "add timeline event" |
+| `CRJ` / `CSJ` / `CRA` | Cortex commands: run jobs, search jobs, refresh analyzers |
+| `THSC` / `THSA` / `THGC` / `THGA` / `THGS` / `THGAFC` | TheHive search/get commands |
+| `MI-*` | modular inputs (the collectors that index TheHive into Splunk) |
+| `MA-*` | the alert action base class |
+| `S*` | settings and instance resolution (`common.py`) |
+| `TH*` / `C*` | the TheHive and Cortex clients |
+
+## Finding them in Splunk
+
+```
+index=_internal sourcetype=tathehivecortex:log
+index=_internal sourcetype=tathehivecortex:log "[THCC-"      ← one component
+index=_internal sourcetype=tathehivecortex:log exec_id=a1b2c3d4   ← one run
+```
+
+⚠️ If that returns nothing on an installation upgraded from 4.0.0–4.2.2, the
+sourcetype was never assigned — see `release_notes/UNRELEASED.md`, which
+explains the manual purge of `etc/apps/learned/local/props.conf`. Fall back to
+`index=_internal source=*TA-thehive-cortex_*.log`.
+
+---
+
+# Codes that signal a problem
+
+## Connecting to TheHive or Cortex
+
+| Code | Meaning | What to do |
+| :--- | :--- | :--- |
+| `TH1` | No instance id was given to the command. | The command was called without its first argument. Check the SPL: `\| thehivesearchcases <instance_id> …`. |
+| `TH10` `TH30` | The alert uses `<default>` but no default instance is configured. | Configuration → Settings → set a default instance, or name the instance explicitly in the alert action. |
+| `TH20` `TH50` | Authentication type is neither `password` nor `api_key`. | Configuration → Instances → fix the type. A value written by hand into `local/thehive_cortex_instances.conf` is the usual cause. |
+| `TH31` | Both password **and** API key are empty for this instance. | The account exists but carries no secret. Re-enter it in Configuration → Accounts — a stored password is not readable back, so an interrupted edit leaves it blank. |
+| `TH45` | The server answered, but not with something this add-on can read. | Usually a reverse proxy or portal answering instead of TheHive. Check the URL and port point at TheHive itself. |
+| `TH85` | Certificate verification failed. | Either the CA is not trusted by Splunk, or the certificate does not match the host. Set the CA in the instance settings; disabling verification hides the problem rather than fixing it. |
+| `TH90` | TLS handshake failed. | Often a TLS version mismatch, or something that is not TLS on that port. |
+| `TH95` `TH100` | The proxy refused, or could not be reached. | Check the proxy settings of the instance, and that its credentials are still valid. |
+| `TH109` | The server returned an **HTML page** instead of JSON. | Almost always an authentication portal or an error page. Open the URL in a browser: what you see is what the add-on received. |
+| `TH110` | The connection itself failed. | Network, DNS or firewall between the Splunk search head and TheHive. |
+| `C7` | A Cortex instance was configured with a password. | Cortex only accepts an API key. Change the authentication type. |
+| `C9` | Cortex authentication type is not one of the expected values. | Same as `TH20`, on the Cortex side. |
+| `C15` | The Cortex API key is empty. | Re-enter it in the account; an empty key cannot connect. |
+| `C25` | Cortex answered 404. | The URL is reachable but is not a Cortex API root. Check the path. |
+| `C26` | Cortex answered "service unavailable". | Cortex is up but not ready, or behind a load balancer with no backend. |
+| `C27` | Cortex rejected the credentials. | The API key is wrong or has been revoked. |
+| `S13` `S13b` | A client or CA certificate is configured but the file was not found. | The path is relative to the search head that runs the search. A file present on one node is not present on the others. |
+| `S41` | A setting could not be read; the default is used. | Harmless in itself, but it means the configuration page never wrote that value. Open it and save once. |
+| `S3_ERROR` | Reading `storage/passwords` failed entirely. | ⚠️ No account has a password after this. Usually a permissions problem on the Splunk user running the search. |
+
+## Resolving an instance or a case
+
+| Code | Meaning | What to do |
+| :--- | :--- | :--- |
+| `S30` `S31` | The instance id does not match anything in the configuration. | The alert or search names an instance that was renamed or deleted. ⚠️ Since 4.2.3 this raises a named error instead of ending the Splunk process — a search that used to stop without a word now says why. |
+| `S66` | The HTTP timeout setting could not be read. | Falls back to the built-in default. Save the Settings page once. |
+| `TH114` | No case matches that number. | Not necessarily a fault: a case number that does not exist, or one in another organisation than the account's. |
+| `TH118` | The lookup of a case number failed. | Distinct from `TH114`: here the query itself failed. Read the attached error. |
+| `THAO-35` | A target id does not look like `~123`. | TheHive ids start with `~`. A case **number** (`42`) is not an id — the add-on resolves numbers separately. |
+
+## Reading the events Splunk hands over
+
+| Code | Meaning | What to do |
+| :--- | :--- | :--- |
+| `THC-86` | The configured timestamp field is absent from the row; now is used. | Check the field name against what the search actually produces. |
+| `THC-87` | The timestamp field holds something non-numeric; now is used. | ⚠️ A date like `2026-01-01` lands here. The field must be an epoch, in seconds or milliseconds. |
+| `THC-88` | The timestamp is numeric but is neither 10 nor 13 digits. | Microseconds, or a truncated value. Convert in the SPL: `eval ts=round(_time)`. |
+| `THC-93` | A composite key `field:subfield` names a datatype the add-on does not know. | The raw value is forwarded rather than dropped. Add the datatype to the datatypes lookup if it is legitimate. |
+| `THC-118` | A custom field has a type this add-on does not map. | Forwarded as text. Harmless if the field is textual; report the type otherwise. |
+| `THC-117` | A custom field was **dropped**: its type is not handled, or its value does not match its declared type. | ⚠️ The alert or case is created *without* that field, and until 4.2.2 this happened in silence. Check the field's type in TheHive against the value the search produces. |
+| `THC-106` | A key was ignored because TheHive reserves it as an internal field. | Rename the field in the SPL. The list of reserved names belongs to TheHive, not to this add-on. |
+| `THC-113` | An observable was declared but carries no value. | The composite key names an observable (`myfield:ip`) but neither `myfield` nor `myfield:value` exists in the row. Usually a typo, or a field that is empty for that event. |
+| `THC-4` | The datatypes file exists but cannot be read; the refresh is aborted. | Deliberate: refreshing would overwrite content that could not be read first. Check permissions on `lookups/`. |
+| `THC-5` | The datatypes file cannot be opened for writing. | Same family, on the write side. |
+| `THC-6` | The datatypes could not be recovered from the TheHive API. | The add-on falls back to the existing file. Check the connection. |
+| `THC-12` | The refresh failed; the existing file is used. | A warning, not a failure — but the file ages. |
+| `THC-13` | The refresh failed **and** no existing file was found. | ⚠️ Nothing to fall back on: custom field mapping will be wrong until this succeeds once. |
+| `THC-16` | The datatypes file is empty, malformed or unreadable. | Delete it and let the add-on rebuild it. |
+| `THAO-20` | The target type is invalid; `alert` is assumed. | Check the alert action's parameter. |
+| `THAO-25` | The sighted date is unreadable; now is used. | Same shape as `THC-87`: the field must be an epoch. |
+| `THTE-20` | No case id could be resolved for a row; it is skipped. | The row carries neither a case id nor a resolvable number. |
+| `THTE-30` | A date could not be parsed for a timeline event. | Check the format of the source field. |
+| `C35` `CJ1` | Cortex does not know this data type. | ⚠️ Since 4.2.3 the job is submitted anyway and Cortex decides — the add-on no longer refuses on a list frozen at build time. |
+| `C40` | The named analyzer does not exist on this Cortex. | Check the name, and that the analyzer is enabled for the organisation. |
+
+## Sending to TheHive
+
+| Code | Meaning | What to do |
+| :--- | :--- | :--- |
+| `THCA-122` `THCC-…` | The object already exists (duplicate); a retry follows. | Normal when a scheduled alert fires twice on overlapping windows. Use a stable `unique_id_field`. |
+| `THCA-123` `THCC-126` | Creation failed; another attempt follows. | Read the attached error: it is the server's own message. |
+| `THCC-135` `THCA-126` | The server accepted the request but returned **no id**. | ⚠️ Same event, two different codes — the two helpers never agreed. The object was probably not created: a validation rejection answered with 200. Check the payload in the attached `data=`. |
+| `THCA-124` `THCC-127` | Every attempt failed. | ⚠️ The object was **not** created. Raise `thehive_creation_max_retry` only if the cause is transient. |
+| `THCC-132` `THCC-137` | Adding an observable to a freshly created case failed. | The case exists, the observable does not. Check the observable's datatype and value. |
+| `THCC-136` | The observable already exists on that case; it is skipped. | Informational. |
+| `139` | Attaching MITRE TTPs failed. | The object exists without its TTPs. Check the `patternId` against the catalogue. |
+| `THAO-60` | The observable already exists on the target. | Informational. |
+| `THAO-70` | Adding the observable failed. | Read the attached response body — it carries TheHive's reason. |
+| `THTE-ERR` | Creating a timeline event failed. | Check that the case still exists and the account can write to it. |
+| `TH202` | Creating a timeline event failed, client side. | Same family, seen from the client. |
+| `80` | The "run function" action failed on the events. | The function name, or the payload it received. |
+| `THCA-1` | The external link back to Splunk could not be built. | The alert is created without its "results link". Set the Splunk base URL in the Settings page — the add-on cannot guess it from inside a search. |
+
+## Attaching the search results
+
+| Code | Meaning | What to do |
+| :--- | :--- | :--- |
+| `145` | The results file is being uncompressed. | Informational; it precedes the two below. |
+| `148` | The results file could not be read. | ⚠️ Since 4.2.3 this aborts with a named error instead of failing three lines later inside the CSV writer. The file is the one Splunk wrote for the alert — a truncated dispatch directory is the usual cause. |
+| `146` | The attachment format is not one of the four supported. | Was `141`, which also meant something else. Check the alert action's "attach format". |
+| `151` | The results could not be prepared for attachment. | ⚠️ The object itself was created; only its attachment is missing. Processing continues with the next object. |
+| `THCC-150` `THCA-150` | The upload to TheHive failed. | The file was built; TheHive refused it. Size limits are the usual cause. |
+| `THCC-180` `THCA-160` | The upload returned nothing usable. | Same, seen from the response. |
+
+## Collecting into Splunk (modular inputs)
+
+| Code | Meaning | What to do |
+| :--- | :--- | :--- |
+| `MI-ERR-DATES` | The backfill date range could not be parsed. | Check the start and end dates of the input. |
+| `MI-ERR-COLLECT` | The collection itself failed. | Read the attached error; it is the API's. |
+| `MI-BTSK-ERR-DATE` `MI-BTL-ERR-DATE` | Same as `MI-ERR-DATES`, for tasks and timeline backfills. | |
+| `ERR` | A collection failed. ⚠️ This bare code appears in several inputs — read the **prefix** to know which. | |
+| `MI-ERR` | A collection failed, for the alerts/cases and audit inputs. | |
+| `MA-ERR` `MA-WRN` | Error and warning of the alert action framework itself. | These come from the base class, before the add-on's own code runs. |
+| `TH117` | The instance status could not be fetched. | The status input cannot reach TheHive. |
+| `TH183` | The timeline of a case could not be fetched. | Often a case deleted between listing and fetching. |
+| `6` | An unsupported filter was given to `thehivegetstats`. | The message lists the supported ones. |
+| `C46` | A Cortex job could not be submitted. | Read the attached error. |
+
+---
+
+<!-- INVENTAIRE:DEBUT -->
+
+# Complete inventory
+
+> ⚠️ **Generated block — do not edit between the markers.**
+> `python tools/checks/log_ids_unique.py --write` rebuilds it.
 
 ## `backfill_alerts_cases.py`
 
@@ -526,3 +679,5 @@ module** -- which is exactly what the check enforces.
 | `ERR` | 113 | error | Error during timeline collection: {…} |
 
 *350 call sites.*
+
+<!-- INVENTAIRE:FIN -->

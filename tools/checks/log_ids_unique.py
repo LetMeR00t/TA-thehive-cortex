@@ -23,11 +23,21 @@ uniqueness would mean renumbering ~340 call sites and breaking every saved
 search built on one -- for an ambiguity that does not exist.
 
     python tools/checks/log_ids_unique.py            # verify
-    python tools/checks/log_ids_unique.py --write    # regenerate the registry
+    python tools/checks/log_ids_unique.py --write    # refresh the inventory block
 
-⚠️ The registry is GENERATED, never hand-maintained. A registry written by hand
-drifts from the code within a release, and then documents a past state while
-looking authoritative.
+⚠️ `docs/log_ids.md` has TWO parts, and the split is the point:
+
+* everything above the `INVENTAIRE` markers is **written by hand** -- what a
+  code means, and for the ones that signal a problem, what to do next. A
+  machine cannot write that, and regenerating the file would erase it.
+* the block between the markers is **generated** from the source, so the
+  inventory itself cannot drift.
+
+And the check closes the gap between the two: **every code the source emits at
+error or warning level must have an interpretation in the hand-written part.**
+A new code shipped without an explanation turns the build red. The document may
+be incomplete -- it cannot quietly stop matching reality, which is the failure
+mode of every hand-maintained registry.
 """
 
 from __future__ import annotations
@@ -109,19 +119,21 @@ def modules():
         yield chemin
 
 
+DEBUT = "<!-- INVENTAIRE:DEBUT -->"
+FIN = "<!-- INVENTAIRE:FIN -->"
+
+#: Les niveaux dont un code DOIT être interprété à la main.
+NIVEAUX_A_EXPLIQUER = {"error", "warn", "warning"}
+
+
 def construire_registre() -> tuple[str, list[str]]:
     lignes = [
-        "# Log identifiers",
+        DEBUT,
         "",
-        "> ⚠️ **Generated file — do not edit.**",
-        "> `python tools/checks/log_ids_unique.py --write` rebuilds it, and the CI",
-        "> fails when it no longer matches the code. A registry maintained by hand",
-        "> drifts within a release, and then documents a past state while looking",
-        "> authoritative.",
+        "# Complete inventory",
         "",
-        "A rendered line reads `[serial][<command_id>-<id>]`. `command_id` namespaces",
-        "the identifier per command, so an identifier must be unique **within its",
-        "module** -- which is exactly what the check enforces.",
+        "> ⚠️ **Generated block — do not edit between the markers.**",
+        "> `python tools/checks/log_ids_unique.py --write` rebuilds it.",
         "",
     ]
     constats = []
@@ -151,35 +163,88 @@ def construire_registre() -> tuple[str, list[str]]:
         lignes.append("")
 
     lignes.append(f"*{total} call sites.*")
+    lignes.append("")
+    lignes.append(FIN)
     return "\n".join(lignes) + "\n", constats
 
 
+def remplacer_inventaire(document: str, inventaire: str) -> str:
+    """Substitue le bloc généré, en laissant l'interprétation intacte."""
+    i, j = document.index(DEBUT), document.index(FIN) + len(FIN)
+    return document[:i] + inventaire.rstrip("\n") + document[j:]
+
+
+def acronymes(module: Path) -> set[str]:
+    """Les préfixes sous lesquels ce module apparaît dans une ligne rendue.
+
+    ⚠️ Un code nu ne désigne rien pour un lecteur : `135` veut dire deux choses
+    différentes selon le module. La documentation l'écrit donc préfixé
+    (`THCC-135`), et c'est cette forme-là que le contrôle doit accepter.
+    """
+    import re
+    return set(re.findall(r'acronym\s*=\s*["\'](\w+)["\']',
+                          module.read_text(encoding="utf-8")))
+
+
+def codes_a_expliquer() -> list[tuple[str, set[str]]]:
+    """(code, formes acceptables) pour tout ce qui signale un problème."""
+    besoin = {}
+    for module in modules():
+        prefixes = acronymes(module)
+        for _, identifiant, niveau, _ in sites(module):
+            if niveau not in NIVEAUX_A_EXPLIQUER:
+                continue
+            formes = besoin.setdefault(identifiant, set())
+            formes.add(identifiant)
+            formes.update(f"{p}-{identifiant}" for p in prefixes)
+    return sorted(besoin.items())
+
+
 def main() -> int:
-    contenu, constats = construire_registre()
+    inventaire, constats = construire_registre()
+
+    if not REGISTRE.is_file():
+        print(f"  {REGISTRE.relative_to(RACINE)} is missing")
+        return 1
+    document = REGISTRE.read_text(encoding="utf-8")
+    if DEBUT not in document or FIN not in document:
+        print(f"  {REGISTRE.relative_to(RACINE)} has lost its {DEBUT} markers")
+        return 1
 
     if "--write" in sys.argv:
-        REGISTRE.parent.mkdir(parents=True, exist_ok=True)
-        REGISTRE.write_text(contenu, encoding="utf-8")
-        print(f"registry written: {REGISTRE.relative_to(RACINE)}")
+        REGISTRE.write_text(remplacer_inventaire(document, inventaire), encoding="utf-8")
+        print(f"inventory refreshed in {REGISTRE.relative_to(RACINE)}; "
+              f"the hand-written part is untouched")
         return 1 if constats else 0
+
+    # ⚠️ L'interprétation est cherchée AVANT les marqueurs seulement : une
+    # mention dans l'inventaire généré ne vaut pas une explication.
+    redige = document[: document.index(DEBUT)]
+    for code, formes in codes_a_expliquer():
+        if not any(f"`{f}`" in redige for f in formes):
+            attendu = " or ".join(f"`{f}`" for f in sorted(formes))
+            constats.append(
+                f"{attendu} is logged as an error or a warning but is explained "
+                f"nowhere in {REGISTRE.relative_to(RACINE)}: someone will read it "
+                f"during an incident with nothing to go on"
+            )
+
+    if remplacer_inventaire(document, inventaire) != document:
+        constats.append(
+            f"the generated inventory of {REGISTRE.relative_to(RACINE)} no longer "
+            f"matches the code: run `--write`"
+        )
 
     for c in constats:
         print(f"  {c}")
-
-    if not REGISTRE.is_file():
-        print(f"  {REGISTRE.relative_to(RACINE)} is missing: run with --write")
-        return 1
-    if REGISTRE.read_text(encoding="utf-8") != contenu:
-        print(f"  {REGISTRE.relative_to(RACINE)} no longer matches the code: "
-              f"run `python tools/checks/log_ids_unique.py --write`")
-        constats.append("registry stale")
-
     if constats:
         print()
-        print("An identifier that designates two places designates none.")
+        print("An identifier that designates two places designates none, and one")
+        print("nobody explained is a code you meet for the first time mid-incident.")
         return 1
 
-    print("every log identifier designates a single place, registry up to date.")
+    print(f"every identifier designates a single place; "
+          f"{len(codes_a_expliquer())} problem code(s) explained; inventory up to date.")
     return 0
 
 
