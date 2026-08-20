@@ -1,4 +1,16 @@
 <form version="1.1">
+
+  <!-- Auto-refresh lives on the PANEL searches of this view only, and that is
+       deliberate on two counts.
+
+       This view reads the Splunk index, so a cycle costs nothing to TheHive.
+       The Cases and Alerts views call the TheHive API on every render: giving
+       them a 60 s refresh would mean one HTTP round-trip per minute per open
+       tab, and on their sendalert panels it would create an object every
+       cycle.
+
+       And never on an input's search: refreshing a dropdown under the
+       analyst's fingers makes their selection jump. -->
   <label>📃 Audit logs</label>
   <description>This dashboard is used to monitor audit logs from scripts</description>
   <fieldset submitButton="false">
@@ -85,6 +97,8 @@
           <earliest>$time.earliest$</earliest>
           <latest>$time.latest$</latest>
           <sampleRatio>1</sampleRatio>
+          <refresh>60s</refresh>
+          <refreshType>delay</refreshType>
         </search>
         <option name="count">25</option>
         <option name="drilldown">none</option>
@@ -149,6 +163,8 @@
           <earliest>$time.earliest$</earliest>
           <latest>$time.latest$</latest>
           <sampleRatio>1</sampleRatio>
+          <refresh>60s</refresh>
+          <refreshType>delay</refreshType>
         </search>
         <option name="count">30</option>
         <option name="dataOverlayMode">none</option>
@@ -205,6 +221,8 @@
           <earliest>$time.earliest$</earliest>
           <latest>$time.latest$</latest>
           <sampleRatio>1</sampleRatio>
+          <refresh>60s</refresh>
+          <refreshType>delay</refreshType>
         </search>
         <option name="count">30</option>
         <option name="dataOverlayMode">none</option>
@@ -248,6 +266,8 @@
           <earliest>$time.earliest$</earliest>
           <latest>$time.latest$</latest>
           <sampleRatio>1</sampleRatio>
+          <refresh>60s</refresh>
+          <refreshType>delay</refreshType>
         </search>
         <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
         <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>
@@ -303,6 +323,8 @@
           <earliest>$time.earliest$</earliest>
           <latest>$time.latest$</latest>
           <sampleRatio>1</sampleRatio>
+          <refresh>60s</refresh>
+          <refreshType>delay</refreshType>
         </search>
         <option name="charting.axisLabelsX.majorLabelStyle.overflowMode">ellipsisNone</option>
         <option name="charting.axisLabelsX.majorLabelStyle.rotation">0</option>

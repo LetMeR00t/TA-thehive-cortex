@@ -142,6 +142,21 @@ def main() -> int:
         # Mais on ne le détecte pas à ce prix-là, et un garde qui crie au loup
         # finit débranché — ce qui coûte les trois règles ci-dessus avec lui.
 
+        # --- 4. un rafraîchissement posé sur la recherche d'un INPUT --------
+        # ⚠️ Un panneau qui se rafraîchit est utile ; une liste déroulante qui
+        # se rafraîchit fait sauter la sélection sous les doigts de
+        # l'utilisateur toutes les minutes. Constaté sur moi-même : une
+        # substitution posée sur « toutes les recherches de panneau » en a
+        # touché trois qui alimentaient des inputs DANS des panneaux.
+        for bloc in re.findall(r"<input\b.*?</input>", texte, re.S):
+            if "<refresh>" in bloc:
+                etiquette = re.search(r"<label>(.*?)</label>", bloc, re.S)
+                nom = etiquette.group(1).strip() if etiquette else "?"
+                constats.append(
+                    f"{relatif}: the input \"{nom}\" carries an auto-refresh. "
+                    f"Its selection will jump under the user every cycle"
+                )
+
         for attribut in ("depends", "rejects"):
             for expression in re.findall(rf'{attribut}="([^"]+)"', texte):
                 for jeton in re.findall(r"\$([^$,]+)\$", expression):

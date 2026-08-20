@@ -599,6 +599,24 @@ unparseable. Worse, the naive fix hits it again — a substitution replacing `--
 everywhere destroys the `<!--` and `-->` delimiters themselves. Sanitise the
 comment *body*, never the whole match.
 
+⚠️ **`git checkout <file>` to prove a guard works also restores the defect the
+guard was written for.** Twice in one session: the check went red as intended,
+and the "restore" wiped an hour of uncommitted work in the same file. Prove a
+guard red on a COPY, or commit first — a demonstration must not be able to
+destroy what it demonstrates.
+
+### Auto-refresh belongs to panels reading the index, never to inputs
+
+A refreshing panel is useful. A refreshing **dropdown** makes the analyst's
+selection jump under their fingers every cycle — and a substitution applied to
+"every panel search" hits the inputs declared *inside* panels, which is how
+three of them got one here.
+
+And never on a view that calls the TheHive API: 60 s means one HTTP round-trip
+per minute **per open tab**, and on a `sendalert` panel it would create an
+object every cycle. `audit_logs.xml` reads the Splunk index, so its cycles cost
+the remote server nothing — that is why it is the only one.
+
 ### A setting read and dropped looks wired from every angle
 
 `thehive_ttp_catalog_name` was on the Settings page, had a getter, the getter
