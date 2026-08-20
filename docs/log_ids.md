@@ -370,40 +370,40 @@ explains the manual purge of `etc/apps/learned/local/props.conf`. Fall back to
 | `THC-2` | 126 | debug | Datatypes recovered from TheHive: … |
 | `THC-5` | 150 | error | FATAL {} could not be opened in write mode |
 | `THC-6` | 157 | error | Could not recover datatypes from TheHive API: … |
-| `THC-10` | 177 | debug | Directory found: … |
-| `THC-11` | 184 | info | File {…} is older than 24h ({…}s). Merging new datatypes from API (existing r… |
-| `THC-12` | 199 | warn | API refresh failed for {…}. Falling back to existing file. |
-| `THC-13` | 204 | error | API refresh failed and no existing file {…} found. |
-| `THC-15` | 224 | debug | dataType_dict built from thehive_datatypes.csv |
-| `THC-16` | 229 | error | file {…} empty, malformed or not readable |
-| `THC-61` | 316 | debug | Row before pre-processing: … |
-| `THC-62` | 339 | debug | Row after pre-processing: … |
-| `THC-63` | 375 | debug | original sourceRef: {} was cut as it was a string too long (max 128 char). |
-| `THC-64` | 383 | debug | sourceRef: {} |
-| `THC-87` | 484 | warn | timestamp_field '{…}' holds a non-numeric value ('{…}'); falling back to curr… |
-| `THC-80` | 490 | debug | new Timestamp from row: {} |
-| `THC-88` | 500 | warn | timestamp_field '{…}' is neither a 10 nor a 13 digit epoch ('{…}'); falling b… |
-| `THC-85` | 507 | debug | alert timestamp: {} |
-| `THC-86` | 512 | warn | timestamp_field '{…}' missing; falling back to current time |
-| `THC-90` | 522 | debug | field to process: {…} |
-| `THC-91` | 526 | debug | composite fieldvalue detected: {…} |
-| `THC-92` | 550 | debug | field: {} enriched with the information {} set to |
-| `THC-93` | 562 | warn | composite key '{…}' was NOT mapped: '{…}' is not a known datatype. The raw va… |
-| `THC-95` | 571 | debug | key is an observable: {} |
-| `THC-96` | 592 | debug | key is a custom field: {}, with type {} |
-| `THC-118` | 660 | warn | custom field '{…}' has type '{…}', which this add-on does not map; forwarding… |
-| `THC-117` | 674 | warn | custom field '{…}' was NOT mapped: type '{…}' is not handled, or value '{…}' … |
-| `THC-108` | 707 | debug | ttp was parsed correctly and added to the alert: {} |
-| `THC-109` | 714 | debug | ttp already exist, ignoring duplicates: {} |
-| `THC-122` | 724 | error | ttp '{…}' is not in the MITRE catalogue '{…}'; the TTP is dropped rather than… |
-| `THC-105` | 741 | debug | key is added as another observable (scope is False): {} |
-| `THC-106` | 759 | warn | key is used by TheHive as an internal field (scope is False): {}. Key ignored… |
-| `THC-111` | 769 | debug | Processing observable data: {} ({}) |
-| `THC-112` | 782 | debug | Multi-value split for {…}: '{…}' -> {…} |
-| `THC-113` | 834 | warn | Observable '{0}' doesn't have any value set (no field '{0}' or '{0}:value' wa… |
-| `THC-115` | 843 | debug | observables found for an alert: … |
-| `THC-116` | 849 | debug | No observable found in current row (sourceRef={…}). |
-| `THC-77` | 920 | debug | Append results to description as markdown table |
+| `THC-10` | 214 | debug | Directory found: … |
+| `THC-11` | 221 | info | File {…} is older than 24h ({…}s). Merging new datatypes from API (existing r… |
+| `THC-12` | 236 | warn | API refresh failed for {…}. Falling back to existing file. |
+| `THC-13` | 241 | error | API refresh failed and no existing file {…} found. |
+| `THC-15` | 261 | debug | dataType_dict built from thehive_datatypes.csv |
+| `THC-16` | 266 | error | file {…} empty, malformed or not readable |
+| `THC-61` | 352 | debug | Row before pre-processing: … |
+| `THC-62` | 375 | debug | Row after pre-processing: … |
+| `THC-63` | 411 | debug | original sourceRef: {} was cut as it was a string too long (max 128 char). |
+| `THC-64` | 419 | debug | sourceRef: {} |
+| `THC-87` | 520 | warn | timestamp_field '{…}' holds a non-numeric value ('{…}'); falling back to curr… |
+| `THC-80` | 526 | debug | new Timestamp from row: {} |
+| `THC-88` | 536 | warn | timestamp_field '{…}' is neither a 10 nor a 13 digit epoch ('{…}'); falling b… |
+| `THC-85` | 543 | debug | alert timestamp: {} |
+| `THC-86` | 548 | warn | timestamp_field '{…}' missing; falling back to current time |
+| `THC-90` | 558 | debug | field to process: {…} |
+| `THC-91` | 562 | debug | composite fieldvalue detected: {…} |
+| `THC-92` | 586 | debug | field: {} enriched with the information {} set to |
+| `THC-93` | 598 | warn | composite key '{…}' was NOT mapped: '{…}' is not a known datatype. The raw va… |
+| `THC-95` | 607 | debug | key is an observable: {} |
+| `THC-96` | 628 | debug | key is a custom field: {}, with type {} |
+| `THC-118` | 696 | warn | custom field '{…}' has type '{…}', which this add-on does not map; forwarding… |
+| `THC-117` | 710 | warn | custom field '{…}' was NOT mapped: type '{…}' is not handled, or value '{…}' … |
+| `THC-108` | 743 | debug | ttp was parsed correctly and added to the alert: {} |
+| `THC-109` | 750 | debug | ttp already exist, ignoring duplicates: {} |
+| `THC-122` | 760 | error | ttp '{…}' is not in the MITRE catalogue '{…}'; the TTP is dropped rather than… |
+| `THC-105` | 777 | debug | key is added as another observable (scope is False): {} |
+| `THC-106` | 795 | warn | key is used by TheHive as an internal field (scope is False): {}. Key ignored… |
+| `THC-111` | 805 | debug | Processing observable data: {} ({}) |
+| `THC-112` | 818 | debug | Multi-value split for {…}: '{…}' -> {…} |
+| `THC-113` | 870 | warn | Observable '{0}' doesn't have any value set (no field '{0}' or '{0}:value' wa… |
+| `THC-115` | 879 | debug | observables found for an alert: … |
+| `THC-116` | 885 | debug | No observable found in current row (sourceRef={…}). |
+| `THC-77` | 956 | debug | Append results to description as markdown table |
 
 ## `ta_thehive_cortex/modalert_thehive_create_a_new_alert_helper.py`
 
@@ -475,8 +475,8 @@ explains the manual purge of `etc/apps/learned/local/props.conf`. Fall back to
 
 | id | line | level | message |
 | :--- | ---: | :--- | :--- |
-| `THC-120` | 52 | warn | the MITRE catalogue '{…}' could not be read ({…}); pattern ids are forwarded … |
-| `THC-121` | 65 | debug | MITRE catalogue '{…}': {…} pattern id(s) loaded |
+| `THC-120` | 59 | warn | the MITRE catalogue '{…}' could not be read ({…}); pattern ids are forwarded … |
+| `THC-121` | 72 | debug | MITRE catalogue '{…}': {…} pattern id(s) loaded |
 
 ## `thehive.py`
 

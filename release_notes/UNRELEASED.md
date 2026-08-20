@@ -243,3 +243,22 @@ per row.
 
 🖥️ If you use TTPs and have never set a catalogue name, nothing changes: with no
 catalogue configured there is nothing to check against.
+
+
+## ⚡ Two invariants read once per execution instead of once per row
+
+`parse_events` re-read the custom field definitions (an HTTP round-trip to
+TheHive) and the datatypes lookup (a full CSV re-read) on **every call**.
+
+Harmless for the creation actions, which call it once. Not harmless for
+**"Add observables"**, which calls it once per result row: for a search
+returning 1 000 rows, that is ~1 000 identical HTTP calls and ~1 000 CSV
+re-reads — and, when the datatypes file is more than 24 hours old, ~1 000
+attempts to rewrite it under `$SPLUNK_HOME/etc/apps` from an alert action
+worker.
+
+Both are now memoised per execution, keyed on the instance URL: a search
+addressing two TheHive instances still reads each one's catalogue.
+
+⚠️ Nothing changes in what the actions produce. A test counts the calls, since
+this cost is invisible both in a reading and in a unit test that runs one row.

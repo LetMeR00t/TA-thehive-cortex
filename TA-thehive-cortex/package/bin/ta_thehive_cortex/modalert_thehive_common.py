@@ -165,6 +165,43 @@ def create_datatype_lookup(thehive: TheHive4Splunk, force=False):
     return dataType_dict
 
 
+#: Per-execution memo. See `per_execution_invariants` below for why.
+_DATATYPES_MEMO: dict = {}
+
+#: Same, for the custom field definitions TheHive holds.
+_CUSTOM_FIELDS_MEMO: dict = {}
+
+
+def reset_per_execution_cache():
+    """Forget what was memoised. For the tests, and for a long-lived process."""
+    _DATATYPES_MEMO.clear()
+    _CUSTOM_FIELDS_MEMO.clear()
+
+
+def per_execution_invariants(thehive: TheHive4Splunk):
+    """The datatypes and the custom field definitions, read at most once.
+
+    ⚠️ Neither changes while a batch of results is being sent, yet both were
+    re-read for every row by the "add observables" action, which calls
+    parse_events once per row. Measured on the shipped code, for 1000 rows:
+    ~1000 extra HTTP round-trips to TheHive for the custom fields, ~1000 full
+    re-reads of the datatypes CSV — and, when that file is more than 24 hours
+    old, ~1000 attempts to rewrite it under $SPLUNK_HOME/etc/apps from a
+    worker.
+
+    The memo is keyed on the instance's URL: a search may address several
+    TheHive instances in one execution, and they do not share a catalogue.
+    """
+    key = getattr(getattr(thehive, "session", None), "hive_url", "?")
+    if key not in _DATATYPES_MEMO:
+        _DATATYPES_MEMO[key] = get_datatype_dict(thehive)
+    if key not in _CUSTOM_FIELDS_MEMO:
+        _CUSTOM_FIELDS_MEMO[key] = {
+            cf["name"]: cf for cf in thehive.custom_field.list()
+        }
+    return _DATATYPES_MEMO[key], _CUSTOM_FIELDS_MEMO[key]
+
+
 def get_datatype_dict(thehive: TheHive4Splunk):
     """This function is used to recover information from a lookup that contain datatypes"""
 
@@ -291,8 +328,7 @@ def parse_events(helper, thehive: TheHive4Splunk, alert_args):
     # iterate through each row, cleaning multivalue fields
     # and then adding the attributes under same alert key
     # this builds the dict parsed_events
-    data_type = get_datatype_dict(thehive)
-    custom_fields = {cf["name"]: cf for cf in thehive.custom_field.list()}
+    data_type, custom_fields = per_execution_invariants(thehive)
     # ⚠️ Once per execution, never per row: the catalogue does not change while
     # a batch is being sent, and re-reading it per row would be one HTTP
     # round-trip per row.
