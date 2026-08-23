@@ -406,11 +406,30 @@ class TheHive4Splunk(TheHiveApi):
 
         except Exception as e:
             if "CERTIFICATE_VERIFY_FAILED" in str(e):
+                # Point at the mechanism that survives an upgrade (the instance's
+                # own CA bundle under local/), never at the bundled certifi store:
+                # that one ships with the add-on and is overwritten on every deploy.
+                if isinstance(verify, str):
+                    remediation = (
+                        'the CA bundle configured for this instance ("'
+                        + verify
+                        + '") does not certify the server. Append the issuing certificate '
+                        "authority to that file."
+                    )
+                else:
+                    remediation = (
+                        "no custom certificate authority is configured for this instance. "
+                        "Place a PEM bundle in the app's local/ folder and set the instance "
+                        'field "CA Certificate Path" to its filename. Do not edit "'
+                        + str(certifi.where())
+                        + '": it ships with the add-on and is overwritten on every upgrade.'
+                    )
                 self.logger_file.warn(
                     id="TH85",
-                    message='THE_HIVE_CERTIFICATE_FAILED - It seems that the certificate verification failed. Please check that the certificate authority is added to "'
-                    + str(certifi.where())
-                    + '". Complete error: '
+                    message="THE_HIVE_CERTIFICATE_FAILED - It seems that the certificate "
+                    "verification failed: "
+                    + remediation
+                    + " Complete error: "
                     + str(e),
                 )
                 sys.exit(85)
