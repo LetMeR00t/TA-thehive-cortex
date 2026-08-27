@@ -1,0 +1,81 @@
+# The repository checks, and what each one exists to prevent
+
+> Trigger: read this when you add, change or silence a check under `tools/checks/`, or one of them fails.
+
+## Repository checks
+
+Run before opening a pull request. They are cheap, offline, and they exist
+because each one comes from a defect that shipped.
+
+```bash
+python -m unittest discover -s tests -p "test_*.py"
+python tools/checks/no_bare_except.py
+python tools/checks/requests_timeout.py
+python tools/checks/declared_files_exist.py
+python tools/checks/log_sourcetype_covered.py
+python tools/checks/rule_not_duplicated.py
+python tools/checks/duplication_threshold.py
+python tools/checks/log_ids_unique.py
+python tools/checks/vendored_path_bootstrap.py
+python tools/checks/unused_imports.py
+python tools/checks/local_imports_resolve.py
+python tools/checks/views_are_reachable.py
+python tools/checks/settings_are_used.py
+python tools/checks/alert_action_params.py
+PYTHON=python3.9 tools/checks/pins_match_build.sh
+tools/checks/tests_on_both_pythons.sh
+```
+
+**And before every tag, on the ARCHIVE:**
+
+```bash
+tools/checks/package_contents.sh <app>.spl
+```
+
+### `no_bare_except.py`
+
+Refuses `except:` and `except ...: pass` in `TA-thehive-cortex/package/bin`.
+Both shapes make a failure indistinguishable from correct behaviour, and this
+add-on has paid for it: `except Exception: pass` around the log level
+resolution meant a user could configure DEBUG, keep getting INFO, and find no
+explanation anywhere.
+
+A silent handler is legitimate when the surrounding code reports the failure
+anyway — a best-effort detail added to a message that is logged just below.
+Say so **on the line**, with the reason:
+
+```python
+except ValueError:  # silent-except: reported by THC-117 below
+    pass
+```
+
+A bare `except:` is never waivable: it also swallows `KeyboardInterrupt` and
+`SystemExit`. Generated files (`cim_actions.py`, `alert_actions_base.py`, …)
+are skipped — they are rewritten by `ucc-gen` at every build, so a finding
+there cannot be acted upon in this repository.
+
+### `pins_match_build.sh`
+
+**A package that is installed but not pinned makes the build irreproducible,
+and nothing signals it.** Two builds a month apart ship different code while
+`requirements.txt` swears otherwise. Measured on 2026-08-19: `PySocks`,
+`defusedxml` and `sortedcontainers` were shipped without being listed --
+sixteen packages installed against thirteen declared.
+
+This is the direct neighbour of the defect in §7: the bare `lib/` rule of the
+standard Python `.gitignore` was swallowing `package/lib/requirements.txt`
+itself, so the build was not reproducible from a clone. Same family -- what
+ships gets decided somewhere nobody is looking.
+
+⚠️ **Run it against the Python the add-on TARGETS**, not the one you happen to
+have. Resolution depends on the version: `splunk-sdk` 3.0.0 requires `>=3.13`
+and `requests` 2.33 requires `>=3.10`, so a 3.13 run and a 3.9 run do not
+produce the same closure. Splunk defaults to 3.9, so 3.9 is what decides.
+
+### `requests_timeout.py`
+
+`requests` has no default timeout. Both vendored libraries shipped without a
+single one, so a server that accepts the connection and then says nothing held
+a Splunk worker until the kernel gave up. The libraries are patched (see
+`tools/vendoring/LOCAL_PATCHES.md`); this check exists so the
+next upgrade cannot quietly undo the patch.
