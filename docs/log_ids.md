@@ -130,6 +130,8 @@ explains the manual purge of `etc/apps/learned/local/props.conf`. Fall back to
 | `THCC-132` `THCC-137` | Adding an observable to a freshly created case failed. | The case exists, the observable does not. Check the observable's datatype and value. |
 | `THCC-136` | The observable already exists on that case; it is skipped. | Informational. |
 | `139` | Attaching MITRE TTPs failed. | The object exists without its TTPs. Check the `patternId` against the catalogue. |
+| `133` | The TTPs were **REFUSED**: the account lacks `manageProcedure`. | ⚠️ The alert or case **was created** — only its TTPs are missing, and the action no longer fails for it. Grant `manageProcedure` to the profile of that account, on that organisation. It is a TheHive permission; the add-on cannot fix it. |
+| `134` | Attaching the TTPs raised an error of another kind. | Same consequence: the object exists, its TTPs do not. The raw error is in the message. |
 | `THAO-60` | The observable already exists on the target. | Informational. |
 | `THAO-70` | Adding the observable failed. | Read the attached response body — it carries TheHive's reason. |
 | `THTE-ERR` | Creating a timeline event failed. | Check that the case still exists and the account can write to it. |
@@ -483,8 +485,10 @@ explains the manual purge of `etc/apps/learned/local/props.conf`. Fall back to
 
 | id | line | level | message |
 | :--- | ---: | :--- | :--- |
-| `138` | 33 | info | Object {…} was successfully updated with the TTPs on url={…} |
-| `139` | 38 | error | TTPs update on recent creation has failed. url={…}, {…}, content={…}, ttp={…} |
+| `133` | 46 | error | TTPS_REFUSED - object {…} was created, but its TTPs were REFUSED: the account… |
+| `134` | 57 | error | TTPS_FAILED - object {…} was created, but its TTPs could not be attached: {…}… |
+| `138` | 68 | info | Object {…} was successfully updated with the TTPs on url={…} |
+| `139` | 73 | error | TTPs update on recent creation has failed. url={…}, {…}, content={…}, ttp={…} |
 
 ## `ta_thehive_cortex/ttp_catalogue.py`
 
@@ -703,6 +707,6 @@ explains the manual purge of `etc/apps/learned/local/props.conf`. Fall back to
 | `2` | 110 | info | Successfully indexed {…} timeline events. |
 | `ERR` | 113 | error | Error during timeline collection: {…} |
 
-*361 call sites.*
+*363 call sites.*
 
 <!-- INVENTAIRE:FIN -->

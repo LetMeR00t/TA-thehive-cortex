@@ -26,8 +26,43 @@ def attach_procedures(endpoint, object_id, ttps, logger_file, url, context):
     parameter carries a DIFFERENT name on each side, which is why it is passed
     positionally: naming it would reintroduce the very split this function
     exists to remove.
+
+    ⚠️ **The object already exists when this runs.** Letting an exception out of
+    here made the whole alert action die: the alert was created, the action
+    exited 5, `splunkd.log` reddened on every single run, and nothing said that
+    only the TTPs were missing. Measured on TheHive 5.7.5 against an account
+    without `manageProcedure`, which is a server-side permission -- nothing the
+    add-on can fix, and no reason to report the creation as failed.
+
+    Returns the response, or None when the TTPs could not be attached.
     """
-    response = endpoint.create_procedures(object_id, procedures=ttps)[0]
+    try:
+        response = endpoint.create_procedures(object_id, procedures=ttps)[0]
+    except Exception as e:
+        details = str(e)
+        # The two cases deserve different messages: one is a permission to
+        # grant, the other is anybody's guess and needs the raw error.
+        if "manageProcedure" in details or "not authorized" in details.lower():
+            logger_file.error(
+                id="133",
+                message=(
+                    f"TTPS_REFUSED - object {object_id} was created, but its "
+                    f"TTPs were REFUSED: the account is missing the "
+                    f"`manageProcedure` permission on this organisation. Grant "
+                    f"it in the TheHive profile; nothing else about this "
+                    f"creation failed. url={url}, {context()}, ttp={ttps}"
+                ),
+            )
+        else:
+            logger_file.error(
+                id="134",
+                message=(
+                    f"TTPS_FAILED - object {object_id} was created, but its "
+                    f"TTPs could not be attached: {details}. url={url}, "
+                    f"{context()}, ttp={ttps}"
+                ),
+            )
+        return None
 
     if "_id" in response:
         logger_file.info(
