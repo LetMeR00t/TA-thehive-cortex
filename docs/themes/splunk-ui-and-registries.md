@@ -165,3 +165,35 @@ is enough.
 translation pass arrives in French again.** The rule is not "translate once", it
 is "the repository is English"; check the file you just created, not only the
 ones you swept.
+
+## A Simple XML view you changed is not done until it ran
+
+*A guard that was never seen working is not a guard.* Nothing here executes a
+dashboard: the XML parses, the checks pass, the tests are green — and none of
+that says a token was set, a panel appeared, or a search returned. Token
+resolution, `<change>` handlers, `<init>`, `depends` / `rejects` and `| loadjob`
+exist only inside a running Splunk.
+
+So: **a modified Simple XML view stays open until it has been exercised on a
+real instance.** Not "should" — the ticket does not close.
+
+### The protocol, reusable as is
+
+For each token the view gates a panel on, walk these four, in this order:
+
+1. **Nominal** — the legitimate value. The panel appears. *(If this fails,
+   nothing else you test means anything.)*
+2. **Empty, then blanks** — clear the field, then type a single **space**.
+   ⚠️ The second is the one that gets missed: `$value$==""` is false for `" "`,
+   so the token is set and the panel unlocks on a value that is not one.
+3. **Injected** — load the view with the token in the **URL**
+   (`?form.create_sid=whatever`), and again through a drilldown if one leads
+   here. A `<change>` handler does **not** fire for a value the input already
+   carries, so without an `<init>` unsetting it, the guard is simply walked
+   around.
+4. **Stale** — a value that was valid and no longer is (an expired search job,
+   a deleted object). Well-formed is not the same as still there, and the
+   failure that follows names neither.
+
+Record what you saw, per step, in the ticket — "tested on a real instance" with
+no detail is indistinguishable from "opened the page once".

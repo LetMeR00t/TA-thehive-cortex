@@ -1,6 +1,34 @@
 <form version="1.1">
   <label>TheHive: Cases</label>
-  
+
+  <!-- ⚠️ Without this, a value carried in by a URL parameter or a drilldown
+       sets `create_sid_set` WITHOUT ever passing through the <change> handler
+       below - so the action panel unlocks on a SID nothing validated. The
+       guard existed and could simply be walked around. -->
+  <init>
+    <unset token="create_sid_set"></unset>
+    <unset token="create_sid_missing"></unset>
+  </init>
+
+  <!-- ⚠️ A well-formed SID is not a SID that still exists: search jobs expire.
+       `| loadjob` on an expired one fails INSIDE the alert action, in a message
+       naming neither the SID nor the fact that it aged out. This search runs
+       only once `create_sid` is set (Simple XML holds a search whose tokens are
+       unset) and tells the analyst here instead. -->
+  <search id="check_create_sid">
+    <query>| rest splunk_server=local /services/search/jobs count=0 | search title="$create_sid$" | stats count as found</query>
+    <earliest>-24h@h</earliest>
+    <latest>now</latest>
+    <done>
+      <condition match="$result.found$ == 0">
+        <set token="create_sid_missing">true</set>
+      </condition>
+      <condition>
+        <unset token="create_sid_missing"></unset>
+      </condition>
+    </done>
+  </search>
+
   <search id="get_instance_info">
     <query>| rest /servicesNS/nobody/TA-thehive-cortex/thehive_cortex_instances splunk_server=local | rename title as id | where id="$instance_id$" | eval case_uri = if(type=="TheHive5","cases","case") | eval case_uri = if(uri!="/","/"+case_uri,case_uri)</query>
     <done>
@@ -114,10 +142,14 @@
         <!-- Mandatory. Simple XML has no "required" attribute, so the token
              below gates the action panel: an empty SID would otherwise reach
              `| loadjob` and fail deep inside the alert action (FileNotFoundError,
-             then UnboundLocalError on 'rf') instead of here. -->
+             then UnboundLocalError on 'rf') instead of here.
+             ⚠️ The test is on BLANKS, not on the empty string: `$value$==""`
+             let a single space through, which set the token and dropped
+             `| loadjob` straight into the error this guard exists to avoid. -->
         <change>
-          <condition match="isnull($value$) OR $value$==&quot;&quot;">
+          <condition match="isnull($value$) OR match(&quot;$value$&quot;, &quot;^\s*$&quot;)">
             <unset token="create_sid_set"></unset>
+            <unset token="create_sid_missing"></unset>
           </condition>
           <condition>
             <set token="create_sid_set">"True"</set>
@@ -223,8 +255,22 @@
       </table>
     </panel>
   </row>
+  <row depends="$create_sid_missing$">
+    <panel>
+      <html>
+        <div class="alert alert-warning">
+          <b>This Job SID does not exist on this search head.</b>
+          A search job expires — by default long before the dashboard does — and
+          it belongs to the search head that ran it. Re-run the search you want
+          to send, and copy its new SID. Until then the action below stays
+          locked: <code>| loadjob</code> would fail inside the alert action, in
+          a message naming neither the SID nor its age.
+        </div>
+      </html>
+    </panel>
+  </row>
   <row>
-    <panel depends="$launch_create_case$,$create_sid_set$">
+    <panel depends="$launch_create_case$,$create_sid_set$" rejects="$create_sid_missing$">
       <table>
         <search>
           <query>| loadjob $create_sid$
