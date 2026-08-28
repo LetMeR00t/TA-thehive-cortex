@@ -99,12 +99,17 @@ explains the manual purge of `etc/apps/learned/local/props.conf`. Fall back to
 | `THC-120` | The MITRE catalogue could not be read; pattern ids go unchecked this time. | ⚠️ Not a rejection: an unreachable catalogue must not silently drop legitimate TTPs. Check the catalogue name in Settings, and that the account can read it. |
 | `THC-122` | A TTP names a `patternId` that is **not in the catalogue**; the TTP is dropped. | The message names the id. Check it against the catalogue in TheHive — until 4.2.3 this was accepted here and refused by TheHive later, in a message naming neither the row nor the field. |
 | `THC-113` | An observable was declared but carries no value. | The composite key names an observable (`myfield:ip`) but neither `myfield` nor `myfield:value` exists in the row. Usually a typo, or a field that is empty for that event. |
-| `THC-4` | The datatypes file exists but cannot be read; the refresh is aborted. | Deliberate: refreshing would overwrite content that could not be read first. Check permissions on `lookups/`. |
-| `THC-5` | The datatypes file cannot be opened for writing. | Same family, on the write side. |
-| `THC-6` | The datatypes could not be recovered from the TheHive API. | The add-on falls back to the existing file. Check the connection. |
-| `THC-12` | The refresh failed; the existing file is used. | A warning, not a failure — but the file ages. |
-| `THC-13` | The refresh failed **and** no existing file was found. | ⚠️ Nothing to fall back on: custom field mapping will be wrong until this succeeds once. |
-| `THC-16` | The datatypes file is empty, malformed or unreadable. | Delete it and let the add-on rebuild it. |
+| `THC-4` | The datatypes collection exists but cannot be read; the refresh is aborted. | Deliberate: refreshing would overwrite content that could not be read first. Check that the KV store is up (`| inputlookup thehive_datatypes`). |
+| `THC-5` | New datatypes could not be written to the collection. | Same family, on the write side. Nothing already stored is lost — only the new rows are missing. |
+| `THC-6` | The datatypes could not be recovered from the TheHive API. | The add-on falls back to what the collection already holds. Check the connection. |
+| `THC-7` | No Splunk client reached the code that reads the datatypes. | ⚠️ Internal: the client travels on the TheHive instance. Report it — an alert action cannot map observables without it. |
+| `THC-8` | The KV store collection `kv_thehive_datatypes` is not reachable. | Check that the collection exists (`collections.conf`) and that the KV store is started on this search head. |
+| `THC-9` | The legacy CSV exists but could not be read during the migration. | ⚠️ Rows customised in `lookups/thehive_datatypes.csv` are **not** migrated: fix the permissions, empty the collection, and let it seed again. |
+| `THC-14` | The collection is being seeded from the legacy CSV. | Informational, once per installation. It names how many rows were migrated. |
+| `THC-17` | The migrated rows could not be written to the collection. | ⚠️ The migration did not happen: the customised rows are still only in the CSV. Same causes as `THC-8`. |
+| `THC-12` | The refresh failed; the rows already stored are used. | A warning, not a failure — but a datatype added in TheHive will not appear. |
+| `THC-13` | The refresh failed **and** the collection holds no datatype. | ⚠️ Nothing to fall back on: custom field mapping will be wrong until this succeeds once. |
+| `THC-16` | The datatypes collection is empty, malformed or unreadable. | Check the KV store on this search head; the add-on reseeds an empty collection by itself. |
 | `THAO-20` | The target type is invalid; `alert` is assumed. | Check the alert action's parameter. |
 | `THAO-25` | The sighted date is unreadable; now is used. | Same shape as `THC-87`: the field must be an epoch. |
 | `THTE-20` | No case id could be resolved for a row; it is skipped. | The row carries neither a case id nor a resolvable number. |
@@ -366,44 +371,47 @@ explains the manual purge of `etc/apps/learned/local/props.conf`. Fall back to
 
 | id | line | level | message |
 | :--- | ---: | :--- | :--- |
-| `THC-4` | 115 | error | {} exists but could not be read, refresh aborted to avoid losing its content |
-| `THC-2` | 126 | debug | Datatypes recovered from TheHive: … |
-| `THC-5` | 150 | error | FATAL {} could not be opened in write mode |
-| `THC-6` | 157 | error | Could not recover datatypes from TheHive API: … |
-| `THC-10` | 214 | debug | Directory found: … |
-| `THC-11` | 221 | info | File {…} is older than 24h ({…}s). Merging new datatypes from API (existing r… |
-| `THC-12` | 236 | warn | API refresh failed for {…}. Falling back to existing file. |
-| `THC-13` | 241 | error | API refresh failed and no existing file {…} found. |
-| `THC-15` | 261 | debug | dataType_dict built from thehive_datatypes.csv |
-| `THC-16` | 266 | error | file {…} empty, malformed or not readable |
-| `THC-61` | 352 | debug | Row before pre-processing: … |
-| `THC-62` | 375 | debug | Row after pre-processing: … |
-| `THC-63` | 411 | debug | original sourceRef: {} was cut as it was a string too long (max 128 char). |
-| `THC-64` | 419 | debug | sourceRef: {} |
-| `THC-87` | 520 | warn | timestamp_field '{…}' holds a non-numeric value ('{…}'); falling back to curr… |
-| `THC-80` | 526 | debug | new Timestamp from row: {} |
-| `THC-88` | 536 | warn | timestamp_field '{…}' is neither a 10 nor a 13 digit epoch ('{…}'); falling b… |
-| `THC-85` | 543 | debug | alert timestamp: {} |
-| `THC-86` | 548 | warn | timestamp_field '{…}' missing; falling back to current time |
-| `THC-90` | 558 | debug | field to process: {…} |
-| `THC-91` | 562 | debug | composite fieldvalue detected: {…} |
-| `THC-92` | 586 | debug | field: {} enriched with the information {} set to |
-| `THC-93` | 598 | warn | composite key '{…}' was NOT mapped: '{…}' is not a known datatype. The raw va… |
-| `THC-95` | 607 | debug | key is an observable: {} |
-| `THC-96` | 628 | debug | key is a custom field: {}, with type {} |
-| `THC-118` | 696 | warn | custom field '{…}' has type '{…}', which this add-on does not map; forwarding… |
-| `THC-117` | 710 | warn | custom field '{…}' was NOT mapped: type '{…}' is not handled, or value '{…}' … |
-| `THC-108` | 743 | debug | ttp was parsed correctly and added to the alert: {} |
-| `THC-109` | 750 | debug | ttp already exist, ignoring duplicates: {} |
-| `THC-122` | 760 | error | ttp '{…}' is not in the MITRE catalogue '{…}'; the TTP is dropped rather than… |
-| `THC-105` | 777 | debug | key is added as another observable (scope is False): {} |
-| `THC-106` | 795 | warn | key is used by TheHive as an internal field (scope is False): {}. Key ignored… |
-| `THC-111` | 805 | debug | Processing observable data: {} ({}) |
-| `THC-112` | 818 | debug | Multi-value split for {…}: '{…}' -> {…} |
-| `THC-113` | 870 | warn | Observable '{0}' doesn't have any value set (no field '{0}' or '{0}:value' wa… |
-| `THC-115` | 879 | debug | observables found for an alert: … |
-| `THC-116` | 885 | debug | No observable found in current row (sourceRef={…}). |
-| `THC-77` | 956 | debug | Append results to description as markdown table |
+| `THC-7` | 116 | error | no Splunk client carried by the TheHive instance: the datatype lookup cannot … |
+| `THC-8` | 127 | error | KV store collection '{…}' is not reachable: {…} |
+| `THC-9` | 152 | warn | {} exists but could not be read; the collection will be seeded from TheHive o… |
+| `THC-14` | 160 | info | seeding '{}' with {} row(s) migrated from {} |
+| `THC-4` | 191 | error | the datatype collection could not be read ({}), refresh aborted to avoid losi… |
+| `THC-17` | 208 | error | the migrated rows could not be written to '{}': {} |
+| `THC-2` | 225 | debug | Datatypes recovered from TheHive: … |
+| `THC-5` | 249 | error | FATAL {} new datatype(s) could not be written to '{}': {} |
+| `THC-6` | 256 | error | Could not recover datatypes from TheHive API: … |
+| `THC-12` | 324 | warn | API refresh failed ({…}). Falling back to the rows already in the collection. |
+| `THC-16` | 332 | error | collection '{…}' is empty, malformed or not readable: {…} |
+| `THC-13` | 339 | error | API refresh failed and collection '{…}' holds no datatype. |
+| `THC-15` | 348 | debug | dataType_dict built from '{}' ({} datatype(s)) |
+| `THC-61` | 434 | debug | Row before pre-processing: … |
+| `THC-62` | 457 | debug | Row after pre-processing: … |
+| `THC-63` | 493 | debug | original sourceRef: {} was cut as it was a string too long (max 128 char). |
+| `THC-64` | 501 | debug | sourceRef: {} |
+| `THC-87` | 602 | warn | timestamp_field '{…}' holds a non-numeric value ('{…}'); falling back to curr… |
+| `THC-80` | 608 | debug | new Timestamp from row: {} |
+| `THC-88` | 618 | warn | timestamp_field '{…}' is neither a 10 nor a 13 digit epoch ('{…}'); falling b… |
+| `THC-85` | 625 | debug | alert timestamp: {} |
+| `THC-86` | 630 | warn | timestamp_field '{…}' missing; falling back to current time |
+| `THC-90` | 640 | debug | field to process: {…} |
+| `THC-91` | 644 | debug | composite fieldvalue detected: {…} |
+| `THC-92` | 668 | debug | field: {} enriched with the information {} set to |
+| `THC-93` | 680 | warn | composite key '{…}' was NOT mapped: '{…}' is not a known datatype. The raw va… |
+| `THC-95` | 689 | debug | key is an observable: {} |
+| `THC-96` | 710 | debug | key is a custom field: {}, with type {} |
+| `THC-118` | 778 | warn | custom field '{…}' has type '{…}', which this add-on does not map; forwarding… |
+| `THC-117` | 792 | warn | custom field '{…}' was NOT mapped: type '{…}' is not handled, or value '{…}' … |
+| `THC-108` | 825 | debug | ttp was parsed correctly and added to the alert: {} |
+| `THC-109` | 832 | debug | ttp already exist, ignoring duplicates: {} |
+| `THC-122` | 842 | error | ttp '{…}' is not in the MITRE catalogue '{…}'; the TTP is dropped rather than… |
+| `THC-105` | 859 | debug | key is added as another observable (scope is False): {} |
+| `THC-106` | 877 | warn | key is used by TheHive as an internal field (scope is False): {}. Key ignored… |
+| `THC-111` | 887 | debug | Processing observable data: {} ({}) |
+| `THC-112` | 900 | debug | Multi-value split for {…}: '{…}' -> {…} |
+| `THC-113` | 952 | warn | Observable '{0}' doesn't have any value set (no field '{0}' or '{0}:value' wa… |
+| `THC-115` | 961 | debug | observables found for an alert: … |
+| `THC-116` | 967 | debug | No observable found in current row (sourceRef={…}). |
+| `THC-77` | 1038 | debug | Append results to description as markdown table |
 
 ## `ta_thehive_cortex/modalert_thehive_create_a_new_alert_helper.py`
 
@@ -490,69 +498,69 @@ explains the manual purge of `etc/apps/learned/local/props.conf`. Fall back to
 | `TH15` | 130 | debug | TheHive instance will be initialized with a password (not an API key) |
 | `TH16` | 148 | debug | TheHive instance will be initialized with an API Key (not a password) |
 | `TH20` | 165 | error | WRONG_AUTHENTICATION_TYPE - Authentication type is not one of the expected va… |
-| `TH25` | 203 | debug | Settings recovered |
-| `TH30` | 212 | error | Your alert is using the <default> instance ID setting which is empty in your … |
-| `TH35` | 242 | debug | TheHive instance will be initialized with a password (not an API key) |
-| `TH40` | 260 | debug | TheHive instance will be initialized with an API Key (not a password) |
-| `TH50` | 277 | error | WRONG_AUTHENTICATION_TYPE - Authentication type is not one of the expected va… |
-| `TH2` | 310 | debug | Version is: … |
-| `TH119` | 315 | debug | Verification of CA cert path: {…}. Exists? {…} |
-| `TH31` | 344 | error | THE_HIVE_AUTHENTICATION - Password AND API Key are null values |
-| `TH41` | 350 | debug | TheHive instance is initialized, try a request to {} |
-| `TH45` | 361 | error | THE_HIVE_AUTHENTICATION_RESPONSE - Server didn't respond with a valid respons… |
-| `TH46` | 365 | debug | Payload content - Headers: … |
-| `TH47` | 369 | debug | Payload content - URL: … |
-| `TH51` | 374 | debug | TheHive API connection to (URL=" … … |
-| `TH60` | 381 | debug | TheHive API connection to (URL=" … … … … |
-| `TH85` | 392 | warn | THE_HIVE_CERTIFICATE_FAILED - It seems that the certificate verification fail… |
-| `TH90` | 401 | warn | THE_HIVE_HANDHSHAKE_FAILURE - It seems that the SSL handshake failed. A possi… |
-| `TH95` | 408 | warn | THE_HIVE_PROXY_AUTHENTICATION_ERROR - It seems that the connection to the pro… |
-| `TH100` | 417 | warn | THE_HIVE_PROXY_ERROR - It seems that the connection to the proxy has failed. … |
-| `TH109` | 428 | error | THEHIVE_HTML_RESPONSE_ERROR - The server at {…} returned an HTML page instead… |
-| `TH110` | 433 | error | THEHIVE_CONNECTION_ERROR - Error: … … |
-| `TH112` | 464 | info | Resolving internal ID for case number {…}... |
-| `TH113` | 469 | info | Case number {…} resolved to {…} |
-| `TH114` | 472 | warning | No case found with number {…} |
-| `TH118` | 475 | error | Error resolving case number {…}: {…} |
-| `TH115` | 487 | info | Retrieving instance status... |
-| `TH116` | 490 | info | Got instance status successfully |
-| `TH117` | 496 | error | FAILED_TO_GET_INSTANCE_STATUS - Error: {…} |
-| `TH120` | 517 | info | Retrieving alerts count... |
-| `TH121` | 519 | info | Got {…} alerts. Estimated time for processing all events: less than {…} secon… |
-| `TH122` | 568 | debug | thehive - observables: … |
-| `TH123` | 580 | debug | thehive - attachments: … |
-| `TH125` | 624 | debug | Event after processing (check_and_reduce_values_size): {…} |
-| `TH126` | 631 | info | {…} events have been processed... |
-| `TH130` | 650 | info | Retrieving cases count... |
-| `TH131` | 652 | info | Got {…} cases. Estimated time for processing all events: less than {…} seconds |
-| `TH133` | 706 | debug | thehive - observables: … |
-| `TH134` | 717 | debug | thehive - attachments: … |
-| `TH135` | 728 | debug | thehive - pages: … |
-| `TH136` | 739 | debug | thehive - ttps: … |
-| `TH137` | 783 | debug | Event after processing (check_and_reduce_values_size): {…} |
-| `TH138` | 790 | info | {…} events have been processed... |
-| `TH141` | 802 | info | Tasks recovery detected. Got {…} tasks with filters: {…}. |
-| `TH142` | 836 | debug | Event after processing (check_and_reduce_values_size): {…} |
-| `TH139` | 843 | debug | TheHive - Tasks: … |
-| `TH140` | 862 | info | Retrieving observables count... |
-| `TH143` | 864 | info | Got {…} observables. Estimated time for processing all events: less than {…} … |
-| `TH145` | 940 | debug | Event after processing (check_and_reduce_values_size): {…} |
-| `TH146` | 946 | info | {…} events have been processed... |
-| `TH170` | 965 | info | Retrieving audit logs count... |
-| `TH171` | 967 | info | Got {…} audit logs. Estimated time for processing all events: less than {…} s… |
-| `TH175` | 1032 | debug | Event after processing (check_and_reduce_values_size): {…} |
-| `TH176` | 1038 | info | {…} events have been processed... |
-| `TH190` | 1057 | info | Retrieving tasks... |
-| `TH191` | 1066 | info | Got {…} tasks. |
-| `TH180` | 1132 | info | Retrieving cases for timeline extraction... |
-| `TH181` | 1136 | info | Got {…} cases to check for timeline events. |
-| `TH182` | 1170 | debug | Fetching timeline for case {…} ({…}) |
-| `TH183` | 1176 | error | Failed to fetch timeline for case {…}: {…} |
-| `TH186` | 1191 | debug | Skipping timeline event {…} because kind {…} is not in {…} |
-| `TH184` | 1227 | info | Processed timeline events for {…} entries so far... |
-| `TH200` | 1254 | info | Creating custom timeline event for case {…}... |
-| `TH201` | 1270 | info | Custom timeline event created successfully for case {…} |
-| `TH202` | 1276 | error | FAILED_TO_CREATE_TIMELINE_EVENT - Error: {…} |
+| `TH25` | 209 | debug | Settings recovered |
+| `TH30` | 218 | error | Your alert is using the <default> instance ID setting which is empty in your … |
+| `TH35` | 248 | debug | TheHive instance will be initialized with a password (not an API key) |
+| `TH40` | 266 | debug | TheHive instance will be initialized with an API Key (not a password) |
+| `TH50` | 283 | error | WRONG_AUTHENTICATION_TYPE - Authentication type is not one of the expected va… |
+| `TH2` | 323 | debug | Version is: … |
+| `TH119` | 328 | debug | Verification of CA cert path: {…}. Exists? {…} |
+| `TH31` | 357 | error | THE_HIVE_AUTHENTICATION - Password AND API Key are null values |
+| `TH41` | 363 | debug | TheHive instance is initialized, try a request to {} |
+| `TH45` | 374 | error | THE_HIVE_AUTHENTICATION_RESPONSE - Server didn't respond with a valid respons… |
+| `TH46` | 378 | debug | Payload content - Headers: … |
+| `TH47` | 382 | debug | Payload content - URL: … |
+| `TH51` | 387 | debug | TheHive API connection to (URL=" … … |
+| `TH60` | 394 | debug | TheHive API connection to (URL=" … … … … |
+| `TH85` | 405 | warn | THE_HIVE_CERTIFICATE_FAILED - It seems that the certificate verification fail… |
+| `TH90` | 414 | warn | THE_HIVE_HANDHSHAKE_FAILURE - It seems that the SSL handshake failed. A possi… |
+| `TH95` | 421 | warn | THE_HIVE_PROXY_AUTHENTICATION_ERROR - It seems that the connection to the pro… |
+| `TH100` | 430 | warn | THE_HIVE_PROXY_ERROR - It seems that the connection to the proxy has failed. … |
+| `TH109` | 441 | error | THEHIVE_HTML_RESPONSE_ERROR - The server at {…} returned an HTML page instead… |
+| `TH110` | 446 | error | THEHIVE_CONNECTION_ERROR - Error: … … |
+| `TH112` | 477 | info | Resolving internal ID for case number {…}... |
+| `TH113` | 482 | info | Case number {…} resolved to {…} |
+| `TH114` | 485 | warning | No case found with number {…} |
+| `TH118` | 488 | error | Error resolving case number {…}: {…} |
+| `TH115` | 500 | info | Retrieving instance status... |
+| `TH116` | 503 | info | Got instance status successfully |
+| `TH117` | 509 | error | FAILED_TO_GET_INSTANCE_STATUS - Error: {…} |
+| `TH120` | 530 | info | Retrieving alerts count... |
+| `TH121` | 532 | info | Got {…} alerts. Estimated time for processing all events: less than {…} secon… |
+| `TH122` | 581 | debug | thehive - observables: … |
+| `TH123` | 593 | debug | thehive - attachments: … |
+| `TH125` | 637 | debug | Event after processing (check_and_reduce_values_size): {…} |
+| `TH126` | 644 | info | {…} events have been processed... |
+| `TH130` | 663 | info | Retrieving cases count... |
+| `TH131` | 665 | info | Got {…} cases. Estimated time for processing all events: less than {…} seconds |
+| `TH133` | 719 | debug | thehive - observables: … |
+| `TH134` | 730 | debug | thehive - attachments: … |
+| `TH135` | 741 | debug | thehive - pages: … |
+| `TH136` | 752 | debug | thehive - ttps: … |
+| `TH137` | 796 | debug | Event after processing (check_and_reduce_values_size): {…} |
+| `TH138` | 803 | info | {…} events have been processed... |
+| `TH141` | 815 | info | Tasks recovery detected. Got {…} tasks with filters: {…}. |
+| `TH142` | 849 | debug | Event after processing (check_and_reduce_values_size): {…} |
+| `TH139` | 856 | debug | TheHive - Tasks: … |
+| `TH140` | 875 | info | Retrieving observables count... |
+| `TH143` | 877 | info | Got {…} observables. Estimated time for processing all events: less than {…} … |
+| `TH145` | 953 | debug | Event after processing (check_and_reduce_values_size): {…} |
+| `TH146` | 959 | info | {…} events have been processed... |
+| `TH170` | 978 | info | Retrieving audit logs count... |
+| `TH171` | 980 | info | Got {…} audit logs. Estimated time for processing all events: less than {…} s… |
+| `TH175` | 1045 | debug | Event after processing (check_and_reduce_values_size): {…} |
+| `TH176` | 1051 | info | {…} events have been processed... |
+| `TH190` | 1070 | info | Retrieving tasks... |
+| `TH191` | 1079 | info | Got {…} tasks. |
+| `TH180` | 1145 | info | Retrieving cases for timeline extraction... |
+| `TH181` | 1149 | info | Got {…} cases to check for timeline events. |
+| `TH182` | 1183 | debug | Fetching timeline for case {…} ({…}) |
+| `TH183` | 1189 | error | Failed to fetch timeline for case {…}: {…} |
+| `TH186` | 1204 | debug | Skipping timeline event {…} because kind {…} is not in {…} |
+| `TH184` | 1240 | info | Processed timeline events for {…} entries so far... |
+| `TH200` | 1267 | info | Creating custom timeline event for case {…}... |
+| `TH201` | 1283 | info | Custom timeline event created successfully for case {…} |
+| `TH202` | 1289 | error | FAILED_TO_CREATE_TIMELINE_EVENT - Error: {…} |
 
 ## `thehive_alerts_cases.py`
 
@@ -688,6 +696,6 @@ explains the manual purge of `etc/apps/learned/local/props.conf`. Fall back to
 | `2` | 110 | info | Successfully indexed {…} timeline events. |
 | `ERR` | 113 | error | Error during timeline collection: {…} |
 
-*353 call sites.*
+*356 call sites.*
 
 <!-- INVENTAIRE:FIN -->

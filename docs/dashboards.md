@@ -56,7 +56,7 @@ You have to specify some inputs:
 - **Unique ID field**: the unique reference for this alert. If a field name is provided, it is used to group results rows in several alerts - default is SPK+now()
 - **Type**: type of alert (default is "alert")
 - **Case Template**: Case template to use by default when importing alert into a case
-- **Scope**: a swithc to include all fields from result set (as type "other") or only field names listed in lookup table "thehive_datatypes.csv"
+- **Scope**: a swithc to include all fields from result set (as type "other") or only field names listed in lookup table `thehive_datatypes`
 - **Description**: Description for this new alert
 
 The search will retrieve the results from SID and create the new alert. You can check the new alert in TheHive Alert History
@@ -117,7 +117,7 @@ You have to specify some inputs:
 - **Timestamp field**: field containing a valid EPOCH timestamp (10-digit for s;13-digit for ms) - if not present, default to now()
 - **Unique ID field**: the unique reference for this case. If a field name is provided, it is used to group results rows in several alerts
 - **Case Template**: Case template to use by default when importing alert into a case
-- **Scope**: a swithc to include all fields from result set (as type "other") or only field names listed in lookup table "thehive_datatypes.csv"
+- **Scope**: a swithc to include all fields from result set (as type "other") or only field names listed in lookup table `thehive_datatypes`
 
 The search will create the new case accordingly
 

@@ -184,7 +184,7 @@
       </input>
       <input type="dropdown" token="create_scope">
         <label>Scope*</label>
-        <choice value="0">Include only listed fields in thehive_datatypes.csv)</choice>
+        <choice value="0">Include only fields listed in the thehive_datatypes lookup</choice>
         <choice value="1">Include all fields (default datatype is 'other')</choice>
         <default>0</default>
       </input>
@@ -399,10 +399,10 @@ param.severity=$create_severity$ param.tlp=$create_tlp$ param.pap=$create_pap$</
   </row>
   <row>
     <panel depends="$show_dashboards_lookup$">
-      <title>Lookup thehive_datatypes.csv</title>
+      <title>Lookup thehive_datatypes</title>
       <table>
         <search>
-          <query>| inputlookup thehive_datatypes.csv
+          <query>| inputlookup thehive_datatypes
 | table field_name, field_type, datatype, description</query>
           <earliest>-24h@h</earliest>
           <latest>now</latest>

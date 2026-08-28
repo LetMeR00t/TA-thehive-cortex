@@ -119,7 +119,9 @@ See the [Alert actions adaptative responses guide](./docs/alert_actions_and_adap
 
 ### Fields and datatypes
 
-Alert actions use a lookup table (`thehive_datatypes.csv`) to identify supported fields as TheHive datatypes. If missing, the first action will attempt to create it with default values from your TheHive instance.
+Alert actions use a lookup table (`thehive_datatypes`) to identify supported fields as TheHive datatypes. It is held in the Splunk KV store: if it is empty, the first action fills it from your TheHive instance, and rows you add or edit are never overwritten by a later refresh.
+
+> ⚠️ Since v5.0.0 this lookup is a KV store collection, not a CSV file. Searches written as `| inputlookup thehive_datatypes` keep working; `| inputlookup thehive_datatypes.csv` must drop the `.csv`.
 
 ## Commands usable in Splunk searches
 

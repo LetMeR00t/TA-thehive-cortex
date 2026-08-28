@@ -175,6 +175,12 @@ def create_thehive_instance(instance_id, settings, logger, acronym, exec_id=None
     # by nobody: the setting existed on the page and did strictly nothing.
     thehive.ttp_catalog_name = defaults["TTP_CATALOG_NAME"]
 
+    # ⚠️ Same reason, same place: the datatype mapping now lives in the KV
+    # store, and reaching it needs a Splunk client. `TheHive4Splunk` has none
+    # of its own -- `Settings` is what holds one -- so the client travels on
+    # the instance, exactly like the catalogue above.
+    thehive.splunk_client = spl
+
     return (thehive, configuration, defaults, logger_file, instance_id)
 
 
@@ -280,6 +286,13 @@ def create_thehive_instance_modular_input(instance_id, helper, acronym, logger=N
             + str(thehive_authentication_type),
         )
         exit(20)
+
+    # The modular inputs do not call parse_events today, but they build the
+    # same object: leaving the attribute unset here would make the difference
+    # between the two factories the reason a future caller fails.
+    # ⚠️ `spl` is None when no session key was handed over -- that case is
+    # handled where the store is read, not hidden here.
+    thehive.splunk_client = spl
 
     return (thehive, configuration, logger_file)
 

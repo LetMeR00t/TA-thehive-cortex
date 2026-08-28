@@ -31,6 +31,10 @@ DEFAULT = PAQUET / "default"
 
 def _lire(chemin: Path) -> configparser.ConfigParser:
     cp = configparser.ConfigParser(strict=False, interpolation=None)
+    # ⚠️ Splunk keys are case sensitive: `field.dataTypeList` is not
+    # `field.datatypelist`. configparser lowercases option names by default,
+    # which turned a correct declaration into a reported break.
+    cp.optionxform = str
     cp.read_string(chemin.read_text(encoding="utf-8"))
     return cp
 
@@ -56,23 +60,53 @@ def verifier_lookups() -> list[str]:
 
 
 def verifier_collections() -> list[str]:
-    """A kvstore lookup needs its collection declared in collections.conf."""
+    """A kvstore lookup needs its collection, and the fields it promises.
+
+    ⚠️ Declaring the collection is not enough. `fields_list` is what a search
+    gets back; a field named there and absent from `collections.conf` returns
+    empty for every row -- a lookup that answers, with nothing in it. That
+    failure is silent on both sides, which is the whole family this file
+    exists for.
+    """
     transforms = DEFAULT / "transforms.conf"
     collections = DEFAULT / "collections.conf"
     if not transforms.is_file():
         return []
-    connues = set(_lire(collections).sections()) if collections.is_file() else set()
+    cp_collections = _lire(collections) if collections.is_file() else None
+    connues = set(cp_collections.sections()) if cp_collections else set()
     manquants = []
     cp = _lire(transforms)
     for stanza in cp.sections():
         if cp[stanza].get("external_type") != "kvstore":
             continue
         collection = cp[stanza].get("collection")
-        if collection and collection not in connues:
+        if not collection:
+            manquants.append(
+                f"transforms.conf [{stanza}] is external_type = kvstore "
+                f"but declares no collection"
+            )
+            continue
+        if collection not in connues:
             manquants.append(
                 f"transforms.conf [{stanza}] uses collection = {collection}, "
                 f"absent from collections.conf"
             )
+            continue
+        # `_key` and `_user` are provided by the KV store itself, never declared.
+        declared_fields = {
+            key.split("field.", 1)[1]
+            for key in cp_collections[collection]
+            if key.startswith("field.")
+        }
+        for field in cp[stanza].get("fields_list", "").split(","):
+            field = field.strip()
+            if not field or field.startswith("_"):
+                continue
+            if field not in declared_fields:
+                manquants.append(
+                    f"transforms.conf [{stanza}] promises the field '{field}' "
+                    f"which collections.conf [{collection}] does not declare"
+                )
     return manquants
 
 

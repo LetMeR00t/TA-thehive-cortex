@@ -158,7 +158,7 @@
       </input>
       <input type="dropdown" token="create_scope">
         <label>Scope*</label>
-        <choice value="0">Include only listed fields in thehive_datatypes.csv)</choice>
+        <choice value="0">Include only fields listed in the thehive_datatypes lookup</choice>
         <choice value="1">Include all fields (default datatype is 'other')</choice>
         <default>0</default>
       </input>

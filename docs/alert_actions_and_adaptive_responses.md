@@ -45,7 +45,7 @@ This TA provides an adaptative response/alert action. It takes the result of a s
 The overall process is as follows:
 
 - search for events & collect observables and custom fields.
-- rename splunk fields to match the field names listed in the lookup table thehive_datatypes.csv. If you haven't created it before the first alert,
+- rename splunk fields to match the field names listed in the lookup table `thehive_datatypes`. If it is still empty before the first alert,
 it will be initialised with the default datatypes (see [example file](../TA-thehive-cortex/README/thehive_datatypes.csv.sample))
 - save your search as an alert.
 - set the alert action "thehive_create_a_new_alert": it will create an alert into TheHive.
@@ -337,7 +337,7 @@ In this example, alert title will be the value of field `myfield` from result se
 - Title: The title to use for created alerts. You can specify a field name to take the title from the row specified like a token usage in a dashboard (see below)
 - Description: The description to send with the alert. You can specify a field name to take the description from the row (see below)
 - Tags: Use single comma-separated string without quotes for multiple tags (ex. "badIP,spam").
-- Scope: you can choose to (option 1) include **only listed** fields in thehive_datatypes.csv or (option 2) include **all fields** (default datatype is 'other')
+- Scope: you can choose to (option 1) include **only listed** fields in `thehive_datatypes` or (option 2) include **all fields** (default datatype is 'other')
 - Severity: Change the severity (Low/Medium/High) of the created alert. Default is High
 - TLP: Change the TLP of the created alert. Default is TLP:AMBER
 - PAP: Change the PAP of the created alert. Default is PAP:AMBER
@@ -353,10 +353,10 @@ In this example, alert title will be the value of field `myfield` from result se
 - Is IOC: A field name or static value (true/false) indicating if the observable is an IOC.
 - Sighted: A field name or static value (true/false) indicating if the observable has been sighted.
 - Sighted Date: A field name containing the sighting date (Splunk epoch time). If Sighted is enabled and no date is found, it defaults to the current time.
-- Scope: you can choose to (option 1) include **only listed** fields in thehive_datatypes.csv or (option 2) include **all fields** (default datatype is 'other').
+- Scope: you can choose to (option 1) include **only listed** fields in `thehive_datatypes` or (option 2) include **all fields** (default datatype is 'other').
 
 **Note for Adaptive Responses (Splunk ES):**
-When used as an Adaptive Response, the Splunk **Finding** must contain fields named exactly after the TheHive datatypes (as defined in `thehive_datatypes.csv`) to be automatically interpreted by the script as observables.
+When used as an Adaptive Response, the Splunk **Finding** must contain fields named exactly after the TheHive datatypes (as defined in `thehive_datatypes`) to be automatically interpreted by the script as observables.
 
 ### Add timeline event overall description
 

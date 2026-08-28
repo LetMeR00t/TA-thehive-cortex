@@ -15,7 +15,6 @@ import ta_thehive_cortex_declare
 # Standard library imports
 import csv
 import datetime
-import gzip
 import os
 import re
 import time
@@ -81,86 +80,186 @@ SEVERITY = {
 
 
 
+#: The KV store collection behind the `thehive_datatypes` lookup.
+KV_DATATYPES_COLLECTION = "kv_thehive_datatypes"
+
+#: Its columns, in the order the shipped seed file carries them.
+DATATYPE_FIELDS = ["field_name", "field_type", "datatype", "description"]
+
+
+def legacy_datatypes_csv():
+    """Where this add-on wrote its datatype lookup before the KV store.
+
+    The package still ships that file, so a fresh installation seeds itself
+    from it; an existing one is read exactly once, so the rows a user
+    customised survive the migration."""
+
+    return os.path.join(
+        os.environ["SPLUNK_HOME"],
+        "etc",
+        "apps",
+        "TA-thehive-cortex",
+        "lookups",
+        "thehive_datatypes.csv",
+    )
+
+
+def datatypes_store(thehive: TheHive4Splunk):
+    """The KV store collection holding the datatypes, or None.
+
+    ⚠️ None means "I could not reach it", never "it is empty". The two lead to
+    opposite decisions -- an unreachable store must not look like a TheHive
+    instance that reports no datatype at all."""
+
+    splunk_client = getattr(thehive, "splunk_client", None)
+    if splunk_client is None:
+        thehive.logger_file.error(
+            id="THC-7",
+            message=(
+                "no Splunk client carried by the TheHive instance: the "
+                "datatype lookup cannot be reached in the KV store"
+            ),
+        )
+        return None
+    try:
+        return splunk_client.kvstore[KV_DATATYPES_COLLECTION].data
+    except Exception as e:
+        thehive.logger_file.error(
+            id="THC-8",
+            message=(
+                f"KV store collection '{KV_DATATYPES_COLLECTION}' is not "
+                f"reachable: {e}"
+            ),
+        )
+        return None
+
+
+def seed_rows_from_legacy_csv(thehive: TheHive4Splunk):
+    """The rows of the CSV lookup, for the one-shot seeding of the collection."""
+
+    filename = legacy_datatypes_csv()
+    if not os.path.exists(filename):
+        return []
+    rows = list()
+    try:
+        with open(filename, "rt", newline="") as file_object:
+            for row in csv.DictReader(file_object):
+                if row.get("field_name"):
+                    rows.append(
+                        {column: row.get(column) or "" for column in DATATYPE_FIELDS}
+                    )
+    except IOError:
+        thehive.logger_file.warn(
+            id="THC-9",
+            message="{} exists but could not be read; the collection will be seeded from TheHive only, and rows customised there are lost".format(
+                filename
+            ),
+        )
+        return []
+    if rows:
+        thehive.logger_file.info(
+            id="THC-14",
+            message="seeding '{}' with {} row(s) migrated from {}".format(
+                KV_DATATYPES_COLLECTION, len(rows), filename
+            ),
+        )
+    return rows
+
+
 def create_datatype_lookup(thehive: TheHive4Splunk, force=False):
     """This function is used to create or refresh a datatype lookup.
 
     A refresh is non-destructive: every existing row (including user-defined
     custom field mappings) is preserved, only datatypes newly reported by
-    TheHive are appended."""
+    TheHive are appended.
+
+    ⚠️ The lookup lives in the KV store and no longer in a CSV under
+    `etc/apps/TA-thehive-cortex/lookups`. That directory is **replaced on
+    every upgrade of the add-on**: the care this function takes to preserve
+    customised rows was undone by the next upgrade. Writing there is also
+    refused by Splunk Cloud vetting, and never replicated across a search
+    head cluster."""
 
     dataType_dict = dict()
-    # if it does not exist, create thehive_datatypes.csv
-    _SPLUNK_PATH = os.environ["SPLUNK_HOME"]
-    directory = os.path.join(
-        _SPLUNK_PATH, "etc", "apps", "TA-thehive-cortex", "lookups"
-    )
-    th_dt_filename = os.path.join(directory, "thehive_datatypes.csv")
+    store = datatypes_store(thehive)
+    if store is None:
+        return dataType_dict
 
-    if force or not os.path.exists(th_dt_filename):
-        header = ["field_name", "field_type", "datatype", "description"]
-        existing_rows = list()
-        known_field_names = set()
+    try:
+        existing_rows = store.query()
+    except Exception as e:
+        thehive.logger_file.error(
+            id="THC-4",
+            message="the datatype collection could not be read ({}), refresh aborted to avoid losing its content".format(
+                e
+            ),
+        )
+        return dataType_dict
 
-        # Preserve all rows of an existing lookup (user customizations included)
-        if os.path.exists(th_dt_filename):
+    # First run after the migration: the collection is empty and the CSV this
+    # add-on used to write still holds what the user customised.
+    if not existing_rows:
+        seed = seed_rows_from_legacy_csv(thehive)
+        if seed:
             try:
-                with open(th_dt_filename, "rt", newline="") as file_object:
-                    for row in csv.DictReader(file_object):
-                        if row.get("field_name"):
-                            existing_rows.append(
-                                [row.get(column) or "" for column in header]
-                            )
-                            known_field_names.add(row["field_name"])
-            except IOError:
+                store.batch_save(*seed)
+                existing_rows = seed
+            except Exception as e:
                 thehive.logger_file.error(
-                    id="THC-4",
-                    message="{} exists but could not be read, refresh aborted to avoid losing its content".format(
-                        th_dt_filename
+                    id="THC-17",
+                    message="the migrated rows could not be written to '{}': {}".format(
+                        KV_DATATYPES_COLLECTION, e
                     ),
                 )
-                return dataType_dict
 
-        # Get the list of datatypes from TheHive itself
-        try:
-            th_datatypes = thehive.observable_type.list()
-            thehive.logger_file.debug(
-                id="THC-2", message="Datatypes recovered from TheHive: " + str(th_datatypes)
-            )
+    if not (force or not existing_rows):
+        return dataType_dict
 
-            # Parse the response, keeping only datatypes not already in the lookup
-            new_rows = list()
-            for dt in th_datatypes:
-                dataType_dict[dt["name"]] = dt["name"]
-                if dt["name"] not in known_field_names:
-                    new_rows.append([dt["name"], "observable", dt["name"], ""])
+    known_field_names = {
+        row.get("field_name") for row in existing_rows if row.get("field_name")
+    }
 
-            # Write the merged file atomically so a crash or a concurrent alert
-            # action can never leave a truncated lookup behind
+    # Get the list of datatypes from TheHive itself
+    try:
+        th_datatypes = thehive.observable_type.list()
+        thehive.logger_file.debug(
+            id="THC-2", message="Datatypes recovered from TheHive: " + str(th_datatypes)
+        )
+
+        # Parse the response, keeping only datatypes not already in the lookup
+        new_rows = list()
+        for dt in th_datatypes:
+            dataType_dict[dt["name"]] = dt["name"]
+            if dt["name"] not in known_field_names:
+                new_rows.append(
+                    {
+                        "field_name": dt["name"],
+                        "field_type": "observable",
+                        "datatype": dt["name"],
+                        "description": "",
+                    }
+                )
+
+        # Only the new rows are written. Nothing existing is ever rewritten,
+        # which is what makes a refresh unable to undo a customisation.
+        if new_rows:
             try:
-                if not os.path.exists(directory):
-                    os.makedirs(directory)
-                tmp_filename = "{}.{}.tmp".format(th_dt_filename, os.getpid())
-                with open(tmp_filename, "w", newline="") as file_object:
-                    csv_writer = csv.writer(file_object, delimiter=",")
-                    csv_writer.writerow(header)
-                    for observable in existing_rows + new_rows:
-                        csv_writer.writerow(observable)
-                os.replace(tmp_filename, th_dt_filename)
-            except IOError:
+                store.batch_save(*new_rows)
+            except Exception as e:
                 thehive.logger_file.error(
                     id="THC-5",
-                    message="FATAL {} could not be opened in write mode".format(
-                        th_dt_filename
+                    message="FATAL {} new datatype(s) could not be written to '{}': {}".format(
+                        len(new_rows), KV_DATATYPES_COLLECTION, e
                     ),
                 )
-        except Exception as e:
-            thehive.logger_file.error(
-                id="THC-6",
-                message="Could not recover datatypes from TheHive API: " + str(e)
-            )
-            if not force:
-                # If it's not a force refresh, we can't do anything
-                raise e
+    except Exception as e:
+        thehive.logger_file.error(
+            id="THC-6",
+            message="Could not recover datatypes from TheHive API: " + str(e)
+        )
+        if not force:
+            # If it's not a force refresh, we can't do anything
+            raise e
 
     return dataType_dict
 
@@ -203,72 +302,55 @@ def per_execution_invariants(thehive: TheHive4Splunk):
 
 
 def get_datatype_dict(thehive: TheHive4Splunk):
-    """This function is used to recover information from a lookup that contain datatypes"""
+    """This function is used to recover information from a lookup that contain datatypes
+
+    ⚠️ The 24-hour "smart sync" disappeared with the file whose age it read:
+    a KV store document carries no modification time. The refresh now happens
+    once per execution instead -- `per_execution_invariants` memoises this
+    call, so the cost is one extra round-trip to TheHive per search, exactly
+    like the custom field definitions read beside it. A datatype added in
+    TheHive is therefore visible on the next search rather than the next day."""
 
     dataType_dict = dict()
-    _SPLUNK_PATH = os.environ["SPLUNK_HOME"]
-    directory = os.path.join(
-        _SPLUNK_PATH, "etc", "apps", "TA-thehive-cortex", "lookups"
+    store = datatypes_store(thehive)
+    if store is None:
+        return dataType_dict
+
+    try:
+        create_datatype_lookup(thehive, force=True)
+    except Exception as e:
+        # An unreachable API is not a reason to lose the mapping already
+        # stored: it is only a reason not to enrich it this time.
+        thehive.logger_file.warn(
+            id="THC-12",
+            message=f"API refresh failed ({e}). Falling back to the rows already in the collection."
+        )
+
+    try:
+        rows = store.query()
+    except Exception as e:
+        thehive.logger_file.error(
+            id="THC-16",
+            message=f"collection '{KV_DATATYPES_COLLECTION}' is empty, malformed or not readable: {e}",
+        )
+        return dataType_dict
+
+    if not rows:
+        thehive.logger_file.error(
+            id="THC-13",
+            message=f"API refresh failed and collection '{KV_DATATYPES_COLLECTION}' holds no datatype."
+        )
+        return dataType_dict
+
+    for row in rows:
+        if row.get("field_type") == "observable" and row.get("field_name"):
+            dataType_dict[row["field_name"]] = row.get("datatype")
+    thehive.logger_file.debug(
+        id="THC-15",
+        message="dataType_dict built from '{}' ({} datatype(s))".format(
+            KV_DATATYPES_COLLECTION, len(dataType_dict)
+        ),
     )
-    th_dt_filename = os.path.join(directory, "thehive_datatypes.csv")
-    thehive.logger_file.debug(id="THC-10", message="Directory found: " + str(directory))
-
-    # Smart Sync: Check if file exists and its age
-    refresh_needed = False
-    if os.path.exists(th_dt_filename):
-        file_age = time.time() - os.path.getmtime(th_dt_filename)
-        if file_age > 86400:  # 24 hours
-            thehive.logger_file.info(
-                id="THC-11",
-                message=f"File {th_dt_filename} is older than 24h ({int(file_age)}s). Merging new datatypes from API (existing rows are preserved)..."
-            )
-            refresh_needed = True
-    else:
-        refresh_needed = True
-
-    if refresh_needed:
-        try:
-            # Try to refresh/create the lookup
-            create_datatype_lookup(thehive, force=True)
-        except Exception:
-            # Fallback to existing file if API refresh fails
-            if os.path.exists(th_dt_filename):
-                thehive.logger_file.warn(
-                    id="THC-12",
-                    message=f"API refresh failed for {th_dt_filename}. Falling back to existing file."
-                )
-            else:
-                thehive.logger_file.error(
-                    id="THC-13",
-                    message=f"API refresh failed and no existing file {th_dt_filename} found."
-                )
-
-    if os.path.exists(th_dt_filename):
-        try:
-            # open the file with gzip lib, start making parsed_events
-            # can with statements fail gracefully??
-            fh = open(th_dt_filename, "rt")
-        except ValueError:
-            # Workaround for Python 2.7 under Windows
-            fh = gzip.open(th_dt_filename, "r")
-        if fh is not None:
-            try:
-                csv_reader = csv.DictReader(fh)
-                for row in csv_reader:
-                    if "field_name" in row and "field_type" in row:
-                        if row["field_type"] == "observable":
-                            dataType_dict[row["field_name"]] = row["datatype"]
-                thehive.logger_file.debug(
-                    id="THC-15",
-                    message="dataType_dict built from thehive_datatypes.csv",
-                )
-            except IOError:  # file thehive_datatypes.csv not readable
-                thehive.logger_file.error(
-                    id="THC-16",
-                    message=f"file {th_dt_filename} empty, malformed or not readable",
-                )
-            finally:
-                fh.close()
     return dataType_dict
 
 
