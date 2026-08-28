@@ -340,6 +340,27 @@ explains the manual purge of `etc/apps/learned/local/props.conf`. Fall back to
 | `148` | 116 | error | Error during uncompressing process: {…} |
 | `146` | 159 | error | Attachment format isn't supported, given: {…} |
 
+## `ta_thehive_cortex/field_mapping.py`
+
+| id | line | level | message |
+| :--- | ---: | :--- | :--- |
+| `THC-118` | 228 | warn | custom field '{…}' has type '{…}', which this add-on does not map; forwarding… |
+| `THC-91` | 295 | debug | composite fieldvalue detected: {…} |
+| `THC-92` | 299 | debug | field: {} enriched with the information {} set to |
+| `THC-93` | 310 | warn | composite key '{…}' was NOT mapped: '{…}' is not a known datatype. The raw va… |
+| `THC-95` | 324 | debug | key is an observable: {} |
+| `THC-96` | 334 | debug | key is a custom field: {}, with type {} |
+| `THC-117` | 343 | warn | custom field '{…}' was NOT mapped: type '{…}' is not handled, or value '{…}' … |
+| `THC-108` | 377 | debug | ttp was parsed correctly and added to the alert: {} |
+| `THC-109` | 382 | debug | ttp already exist, ignoring duplicates: {} |
+| `THC-122` | 389 | error | ttp '{…}' is not in the MITRE catalogue '{…}'; the TTP is dropped rather than… |
+| `THC-105` | 411 | debug | key is added as another observable (scope is False): {} |
+| `THC-106` | 427 | warn | key is used by TheHive as an internal field (scope is False): {}. Key ignored… |
+| `THC-90` | 455 | debug | field to process: {…} |
+| `THC-111` | 476 | debug | Processing observable data: {} ({}) |
+| `THC-113` | 481 | warn | Observable '{0}' doesn't have any value set (no field '{0}' or '{0}:value' wa… |
+| `THC-112` | 498 | debug | Multi-value split for {…}: '{…}' -> {…} |
+
 ## `ta_thehive_cortex/modalert_args.py`
 
 | id | line | level | message |
@@ -380,47 +401,31 @@ explains the manual purge of `etc/apps/learned/local/props.conf`. Fall back to
 
 | id | line | level | message |
 | :--- | ---: | :--- | :--- |
-| `THC-7` | 116 | error | no Splunk client carried by the TheHive instance: the datatype lookup cannot … |
-| `THC-8` | 127 | error | KV store collection '{…}' is not reachable: {…} |
-| `THC-9` | 152 | warn | {} exists but could not be read; the collection will be seeded from TheHive o… |
-| `THC-14` | 160 | info | seeding '{}' with {} row(s) migrated from {} |
-| `THC-4` | 191 | error | the datatype collection could not be read ({}), refresh aborted to avoid losi… |
-| `THC-17` | 208 | error | the migrated rows could not be written to '{}': {} |
-| `THC-2` | 225 | debug | Datatypes recovered from TheHive: … |
-| `THC-5` | 249 | error | FATAL {} new datatype(s) could not be written to '{}': {} |
-| `THC-6` | 256 | error | Could not recover datatypes from TheHive API: … |
-| `THC-12` | 324 | warn | API refresh failed ({…}). Falling back to the rows already in the collection. |
-| `THC-16` | 332 | error | collection '{…}' is empty, malformed or not readable: {…} |
-| `THC-13` | 339 | error | API refresh failed and collection '{…}' holds no datatype. |
-| `THC-15` | 348 | debug | dataType_dict built from '{}' ({} datatype(s)) |
-| `THC-61` | 434 | debug | Row before pre-processing: … |
-| `THC-62` | 457 | debug | Row after pre-processing: … |
-| `THC-63` | 493 | debug | original sourceRef: {} was cut as it was a string too long (max 128 char). |
-| `THC-64` | 501 | debug | sourceRef: {} |
-| `THC-87` | 602 | warn | timestamp_field '{…}' holds a non-numeric value ('{…}'); falling back to curr… |
-| `THC-80` | 608 | debug | new Timestamp from row: {} |
-| `THC-88` | 618 | warn | timestamp_field '{…}' is neither a 10 nor a 13 digit epoch ('{…}'); falling b… |
-| `THC-85` | 625 | debug | alert timestamp: {} |
-| `THC-86` | 630 | warn | timestamp_field '{…}' missing; falling back to current time |
-| `THC-90` | 640 | debug | field to process: {…} |
-| `THC-91` | 644 | debug | composite fieldvalue detected: {…} |
-| `THC-92` | 668 | debug | field: {} enriched with the information {} set to |
-| `THC-93` | 680 | warn | composite key '{…}' was NOT mapped: '{…}' is not a known datatype. The raw va… |
-| `THC-95` | 689 | debug | key is an observable: {} |
-| `THC-96` | 710 | debug | key is a custom field: {}, with type {} |
-| `THC-118` | 778 | warn | custom field '{…}' has type '{…}', which this add-on does not map; forwarding… |
-| `THC-117` | 792 | warn | custom field '{…}' was NOT mapped: type '{…}' is not handled, or value '{…}' … |
-| `THC-108` | 825 | debug | ttp was parsed correctly and added to the alert: {} |
-| `THC-109` | 832 | debug | ttp already exist, ignoring duplicates: {} |
-| `THC-122` | 842 | error | ttp '{…}' is not in the MITRE catalogue '{…}'; the TTP is dropped rather than… |
-| `THC-105` | 859 | debug | key is added as another observable (scope is False): {} |
-| `THC-106` | 877 | warn | key is used by TheHive as an internal field (scope is False): {}. Key ignored… |
-| `THC-111` | 887 | debug | Processing observable data: {} ({}) |
-| `THC-112` | 900 | debug | Multi-value split for {…}: '{…}' -> {…} |
-| `THC-113` | 952 | warn | Observable '{0}' doesn't have any value set (no field '{0}' or '{0}:value' wa… |
-| `THC-115` | 961 | debug | observables found for an alert: … |
-| `THC-116` | 967 | debug | No observable found in current row (sourceRef={…}). |
-| `THC-77` | 1038 | debug | Append results to description as markdown table |
+| `THC-7` | 89 | error | no Splunk client carried by the TheHive instance: the datatype lookup cannot … |
+| `THC-8` | 100 | error | KV store collection '{…}' is not reachable: {…} |
+| `THC-9` | 125 | warn | {} exists but could not be read; the collection will be seeded from TheHive o… |
+| `THC-14` | 133 | info | seeding '{}' with {} row(s) migrated from {} |
+| `THC-4` | 164 | error | the datatype collection could not be read ({}), refresh aborted to avoid losi… |
+| `THC-17` | 181 | error | the migrated rows could not be written to '{}': {} |
+| `THC-2` | 198 | debug | Datatypes recovered from TheHive: … |
+| `THC-5` | 222 | error | FATAL {} new datatype(s) could not be written to '{}': {} |
+| `THC-6` | 229 | error | Could not recover datatypes from TheHive API: … |
+| `THC-12` | 297 | warn | API refresh failed ({…}). Falling back to the rows already in the collection. |
+| `THC-16` | 305 | error | collection '{…}' is empty, malformed or not readable: {…} |
+| `THC-13` | 312 | error | API refresh failed and collection '{…}' holds no datatype. |
+| `THC-15` | 321 | debug | dataType_dict built from '{}' ({} datatype(s)) |
+| `THC-61` | 336 | debug | Row before pre-processing: … |
+| `THC-62` | 353 | debug | Row after pre-processing: … |
+| `THC-63` | 384 | debug | original sourceRef: {} was cut as it was a string too long (max 128 char). |
+| `THC-64` | 392 | debug | sourceRef: {} |
+| `THC-86` | 465 | warn | timestamp_field '{…}' missing; falling back to current time |
+| `THC-85` | 478 | debug | alert timestamp: {} |
+| `THC-87` | 488 | warn | timestamp_field '{…}' holds a non-numeric value ('{…}'); falling back to curr… |
+| `THC-80` | 495 | debug | new Timestamp from row: {} |
+| `THC-88` | 501 | warn | timestamp_field '{…}' is neither a 10 nor a 13 digit epoch ('{…}'); falling b… |
+| `THC-115` | 544 | debug | observables found for an alert: … |
+| `THC-116` | 549 | debug | No observable found in current row (sourceRef={…}). |
+| `THC-77` | 585 | debug | Append results to description as markdown table |
 
 ## `ta_thehive_cortex/modalert_thehive_create_a_new_alert_helper.py`
 

@@ -24,7 +24,7 @@ from tomark import Tomark
 
 # Local application/library specific imports
 from thehive import TheHive4Splunk
-from ttp_catalogue import is_known, pattern_ids
+from ttp_catalogue import pattern_ids
 from thehive4py.types.custom_field import InputCustomField
 from thehive4py.types.observable import InputObservable
 from thehive4py.types.procedure import InputProcedure
@@ -33,50 +33,23 @@ __author__ = "Alexandre Demeyer"
 __maintainer__ = "Alexandre Demeyer"
 __email__ = "letmer00t@gmail.com"
 
-# All available data types
-TLP = {
-    "W": 0,
-    "G": 1,
-    "A": 2,
-    "AS": 3,
-    "R": 4,
-    "0": 0,
-    "1": 1,
-    "2": 2,
-    "3": 3,
-    "4": 4,
-    "WHITE": 0,
-    "GREEN": 1,
-    "AMBER": 2,
-    "AMBER+STRICT": 3,
-    "RED": 4,
-}
-
-PAP = {
-    "W": 0,
-    "G": 1,
-    "A": 2,
-    "R": 3,
-    "0": 0,
-    "1": 1,
-    "2": 2,
-    "3": 3,
-    "WHITE": 0,
-    "GREEN": 1,
-    "AMBER": 2,
-    "RED": 3,
-}
-
-SEVERITY = {
-    "low": 1,
-    "medium": 2,
-    "high": 3,
-    "critical": 4,
-    "1": 1,
-    "2": 2,
-    "3": 3,
-    "4": 4,
-}
+# The value maps and the per-field helpers now live in `field_mapping`, which
+# holds the dispatch table that replaced a 126-branch chain. They are re-exported
+# here because `modalert_thehive_add_observables_helper` and
+# `modalert_thehive_add_timeline_event_helper` import them from this module, and
+# moving a name is not a reason to break three callers.
+from field_mapping import (  # noqa: F401  (re-exported on purpose)
+    TLP,
+    PAP,
+    SEVERITY,
+    KNOWN_CUSTOM_TYPES,
+    extract_field,
+    str_to_bool,
+    str_to_epoch_millis,
+    RowContext,
+    build_observables,
+    dispatch_row,
+)
 
 
 
@@ -354,62 +327,285 @@ def get_datatype_dict(thehive: TheHive4Splunk):
     return dataType_dict
 
 
-def extract_field(row, field):
-    """This function is used to extract information from a potential field in a row and sanitize it if needed. If the field is not found, use the field name directly as value"""
+def _normalise_row(row, logger_file):
+    """Splunk's multivalue fields flattened, every value a string, `__mv_` gone.
 
-    result = field
-    # Check if the given "field" is actually a field from the search results
-    if field in row:
-        # A field is found
-        newValue = str(row[field])
-        if newValue not in [None, ""]:
-            result = newValue
-    return result
+    Splunk emits a parallel `__mv_<field>` column for multivalue fields; TheHive
+    has no use for it, and a list reaching the API is rejected outright.
+    """
+    logger_file.debug(id="THC-61", message="Row before pre-processing: " + str(row))
+    for key in list(row):
+        if (
+            not key.startswith("__mv_")
+            and "__mv_" + key in row
+            and row["__mv_" + key] not in [None, ""]
+        ):
+            row[key] = [e[1 : len(e) - 1] for e in row["__mv_" + key].split(";")]
 
+    sanitized = dict()
+    for key, value in list(row.items()):
+        if not key.startswith("__mv_") and key not in ["rid"]:
+            if isinstance(value, list):
+                sanitized[key] = ", ".join(map(str, value))
+            else:
+                sanitized[key] = str(value)
 
-def str_to_bool(value, default):
-    """Coerce a search-result value (always a string after sanitization) into a
-    real boolean. TheHive expects native booleans for fields such as `ioc`,
-    `sighted` and `ignoreSimilarity`; sending the raw string "1"/"0" makes the
-    API reject the whole payload with "Invalid json". Accepts the same truthy/
-    falsy tokens as the custom-field boolean parsing."""
-    if value is None:
-        return default
-    if isinstance(value, bool):
-        return value
-    s = str(value).strip()
-    if re.match(r"^(1|y|Y|t|T|true|True)$", s):
-        return True
-    if re.match(r"^(0|n|N|f|F|false|False)$", s):
-        return False
-    return default
+    logger_file.debug(id="THC-62", message="Row after pre-processing: " + str(sanitized))
+    return sanitized
 
 
-def str_to_epoch_millis(value):
-    """Convert a Splunk epoch value (seconds, possibly a float string such as
-    "1700000000.000000") into epoch milliseconds expected by TheHive. Returns
-    None when the value is missing or cannot be parsed."""
-    if value in (None, ""):
-        return None
+def _resolve_source_ref(row, helper, alert_args, reference_time, logger_file):
+    """The key that decides which alert a row belongs to.
+
+    ⚠️ Rows sharing a sourceRef are MERGED into one alert, so this is also the
+    grouping key -- getting it wrong does not create a wrong alert, it silently
+    merges or splits alerts that should not be.
+    """
+    unique_id_field = alert_args.get("unique_id_field")
+    es_mode = (
+        alert_args.get("alert_mode") == "es_mode"
+        or alert_args.get("case_mode") == "es_mode"
+    ) and bool(unique_id_field) and unique_id_field not in row
+
+    if es_mode:
+        # Coming from Splunk ES, which carries its own identifier.
+        source_ref = row["event_id"] if "event_id" in row else helper.sid
+    elif unique_id_field and unique_id_field in row:
+        new_source = str(row[unique_id_field])
+        if new_source not in [None, ""]:
+            source_ref = new_source
+            del row[unique_id_field]
+        else:
+            source_ref = helper.sid + reference_time
+    else:
+        source_ref = helper.sid + reference_time
+
+    if len(source_ref) > 128:
+        logger_file.debug(
+            id="THC-63",
+            message="original sourceRef: {} was cut as it was a string too long (max 128 char).".format(
+                source_ref
+            ),
+        )
+        source_ref = source_ref[0:127]
+
+    logger_file.debug(id="THC-64", message="sourceRef: {} ".format(source_ref))
+    return source_ref
+
+
+def _resolve_title(alert, row, helper, alert_args):
+    """The alert title, and the field it consumed if it named one."""
+    arg_title = alert_args.get("title")
+    if arg_title == "<inheritance>":
+        if "search_name" in row:
+            # Coming from Splunk ES.
+            alert["title"] = row["search_name"]
+            del row["search_name"]
+        else:
+            alert["title"] = helper.settings["search_name"]
+    elif arg_title:
+        alert["title"] = extract_field(row, arg_title)
+        if arg_title in row:
+            del row[arg_title]
+    else:
+        alert["title"] = "Notable event"
+
+
+def _resolve_description(alert, row, alert_args):
+    arg_description = alert_args.get("description")
+    if arg_description:
+        alert["description"] = extract_field(row, arg_description)
+        if arg_description in row:
+            del row[arg_description]
+    elif "description" in row:
+        alert["description"] = row["description"]
+        del row["description"]
+    else:
+        alert["description"] = "No description provided"
+
+
+def _resolve_scale(alert, row, alert_args, key, field, mapping, fold):
+    """One of severity / TLP / PAP, read from the row or from the argument.
+
+    ⚠️ The three were three near-identical eleven-line blocks differing only in
+    the map and in `.lower()` versus `.upper()`. That is how the second one
+    drifted from the first without anybody noticing.
+    """
+    raw = row.get(field)
+    if raw in mapping:
+        alert[key] = mapping[raw]
+    elif raw is not None and fold(str(raw)) in mapping:
+        alert[key] = mapping[fold(str(raw))]
+    else:
+        # ⚠️ The row value we could not read stays in the table: the analyst
+        # should see what we refused, not just the default we applied.
+        alert[key] = alert_args.get(key, 2)
+        return
+    del row[field]
+
+
+def _resolve_scales(alert, row, alert_args):
+    _resolve_scale(alert, row, alert_args, "severity", "th_severity", SEVERITY, str.lower)
+    _resolve_scale(alert, row, alert_args, "tlp", "th_tlp", TLP, str.upper)
+    _resolve_scale(alert, row, alert_args, "pap", "th_pap", PAP, str.upper)
+
+
+def _resolve_timestamp(alert, row, alert_args, logger_file):
+    """The alert timestamp in milliseconds, falling back to now.
+
+    ⚠️ Two shapes used to fail the WHOLE alert rather than this one field: a
+    non-numeric value ("2026-01-01", which is what a Splunk strftime produces)
+    raised ValueError on float(); and a numeric value that is neither ten nor
+    thirteen digits left `alert["timestamp"]` unassigned while the log line
+    below read it -- a KeyError on a key the code had just failed to write.
+    """
+    arg_timestamp = alert_args.get("timestamp")
+    if not (arg_timestamp and arg_timestamp in row):
+        if arg_timestamp:
+            logger_file.warn(
+                id="THC-86",
+                message=f"timestamp_field '{arg_timestamp}' missing; falling back to current time",
+            )
+        alert["timestamp"] = int(time.time() * 1000)
+        return
+
+    raw = row.pop(arg_timestamp)
+    epoch = _read_epoch(raw, arg_timestamp, logger_file)
+    if epoch is not None:
+        alert["timestamp"] = epoch
+    else:
+        alert["timestamp"] = int(time.time() * 1000)
+    logger_file.debug(
+        id="THC-85", message="alert timestamp: {} ".format(alert["timestamp"])
+    )
+
+
+def _read_epoch(raw, field_name, logger_file):
+    """Milliseconds from a ten or thirteen digit epoch, or None with a reason."""
     try:
-        ts = int(float(value))
-    except (ValueError, TypeError):
+        digits = str(int(float(raw)))
+    except (TypeError, ValueError):
+        logger_file.warn(
+            id="THC-87",
+            message=f"timestamp_field '{field_name}' holds a non-numeric value "
+            f"('{raw}'); falling back to current time",
+        )
         return None
-    # Seconds-range epoch -> milliseconds; values already in millis are kept.
-    return ts * 1000 if ts < 10_000_000_000 else ts
+
+    logger_file.debug(id="THC-80", message="new Timestamp from row: {} ".format(digits))
+    if re.match("^[0-9]{13}$", digits):
+        return int(float(digits))
+    if re.match("^[0-9]{10}$", digits):
+        return int(float(digits)) * 1000
+
+    logger_file.warn(
+        id="THC-88",
+        message=f"timestamp_field '{field_name}' is neither a 10 nor a "
+        f"13 digit epoch ('{digits}'); falling back to current time",
+    )
+    return None
 
 
-#: The custom field types this add-on knows how to CONVERT. It is deliberately
-#: not "the types TheHive supports" -- that list is TheHive's, it grows, and
-#: freezing a copy of it is exactly what made GitHub #133. Anything outside this
-#: set is forwarded as text rather than dropped.
-TYPES_CONNUS = ("string", "url", "boolean", "integer", "float", "date")
+def _resolve_ttps(alert, row, ttps):
+    """TTPs given explicitly, or failing that the ones Splunk ES annotated."""
+    if len(ttps) > 0:
+        alert["ttps"] = [InputProcedure(ttp) for ttp in ttps]
+        return
+    if not (
+        "annotations.mitre_attack.mitre_tactic" in row
+        and "annotations.mitre_attack" in row
+    ):
+        return
+
+    tactics = row["annotations.mitre_attack.mitre_tactic"]
+    technics = row["annotations.mitre_attack"]
+    if not isinstance(tactics, list):
+        tactics = [tactics]
+    if not isinstance(technics, list):
+        technics = [technics]
+
+    date = datetime.datetime.fromtimestamp(
+        int(float(row.get("_time", time.time())))
+    ).strftime("%Y-%m-%d")
+
+    # Iterate on the shorter of the two: unaligned lists must not raise.
+    alert["ttps"] = [
+        InputProcedure(
+            {"tactic": tactics[i], "patternId": technics[i], "occurDate": date}
+        )
+        for i in range(min(len(tactics), len(technics)))
+    ]
+
+
+def _store_alert(alert, row, observables, ctx, source_ref, logger_file):
+    """Fold one row's harvest into the alert it belongs to."""
+    if observables:
+        alert["observables"] = [InputObservable(o) for o in observables]
+        logger_file.debug(
+            id="THC-115", message="observables found for an alert: " + str(observables)
+        )
+    else:
+        alert["observables"] = []
+        logger_file.debug(
+            id="THC-116",
+            message=f"No observable found in current row (sourceRef={source_ref}).",
+        )
+
+    alert["customFields"] = [InputCustomField(cf) for cf in ctx.custom_field_values]
+    _resolve_ttps(alert, row, ctx.ttps)
+
+    alert["events"] = alert["events"] + [row] if "events" in alert else [row]
+    alert["events_keys"] = (
+        list(set(alert["events_keys"] + list(row.keys())))
+        if "events_keys" in alert
+        else list(row.keys())
+    )
+
+
+def _drop_columns_empty_everywhere(alert):
+    """A column empty in EVERY event of the alert is noise in the table."""
+    for key in list(alert["events_keys"]):
+        empty = sum(1 for event in alert["events"] if key not in event or event[key] == "")
+        if empty == len(alert["events"]):
+            for event in list(alert["events"]):
+                if key in event:
+                    del event[key]
+
+
+def _append_results_table(parsed_events, alert_args, logger_file):
+    """Reinject the raw events as a Markdown table under the description.
+
+    ⚠️ `events` is always deleted afterwards, whether or not it was rendered:
+    it is working state, and handing it back to the caller would put the raw
+    Splunk rows into an object nobody expects to carry them.
+    """
+    for source_ref in parsed_events:
+        if alert_args["description_results_enable"]:
+            _drop_columns_empty_everywhere(parsed_events[source_ref])
+            logger_file.debug(
+                id="THC-77", message="Append results to description as markdown table"
+            )
+            parsed_events[source_ref]["description"] += (
+                "\r\n\r\n-----\r\nRaw events:\r\n\r\n"
+                + Tomark.table(parsed_events[source_ref]["events"])
+            )
+        del parsed_events[source_ref]["events"]
 
 
 def parse_events(helper, thehive: TheHive4Splunk, alert_args):
-    # iterate through each row, cleaning multivalue fields
-    # and then adding the attributes under same alert key
-    # this builds the dict parsed_events
+    """Turn the search results into the alerts or cases to send to TheHive.
+
+    ⚠️ This function used to be 540 lines at **CC 126**, holding nine
+    responsibilities at once. It now reads as the sequence it always was: read
+    the row, decide which alert it joins, fill the header, dispatch the fields,
+    fold the harvest in. The branching that decided what a field *is* lives in
+    `field_mapping.FIELD_RULES`, where the next field type is a table entry
+    rather than a deeper `elif`.
+
+    Behaviour is unchanged, and that is checked rather than claimed:
+    `tests/test_parse_events_characterisation_unit.py` pins it, oddities
+    included.
+    """
     data_type, custom_fields = per_execution_invariants(thehive)
     # ⚠️ Once per execution, never per row: the catalogue does not change while
     # a batch is being sent, and re-reading it per row would be one HTTP
@@ -417,634 +613,44 @@ def parse_events(helper, thehive: TheHive4Splunk, alert_args):
     catalogue = pattern_ids(
         thehive, getattr(thehive, "ttp_catalog_name", None), thehive.logger_file
     )
-    alert_reference_time = str(int(time.time()))
+    reference_time = str(int(time.time()))
     parsed_events = dict()
-    events = helper.get_events()
 
-    for row in events:
-        # Initialize values
-        observables = []
-        ttps = []
-        customFields = []
-        events = []
-        alert = dict()
-
-        # Splunk makes a bunch of dumb empty multivalue fields
-        # replace value by multivalue if required
-        thehive.logger_file.debug(
-            id="THC-61", message="Row before pre-processing: " + str(row)
-        )
-        for key, value in list(row.items()):
-            if (
-                not key.startswith("__mv_")
-                and "__mv_" + key in row
-                and row["__mv_" + key] not in [None, ""]
-            ):
-                row[key] = [e[1 : len(e) - 1] for e in row["__mv_" + key].split(";")]
-        # we filter those out here
-        # AND ensure all values are normalized to strings (joined if lists)
-        # (Improvements for multi-value fields and tags based on PR #119 by @chang6chang)
-        row_sanitized = dict()
-        for key, value in list(row.items()):
-            if not key.startswith("__mv_") and key not in ["rid"]:
-                if isinstance(value, list):
-                    # Join multi-value fields to a comma-separated string
-                    row_sanitized[key] = ", ".join(map(str, value))
-                else:
-                    row_sanitized[key] = str(value)
-        
-        row = row_sanitized
-        thehive.logger_file.debug(
-            id="THC-62", message="Row after pre-processing: " + str(row)
+    for raw_row in helper.get_events():
+        row = _normalise_row(raw_row, thehive.logger_file)
+        source_ref = _resolve_source_ref(
+            row, helper, alert_args, reference_time, thehive.logger_file
         )
 
-        sourceRef = ""
-        unique_id_field = alert_args.get("unique_id_field")
-        # Define thehive alert unique ID (if duplicated, alert creations fails)
-        if (
-            "alert_mode" in alert_args
-            and alert_args["alert_mode"] == "es_mode"
-            and unique_id_field
-            and unique_id_field not in row
-        ) or (
-            "case_mode" in alert_args
-            and alert_args["case_mode"] == "es_mode"
-            and unique_id_field
-            and unique_id_field not in row
-        ):
-            # Check if it's coming from Splunk ES
-            if "event_id" in row:
-                sourceRef = row["event_id"]
-            else:
-                sourceRef = helper.sid
-        elif unique_id_field and unique_id_field in row:
-            newSource = str(row[unique_id_field])
-            if newSource not in [None, ""]:
-                # grabs that field's value and assigns it to our sourceRef
-                sourceRef = newSource
-                del row_sanitized[unique_id_field]
-            else:
-                sourceRef = helper.sid + alert_reference_time
-        else:
-            sourceRef = helper.sid + alert_reference_time
+        # Rows sharing a sourceRef accumulate into one alert, so the harvest of
+        # the previous rows is resumed rather than restarted.
+        alert = parsed_events.get(source_ref, dict())
+        observables = list(alert.get("observables", []))
+        ttps = list(alert.get("ttps", []))
+        custom_field_values = list(alert.get("customFields", []))
 
-        # Check if sourceRef is not too long, otherwise cut to 127 characters
-        if len(sourceRef) > 128:
-            thehive.logger_file.debug(
-                id="THC-63",
-                message="original sourceRef: {} was cut as it was a string too long (max 128 char).".format(
-                    sourceRef
-                ),
-            )
-            sourceRef = sourceRef[0:127]
+        _resolve_title(alert, row, helper, alert_args)
+        _resolve_description(alert, row, alert_args)
+        _resolve_scales(alert, row, alert_args)
+        _resolve_timestamp(alert, row, alert_args, thehive.logger_file)
 
-        thehive.logger_file.debug(
-            id="THC-64", message="sourceRef: {} ".format(sourceRef)
+        context = RowContext(
+            row_sanitized=row,
+            data_type=data_type,
+            custom_fields=custom_fields,
+            alert_args=alert_args,
+            catalogue=catalogue,
+            logger_file=thehive.logger_file,
+            helper=helper,
+            ttps=ttps,
+            custom_field_values=custom_field_values,
+            catalog_name=getattr(thehive, "ttp_catalog_name", "") or "",
         )
+        dispatch_row(context, row)
+        build_observables(context, observables)
 
-        # check if observables have been stored for this sourceRef.
-        # If yes, retrieve them to add new ones from this row
-        if sourceRef in parsed_events:
-            alert = parsed_events[sourceRef]
-            events = alert["events"]
-            ttps = list(alert["ttps"]) if "ttps" in alert else []
-            observables = list(alert["observables"]) if "observables" in alert else []
-            customFields = (
-                list(alert["customFields"]) if "customFields" in alert else []
-            )
+        _store_alert(alert, row, observables, context, source_ref, thehive.logger_file)
+        parsed_events[source_ref] = alert
 
-        # check if title contains a field name instead of a string.
-        # if yes, strip it from the row and assign value to title
-        arg_title = alert_args.get("title")
-        if arg_title == "<inheritance>":
-            # Find the most accurate information for the title
-            if "search_name" in row:
-                # Use this information coming from Splunk ES
-                alert["title"] = row["search_name"]
-                del row_sanitized["search_name"]
-            else:
-                # Take the name of the savedsearch itself
-                alert["title"] = helper.settings["search_name"]
-        elif arg_title:
-            # Field is not null but it's not inheritance, try to format the field
-            alert["title"] = extract_field(row, arg_title)
-            # Check if sanitization is required
-            if arg_title in row:
-                del row_sanitized[arg_title]
-        else:
-            # Give a default name
-            alert["title"] = "Notable event"
-
-        # check if description contains a field name instead of a string.
-        # if yes, strip it from the row and assign value to description
-        arg_description = alert_args.get("description")
-        if arg_description:
-            # Field is not null, try to format the field
-            alert["description"] = extract_field(row, arg_description)
-            # Check if sanitization is required
-            if arg_description in row:
-                del row_sanitized[arg_description]
-        elif "description" in row:
-            # Description is provided in the event
-            alert["description"] = row["description"]
-            del row_sanitized["description"]
-        else:
-            # Give a default name
-            alert["description"] = "No description provided"
-
-        # check if severity is provided or not in the logs (Splunk ES event)
-        if row.get("th_severity") in SEVERITY:
-            alert["severity"] = SEVERITY[row["th_severity"]]
-            del row_sanitized["th_severity"]
-        elif row.get("th_severity") is not None and str(row.get("th_severity")).lower() in SEVERITY:
-            alert["severity"] = SEVERITY[str(row["th_severity"]).lower()]
-            del row_sanitized["th_severity"]
-        else:
-            alert["severity"] = alert_args.get("severity", 2) # Default to Medium
-
-        # check if tlp is provided or not in the logs (Splunk ES event)
-        if row.get("th_tlp") in TLP:
-            alert["tlp"] = TLP[row["th_tlp"]]
-            del row_sanitized["th_tlp"]
-        elif row.get("th_tlp") is not None and str(row.get("th_tlp")).upper() in TLP:
-            alert["tlp"] = TLP[str(row["th_tlp"]).upper()]
-            del row_sanitized["th_tlp"]
-        else:
-            alert["tlp"] = alert_args.get("tlp", 2) # Default to AMBER
-
-        # check if pap is provided or not in the logs (Splunk ES event)
-        if row.get("th_pap") in PAP:
-            alert["pap"] = PAP[row["th_pap"]]
-            del row_sanitized["th_pap"]
-        elif row.get("th_pap") is not None and str(row.get("th_pap")).upper() in PAP:
-            alert["pap"] = PAP[str(row["th_pap"]).upper()]
-            del row_sanitized["th_pap"]
-        else:
-            alert["pap"] = alert_args.get("pap", 2) # Default to AMBER
-
-        # find the field name used for a valid timestamp
-        # and strip it from the row
-        arg_timestamp = alert_args.get("timestamp")
-        if arg_timestamp and arg_timestamp in row:
-            brut = row.pop(arg_timestamp)
-            # Two shapes used to fail the WHOLE alert, not just this field:
-            #   - a non-numeric value ("2026-01-01", which is what a Splunk
-            #     strftime produces) raised ValueError on float();
-            #   - a numeric value that is neither ten nor thirteen digits left
-            #     alert["timestamp"] unassigned, and the log line right below
-            #     read it -> KeyError on a key the code had just failed to write.
-            # An unusable timestamp is a reason to fall back, never a reason to
-            # lose the alert.
-            newTimestamp = None
-            try:
-                newTimestamp = str(int(float(brut)))
-            except (TypeError, ValueError):
-                thehive.logger_file.warn(
-                    id="THC-87",
-                    message=f"timestamp_field '{arg_timestamp}' holds a non-numeric value "
-                    f"('{brut}'); falling back to current time",
-                )
-            if newTimestamp is not None:
-                thehive.logger_file.debug(
-                    id="THC-80", message="new Timestamp from row: {} ".format(newTimestamp)
-                )
-                epoch10 = re.match("^[0-9]{10}$", newTimestamp)
-                epoch13 = re.match("^[0-9]{13}$", newTimestamp)
-                if epoch13 is not None:
-                    alert["timestamp"] = int(float(newTimestamp))
-                elif epoch10 is not None:
-                    alert["timestamp"] = int(float(newTimestamp)) * 1000
-                else:
-                    thehive.logger_file.warn(
-                        id="THC-88",
-                        message=f"timestamp_field '{arg_timestamp}' is neither a 10 nor a "
-                        f"13 digit epoch ('{newTimestamp}'); falling back to current time",
-                    )
-            if "timestamp" not in alert:
-                alert["timestamp"] = int(time.time() * 1000)
-            thehive.logger_file.debug(
-                id="THC-85", message="alert timestamp: {} ".format(alert["timestamp"])
-            )
-        else:
-            if arg_timestamp:
-                thehive.logger_file.warn(
-                    id="THC-86",
-                    message=f"timestamp_field '{arg_timestamp}' missing; falling back to current time",
-                )
-            alert["timestamp"] = int(time.time() * 1000)
-
-        observables_data = dict()
-        # now we take those KV pairs to add to dict
-        for key, value in list(row.items()):
-            if value != "":
-                thehive.logger_file.debug(
-                    id="THC-90", message=f"field to process: {key}"
-                )
-                if ":" in key:
-                    thehive.logger_file.debug(
-                        id="THC-91", message=f"composite fieldvalue detected: {key}"
-                    )
-                    # ⚠️ NOT removed here. It used to be, and the branch below
-                    # had no `else` at all: a composite key whose prefix is not
-                    # a datatype disappeared without even a warning -- the
-                    # sneakiest of the losses, because nothing distinguished it
-                    # from a field that was never sent.
-                    # Extract information
-                    compositekey = key.split(":", 1)
-                    mainkey = str(compositekey[0])
-                    subkey = str(compositekey[1])
-                    # Check if it's a specific datatype or not
-                    if mainkey in data_type:
-                        # This is a datatype, so we use the subkey to add information about an observable
-                        observable_datatype = data_type[mainkey]
-                        if mainkey not in observables_data:
-                            observables_data[mainkey] = {
-                                subkey: value,
-                                "datatype": observable_datatype,
-                            }
-                        else:
-                            observables_data[mainkey][subkey] = value
-                            observables_data[mainkey]["datatype"] = observable_datatype
-                        thehive.logger_file.debug(
-                            id="THC-92",
-                            message="field: {} enriched with the information {} set to ".format(
-                                mainkey, subkey, value
-                            ),
-                        )
-                        # Consumed: now it may leave the raw table.
-                        del row_sanitized[key]
-                    else:
-                        # The terminal branch that was missing. The prefix names
-                        # no known datatype, so we cannot build an observable --
-                        # but the value stays readable in the description table.
-                        thehive.logger_file.warn(
-                            id="THC-93",
-                            message=f"composite key '{key}' was NOT mapped: '{mainkey}' is "
-                            f"not a known datatype. The raw value is kept in the description table.",
-                        )
-                elif key in data_type:
-                    # Check if observables must be kept in the sanitized results or not
-                    if not alert_args["description_results_keep_observable"]:
-                        del row_sanitized[key]
-                    thehive.logger_file.debug(
-                        id="THC-95", message="key is an observable: {} ".format(key)
-                    )
-                    # Given value of the row is the value of the datatype
-                    observable_datatype = data_type[key]
-                    if key not in observables_data:
-                        observables_data[key] = {
-                            "value": value,
-                            "datatype": observable_datatype,
-                        }
-                    else:
-                        observables_data[key]["value"] = value
-                        observables_data[key]["datatype"] = observable_datatype
-                elif key in custom_fields:
-                    # ⚠️ The key is NOT removed here. It used to be, before the
-                    # type was even read, so a type this chain does not know
-                    # lost the value TWICE: absent from customFields, and gone
-                    # from the raw table reinjected into the description. The
-                    # analyst had nowhere left to see it. Deletion now happens
-                    # only where the field was actually consumed -- see below.
-                    custom_type = custom_fields[key]["type"]
-                    thehive.logger_file.debug(
-                        id="THC-96",
-                        message="key is a custom field: {}, with type {} ".format(
-                            key, custom_type
-                        ),
-                    )
-                    custom_field_check = False
-                    custom_field = {"name": key}
-                    # "url" (TheHive >= 5.1) carries a plain string value, so it
-                    # is handled exactly like "string". Any type missing from
-                    # this chain leaves custom_field_check False and the field
-                    # is dropped without an error.
-                    if custom_type in ("string", "url"):
-                        custom_field_check = True
-                        custom_field["value"] = str(value)
-                    elif custom_type == "boolean":
-                        is_True = re.match("^(1|y|Y|t|T|true|True)$", value)
-                        is_False = re.match("^(0|n|N|f|F|false|False)$", value)
-                        if is_True is not None:
-                            custom_field_check = True
-                            custom_field["value"] = True
-                        elif is_False is not None:
-                            custom_field_check = True
-                            custom_field["value"] = False
-                    elif custom_type == "integer":  # for TheHive4 only
-                        try:
-                            number = int(value)
-                            custom_field_check = True
-                            custom_field["value"] = number
-                        except ValueError:  # silent-except: reported by THC-117 below
-                            pass
-                    elif custom_type == "float":  # for TheHive4 only
-                        try:
-                            number = float(value)
-                            custom_field_check = True
-                            custom_field["value"] = number
-                        except ValueError:  # silent-except: reported by THC-117 below
-                            pass
-                    elif custom_type == "date":
-                        epoch10 = re.match("^[0-9]{10}$", value)
-                        epoch13 = re.match("^[0-9]{13}$", value)
-                        if epoch13 is not None:
-                            custom_field_check = True
-                            custom_field["value"] = int(value)
-                        elif epoch10 is not None:
-                            custom_field_check = True
-                            custom_field["value"] = int(value) * 1000
-                        else:
-                            # ISO-8601 is what a Splunk strftime produces, so it
-                            # is the most likely shape after an epoch -- and it
-                            # was the one shape rejected.
-                            try:
-                                iso = datetime.datetime.fromisoformat(
-                                    str(value).replace("Z", "+00:00")
-                                )
-                                custom_field_check = True
-                                custom_field["value"] = int(iso.timestamp() * 1000)
-                            except ValueError:
-                                pass  # silent-except: reported by THC-117 below
-                    if custom_field_check is False and custom_type not in TYPES_CONNUS:
-                        # ⚠️ The type is one WE do not know -- not one TheHive
-                        # refuses. Freezing the list of TheHive custom field
-                        # types is what made #133: every type TheHive added
-                        # vanished here. Forward the raw value as text and let
-                        # TheHive, the only authority on its own schema, accept
-                        # or refuse it.
-                        custom_field_check = True
-                        custom_field["value"] = str(value)
-                        thehive.logger_file.warn(
-                            id="THC-118",
-                            message=f"custom field '{key}' has type '{custom_type}', which this "
-                            f"add-on does not map; forwarding the raw value as text",
-                        )
-
-                    if custom_field_check is True:
-                        customFields += [custom_field]
-                        # Consumed: now it may leave the raw table.
-                        del row_sanitized[key]
-                    else:
-                        # Kept in row_sanitized ON PURPOSE: the field could not
-                        # be mapped, so the reinjected table is the only place
-                        # the analyst can still read the value.
-                        thehive.logger_file.warn(
-                            id="THC-117",
-                            message=f"custom field '{key}' was NOT mapped: type '{custom_type}' is not handled, or value '{value}' does not match it. The raw value is kept in the description table.",
-                        )
-                elif key == "ttp":
-                    del row_sanitized["ttp"]
-                    # Expected pattern is: tactic::patternId::occurDate
-                    values = value.split("::")
-                    # Validate the excepted occurDate format (YYYY-mm-dd)
-                    try:
-                        datetime.date.fromisoformat(values[2])
-                        date_check = True
-                    except ValueError as e:
-                        date_check = False
-                    # ⚠️ `startswith("T")` accepts `T`, `TOTO` and `T99999`
-                    # alike. A wrong id used to be accepted here and rejected by
-                    # TheHive later, in a message naming neither the row nor the
-                    # field it came from. The catalogue is what makes the check
-                    # possible, and it is the setting that did nothing until now.
-                    known = is_known(values[1], catalogue) if len(values) == 3 else False
-                    if (
-                        len(values) == 3
-                        and values[1].startswith("T")
-                        and date_check is True
-                        and known
-                    ):
-                        new_ttp = {
-                            "tactic": values[0],
-                            "patternId": values[1],
-                            "occurDate": values[2],
-                        }
-                        if new_ttp not in ttps:
-                            ttps.append(new_ttp)
-                            thehive.logger_file.debug(
-                                id="THC-108",
-                                message="ttp was parsed correctly and added to the alert: {}".format(
-                                    value
-                                ),
-                            )
-                        else:
-                            thehive.logger_file.debug(
-                                id="THC-109",
-                                message="ttp already exist, ignoring duplicates: {}".format(
-                                    value
-                                ),
-                            )
-                    elif len(values) == 3 and values[1].startswith("T") and date_check and not known:
-                        # Well formed, but the id is not in the catalogue. Say
-                        # WHICH one: otherwise the user goes hunting for a typo
-                        # across the whole row.
-                        thehive.logger_file.error(
-                            id="THC-122",
-                            message=(
-                                f"ttp '{values[1]}' is not in the MITRE catalogue "
-                                f"'{getattr(thehive, 'ttp_catalog_name', '')}'; the TTP is "
-                                f"dropped rather than sent for TheHive to reject. Full value: {value}"
-                            ),
-                        )
-                    else:
-                        helper.error(
-                            '[CAA-THC-110-ERROR] ttp field was detected but malformed, expected one value with the pattern "tactic::patternId::occurDate" with occurDate as "YYYY-mm-dd", got: {}'.format(
-                                value
-                            )
-                        )
-                elif alert_args["scope"] is False:
-                    # If the key wasn't removed, consider this as an other observable
-                    if key in row_sanitized:
-                        thehive.logger_file.debug(
-                            id="THC-105",
-                            message="key is added as another observable (scope is False): {}".format(
-                                key
-                            ),
-                        )
-                        # As we are taking a field as an "other" datatype, we build the value differently
-                        if key not in observables_data:
-                            observables_data[key] = {
-                                "value": key + ": " + value,
-                                "datatype": "other",
-                                "tags": "value:" + value,
-                            }
-                        else:
-                            observables_data[key]["value"] = key + ": " + value
-                            observables_data[key]["datatype"] = "other"
-                            observables_data[key]["tags"] = "value:" + value
-                    else:
-                        thehive.logger_file.warn(
-                            id="THC-106",
-                            message='key is used by TheHive as an internal field (scope is False): {}. Key ignored to be added as an "other" observable.'.format(
-                                key
-                            ),
-                        )
-
-        # Process all observables
-        if len(observables_data) > 0:
-            for field, data in observables_data.items():
-                thehive.logger_file.debug(
-                    id="THC-111",
-                    message="Processing observable data: {} ({})".format(
-                        field, observables_data[field]
-                    ),
-                )
-                obs_datatype = data["datatype"] if "datatype" in data else "other"
-                # Test if the observable has at least its value
-                if "value" in data:
-                    # Multi-value support: split by comma, semicolon, pipe or newline
-                    raw_val_str = str(data["value"])
-                    raw_values = [v.strip() for v in re.split(r'[,;|\n]+', raw_val_str) if v.strip()]
-                    
-                    thehive.logger_file.debug(
-                        id="THC-112",
-                        message=f"Multi-value split for {field}: '{raw_val_str}' -> {str(raw_values)}"
-                    )
-                    
-                    for obs_data in raw_values:
-                        obs_message = (
-                            data["description"]
-                            if "description" in data
-                            else "No description provided for this observable"
-                        )
-                        
-                        # Handle tags correctly: must be a list of strings, each max 128 chars
-                        obs_tags_raw = data.get("tags", "")
-                        if isinstance(obs_tags_raw, list):
-                            obs_tags = [str(t) for t in obs_tags_raw]
-                        else:
-                            obs_tags = [t.strip() for t in str(obs_tags_raw).split(",") if t.strip()]
-                        
-                        # Add the field in the tags and truncate each tag to 128 chars
-                        obs_tags.append("field:" + field)
-                        obs_tags = [t[:128] for t in obs_tags]
-                        
-                        obs_tlp = TLP.get(str(data.get("tlp")), TLP["AMBER"])
-                        obs_pap = PAP.get(str(data.get("pap")), PAP["AMBER"])
-                        # Sub-field names follow the documented snake_case
-                        # convention (is_ioc / sighted / sighted_at /
-                        # ignore_similarity) and arrive as strings, so they must
-                        # be coerced to the native types TheHive expects.
-                        obs_is_ioc = str_to_bool(data.get("is_ioc"), False)
-                        obs_sighted = str_to_bool(data.get("sighted"), True)
-                        obs_sighted_at = str_to_epoch_millis(data.get("sighted_at"))
-                        obs_ignore_similarity = str_to_bool(
-                            data.get("ignore_similarity"), False
-                        )
-
-                        observable = dict(
-                            dataType=obs_datatype,
-                            data=obs_data,
-                            message=obs_message,
-                            tags=obs_tags,
-                            tlp=obs_tlp,
-                            pap=obs_pap,
-                            ioc=obs_is_ioc,
-                            sighted=obs_sighted,
-                            sightedAt=obs_sighted_at,
-                            ignoreSimilarity=obs_ignore_similarity,
-                        )
-                        if observable not in observables:
-                            observables.append(observable)
-
-                else:
-                    thehive.logger_file.warn(
-                        id="THC-113",
-                        message="Observable '{0}' doesn't have any value set (no field '{0}' or '{0}:value' was detected), ignored.".format(
-                            field
-                        ),
-                    )
-
-        if observables:
-            alert["observables"] = [InputObservable(o) for o in observables]
-            thehive.logger_file.debug(
-                id="THC-115",
-                message="observables found for an alert: " + str(observables),
-            )
-        else:
-            alert["observables"] = []
-            thehive.logger_file.debug(
-                id="THC-116", message=f"No observable found in current row (sourceRef={sourceRef})."
-            )
-        # Process customFields
-        alert["customFields"] = [InputCustomField(cf) for cf in customFields]
-
-        # Process TTPs
-        if len(ttps) > 0:
-            # TTPs are given manually
-            # Ensure that there is no duplicate
-            alert["ttps"] = [InputProcedure(ttp) for ttp in ttps]
-        elif "annotations.mitre_attack.mitre_tactic" in row and "annotations.mitre_attack" in row:
-            # Try to extract them from Splunk ES notable event
-            mitre_tactics = row["annotations.mitre_attack.mitre_tactic"]
-            mitre_technics = row["annotations.mitre_attack"]
-
-            # Ensure they are lists (handle case when Splunk returns a single value as a string)
-            if not isinstance(mitre_tactics, list):
-                mitre_tactics = [mitre_tactics]
-            if not isinstance(mitre_technics, list):
-                mitre_technics = [mitre_technics]
-
-            date = datetime.datetime.fromtimestamp(int(float(row.get("_time", time.time())))).strftime(
-                "%Y-%m-%d"
-            )
-            alert["ttps"] = []
-            
-            # Iterate based on the minimum length to avoid IndexError if lists are not perfectly aligned
-            # and ensure we process all available pairs.
-            for i in range(min(len(mitre_tactics), len(mitre_technics))):
-                ttp = {
-                    "tactic": mitre_tactics[i],
-                    "patternId": mitre_technics[i],
-                    "occurDate": date,
-                }
-                alert["ttps"].append(InputProcedure(ttp))
-
-        # Store original event
-        alert["events"] = (
-            alert["events"] + [row_sanitized] if "events" in alert else [row_sanitized]
-        )
-        alert["events_keys"] = (
-            list(set(alert["events_keys"] + list(row_sanitized.keys())))
-            if "events_keys" in alert
-            else list(row_sanitized.keys())
-        )
-
-        # Store the parsed event
-        parsed_events[sourceRef] = alert
-
-    for sourceRef in parsed_events:
-        # Store original events if required
-        # check if we need to append the results to the description
-        if alert_args["description_results_enable"]:
-
-            # Sanitize dictionnaries
-            # Get all keys from events
-            # Check all events for each key
-            for k in list(parsed_events[sourceRef]["events_keys"]):
-                count = 0
-                total = len(parsed_events[sourceRef]["events"])
-                for event in parsed_events[sourceRef]["events"]:
-                    # If empty, count + 1
-                    if k not in event or event[k] == "":
-                        count += 1
-                if count == total:
-                    # This means that all fields are empty, remove the key
-                    for event in list(parsed_events[sourceRef]["events"]):
-                        if k in event:
-                            del event[k]
-
-            thehive.logger_file.debug(
-                id="THC-77", message="Append results to description as markdown table"
-            )
-            parsed_events[sourceRef][
-                "description"
-            ] += "\r\n\r\n-----\r\nRaw events:\r\n\r\n" + Tomark.table(
-                parsed_events[sourceRef]["events"]
-            )
-
-        # Remove events
-        del parsed_events[sourceRef]["events"]
-
+    _append_results_table(parsed_events, alert_args, thehive.logger_file)
     return parsed_events

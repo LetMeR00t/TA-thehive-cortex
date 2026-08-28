@@ -15,6 +15,7 @@ python tools/checks/declared_files_exist.py
 python tools/checks/log_sourcetype_covered.py
 python tools/checks/rule_not_duplicated.py
 python tools/checks/duplication_threshold.py
+python tools/checks/complexity_ceiling.py
 python tools/checks/log_ids_unique.py
 python tools/checks/vendored_path_bootstrap.py
 python tools/checks/unused_imports.py
@@ -79,3 +80,27 @@ single one, so a server that accepts the connection and then says nothing held
 a Splunk worker until the kernel gave up. The libraries are patched (see
 `tools/vendoring/LOCAL_PATCHES.md`); this check exists so the
 next upgrade cannot quietly undo the patch.
+
+### `complexity_ceiling.py`
+
+Per-function cyclomatic complexity, as a ratchet. `parse_events` reached
+**CC 126** in one function — and nobody ever added complexity to it, everybody
+added a field type, one `elif` at a time, each reasonable on its own day.
+
+The ceilings in `CEILINGS` are **measured** values, not ambitions: a check that
+is red from birth gets switched off, after which it guards nothing. Anything
+not named there gets the default of 15. Raising a ceiling means editing the
+file, which is the point — the next `elif` has to argue for itself in a diff.
+
+⚠️ It also fails when a ceiling names a function that no longer exists. A
+ceiling for a renamed function protects nothing, and silently.
+
+```bash
+python tools/checks/complexity_ceiling.py --report   # every function, worst first
+```
+
+⚠️ **When you extract, move the floors and ceilings with the code.** A
+`coverage_floors.py` entry left on the shrunken function goes on reporting a
+comfortable green over what is now fifteen lines, while the branching it was
+written to watch sits somewhere else with no floor at all. That happened here,
+and it was caught by reading the number rather than the colour.

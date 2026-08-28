@@ -136,11 +136,23 @@ class TheSettingIsActuallyCarried(unittest.TestCase):
         self.assertIn('thehive.ttp_catalog_name = defaults["TTP_CATALOG_NAME"]', source)
 
     def test_parse_events_reads_it(self):
-        chemin = os.path.join(BIN, "ta_thehive_cortex", "modalert_thehive_common.py")
-        with open(chemin, encoding="utf-8") as f:
+        """⚠️ Two files, and the split is the point.
+
+        `parse_events` reads the setting off the instance and hands it down;
+        the CHECK against the catalogue moved into `field_mapping`, with the
+        dispatch rule that owns the `ttp` key. Asserting on one file only would
+        have gone green while the other half quietly disappeared — which is
+        exactly the shape of defect this pair of tests exists for.
+        """
+        entry = os.path.join(BIN, "ta_thehive_cortex", "modalert_thehive_common.py")
+        with open(entry, encoding="utf-8") as f:
+            self.assertIn("ttp_catalog_name", f.read())
+
+        mapping = os.path.join(BIN, "ta_thehive_cortex", "field_mapping.py")
+        with open(mapping, encoding="utf-8") as f:
             source = f.read()
-        self.assertIn("ttp_catalog_name", source)
         self.assertIn("is_known(", source)
+        self.assertIn("catalog_name", source)
 
 
 if __name__ == "__main__":

@@ -35,10 +35,22 @@ BIN = RACINE / "TA-thehive-cortex" / "package" / "bin"
 #: floor towards it is a deliberate act, taken once the tests that justify it
 #: exist.
 PLANCHERS = [
-    # The heart of the data loss: five branches, no terminal one, and a `del`
-    # that used to run before the type was known. The 80 % target is what the
-    # refonte asks for; the gap is the remaining test work.
-    ("ta_thehive_cortex/modalert_thehive_common.py", "parse_events", 50, 80),
+    # ⚠️ THE FLOOR FOLLOWED THE CODE, AND IT HAD TO. `parse_events` was the
+    # heart of the data loss at CC 126; the dispatch that decided what a field
+    # IS now lives in `field_mapping`. Left alone, this line would have gone on
+    # reporting a comfortable green over a fifteen-line function -- a ratchet
+    # measuring the one place the risk had just left. An extraction moves code
+    # out of the paths a floor watches, so the moment of extraction is the
+    # moment to move the floor with it.
+    ("ta_thehive_cortex/modalert_thehive_common.py", "parse_events", 95, 95),
+    # Where the branching actually went. Measured after the extraction, so the
+    # ratchet starts where reality is.
+    ("ta_thehive_cortex/field_mapping.py", "dispatch_row", 90, 100),
+    ("ta_thehive_cortex/field_mapping.py", "encode_custom_field", 90, 100),
+    ("ta_thehive_cortex/field_mapping.py", "build_observables", 90, 100),
+    ("ta_thehive_cortex/field_mapping.py", "_extract_ttp", 85, 95),
+    ("ta_thehive_cortex/field_mapping.py", "_extract_custom_field", 90, 100),
+    ("ta_thehive_cortex/field_mapping.py", "_observables_of", 90, 100),
     # Were at 0 % while calling sys.exit() on an unknown id -- a path that ended
     # the Splunk process and that nothing could reach.
     ("common.py", "getInstanceURL", 90, 90),
