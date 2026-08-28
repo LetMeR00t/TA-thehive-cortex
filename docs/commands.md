@@ -421,8 +421,17 @@ If not set, no filter will be applied on the jobs history.
 * (Optional) **analyzers**: A list of analyzers name to search for separated by a semicolon (Default: *)
 * (Optional) **max_jobs**: The maximum number of jobs to return (Default: 100 or your own default)
 * (Optional) **sort_jobs**: The way how your jobs are sorted (Default: "-createdAt" or your own default)
+* (Optional) **wait**: How many seconds Cortex may hold the report of a job that is still running, before answering anyway (Default: 0, or your own default in Settings)
 
 **Note**: These parameters are the **expected fields name**.
+
+⚠️ **About `wait`.** With `wait = 0` — the historical behaviour — a job that is
+still running answers with an *empty* report, which reads exactly like an
+analyzer that found nothing. Since v5.0.0 such a row carries
+`cortex_job_finished = 0` and **no** `cortex_job_report` field at all, so the
+two cases can no longer be confused. Set `wait` to make Cortex hold the answer
+server-side instead (one call, not a polling loop); keep it below the HTTP
+Timeout setting, which bounds each single call.
 
 ### Return
 This command append new fields per row to previous results.
@@ -448,6 +457,22 @@ Every new field will start with "cortex_*". As an exemple, you can recover:
  - cortex_job_workerDefinitionId
  - cortex_job_workerId
  - cortex_job_workerName
+
+Since v5.0.0, three more:
+
+ - **cortex_job_finished**: `1` when the job reached a final status (`Success`,
+   `Failure`, `Deleted`), `0` while the analyzer is still working. ⚠️ A row with
+   `0` carries **no** `cortex_job_report`.
+ - **cortex_job_artifacts**: the observables the analyzer *extracted*, as
+   `dataType::value`. Present only for a job that succeeded — and only if
+   Cortex answered; a failure to read them is logged (`CSJ-33`) and leaves the
+   report untouched.
+ - **cortex_job_artifacts_count**: how many of them there are.
+
+⚠️ **This changes what a count returns.** A saved search counting rows from
+`cortexjobs` used to include running jobs carrying an empty report. They are
+still returned — with `cortex_job_finished = 0` — so filter on it if you meant
+"finished jobs only".
 
 ### Examples
 

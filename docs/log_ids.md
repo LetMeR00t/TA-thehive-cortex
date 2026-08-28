@@ -116,6 +116,8 @@ explains the manual purge of `etc/apps/learned/local/props.conf`. Fall back to
 | `THTE-30` | A date could not be parsed for a timeline event. | Check the format of the source field. |
 | `C35` `CJ1` | Cortex does not know this data type. | ⚠️ Since 4.2.3 the job is submitted anyway and Cortex decides — the add-on no longer refuses on a list frozen at build time. |
 | `C40` | The named analyzer does not exist on this Cortex. | Check the name, and that the analyzer is enabled for the organisation. |
+| `CSJ-30` | The `wait` field of `cortexjobs` is not a number of seconds. | Falls back to 0, i.e. no waiting — the behaviour of every version before v5.0.0. Check the field in the SPL. |
+| `CSJ-33` | The artifacts of a job could not be read. | ⚠️ The report is kept: they are two separate calls. Only `cortex_job_artifacts` is missing from that row. Usually a transient Cortex error. |
 
 ## Sending to TheHive
 
@@ -245,13 +247,14 @@ explains the manual purge of `etc/apps/learned/local/props.conf`. Fall back to
 | `S57` | 687 | debug | Getting this parameter: thehive_cortex_http_timeout= … |
 | `S58` | 700 | debug | Getting this parameter: thehive_creation_max_retry= … |
 | `S55` | 713 | debug | Getting this parameter: … |
-| `S56` | 725 | debug | Getting this parameter: … |
-| `S60` | 733 | debug | Found parameter " … … … |
-| `S66` | 740 | error | … |
-| `S67` | 743 | debug | Parameter " … … … … |
-| `U1` | 761 | debug | Utils class initiated |
-| `U5` | 780 | debug | Event before processing (remove_unwanted_keys_from_dict): {…} |
-| `U10` | 787 | debug | Event after processing (remove_unwanted_keys_from_dict): {…} |
+| `S68` | 731 | debug | Getting this parameter: cortex_job_max_wait= … |
+| `S56` | 744 | debug | Getting this parameter: … |
+| `S60` | 752 | debug | Found parameter " … … … |
+| `S66` | 759 | error | … |
+| `S67` | 762 | debug | Parameter " … … … … |
+| `U1` | 780 | debug | Utils class initiated |
+| `U5` | 799 | debug | Event before processing (remove_unwanted_keys_from_dict): {…} |
+| `U10` | 806 | debug | Event after processing (remove_unwanted_keys_from_dict): {…} |
 
 ## `cortex.py`
 
@@ -259,28 +262,28 @@ explains the manual purge of `etc/apps/learned/local/props.conf`. Fall back to
 | :--- | ---: | :--- | :--- |
 | `C5` | 75 | debug | Connection to Splunk done |
 | `C6` | 77 | debug | Settings recovered |
-| `C7` | 98 | error | Cortex instance will be initialized with a password (not an API key) - This i… |
-| `C8` | 101 | debug | Cortex instance will be initialized with an API Key (not a password) |
-| `C9` | 104 | error | WRONG_AUTHENTICATION_TYPE - Authentication type is not one of the expected va… |
-| `C15` | 117 | error | API Key is null, this is the only way to connect to a Cortex instance |
-| `C19` | 120 | debug | Cortex object will be instanciated with url '{…}' |
-| `C20` | 122 | debug | Cortex object instanciated |
-| `C21` | 127 | debug | Cortex API connection to (URL=" … … |
-| `C25` | 129 | error | RESOURCE NOT FOUND - Cortex service is unavailable, is the configuration corr… |
-| `C26` | 132 | error | SERVICE UNAVAILABLE - Cortex service is unavailable, is the configuration cor… |
-| `C27` | 135 | error | AUTHENTICATION ERROR - Credentials are invalid |
-| `C30` | 143 | debug | Getting jobs: … |
-| `C35` | 158 | warn | UNKNOWN DATA TYPE - This data type ( … … |
-| `C40` | 170 | error | ANALYZER NOT FOUND - This analyzer ( … … |
-| `C41` | 172 | debug | Analyzers recovered: … |
-| `C42` | 175 | debug | Job instance created |
-| `C45` | 187 | debug | JOB sent: … |
-| `C46` | 191 | error | … … … |
-| `CJ1` | 208 | warn | UNKNOWN DATA TYPE - This data type ( … … |
-| `CJ5` | 215 | debug | [ … … … … |
-| `CJ6` | 216 | debug | [ … … … … |
-| `CJ7` | 217 | debug | [ … … … … |
-| `CJ8` | 218 | debug | [ … … … |
+| `C7` | 99 | error | Cortex instance will be initialized with a password (not an API key) - This i… |
+| `C8` | 102 | debug | Cortex instance will be initialized with an API Key (not a password) |
+| `C9` | 105 | error | WRONG_AUTHENTICATION_TYPE - Authentication type is not one of the expected va… |
+| `C15` | 118 | error | API Key is null, this is the only way to connect to a Cortex instance |
+| `C19` | 121 | debug | Cortex object will be instanciated with url '{…}' |
+| `C20` | 123 | debug | Cortex object instanciated |
+| `C21` | 128 | debug | Cortex API connection to (URL=" … … |
+| `C25` | 130 | error | RESOURCE NOT FOUND - Cortex service is unavailable, is the configuration corr… |
+| `C26` | 133 | error | SERVICE UNAVAILABLE - Cortex service is unavailable, is the configuration cor… |
+| `C27` | 136 | error | AUTHENTICATION ERROR - Credentials are invalid |
+| `C30` | 144 | debug | Getting jobs: … |
+| `C35` | 159 | warn | UNKNOWN DATA TYPE - This data type ( … … |
+| `C40` | 171 | error | ANALYZER NOT FOUND - This analyzer ( … … |
+| `C41` | 173 | debug | Analyzers recovered: … |
+| `C42` | 176 | debug | Job instance created |
+| `C45` | 188 | debug | JOB sent: … |
+| `C46` | 192 | error | … … … |
+| `CJ1` | 209 | warn | UNKNOWN DATA TYPE - This data type ( … … |
+| `CJ5` | 216 | debug | [ … … … … |
+| `CJ6` | 217 | debug | [ … … … … |
+| `CJ7` | 218 | debug | [ … … … … |
+| `CJ8` | 219 | debug | [ … … … |
 
 ## `cortex_refresh_analyzers.py`
 
@@ -305,13 +308,17 @@ explains the manual purge of `etc/apps/learned/local/props.conf`. Fall back to
 
 | id | line | level | message |
 | :--- | ---: | :--- | :--- |
-| `1` | 47 | debug | Input keywords: … |
-| `2` | 48 | debug | Input results: … |
-| `10` | 78 | info | Query is: … |
-| `15` | 85 | debug | Job details: … |
-| `16` | 89 | debug | Report details: " … … … |
-| `20` | 95 | debug | Event before post processing: … |
-| `25` | 112 | debug | Event after post processing: … |
+| `15` | 46 | debug | Job details: … |
+| `31` | 56 | info | Job " … … … … … … |
+| `16` | 61 | debug | Report details: " … … … |
+| `20` | 78 | debug | Event before post processing: … |
+| `32` | 85 | info | Job " … … … … |
+| `33` | 106 | warn | ARTIFACTS_UNREACHABLE - artifacts of job " … … … |
+| `25` | 125 | debug | Event after post processing: … |
+| `1` | 143 | debug | Input keywords: … |
+| `2` | 144 | debug | Input results: … |
+| `30` | 162 | warn | WAIT_NOT_A_NUMBER - wait=" … … |
+| `10` | 182 | info | Query is: … |
 
 ## `ta_thehive_cortex/alert_actions_base.py`
 
@@ -696,6 +703,6 @@ explains the manual purge of `etc/apps/learned/local/props.conf`. Fall back to
 | `2` | 110 | info | Successfully indexed {…} timeline events. |
 | `ERR` | 113 | error | Error during timeline collection: {…} |
 
-*356 call sites.*
+*361 call sites.*
 
 <!-- INVENTAIRE:FIN -->

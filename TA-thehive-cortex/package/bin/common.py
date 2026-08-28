@@ -715,6 +715,25 @@ class Settings(object):
         )
         return param
 
+    def getCortexJobMaxWait(self):
+        """This function returns how long Cortex may hold a job report before answering
+
+        ⚠️ Zero means "answer now", which is what this add-on has always done:
+        a report asked for while the analyzer is still running comes back
+        empty, and an empty report reads exactly like an analyzer that found
+        nothing. A non-zero value is passed to Cortex as `waitreport?atMost=`,
+        so the waiting happens server-side -- one call, not a polling loop."""
+        param = (
+            self.__additional_parameters["cortex_job_max_wait"]
+            if "cortex_job_max_wait" in self.__additional_parameters
+            else "0"
+        )
+        self.logger_file.debug(
+            id="S68",
+            message="Getting this parameter: cortex_job_max_wait=" + str(param),
+        )
+        return param
+
     def getCortexJobsSort(self):
         """This function returns the sort key to use for jobs of a Cortex instance"""
         param = (

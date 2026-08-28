@@ -78,7 +78,8 @@ def create_cortex_instance(instance_id, settings, logger, acronym, exec_id=None)
 
     defaults = {
         "MAX_JOBS_DEFAULT": configuration.getCortexJobsMax(),
-        "SORT_JOBS_DEFAULT": configuration.getCortexJobsSort()
+        "SORT_JOBS_DEFAULT": configuration.getCortexJobsSort(),
+        "JOB_MAX_WAIT_DEFAULT": configuration.getCortexJobMaxWait()
     }
 
     # Create the Cortex instance

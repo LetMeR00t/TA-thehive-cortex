@@ -60,3 +60,47 @@ Two guards now cover the two halves:
 calls it before you write anything else.** An extraction moves code out of the
 paths the suite already covers, so the moment of extraction is exactly the
 moment coverage silently drops.
+
+## R44 — Cortex is reached through `cortex4py`, and through nothing else
+
+**Decision.** Every call to Cortex goes through the vendored `cortex4py`. The
+`thehive4py` route to Cortex -- `libs/thehive4py/endpoints/cortex.py`, with
+`create_analyzer_job`, `create_responder_action`, `list_analyzers` and
+`list_responders` -- is **written off**. It has zero call sites today, and it
+keeps zero.
+
+**Why.** It would be a second way to do one gesture: two code paths, two
+behaviours to explain when they disagree, two surfaces to maintain, and a
+Cortex instance addressed sometimes directly and sometimes through TheHive.
+The `cortex4py` route is the one this add-on already configures, authenticates
+and logs.
+
+**The consequence, stated rather than discovered.** Cortex **responders** stay
+out of reach. They are not merely unimplemented here: `cortex4py` has no
+responder controller at all, so the direct route cannot express them. Anyone
+wanting responders is choosing to reopen this decision, not to add a feature on
+top of it.
+
+## A method the library has and nobody calls is a signal, not a curiosity
+
+Two of the three defects behind `cortexjobs` were exactly that shape:
+`jobs.get_report_async()` (Cortex holds the answer server-side, instead of us
+asking too early) and `jobs.get_artifacts()` (the observables an analyzer
+extracts) sat in the vendored library, fully working, with **zero** call sites.
+The enrichment Cortex produced never came back to Splunk -- not because of a
+bug, but because nobody had ever compared the two lists.
+
+So compare them, as a periodic review gesture rather than an accident:
+
+```bash
+# what the library offers
+grep -rn "    def [a-z]" TA-thehive-cortex/package/bin/ta_thehive_cortex/libs/cortex4py/controllers/
+
+# what the add-on actually calls
+grep -rn "cortex\.\(jobs\|analyzers\|organizations\)\." \
+     TA-thehive-cortex/package/bin --include=*.py | grep -v /libs/
+```
+
+⚠️ A gap is not automatically a defect -- plenty of methods have no business
+here. It is a **question to answer once**, and the answer belongs in this file
+if it is "no", like R44 above. What is not acceptable is never asking.

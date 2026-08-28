@@ -610,6 +610,23 @@
                                     "errorMsg": "Must be between 1 and 600 seconds"
                                 }
                             ]
+                        },
+                        {
+                            "field": "cortex_job_max_wait",
+                            "label": "Cortex Job Max Wait (seconds)",
+                            "help": "How long Cortex may hold a job report before answering, when the job is still running. 0 answers immediately, which is what previous versions did -- and an empty report then reads exactly like an analyzer that found nothing. A non-zero value makes Cortex wait server-side, so it costs one call rather than a polling loop. Must stay below the HTTP Timeout above, which bounds each single call.",
+                            "type": "text",
+                            "defaultValue": "0",
+                            "validators": [
+                                {
+                                    "type": "number",
+                                    "range": [
+                                        0,
+                                        600
+                                    ],
+                                    "errorMsg": "Must be between 0 and 600 seconds"
+                                }
+                            ]
                         }
                     ]
                 },
