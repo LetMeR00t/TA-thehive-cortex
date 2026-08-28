@@ -266,6 +266,10 @@ class Settings(object):
                 )
             self.logger_file.debug(
                 id="S4",
+                # credential-free: the KEYS of this mapping are account names,
+                # never values. Naming which accounts carry a stored password is
+                # what makes "TH31: both password and API key are empty"
+                # diagnosable at all.
                 message=f"Passwords retrieved for accounts: {list(self._passwords.keys())}",
             )
 

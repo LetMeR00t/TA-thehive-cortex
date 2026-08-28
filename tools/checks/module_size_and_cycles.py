@@ -48,9 +48,19 @@ GENERATED = {
 #: Measured debt, with a number on it. Each entry is a file waiting to be split
 #: by project-management#24; lowering a number is the deliverable, raising one
 #: has to argue for itself in a diff.
+#:
+#: ⚠️ COMMENTS COUNT, and that bit within an hour of writing this: four lines of
+#: explanation added to `thehive.py` tripped its ceiling. The number was raised
+#: rather than the measure changed, because the DoD says lines and because
+#: excluding comments would make the ceiling stop describing the thing anyone
+#: actually has to read.
+#: But the tension is real: a ratchet that punishes explaining the code gets
+#: switched off. The answer for these four files is the SPLIT, not a slowly
+#: rising number -- and if a ceiling here starts creeping up commit after
+#: commit, that is the signal the split is overdue, not that the check is wrong.
 CEILINGS: dict[str, int] = {
-    "thehive.py": 1293,
-    "common.py": 893,
+    "thehive.py": 1297,
+    "common.py": 897,
     "ta_thehive_cortex/modalert_thehive_common.py": 656,
     "ta_thehive_cortex/field_mapping.py": 526,
 }

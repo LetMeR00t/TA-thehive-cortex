@@ -102,6 +102,13 @@ jobs:
         # ceilings are measured values, so the next one has to argue in a diff.
         run: python tools/checks/complexity_ceiling.py
 
+      - name: No log line derives anything from a credential
+        # Shipped in FOUR versions: a debug line carrying the last four
+        # characters of the API key, into a file Splunk indexes and a `splunk
+        # diag` mails to a third party. Reduced to the key's length afterwards,
+        # which still says WHICH key. Presence, or nothing.
+        run: python tools/checks/secrets_never_logged.py
+
       - name: No module past its ceiling, no import cycle
         # thehive.py is at 1293 lines and nobody saw it cross 400: a file grows
         # one line at a time. And a cycle runs fine until the day an import

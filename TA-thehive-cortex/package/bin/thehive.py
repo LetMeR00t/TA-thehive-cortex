@@ -98,14 +98,18 @@ def create_thehive_instance(instance_id, settings, logger, acronym, exec_id=None
     (thehive_username, thehive_secret) = configuration.getInstanceUsernameApiKey(
         instance_id_final
     )
-    # ⚠️ The LENGTH only. This line used to append the last four characters of
-    # the API key -- a real secret fragment, written to a log file that is
-    # indexed by Splunk and read by anyone with access to the index. A length
-    # is enough to tell "empty" from "truncated" from "looks right", which is
-    # the whole reason the line exists.
+    # ⚠️ PRESENT OR ABSENT, and nothing else. This line first carried the last
+    # four characters of the API key, then only its length -- and the length is
+    # still a correlation channel: it identifies WHICH key is in play across
+    # logs, tickets and screenshots, and it travels verbatim into a `splunk
+    # diag`, the one file that gets sent to a third party.
+    #
+    # Every value derived from a secret is such a channel: length, prefix,
+    # suffix, fingerprint. The line exists to answer "did the account carry a
+    # secret at all", and a boolean answers exactly that.
     logger_file.debug(
         id="TH11",
-        message=f"Secret length: {len(thehive_secret) if thehive_secret else 0}",
+        message=f"Secret present: {bool(thehive_secret)}",
     )
     thehive_url = configuration.getInstanceURL(instance_id_final)
     thehive_authentication_type = configuration.getInstanceSetting(
