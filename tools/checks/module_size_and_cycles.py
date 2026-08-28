@@ -2,7 +2,7 @@
 """No module grows past its ceiling, and no import cycle appears.
 
 ⚠️ **A file grows one line at a time, and nobody sees it cross 400.** `thehive.py`
-is at 1292 and `common.py` at 893; neither arrived there in a commit anyone
+is at 1297 and `common.py` at 897; neither arrived there in a commit anyone
 would have questioned. The only thing that catches that is a number.
 
 Two guards, because the two failures look alike from a diff:
@@ -55,14 +55,13 @@ GENERATED = {
 #: excluding comments would make the ceiling stop describing the thing anyone
 #: actually has to read.
 #: But the tension is real: a ratchet that punishes explaining the code gets
-#: switched off. The answer for these four files is the SPLIT, not a slowly
+#: switched off. The answer for the files listed here is the SPLIT, not a slowly
 #: rising number -- and if a ceiling here starts creeping up commit after
 #: commit, that is the signal the split is overdue, not that the check is wrong.
 CEILINGS: dict[str, int] = {
     "thehive.py": 1297,
     "common.py": 897,
     "ta_thehive_cortex/modalert_thehive_common.py": 656,
-    "ta_thehive_cortex/field_mapping.py": 526,
 }
 
 

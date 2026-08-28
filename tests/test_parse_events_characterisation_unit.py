@@ -443,22 +443,41 @@ class TestTtp(Base):
         self.assertEqual([], list(alert.get("ttps", [])))
         self.assertIn("T99999", log["error"])
 
-    def test_a_ttp_without_a_separator_CRASHES_the_action(self):
-        """🔴 A SHIPPED DEFECT, pinned as it is — deliberately not fixed here.
+    def test_a_ttp_without_a_separator_is_reported_and_the_alert_lives(self):
+        """Replaces the test that pinned the crash (#36, fixed 2026-08-28).
 
-        `values[2]` is read before any length check, and the `except` only
-        catches `ValueError`. A `ttp` field without `::` therefore raises an
-        `IndexError` that propagates: it is not that TTP which is lost, it is
-        **the whole alert**, and the message names neither the row nor the field.
-
-        This ticket forbids touching it — a functional fix smuggled into a
-        refactoring can no longer be reviewed, since any difference could be
-        either one. The defect goes to its own ticket, and this test holds the
-        line until then: the day it turns red, someone fixed it, and it must be
-        replaced by the test of that fix.
+        `parts[2]` was read before any length check, inside a `try` catching
+        only ValueError, so a `ttp` without `::` raised IndexError and took the
+        whole alert action with it. The degraded path already existed three
+        lines below; the indexed read short-circuited it.
         """
-        with self.assertRaises(IndexError):
-            self.one({"unique": "r", "ttp": "nonsense"}, catalogue={"T1070"})
+        alert, log = self.one({"unique": "r", "ttp": "nonsense"},
+                              catalogue={"T1070"})
+        self.assertIn("malformed", log["helper_error"])
+        self.assertIn("nonsense", log["helper_error"], "the value must be named")
+        self.assertEqual([], list(alert.get("ttps", [])))
+        self.assertEqual("Notable event", alert["title"],
+                         "the alert itself is unaffected by one unreadable field")
+
+    def test_one_unreadable_ttp_does_not_lose_the_other_rows(self):
+        """⚠️ The real cost of the crash, and the reason it was `serious`: the
+        batch died, not the field. A row nobody had a problem with disappeared
+        because another row carried a typo."""
+        parsed, log = self.run_rows([
+            {"unique": "good", "ttp": "evasion::T1070::2026-01-15"},
+            {"unique": "bad", "ttp": "nonsense"},
+        ], catalogue={"T1070"})
+
+        self.assertEqual({"good", "bad"}, set(parsed))
+        self.assertEqual(1, len(parsed["good"]["ttps"]))
+        self.assertEqual([], list(parsed["bad"].get("ttps", [])))
+        self.assertIn("malformed", log["helper_error"])
+
+    def test_an_empty_ttp_field_is_not_even_visited(self):
+        """An empty value never reaches the dispatch: the loop skips it. Pinned
+        so the length check is not credited with something it does not do."""
+        alert, log = self.one({"unique": "r", "ttp": ""}, catalogue={"T1070"})
+        self.assertEqual("", log["helper_error"])
 
     def test_a_three_part_but_malformed_ttp_is_reported(self):
         alert, log = self.one({"unique": "r", "ttp": "evasion::NOT-AN-ID::2026-01-15"},

@@ -46,7 +46,7 @@ PLANCHERS = [
     # Where the branching actually went. Measured after the extraction, so the
     # ratchet starts where reality is.
     ("ta_thehive_cortex/field_mapping.py", "dispatch_row", 90, 100),
-    ("ta_thehive_cortex/field_mapping.py", "encode_custom_field", 90, 100),
+    ("ta_thehive_cortex/value_codecs.py", "encode_custom_field", 90, 100),
     ("ta_thehive_cortex/field_mapping.py", "build_observables", 90, 100),
     ("ta_thehive_cortex/field_mapping.py", "_extract_ttp", 85, 95),
     ("ta_thehive_cortex/field_mapping.py", "_extract_custom_field", 90, 100),

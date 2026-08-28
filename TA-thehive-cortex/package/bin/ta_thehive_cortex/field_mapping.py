@@ -9,22 +9,23 @@ function: nine sub-responsibilities, five branches with no `else`, three silent
 losses. Nobody added complexity to it -- everybody added a field type, one
 `elif` at a time, each reasonable on its own day.
 
-The chain that decided what a key *is* now lives in `FIELD_RULES`, and the
-chain that decided how a custom field's **value** is encoded lives in
-`CUSTOM_FIELD_CODECS`. Both are ordered data rather than nested branches, which
-means the next field type is a line in a table and not a deeper `elif`.
+The chain that decided what a key *is* lives here, in `FIELD_RULES`. The chain
+that decided what a **value** is worth moved to `value_codecs` the day this file
+crossed its own line ceiling: adding a TheHive type touches that file only,
+adding a kind of field touches this one only.
 
 ⚠️ **Order carries meaning in `FIELD_RULES`.** A composite key wins over a plain
 datatype, a datatype wins over a custom field, and the catch-all `other` rule
 must stay last. Reordering this list changes behaviour silently -- it is the one
 thing here that cannot be checked by reading a single entry.
 
-⚠️ Nothing in this module fixes anything. It was extracted under a ticket that
-forbids functional change, and the oddities are preserved on purpose: the
-sub-key that fills an observable's message is `description` and not `message`;
-a `ttp` value without `::` still raises; the `THC-106` branch is kept although
-it appears unreachable. Each of those is its own ticket. A refactoring that
-smuggles in a fix cannot be reviewed, because any difference could be either.
+⚠️ This module was extracted under a ticket forbidding functional change, and
+the oddities are preserved on purpose: the sub-key that fills an observable's
+message is `description` and not `message`; the `THC-106` branch is kept
+although it appears unreachable. Each of those is its own ticket. A refactoring
+that smuggles in a fix cannot be reviewed, because any difference could be
+either. *(The one exception is the `ttp` crash, and it was NOT fixed here: it
+went out as #36 and came back as its own commit.)*
 """
 
 from __future__ import annotations
@@ -34,6 +35,15 @@ import re
 from collections import namedtuple
 
 from ttp_catalogue import is_known
+from value_codecs import (  # noqa: F401  (re-exported: `modalert_thehive_common` imports them here)
+    KNOWN_CUSTOM_TYPES,
+    FieldMappingError,
+    UnknownCustomFieldType,
+    encode_custom_field,
+    extract_field,
+    str_to_bool,
+    str_to_epoch_millis,
+)
 
 # ---------------------------------------------------------------------------
 # The value maps. They live here rather than in the caller so this module has
@@ -58,184 +68,9 @@ SEVERITY = {
     "1": 1, "2": 2, "3": 3, "4": 4,
 }
 
-#: The custom field types this add-on knows how to encode.
-#: ⚠️ Used ONLY to decide whether an unmappable value is "a type we do not
-#: know" (forward it as text) or "a value that does not fit its declared type"
-#: (drop it, and say so). Freezing this list as the list of types TheHive
-#: supports is what made GitHub #133: every type TheHive added vanished here.
-KNOWN_CUSTOM_TYPES = ("string", "url", "boolean", "integer", "float", "date")
-
-_TRUE = re.compile("^(1|y|Y|t|T|true|True)$")
-_FALSE = re.compile("^(0|n|N|f|F|false|False)$")
-_EPOCH10 = re.compile("^[0-9]{10}$")
-_EPOCH13 = re.compile("^[0-9]{13}$")
-
 #: Separators a single Splunk field may pack several observable values with.
 _MULTIVALUE = re.compile(r"[,;|\n]+")
 
-
-class FieldMappingError(Exception):
-    """Anything this module refuses to map, with the field that caused it."""
-
-
-class UnknownCustomFieldType(FieldMappingError):
-    """A custom field whose declared type is not in `KNOWN_CUSTOM_TYPES`.
-
-    ⚠️ Raised nowhere today, and that is deliberate: the current behaviour is to
-    forward such a value as text rather than refuse it, because TheHive is the
-    authority on its own schema. The type exists so a caller that WANTS to be
-    strict has something to catch, instead of re-deriving the condition.
-    """
-
-    def __init__(self, field, declared_type, known=KNOWN_CUSTOM_TYPES):
-        self.field = field
-        self.declared_type = declared_type
-        self.known = known
-        super().__init__(
-            f"custom field '{field}' declares type '{declared_type}', "
-            f"which is none of {', '.join(known)}"
-        )
-
-
-# ---------------------------------------------------------------------------
-# Value helpers, moved verbatim from the caller
-# ---------------------------------------------------------------------------
-
-
-def extract_field(row, field):
-    """The value of `field` in the row, or the field name itself.
-
-    ⚠️ Returning the name is not a fallback, it is a feature: it is what lets an
-    argument double as fixed text when it names no column.
-    """
-    result = field
-    if field in row:
-        new_value = str(row[field])
-        if new_value not in [None, ""]:
-            result = new_value
-    return result
-
-
-def str_to_bool(value, default):
-    """Coerce a search-result value (always a string after sanitization) into a
-    real boolean. TheHive expects native booleans for fields such as `ioc`,
-    `sighted` and `ignoreSimilarity`; sending the raw string "1"/"0" makes the
-    API reject the whole payload with "Invalid json"."""
-    if value is None:
-        return default
-    if isinstance(value, bool):
-        return value
-    text = str(value).strip()
-    if _TRUE.match(text):
-        return True
-    if _FALSE.match(text):
-        return False
-    return default
-
-
-def str_to_epoch_millis(value):
-    """A sighting date as milliseconds, or None when it cannot be read."""
-    if value is None:
-        return None
-    text = str(value).strip()
-    if _EPOCH13.match(text):
-        return int(text)
-    if _EPOCH10.match(text):
-        return int(text) * 1000
-    return None
-
-
-# ---------------------------------------------------------------------------
-# Custom field codecs — one entry per type, instead of one `elif` per type
-# ---------------------------------------------------------------------------
-#
-# A codec takes the raw string and returns `(mapped, value)`. `mapped` False
-# means "this value does not fit this type"; the caller decides what to do with
-# that, and today it keeps the value readable in the reinjected table.
-
-
-def _codec_text(value):
-    return True, str(value)
-
-
-def _codec_boolean(value):
-    if _TRUE.match(value):
-        return True, True
-    if _FALSE.match(value):
-        return True, False
-    return False, None
-
-
-def _codec_integer(value):
-    try:
-        return True, int(value)
-    except ValueError:  # silent-except: the caller reports it as THC-117
-        return False, None
-
-
-def _codec_float(value):
-    try:
-        return True, float(value)
-    except ValueError:  # silent-except: the caller reports it as THC-117
-        return False, None
-
-
-def _codec_date(value):
-    if _EPOCH13.match(value):
-        return True, int(value)
-    if _EPOCH10.match(value):
-        return True, int(value) * 1000
-    # ISO-8601 is what a Splunk strftime produces, so it is the most likely
-    # shape after an epoch -- and it was the one shape rejected.
-    try:
-        iso = datetime.datetime.fromisoformat(str(value).replace("Z", "+00:00"))
-        return True, int(iso.timestamp() * 1000)
-    except ValueError:  # silent-except: the caller reports it as THC-117
-        return False, None
-
-
-CUSTOM_FIELD_CODECS = {
-    "string": _codec_text,
-    # "url" (TheHive >= 5.1) carries a plain string value, so it is handled
-    # exactly like "string".
-    "url": _codec_text,
-    "boolean": _codec_boolean,
-    "integer": _codec_integer,   # for TheHive4 only
-    "float": _codec_float,       # for TheHive4 only
-    "date": _codec_date,
-}
-
-
-def encode_custom_field(name, declared_type, value, logger_file):
-    """The custom field to send, or None when the value cannot be mapped.
-
-    ⚠️ The two failure modes are NOT the same, and telling them apart is the
-    whole point of this function:
-
-    * a type we do not know -> forward the raw value as text (`THC-118`), so a
-      type TheHive added after this add-on shipped is not silently dropped;
-    * a KNOWN type whose value does not fit it -> return None. The caller keeps
-      the key in the reinjected table, which is then the only place the analyst
-      can still read the value.
-    """
-    codec = CUSTOM_FIELD_CODECS.get(declared_type)
-    if codec is not None:
-        mapped, encoded = codec(value)
-        if mapped:
-            return {"name": name, "value": encoded}
-
-    if declared_type not in KNOWN_CUSTOM_TYPES:
-        logger_file.warn(
-            id="THC-118",
-            message=f"custom field '{name}' has type '{declared_type}', which this "
-            f"add-on does not map; forwarding the raw value as text",
-        )
-        return {"name": name, "value": str(value)}
-
-    return None
-
-
-# ---------------------------------------------------------------------------
 # The dispatch table
 # ---------------------------------------------------------------------------
 
@@ -352,53 +187,74 @@ def _match_ttp(ctx, key, value):
     return key == "ttp"
 
 
+def _malformed_ttp(ctx, value):
+    """Report a `ttp` this add-on cannot read, and let the alert live.
+
+    ⚠️ One unreadable field is a reason to drop that field, never a reason to
+    drop the alert -- let alone the other rows of the same batch, which had
+    nothing wrong with them.
+    """
+    ctx.helper.error(
+        '[CAA-THC-110-ERROR] ttp field was detected but malformed, expected one '
+        'value with the pattern "tactic::patternId::occurDate" with occurDate as '
+        '"YYYY-mm-dd", got: {}'.format(value)
+    )
+
+
 def _extract_ttp(ctx, key, value):
     ctx.consume("ttp")
     # Expected pattern is: tactic::patternId::occurDate
     parts = value.split("::")
-    # ⚠️ `parts[2]` is read before any length check, exactly as it always was.
-    # A value without `::` raises IndexError and takes the WHOLE alert with it.
-    # Preserved verbatim: fixing it here would make this refactoring
-    # unreviewable. It has its own ticket.
+
+    # ⚠️ THE LENGTH CHECK COMES FIRST, and that is the whole fix (#36).
+    # `parts[2]` used to be read before it, inside a `try` that catches only
+    # ValueError -- so a value without `::` raised IndexError and propagated:
+    # not this TTP lost, but the WHOLE alert action, every row of the batch
+    # with it, in a message naming neither the row nor the field. The degraded
+    # path already existed three lines below; the indexed read short-circuited
+    # it before it could run.
+    if len(parts) != 3:
+        _malformed_ttp(ctx, value)
+        return
+
+    tactic, pattern_id, occur_date = parts
+
     try:
-        datetime.date.fromisoformat(parts[2])
+        datetime.date.fromisoformat(occur_date)
         date_ok = True
     except ValueError:
         date_ok = False
 
     # ⚠️ `startswith("T")` accepts `T`, `TOTO` and `T99999` alike. The catalogue
     # is what makes the real check possible.
-    known = is_known(parts[1], ctx.catalogue) if len(parts) == 3 else False
+    if not (pattern_id.startswith("T") and date_ok):
+        _malformed_ttp(ctx, value)
+        return
 
-    if len(parts) == 3 and parts[1].startswith("T") and date_ok and known:
-        new_ttp = {"tactic": parts[0], "patternId": parts[1], "occurDate": parts[2]}
-        if new_ttp not in ctx.ttps:
-            ctx.ttps.append(new_ttp)
-            ctx.logger_file.debug(
-                id="THC-108",
-                message="ttp was parsed correctly and added to the alert: {}".format(value),
-            )
-        else:
-            ctx.logger_file.debug(
-                id="THC-109",
-                message="ttp already exist, ignoring duplicates: {}".format(value),
-            )
-    elif len(parts) == 3 and parts[1].startswith("T") and date_ok and not known:
+    if not is_known(pattern_id, ctx.catalogue):
         # Well formed, but the id is not in the catalogue. Say WHICH one:
         # otherwise the user goes hunting for a typo across the whole row.
         ctx.logger_file.error(
             id="THC-122",
             message=(
-                f"ttp '{parts[1]}' is not in the MITRE catalogue "
+                f"ttp '{pattern_id}' is not in the MITRE catalogue "
                 f"'{ctx.catalog_name}'; the TTP is dropped rather than sent for "
                 f"TheHive to reject. Full value: {value}"
             ),
         )
+        return
+
+    new_ttp = {"tactic": tactic, "patternId": pattern_id, "occurDate": occur_date}
+    if new_ttp not in ctx.ttps:
+        ctx.ttps.append(new_ttp)
+        ctx.logger_file.debug(
+            id="THC-108",
+            message="ttp was parsed correctly and added to the alert: {}".format(value),
+        )
     else:
-        ctx.helper.error(
-            '[CAA-THC-110-ERROR] ttp field was detected but malformed, expected one '
-            'value with the pattern "tactic::patternId::occurDate" with occurDate as '
-            '"YYYY-mm-dd", got: {}'.format(value)
+        ctx.logger_file.debug(
+            id="THC-109",
+            message="ttp already exist, ignoring duplicates: {}".format(value),
         )
 
 
