@@ -102,6 +102,12 @@ jobs:
         # ceilings are measured values, so the next one has to argue in a diff.
         run: python tools/checks/complexity_ceiling.py
 
+      - name: No module past its ceiling, no import cycle
+        # thehive.py is at 1293 lines and nobody saw it cross 400: a file grows
+        # one line at a time. And a cycle runs fine until the day an import
+        # moves to the top of a module -- which is what splitting one does.
+        run: python tools/checks/module_size_and_cycles.py
+
       - name: Every log identifier designates one place
         # An identifier that names two call sites names none -- and it is what
         # someone reaches for when an incident must be traced back to a line.
