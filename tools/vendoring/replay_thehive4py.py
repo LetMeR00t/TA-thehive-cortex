@@ -133,6 +133,12 @@ def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--upstream", default=BASE)
     ap.add_argument("--write", action="store_true")
+    # ⚠️ `--check` is the DEFAULT, and it exists as a flag only because the
+    # docstring documented it before the parser did: anyone following the
+    # instructions got `error: unrecognized arguments: --check`. A tool whose
+    # documented invocation fails teaches people not to trust the document.
+    ap.add_argument("--check", action="store_true",
+                    help="rebuild in a temporary directory and compare (the default)")
     ap.add_argument("--python", default=sys.executable,
                     help="interpreter used to VERIFY the rebuilt tree; it needs "
                          "the runtime dependencies installed")
@@ -147,57 +153,57 @@ def main() -> int:
         capture_output=True, text=True,
     )
     if sonde.returncode != 0:
-        print(f" {R}impossible de VÉRIFIER{Z} : {args.python} n'a pas les dépendances "
-              f"d'exécution ({sonde.stderr.strip().splitlines()[-1] if sonde.stderr else '?'})")
-        print(f"        {D}ce n'est PAS une greffe perdue — installez "
-              f"package/lib/requirements.txt, ou passez --python{Z}")
+        print(f" {R}cannot VERIFY{Z}: {args.python} lacks the runtime "
+              f"dependencies ({sonde.stderr.strip().splitlines()[-1] if sonde.stderr else '?'})")
+        print(f"        {D}this is NOT a lost graft -- install "
+              f"package/lib/requirements.txt, or pass --python{Z}")
         return 1
 
     INTERPRETEUR[0] = args.python
-    print(f"{B}Rejeu de thehive4py {args.upstream} + {len(list(PATCHES.glob('*.patch')))} greffes{Z}")
+    print(f"{B}Replaying thehive4py {args.upstream} + {len(list(PATCHES.glob('*.patch')))} grafts{Z}")
 
     with tempfile.TemporaryDirectory() as tmp:
         chantier = Path(tmp)
         try:
             amont = _telecharger(args.upstream, chantier)
         except Exception as err:  # noqa: BLE001
-            print(f" {R}échec du téléchargement amont{Z} : {err}")
+            print(f" {R}upstream download failed{Z}: {err}")
             return 1
-        print(f" {V}ok{Z}     amont {args.upstream} récupéré")
+        print(f" {V}ok{Z}     upstream {args.upstream} fetched")
 
         echecs = _appliquer(amont)
         if echecs:
-            print(f" {R}ÉCHEC{Z}  greffes non appliquées : {', '.join(echecs)}")
-            print(f"        {D}upstream a changé les mêmes lignes — à examiner, pas à forcer{Z}")
+            print(f" {R}ÉCHEC{Z}  grafts that did not apply: {', '.join(echecs)}")
+            print(f"        {D}upstream changed the same lines -- look at it, do not force it{Z}")
             return 1
-        print(f" {V}ok{Z}     série de greffes appliquée")
+        print(f" {V}ok{Z}     graft series applied")
 
         for propre in PROPRES:
             source = VENDORISE / propre
             if not source.is_file():
-                print(f" {R}ÉCHEC{Z}  fichier propre au fork absent : {propre}")
+                print(f" {R}ÉCHEC{Z}  fork-only file missing: {propre}")
                 return 1
             (amont / propre).parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(source, amont / propre)
-        print(f" {V}ok{Z}     {len(PROPRES)} fichiers propres au fork copiés")
+        print(f" {V}ok{Z}     {len(PROPRES)} fork-only file(s) copied")
 
         perdues = _verifier_greffes(amont)
         if perdues:
-            print(f" {R}ÉCHEC{Z}  greffes perdues malgré des patchs appliqués :")
+            print(f" {R}ÉCHEC{Z}  grafts lost despite the patches applying:")
             for p in perdues:
                 print(f"          {p}")
             return 1
-        print(f" {V}ok{Z}     toutes les greffes sont présentes à l'arrivée")
+        print(f" {V}ok{Z}     every graft is present at arrival")
 
         if args.write:
             shutil.rmtree(VENDORISE)
             shutil.copytree(amont, VENDORISE)
-            print(f" {V}ok{Z}     arbre vendorisé remplacé")
-            print(f"{D}        lancez maintenant tools/checks/tests_on_both_pythons.sh{Z}")
+            print(f" {V}ok{Z}     vendored tree replaced")
+            print(f"{D}        now run tools/checks/tests_on_both_pythons.sh{Z}")
         else:
-            print(f"{D}        (--check : l'arbre vendorisé n'a pas été touché){Z}")
+            print(f"{D}        (--check: the vendored tree was not touched){Z}")
 
-    print(f"\n{V}Le rejeu reconstruit la bibliothèque sans perdre de greffe.{Z}")
+    print(f"\n{V}The replay rebuilds the library without losing a graft.{Z}")
     return 0
 
 

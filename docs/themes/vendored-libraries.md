@@ -61,6 +61,41 @@ calls it before you write anything else.** An extraction moves code out of the
 paths the suite already covers, so the moment of extraction is exactly the
 moment coverage silently drops.
 
+## Before ANY upgrade of a vendored library — the mandatory gesture
+
+⚠️ **A vendored library carries no sign of what is ours.** An upgrade overwrites
+local work in silence. This repository has already paid for it: the UCC
+migration erased `cortex4py/__init__.py`, and nobody noticed **for years** —
+nothing failed loudly, the package simply stopped being importable the day
+someone needed it.
+
+So, in this order, and none of it optional:
+
+1. **`python tools/checks/vendored_grafts_present.py`** — before and after.
+   It reads the source of what is vendored: no import, no network, no
+   dependency, so it runs anywhere, including CI. It cannot prove the tree
+   loads; it proves nothing was silently dropped.
+2. **`python tools/vendoring/replay_thehive4py.py --check`** — rebuilds the fork
+   from upstream plus the patch series and refuses to finish if a graft did not
+   land. ⚠️ It needs the runtime dependencies (`requests`, `typing_extensions`)
+   and a PyPI round-trip; pass `--python` to point at an interpreter that has
+   them. It says *"cannot VERIFY"* rather than *"graft lost"* when it cannot
+   run — those are different problems and one message for both sends the reader
+   hunting in the wrong place.
+3. **`tools/checks/tests_on_both_pythons.sh`** — 3.9 and 3.13, both required.
+4. Update `tools/vendoring/LOCAL_PATCHES.md`: baseline, version, and **each**
+   graft. A graft nobody wrote down is a graft the next upgrade deletes.
+
+⚠️ **A patch that no longer applies is not a nuisance to force through.** It
+means upstream changed the same lines, and somebody has to look at what they
+changed and why.
+
+⚠️ **`cortex4py` has no replay at all**, and that makes it the more exposed of
+the two, not the less: upstream is archived, there is no release to rebuild
+from, and its version is not even determinable — no `setup.py`, no
+`__version__`. Its one local graft (client certificate support, `1c5ab88`) is
+held by the source check alone.
+
 ## R44 — Cortex is reached through `cortex4py`, and through nothing else
 
 **Decision.** Every call to Cortex goes through the vendored `cortex4py`. The

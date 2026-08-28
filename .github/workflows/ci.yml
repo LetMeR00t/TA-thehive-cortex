@@ -102,6 +102,13 @@ jobs:
         # ceilings are measured values, so the next one has to argue in a diff.
         run: python tools/checks/complexity_ceiling.py
 
+      - name: Every local graft is still in the vendored libraries
+        # A vendored library carries no sign of what is ours: the UCC migration
+        # erased cortex4py/__init__.py and nobody noticed for years. The replay
+        # script needs PyPI and the runtime deps, so it cannot run here -- this
+        # one reads the source, and would have caught that exact loss.
+        run: python tools/checks/vendored_grafts_present.py
+
       - name: No log line derives anything from a credential
         # Shipped in FOUR versions: a debug line carrying the last four
         # characters of the API key, into a file Splunk indexes and a `splunk

@@ -18,6 +18,7 @@ python tools/checks/duplication_threshold.py
 python tools/checks/complexity_ceiling.py
 python tools/checks/module_size_and_cycles.py
 python tools/checks/secrets_never_logged.py
+python tools/checks/vendored_grafts_present.py
 python tools/checks/log_ids_unique.py
 python tools/checks/vendored_path_bootstrap.py
 python tools/checks/unused_imports.py
