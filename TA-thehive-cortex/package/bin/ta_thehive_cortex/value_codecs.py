@@ -30,8 +30,13 @@ KNOWN_CUSTOM_TYPES = ("string", "url", "boolean", "integer", "float", "date")
 
 _TRUE = re.compile("^(1|y|Y|t|T|true|True)$")
 _FALSE = re.compile("^(0|n|N|f|F|false|False)$")
-_EPOCH10 = re.compile("^[0-9]{10}$")
-_EPOCH13 = re.compile("^[0-9]{13}$")
+# ⚠️ The fractional part is not decoration. `relative_time()`, `strptime()`
+# and any arithmetic on `_time` all render as "1788071433.000000" in the CSV
+# the alert action reads -- including in the `ip:sighted_at` of the UC2 the
+# documentation ships. Anchoring on digits only rejected the single most
+# common shape Splunk emits.
+_EPOCH10 = re.compile(r"^[0-9]{10}(\.[0-9]+)?$")
+_EPOCH13 = re.compile(r"^[0-9]{13}(\.[0-9]+)?$")
 
 class FieldMappingError(Exception):
     """Anything this module refuses to map, with the field that caused it."""
@@ -92,16 +97,26 @@ def str_to_bool(value, default):
     return default
 
 
-def str_to_epoch_millis(value):
-    """A sighting date as milliseconds, or None when it cannot be read."""
+def epoch_millis(value):
+    """Milliseconds for any epoch shape Splunk emits, or None.
+
+    Seconds or milliseconds, integer or fractional. Returning None here means
+    "this is not an epoch"; it does NOT mean "nothing to see" -- every caller
+    is expected to say so rather than drop the value quietly.
+    """
     if value is None:
         return None
     text = str(value).strip()
     if _EPOCH13.match(text):
-        return int(text)
+        return int(float(text))
     if _EPOCH10.match(text):
-        return int(text) * 1000
+        return int(float(text) * 1000)
     return None
+
+
+def str_to_epoch_millis(value):
+    """Historical name, kept for the callers that already use it."""
+    return epoch_millis(value)
 
 
 # ---------------------------------------------------------------------------
@@ -140,10 +155,12 @@ def _codec_float(value):
 
 
 def _codec_date(value):
-    if _EPOCH13.match(value):
-        return True, int(value)
-    if _EPOCH10.match(value):
-        return True, int(value) * 1000
+    # Same reader as the observable path uses: two date parsers that disagree
+    # about what a date looks like is how the same value lands in a custom
+    # field and vanishes from an observable.
+    millis = epoch_millis(value)
+    if millis is not None:
+        return True, millis
     # ISO-8601 is what a Splunk strftime produces, so it is the most likely
     # shape after an epoch -- and it was the one shape rejected.
     try:

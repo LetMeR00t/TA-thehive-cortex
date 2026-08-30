@@ -42,6 +42,7 @@ from value_codecs import (  # noqa: F401  (re-exported: `modalert_thehive_common
     encode_custom_field,
     extract_field,
     str_to_bool,
+    epoch_millis,
     str_to_epoch_millis,
 )
 
@@ -346,6 +347,30 @@ def build_observables(ctx, observables):
     return observables
 
 
+def _sighted_at_millis(ctx, field, raw):
+    """`sighted_at` as milliseconds, and a word when it cannot be read.
+
+    ⚠️ This used to be a bare `str_to_epoch_millis(...)`: an unreadable date
+    became `None` and the observable was created without it, with nothing in
+    the log. The custom field path already reported the same failure as
+    THC-117; only this one stayed quiet, so the two halves of the same event
+    disagreed about whether anything had gone wrong.
+    """
+    if raw in (None, ""):
+        return None
+    millis = epoch_millis(raw)
+    if millis is None:
+        ctx.logger_file.warning(
+            id="THC-123",
+            message=(
+                f"Unreadable sighted_at for {field}: '{raw}' is not an epoch in "
+                "seconds or milliseconds; the observable is created without a "
+                "sighting date."
+            ),
+        )
+    return millis
+
+
 def _observables_of(ctx, field, data):
     """Every observable one collected field yields, one per packed value."""
     datatype = data.get("datatype", "other")
@@ -375,7 +400,7 @@ def _observables_of(ctx, field, data):
         pap=PAP.get(str(data.get("pap")), PAP["AMBER"]),
         ioc=str_to_bool(data.get("is_ioc"), False),
         sighted=str_to_bool(data.get("sighted"), True),
-        sightedAt=str_to_epoch_millis(data.get("sighted_at")),
+        sightedAt=_sighted_at_millis(ctx, field, data.get("sighted_at")),
         ignoreSimilarity=str_to_bool(data.get("ignore_similarity"), False),
     )
 
