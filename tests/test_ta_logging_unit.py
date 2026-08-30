@@ -70,12 +70,23 @@ class TestResolutionDuNiveau(unittest.TestCase):
         self._ancien = os.environ.get("SPLUNK_HOME")
         os.environ["SPLUNK_HOME"] = self.splunk_home
         self._compteur = 0
+        self._loggers = []
 
     def tearDown(self):
         if self._ancien is None:
             os.environ.pop("SPLUNK_HOME", None)
         else:
             os.environ["SPLUNK_HOME"] = self._ancien
+        # ⚠️ setup_logging() installs a RotatingFileHandler that keeps the log
+        # file OPEN. Windows refuses to unlink an open file, so the cleanup
+        # below died with WinError 32 while Linux happily removed the tree:
+        # the leak was invisible on the CI and fatal on a Windows checkout.
+        # Closing here is not tidiness, it is what makes the test isolated.
+        for logger in self._loggers:
+            for handler in list(logger.handlers):
+                logger.removeHandler(handler)
+                handler.close()
+        self._loggers = []
         self._racine.cleanup()
 
     def _ecrire_reglages(self, contenu, ou="local"):
@@ -90,7 +101,9 @@ class TestResolutionDuNiveau(unittest.TestCase):
         nom = f"essai_niveau_{id(self)}_{self._compteur}"
         collecteur = CollecteurDAvertissements()
         logging.getLogger("TA-thehive-cortex_" + nom).addHandler(collecteur)
-        return ta_logging.setup_logging(nom), collecteur
+        logger = ta_logging.setup_logging(nom)
+        self._loggers.append(logger)
+        return logger, collecteur
 
     def test_le_niveau_demande_est_applique(self):
         self._ecrire_reglages("[logging]\nloglevel = DEBUG\n")
