@@ -14,9 +14,13 @@
        `| loadjob` on an expired one fails INSIDE the alert action, in a message
        naming neither the SID nor the fact that it aged out. This search runs
        only once `create_sid` is set (Simple XML holds a search whose tokens are
-       unset) and tells the analyst here instead. -->
+       unset) and tells the analyst here instead.
+
+       ⚠️ Match on `sid`, NOT on `title`: in `| rest /services/search/jobs`
+       `title` holds the SEARCH STRING, so `title="<a sid>"` never matches and
+       the guard declared every SID missing, including live ones. -->
   <search id="check_create_sid">
-    <query>| rest splunk_server=local /services/search/jobs count=0 | search title="$create_sid$" | stats count as found</query>
+    <query>| rest splunk_server=local /services/search/jobs count=0 | search sid="$create_sid$" | stats count as found</query>
     <earliest>-24h@h</earliest>
     <latest>now</latest>
     <done>
