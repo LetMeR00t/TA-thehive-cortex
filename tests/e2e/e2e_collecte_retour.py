@@ -1,0 +1,153 @@
+"""The return trip: Splunk -> TheHive -> Splunk, on a live instance.
+
+The five use cases prove what leaves Splunk and what TheHive receives. They
+say nothing about the other direction: the modular inputs that pull alerts,
+cases, observables and TTPs back into an index. That half has its own way of
+being wrong -- an input that runs, logs cheerfully, and indexes nothing.
+
+⚠️ Measured on the lab instance before this case was written: every collection
+sourcetype's most recent event was **seven days old**, while the input was
+running every two minutes and logging `Got 0 cases` without a single error. It
+was right -- nothing had changed in the organisation it watches -- but
+"running, logging, and indexing nothing" is exactly what a broken input looks
+like too. Only a round trip can tell the two apart.
+
+⚠️ The collected data goes into a **throwaway index** that the test creates
+and drops. Indexed events cannot be deleted; sending them into the operator's
+own `thehive` index would leave rows behind that no teardown could remove.
+"""
+
+import time
+import unittest
+
+from . import _config
+from ._case import CampagneE2E
+
+ACTION = "thehive_create_a_new_alert"
+
+RECHERCHE = """| makeresults
+| eval ip="1.2.3.4", fqdn="fake-website.com"
+| eval name = "{titre}", risk="Medium", unique = "{unique}"
+| eval ttp="defense-evasion::T1027.003::"+tostring(strftime(now(),"%Y-%m-%d"))
+"""
+
+#: The input polls on an interval and queries a window ending at "now"; a fresh
+#: alert therefore needs at least one full cycle, plus indexing time.
+DELAI_COLLECTE = 420
+
+
+class TestCollecteDeRetour(CampagneE2E):
+
+    def setUp(self):
+        super().setUp()
+        self.index = f"e2e{self.runid}"
+        self.nom_input = f"{self.prefixe}_collect"
+        self._modele_input = None
+        self.splunk.creer_index(self.index)
+
+    def tearDown(self):
+        self.splunk.supprimer_input_collecte(self.nom_input)
+        # The index goes last and takes its events with it: that is the only
+        # way this test can honestly claim to leave nothing behind.
+        self.splunk.supprimer_index(self.index)
+        super().tearDown()
+
+    def test_l_alerte_creee_revient_dans_splunk(self):
+        titre = f"{self.prefixe} round trip"
+
+        # The input must exist BEFORE the alert: it queries a window ending at
+        # "now", so an alert created earlier than its first cycle is simply
+        # outside every window it will ever ask for.
+        self.splunk.creer_input_collecte(
+            self.nom_input,
+            {
+                "type": "alerts,cases",
+                "date": "_createdAt,_updatedAt,date,startDate",
+                "additional_information": "observables,ttps",
+                "extra_data": "",
+                "max_size_value": "1000",
+            },
+            self.nom_instance,
+            self.index,
+            intervalle="60",
+        )
+
+        nom = self.jouer(
+            "collecte",
+            RECHERCHE.format(titre=titre, unique=f"{self.prefixe}_rt"),
+            ACTION,
+            {
+                "thehive_instance_id": self.nom_instance,
+                "alert_mode": "regular_mode",
+                "unique_id_field": "unique",
+                "type": "alert",
+                "source": "splunk",
+                "title": "name",
+                "description": "name",
+                "tags": "e2e,collecte",
+                "scope": "0",
+                "severity": "2",
+                "tlp": "2",
+                "pap": "2",
+                "description_results_enable": "0",
+                "description_results_keep_observable": "0",
+                "attach_results": "0",
+                "attach_format": "0",
+            },
+        )
+
+        alertes = self.thehive.attendre_alertes(self.prefixe, 1, _config.DELAI_THEHIVE)
+        self.assertEqual(1, len(alertes), "the alert must reach TheHive first")
+
+        lignes = self._attendre_la_collecte(titre)
+        self.assertTrue(
+            lignes,
+            "the modular input never indexed the alert it had every chance to see: "
+            f"nothing matching the title landed in index={self.index} within "
+            f"{DELAI_COLLECTE}s",
+        )
+
+        # ⚠️ Assert on the CONTENT that came back, not merely on the count.
+        # An input that indexes an empty envelope is indistinguishable from a
+        # working one if all you count is events.
+        evenement = str(lignes[0].get("_raw", ""))
+        self.assertIn(titre, evenement)
+        for attendu in ("Medium", "fake-website.com", "MEDIUM", "AMBER", '"dataType": "ip"'):
+            self.assertIn(
+                attendu,
+                evenement,
+                f"{attendu!r} left Splunk, reached TheHive, and must come back",
+            )
+
+        # ⚠️ The TTP does NOT come back, and that is deliberate rather than a
+        # loss: `thehive_alerts_cases.py:94` filters an ALERT's additional
+        # information down to observables and attachments, and keeps `ttps`
+        # only for CASES (line 97). The alert really does carry the procedure
+        # -- UC1 asserts it on TheHive's side -- so this is a collection gap,
+        # not a creation one. Pinned here so that changing it is a decision
+        # rather than an accident.
+        self.assertNotIn(
+            "T1027.003",
+            evenement,
+            "alerts are collected without their TTPs by design; if this starts "
+            "failing, thehive_alerts_cases.py:94 changed and the indexed shape "
+            "changed with it",
+        )
+
+        self.assert_journal_propre(nom)
+
+    def _attendre_la_collecte(self, titre):
+        """Poll the throwaway index until the alert comes back, or give up."""
+        limite = time.time() + DELAI_COLLECTE
+        while time.time() < limite:
+            lignes = self.splunk.rechercher(
+                f'search index={self.index} "{titre}"', earliest="-1h"
+            )
+            if lignes:
+                return lignes
+            time.sleep(10)
+        return []
+
+
+if __name__ == "__main__":
+    unittest.main()

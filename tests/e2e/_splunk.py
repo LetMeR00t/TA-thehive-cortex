@@ -160,6 +160,68 @@ class ClientSplunk:
             time.sleep(2)
         raise ErreurSplunk(f"job did not finish within {delai}s")
 
+    # -- the collection side ----------------------------------------------
+
+    def creer_index(self, nom):
+        """A throwaway index for the return trip.
+
+        ⚠️ Indexed events cannot be deleted. Sending the collected data into
+        the operator's own `thehive` index would leave rows behind that no
+        teardown could remove, so the campaign gives itself an index and drops
+        the whole thing afterwards -- data included.
+        """
+        self._appel(
+            "POST", f"{self.base}/services/data/indexes", data={"name": nom}
+        )
+
+    def supprimer_index(self, nom):
+        self._supprimer_silencieux(f"{self.base}/services/data/indexes/{nom}")
+
+    def creer_input_collecte(self, nom, modele, instance, index, intervalle="60"):
+        """A modular input pulling alerts and cases back from TheHive."""
+        champs = {
+            "name": nom,
+            "instance_id": instance,
+            "index": index,
+            "interval": intervalle,
+            "type": modele.get("type", "alerts,cases"),
+            "date": modele.get("date", "_createdAt,_updatedAt,date,startDate"),
+            "additional_information": modele.get("additional_information", ""),
+            "extra_data": modele.get("extra_data", ""),
+            "max_size_value": modele.get("max_size_value", "1000"),
+        }
+        self._appel(
+            "POST", self._ns("thehive_cortex_thehive_alerts_cases"), data=champs
+        )
+
+    def lire_input_collecte(self, nom):
+        reponse = self._appel(
+            "GET", self._ns(f"thehive_cortex_thehive_alerts_cases/{nom}")
+        )
+        entrees = reponse.json().get("entry") or []
+        if not entrees:
+            raise ErreurSplunk(f"input {nom!r} does not exist")
+        return entrees[0]["content"]
+
+    def supprimer_input_collecte(self, nom):
+        self._supprimer_silencieux(
+            self._ns(f"thehive_cortex_thehive_alerts_cases/{nom}")
+        )
+
+    def inputs_collecte_par_prefixe(self, prefixe):
+        return self._noms_par_prefixe("thehive_cortex_thehive_alerts_cases", prefixe)
+
+    def index_par_prefixe(self, prefixe):
+        reponse = self._appel(
+            "GET", f"{self.base}/services/data/indexes",
+            params={"output_mode": "json", "count": "0"},
+        )
+        return [
+            entree["name"]
+            for entree in reponse.json().get("entry", [])
+            if entree["name"].startswith(prefixe)
+        ]
+
     # -- searching --------------------------------------------------------
 
     def rechercher(self, spl, delai=120, earliest="-15m", latest="now"):

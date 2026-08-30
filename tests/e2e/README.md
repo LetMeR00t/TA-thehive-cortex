@@ -55,6 +55,7 @@ prevent.
 | `e2e_uc2_several_alerts.py` | grouping by `unique_id_field`, and the per-observable `ip:<attribute>` metadata — description, tags, TLP, PAP, ioc, sighted, sighted_at, ignore_similarity |
 | `e2e_uc3_correlation_case.py` | the **case** creation path, and the reserved `th_severity` / `th_tlp` / `th_pap` overrides beating the dialog — the dialog is configured with different values on purpose, so a pass can only mean the search won |
 | `e2e_uc4_notable_es_mode.py` | the one decision `es_mode` actually changes: `sourceRef` taken from the notable's `event_id`. ⚠️ It deliberately does **not** create a real notable — that would write into the `notable` index, which the campaign could not clean up |
+| `e2e_collecte_retour.py` | the **return trip**: an alert created from Splunk, collected back by the modular input into a throwaway index, checked on its content. ⚠️ Creates and drops its own index — indexed events cannot be deleted, so writing into the operator's `thehive` index would leave rows no teardown could remove |
 | `e2e_uc5_thehive_function.py` | pushing to a TheHive **Function**. Skips **with the reason** unless `E2E_THEHIVE_FUNCTION` is set: Functions are licensed and `listFunction` is empty on the lab instance |
 
 ⚠️ Asserting that the alert **exists** proves almost nothing. The defects that
