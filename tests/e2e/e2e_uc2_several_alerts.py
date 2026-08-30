@@ -84,7 +84,9 @@ class TestUC2PlusieursAlertes(CampagneE2E):
 
         par_observables = {}
         for alerte in alertes:
-            observables = self.thehive.observables_de_l_alerte(alerte["_id"])
+            observables = self.thehive.attendre_observables_de_l_alerte(
+                alerte["_id"], 1, _config.DELAI_THEHIVE
+            )
             par_observables[alerte["_id"]] = {
                 obs.get("data"): obs for obs in observables
             }

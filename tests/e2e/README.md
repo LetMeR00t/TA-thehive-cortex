@@ -53,6 +53,9 @@ prevent.
 | :--- | :--- |
 | `e2e_uc1_single_alert.py` | the happy path: one alert, three observables **with their types**, a string and a date custom field, one TTP |
 | `e2e_uc2_several_alerts.py` | grouping by `unique_id_field`, and the per-observable `ip:<attribute>` metadata — description, tags, TLP, PAP, ioc, sighted, sighted_at, ignore_similarity |
+| `e2e_uc3_correlation_case.py` | the **case** creation path, and the reserved `th_severity` / `th_tlp` / `th_pap` overrides beating the dialog — the dialog is configured with different values on purpose, so a pass can only mean the search won |
+| `e2e_uc4_notable_es_mode.py` | the one decision `es_mode` actually changes: `sourceRef` taken from the notable's `event_id`. ⚠️ It deliberately does **not** create a real notable — that would write into the `notable` index, which the campaign could not clean up |
+| `e2e_uc5_thehive_function.py` | pushing to a TheHive **Function**. Skips **with the reason** unless `E2E_THEHIVE_FUNCTION` is set: Functions are licensed and `listFunction` is empty on the lab instance |
 
 ⚠️ Asserting that the alert **exists** proves almost nothing. The defects that
 hurt in this add-on do not fail: the alert is created, Splunk reports success,
@@ -60,13 +63,23 @@ and one field is missing. Every case here asserts on **content** — the value
 *and* the type of each observable, each custom field, each TTP — and on what
 the alert action wrote in its own log.
 
-## Two things measured here that are worth knowing
+## Four things measured here that are worth knowing
 
 - The run creates its own **instance** but reuses the template's **account**.
   The add-on's `password` authentication mode sends HTTP Basic, and TheHive 5
   answers `401` to Basic on `/api/v1` while accepting `/api/v1/login`; an
   account built from `THEHIVE_USER`/`THEHIVE_PASSWORD` gets `THCA-TH110
   AuthenticationError` and no alert is ever created.
+- TheHive listings are filtered **server-side** with `_startsWith`. Listing and
+  filtering in Python looked identical on alerts and quietly failed on cases:
+  the lab organisation holds more than 3 600 of them, `listCase` does not
+  promise the newest first, and a page of 500 did not contain the case that had
+  just been created — the campaign reported "no case" about a case its own log
+  said it had created, and then failed to clean it up.
+- Observables are **polled**, not read the instant the alert appears. The
+  add-on creates the alert first and attaches observables afterwards, one API
+  call each: measured, one second apart. Reading too early produces a flake
+  that looks exactly like the silent loss this campaign exists to catch.
 - The saved search is created with an explicit `dispatch.ttl`. Without it the
   dispatch directory of a manually triggered saved search is reaped before the
   alert action opens `results.csv.gz`, and the action reports *"No search

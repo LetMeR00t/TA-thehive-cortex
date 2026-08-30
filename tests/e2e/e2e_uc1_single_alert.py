@@ -83,7 +83,9 @@ class TestUC1UneSeuleAlerte(CampagneE2E):
         # and useless -- no analyzer will ever run on it.
         observables = {
             (obs.get("data"), obs.get("dataType"))
-            for obs in self.thehive.observables_de_l_alerte(alerte["_id"])
+            for obs in self.thehive.attendre_observables_de_l_alerte(
+                alerte["_id"], 3, _config.DELAI_THEHIVE
+            )
         }
         self.assertEqual(
             {

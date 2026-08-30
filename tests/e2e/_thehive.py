@@ -65,25 +65,37 @@ class ClientTheHive:
 
     # -- reading ----------------------------------------------------------
 
-    def alertes_par_prefixe_de_titre(self, prefixe):
-        """Every alert whose title starts with `prefixe`.
+    @staticmethod
+    def _commence_par(prefixe):
+        return {"_name": "filter", "_startsWith": {"_field": "title", "_value": prefixe}}
 
-        The campaign never searches by "the most recent": two runs in
-        parallel would steal each other's objects, and a leftover from a
-        previous run would be mistaken for this one's result.
+    def _par_prefixe(self, operation, prefixe):
+        """Objects whose title starts with `prefixe`, filtered SERVER-side.
+
+        ⚠️ The filter is not an optimisation. Listing and filtering in Python
+        looked identical on alerts and quietly failed on cases: this
+        organisation holds more than 3 600 of them, `listCase` does not
+        promise the newest first, and a page of 500 simply did not contain the
+        case that had just been created. The campaign reported "no case" about
+        a case the log said it had created -- and then failed to clean it up,
+        because the cleanup used the same blind listing.
+
+        The campaign also never searches by "the most recent": two runs in
+        parallel would steal each other's objects.
         """
         return [
-            alerte
-            for alerte in self._query({"_name": "listAlert"}, self._page(500))
-            if str(alerte.get("title", "")).startswith(prefixe)
+            objet
+            for objet in self._query(
+                {"_name": operation}, self._commence_par(prefixe), self._page(500)
+            )
+            if str(objet.get("title", "")).startswith(prefixe)
         ]
 
+    def alertes_par_prefixe_de_titre(self, prefixe):
+        return self._par_prefixe("listAlert", prefixe)
+
     def cas_par_prefixe_de_titre(self, prefixe):
-        return [
-            cas
-            for cas in self._query({"_name": "listCase"}, self._page(500))
-            if str(cas.get("title", "")).startswith(prefixe)
-        ]
+        return self._par_prefixe("listCase", prefixe)
 
     def attendre_alertes(self, prefixe, combien, delai):
         """Poll until `combien` alerts carry the prefix, or give up.
@@ -139,6 +151,33 @@ class ClientTheHive:
             {"_name": "procedures"},
             self._page(500),
         )
+
+    def attendre_observables_de_l_alerte(self, alerte_id, combien, delai):
+        return self._attendre(self.observables_de_l_alerte, alerte_id, combien, delai)
+
+    def attendre_observables_du_cas(self, cas_id, combien, delai):
+        return self._attendre(self.observables_du_cas, cas_id, combien, delai)
+
+    @staticmethod
+    def _attendre(lecture, identifiant, combien, delai):
+        """Poll until `combien` items are there, then return what there is.
+
+        ⚠️ The add-on creates the alert or the case FIRST and attaches the
+        observables afterwards, one API call each. Measured on UC3: the case
+        appeared, the first observable landed one second later and the second
+        one a second after that. Reading them the instant the case exists
+        makes the campaign report a missing observable that was merely late --
+        a flake that looks exactly like the silent loss this campaign was
+        written to catch, which is the worst kind.
+        """
+        limite = time.time() + delai
+        vus = []
+        while time.time() < limite:
+            vus = lecture(identifiant)
+            if len(vus) >= combien:
+                return vus
+            time.sleep(2)
+        return vus
 
     def champs_personnalises_declares(self):
         """name -> type, as TheHive declares them.
