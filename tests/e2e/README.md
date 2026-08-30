@@ -1,0 +1,74 @@
+# The end-to-end campaign
+
+Replays the documented use cases against a **real Splunk** and a **real
+TheHive**, checks what each side actually did, and destroys everything it
+created — including after a failure.
+
+> ⚠️ **Never run this in the public CI.** It needs real credentials, and this
+> repository is public. `.github/workflows/ci.yml` runs `tests/` only, and the
+> files here are named `e2e_*.py` precisely so that `-p "test_*.py"` cannot
+> pick them up by accident. Two guards, because one of them is a convention.
+
+## What it needs
+
+| Variable | What for |
+| :--- | :--- |
+| `SPLUNK_USER` / `SPLUNK_PASSWORD` | an account that can create saved searches and add-on configuration |
+| `THEHIVE_USER` / `THEHIVE_PASSWORD` | the account the **verification** client authenticates with |
+| `E2E_TEMPLATE_INSTANCE` | id of an existing add-on instance whose host, port, uri, organisation and account the run copies |
+| `E2E_SPLUNK_MGMT` | optional, defaults to `https://localhost:8089` |
+| `E2E_JOB_TIMEOUT`, `E2E_THEHIVE_TIMEOUT` | optional, seconds |
+
+Put them in the environment, or in an **unversioned** `tests/e2e/.env`
+(`KEY=value` per line; the real environment always wins). There is **no
+default host anywhere**: a fallback URL is how a test suite ends up writing
+into somebody else's production. Missing configuration makes every test
+**skip, with the reason** — never `sys.exit`.
+
+## Running it
+
+```bash
+python -m unittest discover -s tests/e2e -p "e2e_*.py" -t .
+python -m unittest discover -s tests/e2e -p "e2e_uc2*.py" -t .   # one case
+```
+
+## Cleaning up after a killed run
+
+Every object carries an `e2e_<runid>` prefix — Splunk instance, saved search,
+and the title of every TheHive alert and case. That is what lets the cleanup
+be total and still safe.
+
+```bash
+python -m tests.e2e.purge            # list what is left, change nothing
+python -m tests.e2e.purge --purge    # delete it
+```
+
+`--purge` re-counts afterwards and says so if anything survived. Claiming
+"cleaned" while something is left is the failure this script exists to
+prevent.
+
+## What each case is for
+
+| File | What only this can catch |
+| :--- | :--- |
+| `e2e_uc1_single_alert.py` | the happy path: one alert, three observables **with their types**, a string and a date custom field, one TTP |
+| `e2e_uc2_several_alerts.py` | grouping by `unique_id_field`, and the per-observable `ip:<attribute>` metadata — description, tags, TLP, PAP, ioc, sighted, sighted_at, ignore_similarity |
+
+⚠️ Asserting that the alert **exists** proves almost nothing. The defects that
+hurt in this add-on do not fail: the alert is created, Splunk reports success,
+and one field is missing. Every case here asserts on **content** — the value
+*and* the type of each observable, each custom field, each TTP — and on what
+the alert action wrote in its own log.
+
+## Two things measured here that are worth knowing
+
+- The run creates its own **instance** but reuses the template's **account**.
+  The add-on's `password` authentication mode sends HTTP Basic, and TheHive 5
+  answers `401` to Basic on `/api/v1` while accepting `/api/v1/login`; an
+  account built from `THEHIVE_USER`/`THEHIVE_PASSWORD` gets `THCA-TH110
+  AuthenticationError` and no alert is ever created.
+- The saved search is created with an explicit `dispatch.ttl`. Without it the
+  dispatch directory of a manually triggered saved search is reaped before the
+  alert action opens `results.csv.gz`, and the action reports *"No search
+  result"* — an `IOError` described as an empty search, on a job that really
+  did return its rows.

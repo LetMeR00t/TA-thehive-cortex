@@ -156,3 +156,6 @@ TA-thehive-cortex/package/lib/*
 # module and run anywhere. Integration tests read their endpoints and
 # credentials from `.env`, which stays ignored -- never hardcode a host here.
 tests/__pycache__/coverage.json
+
+# The end-to-end campaign reads its credentials from here.
+tests/e2e/.env

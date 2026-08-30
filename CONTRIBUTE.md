@@ -17,6 +17,12 @@ can decide without reading it.
   fails.
 - [Testing: what a guard actually proves](docs/themes/testing-and-coverage.md) —
   when you write or change a test, a mock, or a coverage floor.
+- [The end-to-end campaign](tests/e2e/README.md) — when you change an alert
+  action, a field mapping or a documented use case. It replays the use cases
+  against a real Splunk and a real TheHive, asserts on what TheHive actually
+  received, and destroys what it created. ⚠️ It needs real credentials and
+  therefore never runs in the public CI; `python -m tests.e2e.purge --purge`
+  clears what a killed run left behind.
 - [Declarations that must resolve, and what a log line costs](docs/themes/declarations-and-logging.md) —
   when you touch a declaration split across two files, a log identifier, or a
   debug line.
