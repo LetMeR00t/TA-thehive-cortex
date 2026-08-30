@@ -132,7 +132,7 @@
         <fieldForValue>sourcetype</fieldForValue>
         <search>
           <query>`thehive_cortex_logs` source="*_modalert.log*"
-| stats count by sourcetype
+| stats count by sourcetype source
 | eval label = case(
     match(source, "thehive_create_a_new_alert_modalert"), "TheHive: Create Alert",
     match(source, "thehive_create_a_new_case_modalert"), "TheHive: Create Case",
@@ -141,7 +141,8 @@
     match(source, "thehive_run_function_modalert"), "TheHive: Run Function",
     match(source, "cortex_run_a_new_job_modalert"), "Cortex: Run Job",
     1=1, sourcetype
-  )</query>
+  )
+| dedup sourcetype</query>
           <earliest>$time.earliest$</earliest>
           <latest>$time.latest$</latest>
         </search>
