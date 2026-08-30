@@ -140,6 +140,8 @@ output/
 CLAUDE.md
 .claude/
 *.spl
+# ucc-gen package names the archive .tar.gz, not .spl
+*.tar.gz
 # release_notes/
 !release_notes/
 

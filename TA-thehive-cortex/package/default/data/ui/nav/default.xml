@@ -1,6 +1,9 @@
 <nav search_view="search" color="#0049D4">
   <view name="configuration"/>
   <view name="inputs"/>
+  <!-- ucc-gen generates this monitoring page from globalConfig; without an entry
+       here it shipped in every release and no one could reach it. -->
+  <view name="dashboard"/>
   <collection label="TheHive">
     <view name="cases" default='true'/>
     <view name="thehive_alerts" />
@@ -8,7 +11,6 @@
   </collection>
   <collection label="Cortex">
     <view name="analyzers" />
-    <view name="jobs" />
   </collection>
   <view name="audit_logs"/>
   <collection label="Splunk App">
