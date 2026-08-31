@@ -39,17 +39,17 @@ __email__ = "letmer00t@gmail.com"
 # `modalert_thehive_add_timeline_event_helper` import them from this module, and
 # moving a name is not a reason to break three callers.
 from field_mapping import (  # noqa: F401  (re-exported on purpose)
-    TLP,
-    PAP,
     SEVERITY,
     KNOWN_CUSTOM_TYPES,
     extract_field,
     str_to_bool,
     str_to_epoch_millis,
     RowContext,
-    build_observables,
     dispatch_row,
 )
+# `TLP`/`PAP`/`build_observables` moved to `observable_builder` (field_mapping
+# split a second time); still re-exported here for the same three callers.
+from observable_builder import TLP, PAP, build_observables  # noqa: F401
 
 
 

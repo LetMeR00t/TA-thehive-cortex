@@ -44,7 +44,7 @@ CEILINGS: dict[str, int] = {
     "common.py:Settings.__init__": 28,
     "thehive.py:TheHive4Splunk.get_alerts_events": 28,
     "ta_thehive_cortex/cim_actions.py:ModularAction.result2stash": 26,
-    "thehive.py:TheHive4Splunk.get_case_timeline_events": 25,
+    "ta_thehive_cortex/timeline_events.py:TimelineEventsMixin.get_case_timeline_events": 25,
     "backfill_observables.py:BACKFILL_OBSERVABLES.stream_events": 24,
     "ta_thehive_cortex/cim_actions.py:ModularAction.message": 21,
     "cortex_search_jobs.py:collect_job": 20,

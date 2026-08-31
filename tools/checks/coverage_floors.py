@@ -47,10 +47,12 @@ PLANCHERS = [
     # ratchet starts where reality is.
     ("ta_thehive_cortex/field_mapping.py", "dispatch_row", 90, 100),
     ("ta_thehive_cortex/value_codecs.py", "encode_custom_field", 90, 100),
-    ("ta_thehive_cortex/field_mapping.py", "build_observables", 90, 100),
+    # Moved with the code: `build_observables`/`_observables_of` now live in
+    # `observable_builder` (field_mapping crossed its own ceiling a second time).
+    ("ta_thehive_cortex/observable_builder.py", "build_observables", 90, 100),
     ("ta_thehive_cortex/field_mapping.py", "_extract_ttp", 85, 95),
     ("ta_thehive_cortex/field_mapping.py", "_extract_custom_field", 90, 100),
-    ("ta_thehive_cortex/field_mapping.py", "_observables_of", 90, 100),
+    ("ta_thehive_cortex/observable_builder.py", "_observables_of", 90, 100),
     # Were at 0 % while calling sys.exit() on an unknown id -- a path that ended
     # the Splunk process and that nothing could reach.
     ("common.py", "getInstanceURL", 90, 90),
