@@ -99,6 +99,7 @@ explains the manual purge of `etc/apps/learned/local/props.conf`. Fall back to
 | `THC-120` | The MITRE catalogue could not be read; pattern ids go unchecked this time. | ⚠️ Not a rejection: an unreachable catalogue must not silently drop legitimate TTPs. Check the catalogue name in Settings, and that the account can read it. |
 | `THC-122` | A TTP names a `patternId` that is **not in the catalogue**; the TTP is dropped. | The message names the id. Check it against the catalogue in TheHive — until 4.2.3 this was accepted here and refused by TheHive later, in a message naming neither the row nor the field. |
 | `THC-113` | An observable was declared but carries no value. | The composite key names an observable (`myfield:ip`) but neither `myfield` nor `myfield:value` exists in the row. Usually a typo, or a field that is empty for that event. |
+| `THC-123` | An observable's `sighted_at` is not a valid epoch, in seconds or milliseconds; the observable is created without a sighting date. | Same shape as `THC-87`/`THC-88`, but on the `sighted_at` sub-key of an observable rather than the row-level timestamp. Check the field feeding it against what the search actually produces. |
 | `THC-4` | The datatypes collection exists but cannot be read; the refresh is aborted. | Deliberate: refreshing would overwrite content that could not be read first. Check that the KV store is up (`| inputlookup thehive_datatypes`). |
 | `THC-5` | New datatypes could not be written to the collection. | Same family, on the write side. Nothing already stored is lost — only the new rows are missing. |
 | `THC-6` | The datatypes could not be recovered from the TheHive API. | The add-on falls back to what the collection already holds. Check the connection. |
@@ -276,16 +277,16 @@ explains the manual purge of `etc/apps/learned/local/props.conf`. Fall back to
 | `C27` | 136 | error | AUTHENTICATION ERROR - Credentials are invalid |
 | `C30` | 144 | debug | Getting jobs: … |
 | `C35` | 159 | warn | UNKNOWN DATA TYPE - This data type ( … … |
-| `C40` | 171 | error | ANALYZER NOT FOUND - This analyzer ( … … |
-| `C41` | 173 | debug | Analyzers recovered: … |
-| `C42` | 176 | debug | Job instance created |
-| `C45` | 188 | debug | JOB sent: … |
-| `C46` | 192 | error | … … … |
-| `CJ1` | 209 | warn | UNKNOWN DATA TYPE - This data type ( … … |
-| `CJ5` | 216 | debug | [ … … … … |
-| `CJ6` | 217 | debug | [ … … … … |
-| `CJ7` | 218 | debug | [ … … … … |
-| `CJ8` | 219 | debug | [ … … … |
+| `C40` | 184 | error | ANALYZER NOT FOUND - This analyzer ( … … |
+| `C41` | 186 | debug | Analyzers recovered: … |
+| `C42` | 189 | debug | Job instance created |
+| `C45` | 201 | debug | JOB sent: … |
+| `C46` | 205 | error | … … … |
+| `CJ1` | 222 | warn | UNKNOWN DATA TYPE - This data type ( … … |
+| `CJ5` | 229 | debug | [ … … … … |
+| `CJ6` | 230 | debug | [ … … … … |
+| `CJ7` | 231 | debug | [ … … … … |
+| `CJ8` | 232 | debug | [ … … … |
 
 ## `cortex_refresh_analyzers.py`
 
@@ -344,21 +345,18 @@ explains the manual purge of `etc/apps/learned/local/props.conf`. Fall back to
 
 | id | line | level | message |
 | :--- | ---: | :--- | :--- |
-| `THC-91` | 130 | debug | composite fieldvalue detected: {…} |
-| `THC-92` | 134 | debug | field: {} enriched with the information {} set to |
-| `THC-93` | 145 | warn | composite key '{…}' was NOT mapped: '{…}' is not a known datatype. The raw va… |
-| `THC-95` | 159 | debug | key is an observable: {} |
-| `THC-96` | 169 | debug | key is a custom field: {}, with type {} |
-| `THC-117` | 178 | warn | custom field '{…}' was NOT mapped: type '{…}' is not handled, or value '{…}' … |
-| `THC-122` | 237 | error | ttp '{…}' is not in the MITRE catalogue '{…}'; the TTP is dropped rather than… |
-| `THC-108` | 250 | debug | ttp was parsed correctly and added to the alert: {} |
-| `THC-109` | 255 | debug | ttp already exist, ignoring duplicates: {} |
-| `THC-105` | 267 | debug | key is added as another observable (scope is False): {} |
-| `THC-106` | 283 | warn | key is used by TheHive as an internal field (scope is False): {}. Key ignored… |
-| `THC-90` | 311 | debug | field to process: {…} |
-| `THC-111` | 332 | debug | Processing observable data: {} ({}) |
-| `THC-113` | 337 | warn | Observable '{0}' doesn't have any value set (no field '{0}' or '{0}:value' wa… |
-| `THC-112` | 354 | debug | Multi-value split for {…}: '{…}' -> {…} |
+| `THC-91` | 120 | debug | composite fieldvalue detected: {…} |
+| `THC-92` | 124 | debug | field: {} enriched with the information {} set to |
+| `THC-93` | 135 | warn | composite key '{…}' was NOT mapped: '{…}' is not a known datatype. The raw va… |
+| `THC-95` | 149 | debug | key is an observable: {} |
+| `THC-96` | 159 | debug | key is a custom field: {}, with type {} |
+| `THC-117` | 168 | warn | custom field '{…}' was NOT mapped: type '{…}' is not handled, or value '{…}' … |
+| `THC-122` | 227 | error | ttp '{…}' is not in the MITRE catalogue '{…}'; the TTP is dropped rather than… |
+| `THC-108` | 240 | debug | ttp was parsed correctly and added to the alert: {} |
+| `THC-109` | 245 | debug | ttp already exist, ignoring duplicates: {} |
+| `THC-105` | 257 | debug | key is added as another observable (scope is False): {} |
+| `THC-106` | 273 | warn | key is used by TheHive as an internal field (scope is False): {}. Key ignored… |
+| `THC-90` | 301 | debug | field to process: {…} |
 
 ## `ta_thehive_cortex/modalert_args.py`
 
@@ -379,14 +377,14 @@ explains the manual purge of `etc/apps/learned/local/props.conf`. Fall back to
 
 | id | line | level | message |
 | :--- | ---: | :--- | :--- |
-| `THAO-20` | 85 | warning | Invalid target type '{…}', defaulting to 'alert' |
-| `THAO-25` | 123 | warning | Invalid sighted date value '{…}', defaulting to now(). |
-| `THAO-30` | 141 | info | No observables found in current row, skipping. |
-| `THAO-35` | 148 | error | Invalid target ID format: '{…}'. Must match ^~[0-9]+$. Skipping this ID. |
-| `THAO-40` | 173 | info | Adding observable to {…} {…}: Type={…}, Data={…}, TLP={…}, PAP={…}, IOC={…}, … |
-| `THAO-50` | 180 | info | Successfully added observable to {…} {…} |
-| `THAO-60` | 185 | warning | Observable already exists in {…} {…} (Status={…}). Skipping. |
-| `THAO-70` | 191 | error | Failed to add observable to {…} {…}: {…}{…} |
+| `THAO-20` | 99 | warning | Invalid target type '{…}', defaulting to 'alert' |
+| `THAO-25` | 137 | warning | Invalid sighted date value '{…}', defaulting to now(). |
+| `THAO-30` | 155 | info | No observables found in current row, skipping. |
+| `THAO-35` | 162 | error | Invalid target ID format: '{…}'. Must match ^~[0-9]+$. Skipping this ID. |
+| `THAO-40` | 187 | info | Adding observable to {…} {…}: Type={…}, Data={…}, TLP={…}, PAP={…}, IOC={…}, … |
+| `THAO-50` | 194 | info | Successfully added observable to {…} {…} |
+| `THAO-60` | 199 | warning | Observable already exists in {…} {…} (Status={…}). Skipping. |
+| `THAO-70` | 205 | error | Failed to add observable to {…} {…}: {…}{…} |
 
 ## `ta_thehive_cortex/modalert_thehive_add_timeline_event_helper.py`
 
@@ -441,12 +439,12 @@ explains the manual purge of `etc/apps/learned/local/props.conf`. Fall back to
 | `124` | 121 | via helper | passed as `exhausted` to create_with_retry |
 | `125` | 132 | info | TheHive alert {} is successfully created on url={} |
 | `126` | 141 | error | TheHive alert creation has failed. url={}, data={}, content={} |
-| `140` | 165 | info | Processing attachment of the Splunk search results to the alert... |
-| `151` | 184 | error | The search results could not be prepared for attachment: {…} |
-| `149` | 195 | via helper | passed as `uploading` to upload_attachment |
-| `150` | 195 | via helper | passed as `failed` to upload_attachment |
-| `155` | 195 | via helper | passed as `attached` to upload_attachment |
-| `160` | 195 | via helper | passed as `not_attached` to upload_attachment |
+| `140` | 168 | info | Processing attachment of the Splunk search results to the alert... |
+| `151` | 187 | error | The search results could not be prepared for attachment: {…} |
+| `149` | 198 | via helper | passed as `uploading` to upload_attachment |
+| `150` | 198 | via helper | passed as `failed` to upload_attachment |
+| `155` | 198 | via helper | passed as `attached` to upload_attachment |
+| `160` | 198 | via helper | passed as `not_attached` to upload_attachment |
 
 ## `ta_thehive_cortex/modalert_thehive_create_a_new_case_helper.py`
 
@@ -461,16 +459,16 @@ explains the manual purge of `etc/apps/learned/local/props.conf`. Fall back to
 | `127` | 103 | via helper | passed as `exhausted` to create_with_retry |
 | `130` | 114 | info | TheHive case #{} is successfully created on url={} |
 | `135` | 123 | error | TheHive case creation has failed. url={}, data={}, content={} |
-| `132` | 141 | error | TheHive observable update on recent case creation has failed. url={}, data={}… |
-| `131` | 155 | info | TheHive case {} was successfully updated with the observable {} on url={} |
-| `136` | 168 | warning | Observable already exists in case {} (Status={}). Skipping. url={}, data={} |
-| `137` | 176 | error | TheHive observable update on recent case creation has failed. url={}, data={}… |
-| `140` | 204 | info | Processing attachment of the Splunk search results to the case... |
-| `151` | 223 | error | The search results could not be prepared for attachment: {…} |
-| `149` | 234 | via helper | passed as `uploading` to upload_attachment |
-| `150` | 234 | via helper | passed as `failed` to upload_attachment |
-| `170` | 234 | via helper | passed as `attached` to upload_attachment |
-| `180` | 234 | via helper | passed as `not_attached` to upload_attachment |
+| `132` | 143 | error | TheHive observable update on recent case creation has failed. url={}, data={}… |
+| `131` | 157 | info | TheHive case {} was successfully updated with the observable {} on url={} |
+| `136` | 170 | warning | Observable already exists in case {} (Status={}). Skipping. url={}, data={} |
+| `137` | 178 | error | TheHive observable update on recent case creation has failed. url={}, data={}… |
+| `140` | 206 | info | Processing attachment of the Splunk search results to the case... |
+| `151` | 225 | error | The search results could not be prepared for attachment: {…} |
+| `149` | 236 | via helper | passed as `uploading` to upload_attachment |
+| `150` | 236 | via helper | passed as `failed` to upload_attachment |
+| `170` | 236 | via helper | passed as `attached` to upload_attachment |
+| `180` | 236 | via helper | passed as `not_attached` to upload_attachment |
 
 ## `ta_thehive_cortex/modalert_thehive_run_function_helper.py`
 
@@ -485,6 +483,15 @@ explains the manual purge of `etc/apps/learned/local/props.conf`. Fall back to
 | `75` | 128 | info | Function was run on the events: {} |
 | `80` | 132 | error | Function didn't run correctly on the events: {} |
 
+## `ta_thehive_cortex/observable_builder.py`
+
+| id | line | level | message |
+| :--- | ---: | :--- | :--- |
+| `THC-111` | 46 | debug | Processing observable data: {} ({}) |
+| `THC-113` | 51 | warn | Observable '{0}' doesn't have any value set (no field '{0}' or '{0}:value' wa… |
+| `THC-123` | 76 | warning | Unreadable sighted_at for {…}: '{…}' is not an epoch in seconds or millisecon… |
+| `THC-112` | 92 | debug | Multi-value split for {…}: '{…}' -> {…} |
+
 ## `ta_thehive_cortex/post_creation.py`
 
 | id | line | level | message |
@@ -493,6 +500,20 @@ explains the manual purge of `etc/apps/learned/local/props.conf`. Fall back to
 | `134` | 57 | error | TTPS_FAILED - object {…} was created, but its TTPs could not be attached: {…}… |
 | `138` | 68 | info | Object {…} was successfully updated with the TTPs on url={…} |
 | `139` | 73 | error | TTPs update on recent creation has failed. url={…}, {…}, content={…}, ttp={…} |
+
+## `ta_thehive_cortex/timeline_events.py`
+
+| id | line | level | message |
+| :--- | ---: | :--- | :--- |
+| `TH180` | 45 | info | Retrieving cases for timeline extraction... |
+| `TH181` | 49 | info | Got {…} cases to check for timeline events. |
+| `TH182` | 83 | debug | Fetching timeline for case {…} ({…}) |
+| `TH183` | 89 | error | Failed to fetch timeline for case {…}: {…} |
+| `TH186` | 104 | debug | Skipping timeline event {…} because kind {…} is not in {…} |
+| `TH184` | 140 | info | Processed timeline events for {…} entries so far... |
+| `TH200` | 167 | info | Creating custom timeline event for case {…}... |
+| `TH201` | 183 | info | Custom timeline event created successfully for case {…} |
+| `TH202` | 189 | error | FAILED_TO_CREATE_TIMELINE_EVENT - Error: {…} |
 
 ## `ta_thehive_cortex/ttp_catalogue.py`
 
@@ -505,83 +526,74 @@ explains the manual purge of `etc/apps/learned/local/props.conf`. Fall back to
 
 | id | line | level | message |
 | :--- | ---: | :--- | :--- |
-| `THC-118` | 187 | warn | custom field '{…}' has type '{…}', which this add-on does not map; forwarding… |
+| `THC-118` | 204 | warn | custom field '{…}' has type '{…}', which this add-on does not map; forwarding… |
 
 ## `thehive.py`
 
 | id | line | level | message |
 | :--- | ---: | :--- | :--- |
-| `TH1` | 45 | error | MISSING_INSTANCE_ID - No instance ID was given to the script |
-| `TH5` | 68 | debug | Connection to Splunk done |
-| `TH6` | 70 | debug | Settings recovered |
-| `TH10` | 91 | error | Your alert is using the <default> instance ID setting which is empty in your … |
-| `TH11` | 110 | debug | Secret present: {…} |
-| `TH15` | 134 | debug | TheHive instance will be initialized with a password (not an API key) |
-| `TH16` | 152 | debug | TheHive instance will be initialized with an API Key (not a password) |
-| `TH20` | 169 | error | WRONG_AUTHENTICATION_TYPE - Authentication type is not one of the expected va… |
-| `TH25` | 213 | debug | Settings recovered |
-| `TH30` | 222 | error | Your alert is using the <default> instance ID setting which is empty in your … |
-| `TH35` | 252 | debug | TheHive instance will be initialized with a password (not an API key) |
-| `TH40` | 270 | debug | TheHive instance will be initialized with an API Key (not a password) |
-| `TH50` | 287 | error | WRONG_AUTHENTICATION_TYPE - Authentication type is not one of the expected va… |
-| `TH2` | 327 | debug | Version is: … |
-| `TH119` | 332 | debug | Verification of CA cert path: {…}. Exists? {…} |
-| `TH31` | 361 | error | THE_HIVE_AUTHENTICATION - Password AND API Key are null values |
-| `TH41` | 367 | debug | TheHive instance is initialized, try a request to {} |
-| `TH45` | 378 | error | THE_HIVE_AUTHENTICATION_RESPONSE - Server didn't respond with a valid respons… |
-| `TH46` | 382 | debug | Payload content - Headers: … |
-| `TH47` | 386 | debug | Payload content - URL: … |
-| `TH51` | 391 | debug | TheHive API connection to (URL=" … … |
-| `TH60` | 398 | debug | TheHive API connection to (URL=" … … … … |
-| `TH85` | 409 | warn | THE_HIVE_CERTIFICATE_FAILED - It seems that the certificate verification fail… |
-| `TH90` | 418 | warn | THE_HIVE_HANDHSHAKE_FAILURE - It seems that the SSL handshake failed. A possi… |
-| `TH95` | 425 | warn | THE_HIVE_PROXY_AUTHENTICATION_ERROR - It seems that the connection to the pro… |
-| `TH100` | 434 | warn | THE_HIVE_PROXY_ERROR - It seems that the connection to the proxy has failed. … |
-| `TH109` | 445 | error | THEHIVE_HTML_RESPONSE_ERROR - The server at {…} returned an HTML page instead… |
-| `TH110` | 450 | error | THEHIVE_CONNECTION_ERROR - Error: … … |
-| `TH112` | 481 | info | Resolving internal ID for case number {…}... |
-| `TH113` | 486 | info | Case number {…} resolved to {…} |
-| `TH114` | 489 | warning | No case found with number {…} |
-| `TH118` | 492 | error | Error resolving case number {…}: {…} |
-| `TH115` | 504 | info | Retrieving instance status... |
-| `TH116` | 507 | info | Got instance status successfully |
-| `TH117` | 513 | error | FAILED_TO_GET_INSTANCE_STATUS - Error: {…} |
-| `TH120` | 534 | info | Retrieving alerts count... |
-| `TH121` | 536 | info | Got {…} alerts. Estimated time for processing all events: less than {…} secon… |
-| `TH122` | 585 | debug | thehive - observables: … |
-| `TH123` | 597 | debug | thehive - attachments: … |
-| `TH125` | 641 | debug | Event after processing (check_and_reduce_values_size): {…} |
-| `TH126` | 648 | info | {…} events have been processed... |
-| `TH130` | 667 | info | Retrieving cases count... |
-| `TH131` | 669 | info | Got {…} cases. Estimated time for processing all events: less than {…} seconds |
-| `TH133` | 723 | debug | thehive - observables: … |
-| `TH134` | 734 | debug | thehive - attachments: … |
-| `TH135` | 745 | debug | thehive - pages: … |
-| `TH136` | 756 | debug | thehive - ttps: … |
-| `TH137` | 800 | debug | Event after processing (check_and_reduce_values_size): {…} |
-| `TH138` | 807 | info | {…} events have been processed... |
-| `TH141` | 819 | info | Tasks recovery detected. Got {…} tasks with filters: {…}. |
-| `TH142` | 853 | debug | Event after processing (check_and_reduce_values_size): {…} |
-| `TH139` | 860 | debug | TheHive - Tasks: … |
-| `TH140` | 879 | info | Retrieving observables count... |
-| `TH143` | 881 | info | Got {…} observables. Estimated time for processing all events: less than {…} … |
-| `TH145` | 957 | debug | Event after processing (check_and_reduce_values_size): {…} |
-| `TH146` | 963 | info | {…} events have been processed... |
-| `TH170` | 982 | info | Retrieving audit logs count... |
-| `TH171` | 984 | info | Got {…} audit logs. Estimated time for processing all events: less than {…} s… |
-| `TH175` | 1049 | debug | Event after processing (check_and_reduce_values_size): {…} |
-| `TH176` | 1055 | info | {…} events have been processed... |
-| `TH190` | 1074 | info | Retrieving tasks... |
-| `TH191` | 1083 | info | Got {…} tasks. |
-| `TH180` | 1149 | info | Retrieving cases for timeline extraction... |
-| `TH181` | 1153 | info | Got {…} cases to check for timeline events. |
-| `TH182` | 1187 | debug | Fetching timeline for case {…} ({…}) |
-| `TH183` | 1193 | error | Failed to fetch timeline for case {…}: {…} |
-| `TH186` | 1208 | debug | Skipping timeline event {…} because kind {…} is not in {…} |
-| `TH184` | 1244 | info | Processed timeline events for {…} entries so far... |
-| `TH200` | 1271 | info | Creating custom timeline event for case {…}... |
-| `TH201` | 1287 | info | Custom timeline event created successfully for case {…} |
-| `TH202` | 1293 | error | FAILED_TO_CREATE_TIMELINE_EVENT - Error: {…} |
+| `TH1` | 46 | error | MISSING_INSTANCE_ID - No instance ID was given to the script |
+| `TH5` | 69 | debug | Connection to Splunk done |
+| `TH6` | 71 | debug | Settings recovered |
+| `TH10` | 92 | error | Your alert is using the <default> instance ID setting which is empty in your … |
+| `TH11` | 111 | debug | Secret present: {…} |
+| `TH15` | 135 | debug | TheHive instance will be initialized with a password (not an API key) |
+| `TH16` | 153 | debug | TheHive instance will be initialized with an API Key (not a password) |
+| `TH20` | 170 | error | WRONG_AUTHENTICATION_TYPE - Authentication type is not one of the expected va… |
+| `TH25` | 214 | debug | Settings recovered |
+| `TH30` | 223 | error | Your alert is using the <default> instance ID setting which is empty in your … |
+| `TH35` | 253 | debug | TheHive instance will be initialized with a password (not an API key) |
+| `TH40` | 271 | debug | TheHive instance will be initialized with an API Key (not a password) |
+| `TH50` | 288 | error | WRONG_AUTHENTICATION_TYPE - Authentication type is not one of the expected va… |
+| `TH2` | 335 | debug | Version is: … |
+| `TH119` | 340 | debug | Verification of CA cert path: {…}. Exists? {…} |
+| `TH31` | 369 | error | THE_HIVE_AUTHENTICATION - Password AND API Key are null values |
+| `TH41` | 375 | debug | TheHive instance is initialized, try a request to {} |
+| `TH45` | 386 | error | THE_HIVE_AUTHENTICATION_RESPONSE - Server didn't respond with a valid respons… |
+| `TH46` | 390 | debug | Payload content - Headers: … |
+| `TH47` | 394 | debug | Payload content - URL: … |
+| `TH51` | 399 | debug | TheHive API connection to (URL=" … … |
+| `TH60` | 406 | debug | TheHive API connection to (URL=" … … … … |
+| `TH85` | 435 | warn | THE_HIVE_CERTIFICATE_FAILED - It seems that the certificate verification fail… |
+| `TH90` | 445 | warn | THE_HIVE_HANDHSHAKE_FAILURE - It seems that the SSL handshake failed. A possi… |
+| `TH95` | 452 | warn | THE_HIVE_PROXY_AUTHENTICATION_ERROR - It seems that the connection to the pro… |
+| `TH100` | 461 | warn | THE_HIVE_PROXY_ERROR - It seems that the connection to the proxy has failed. … |
+| `TH109` | 472 | error | THEHIVE_HTML_RESPONSE_ERROR - The server at {…} returned an HTML page instead… |
+| `TH110` | 477 | error | THEHIVE_CONNECTION_ERROR - Error: … … |
+| `TH112` | 508 | info | Resolving internal ID for case number {…}... |
+| `TH113` | 513 | info | Case number {…} resolved to {…} |
+| `TH114` | 516 | warning | No case found with number {…} |
+| `TH118` | 519 | error | Error resolving case number {…}: {…} |
+| `TH115` | 531 | info | Retrieving instance status... |
+| `TH116` | 534 | info | Got instance status successfully |
+| `TH117` | 540 | error | FAILED_TO_GET_INSTANCE_STATUS - Error: {…} |
+| `TH120` | 561 | info | Retrieving alerts count... |
+| `TH121` | 563 | info | Got {…} alerts. Estimated time for processing all events: less than {…} secon… |
+| `TH122` | 612 | debug | thehive - observables: … |
+| `TH123` | 624 | debug | thehive - attachments: … |
+| `TH125` | 668 | debug | Event after processing (check_and_reduce_values_size): {…} |
+| `TH126` | 675 | info | {…} events have been processed... |
+| `TH130` | 694 | info | Retrieving cases count... |
+| `TH131` | 696 | info | Got {…} cases. Estimated time for processing all events: less than {…} seconds |
+| `TH133` | 750 | debug | thehive - observables: … |
+| `TH134` | 761 | debug | thehive - attachments: … |
+| `TH135` | 772 | debug | thehive - pages: … |
+| `TH136` | 783 | debug | thehive - ttps: … |
+| `TH137` | 827 | debug | Event after processing (check_and_reduce_values_size): {…} |
+| `TH138` | 834 | info | {…} events have been processed... |
+| `TH141` | 846 | info | Tasks recovery detected. Got {…} tasks with filters: {…}. |
+| `TH142` | 880 | debug | Event after processing (check_and_reduce_values_size): {…} |
+| `TH139` | 887 | debug | TheHive - Tasks: … |
+| `TH140` | 906 | info | Retrieving observables count... |
+| `TH143` | 908 | info | Got {…} observables. Estimated time for processing all events: less than {…} … |
+| `TH145` | 984 | debug | Event after processing (check_and_reduce_values_size): {…} |
+| `TH146` | 990 | info | {…} events have been processed... |
+| `TH170` | 1009 | info | Retrieving audit logs count... |
+| `TH171` | 1011 | info | Got {…} audit logs. Estimated time for processing all events: less than {…} s… |
+| `TH175` | 1076 | debug | Event after processing (check_and_reduce_values_size): {…} |
+| `TH176` | 1082 | info | {…} events have been processed... |
+| `TH190` | 1101 | info | Retrieving tasks... |
+| `TH191` | 1110 | info | Got {…} tasks. |
 
 ## `thehive_alerts_cases.py`
 
@@ -717,6 +729,6 @@ explains the manual purge of `etc/apps/learned/local/props.conf`. Fall back to
 | `2` | 110 | info | Successfully indexed {…} timeline events. |
 | `ERR` | 113 | error | Error during timeline collection: {…} |
 
-*363 call sites.*
+*364 call sites.*
 
 <!-- INVENTAIRE:FIN -->
