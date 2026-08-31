@@ -140,9 +140,20 @@ Never tried on a real Splunk, and three edges are known: a **whitespace-only**
 entry, a value injected through the **URL or a drilldown**, and an **expired**
 SID. Test all three SID shapes: numeric, `scheduler__…`, `subsearch_…`.
 
-## D. Not implemented, and needing an instance anyway
+### C4 — The KV store lookup, populated and readable (#19)
 
-### D1 — The KV store lookup (#19)
+⚠️ **This entry used to say "not written" — it is, since commit `93ce96d`.**
+Re-measured 2026-08-30 against the installed 5.0.0 package rather than
+trusting this file: `[kv_thehive_datatypes]` is in `collections.conf`,
+`transforms.conf` points `thehive_datatypes` at it, and
+`modalert_thehive_common.py` reads/writes it with the non-destructive
+refresh and CSV-seed migration the ticket asked for. **Remeasure before
+acting on a checkbox, including one about your own past work.**
 
-Decided, planned in the ticket, not written: KV store access goes through
-Splunk's REST API, so none of it would be verifiable here.
+What is left is genuinely instance-only: confirm the collection is
+populated and readable at `storage/collections/data/kv_thehive_datatypes`.
+⚠️ On the 2026-08-30 attempt this returned `HTTP 000` — `splunkd.log` showed
+the KV store shutting down, and Splunk 10.2.1 warns that **KV store server
+version 4.2 is unsupported since 9.4**. That is an infrastructure state to
+clear (restart, or an upgrade past 4.2), not a defect in this code; retry
+once the KV store service reports healthy.
