@@ -31,6 +31,19 @@ __maintainer__ = "Alexandre Demeyer"
 __email__ = "letmer00t@gmail.com"
 
 
+def _resolve_case_ids(thehive, target_ids, cache):
+    """Case number -> internal id, memoised in `cache` for this execution.
+
+    The same case number repeated across rows must not cost one TheHive
+    search per row (Gitea #32)."""
+    resolved = []
+    for tid in target_ids:
+        if tid not in cache:
+            cache[tid] = thehive.resolve_case_id(tid)
+        resolved.append(cache[tid])
+    return resolved
+
+
 def process_event(helper, *args, **kwargs):
 
     globals.initialize_globals()
@@ -55,22 +68,23 @@ def process_event(helper, *args, **kwargs):
     alert_args["description_results_enable"] = False
     alert_args["description_results_keep_observable"] = True
 
-    # Parse events to get observables
-    # We call parse_events which will return observables found in the rows
-    parsed_events = parse_events(helper, thehive, alert_args)
+    # ⚠️ parse_events groups rows by sourceRef, but this action needs its
+    # observables row by row (each row carries its own target ID(s)). A batch
+    # call over ALL rows used to be made here and its result thrown away --
+    # a full pass (row normalisation, TTP resolution, dispatch_row) for
+    # nothing, on top of the per-row call below that does the real work.
+    # Removing it also means `helper.get_events()` -- which opens the gzipped
+    # results file and never closes the previous handle -- is now called
+    # exactly once for real (see `events = helper.get_events()` right below);
+    # the per-row calls inside the loop are served by the monkeypatched
+    # `lambda: [row]`, not by a second file open.
+    #
+    # Cache case-number -> internal-id resolutions: the same case number
+    # repeated across rows would otherwise cost one TheHive search per row.
+    case_id_cache = {}
 
     # Iterate over each search result
     events = helper.get_events()
-    # Since parse_events might group events by sourceRef, but here we want to process row by row
-    # and match them with their specific target IDs.
-    
-    # Actually, parse_events returns a dict of sourceRef -> alert_dict
-    # We need to map back which row corresponds to which sourceRef.
-    # But wait, if we have multiple rows, parse_events might have grouped them.
-    # For "Add observables", we usually want to process each row independently if the target ID is in the row.
-    
-    # Let's re-read the rows and for each row, find its observables from the parsed_events.
-    # To do this safely, we can call parse_events for each row separately.
 
     for row in events:
         # Resolve target IDs
@@ -87,7 +101,7 @@ def process_event(helper, *args, **kwargs):
 
         # Resolve case IDs if needed
         if target_type == "case":
-            target_ids = [thehive.resolve_case_id(tid) for tid in target_ids]
+            target_ids = _resolve_case_ids(thehive, target_ids, case_id_cache)
 
         # Resolve metadata
         tags_raw = helper.get_param("tags_field")

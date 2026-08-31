@@ -159,12 +159,25 @@ class Cortex(Api):
             self.logger_file.warn(id="C35",message="UNKNOWN DATA TYPE - This data type ("+dataType+") is not in the known list, letting Cortex decide")
 
         analyzersObj = []
+        # ⚠️ addJob runs once PER ROW (see cortexrun's helper), and the analyzer
+        # list is invariant across rows within one execution -- resolving it
+        # again for every row is 2*N*A avoidable API calls for N rows and A
+        # named analyzers. Cached on the instance, not module-wide: its
+        # lifetime already matches one execution (one Cortex connection per
+        # search). `object.__new__`-built instances (see the unit tests) never
+        # ran __init__, so the cache is created lazily here rather than there.
+        by_type_cache = self.__dict__.setdefault("_analyzers_by_type_cache", {})
+        by_name_cache = self.__dict__.setdefault("_analyzers_by_name_cache", {})
         # If all analyzers are chosen, we recover them using the datatype
         if analyzers == "all":
-            analyzersObj = self.analyzers.get_by_type(dataType)
+            if dataType not in by_type_cache:
+                by_type_cache[dataType] = self.analyzers.get_by_type(dataType)
+            analyzersObj = by_type_cache[dataType]
         else:
             for analyzer in analyzers.replace(" ","").split(";"):
-                a = self.analyzers.get_by_name(analyzer)
+                if analyzer not in by_name_cache:
+                    by_name_cache[analyzer] = self.analyzers.get_by_name(analyzer)
+                a = by_name_cache[analyzer]
                 if a is not None:
                     analyzersObj.append(a)
                 else:

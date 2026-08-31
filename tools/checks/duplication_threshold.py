@@ -34,11 +34,16 @@ HELPERS = RACINE / "TA-thehive-cortex" / "package" / "bin" / "ta_thehive_cortex"
 #: measurement, so it goes red on a REGROWTH and only on that. Setting it at
 #: the ambition would make the check red from birth, and a check that is red
 #: from birth gets switched off.
+#: ⚠️ Bumped 148 -> 149 by Gitea #32: both helpers now `continue` past a
+#: creation response with no `_id`, since everything below that point reads
+#: `new_case["_id"]`/`new_alert["_id"]` and would otherwise KeyError. One
+#: `continue` line, unavoidable in both, deliberately not chased away by
+#: rewording -- see the commit for the measurement.
 PAIRES = [
     (
         "modalert_thehive_create_a_new_case_helper.py",
         "modalert_thehive_create_a_new_alert_helper.py",
-        148,
+        149,
         120,
     ),
 ]

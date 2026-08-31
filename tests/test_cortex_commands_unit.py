@@ -137,5 +137,58 @@ class TestCortexAddJobAttributes(unittest.TestCase):
         self.assertEqual(1, len(instance.getJobs()))
 
 
+class TestCortexAddJobAnalyzerCaching(unittest.TestCase):
+    """Gitea #32: resolving analyzers is invariant across rows in one run.
+
+    `cortexrun` calls `addJob()` once per search result. Before this, a named
+    analyzer was re-resolved by name on every single row (2*N*A avoidable
+    calls for N rows and A analyzers), and "all" was re-resolved by type on
+    every row sharing the same dataType. Both are now memoised on the
+    instance -- its lifetime already matches one execution.
+
+    Addresses are the RFC 5737 documentation range, as in
+    test_cortex_jobs_unit.py.
+    """
+
+    def _cortex_sans_reseau(self):
+        instance = object.__new__(cortex_module.Cortex)
+        instance.logger_file = MagicMock()
+        instance.analyzers = MagicMock()
+        instance.analyzers.get_by_name.return_value = MagicMock(id="a1", name="VirusTotal")
+        instance.analyzers.get_by_type.return_value = [MagicMock(id="a2", name="Abuse_Finder")]
+        instance._Cortex__jobs = []
+        instance._Cortex__sid = "sid"
+        return instance
+
+    def test_named_analyzer_is_resolved_once_across_rows(self):
+        instance = self._cortex_sans_reseau()
+
+        instance.addJob(data="192.0.2.10", dataType="ip", analyzers="VirusTotal")
+        instance.addJob(data="192.0.2.11", dataType="ip", analyzers="VirusTotal")
+        instance.addJob(data="evil.example", dataType="domain", analyzers="VirusTotal")
+
+        instance.analyzers.get_by_name.assert_called_once_with("VirusTotal")
+        self.assertEqual(3, len(instance.getJobs()))
+
+    def test_all_analyzers_resolved_once_per_datatype(self):
+        instance = self._cortex_sans_reseau()
+
+        instance.addJob(data="192.0.2.10", dataType="ip", analyzers="all")
+        instance.addJob(data="192.0.2.11", dataType="ip", analyzers="all")
+        instance.addJob(data="evil.example", dataType="domain", analyzers="all")
+
+        instance.analyzers.get_by_type.assert_any_call("ip")
+        instance.analyzers.get_by_type.assert_any_call("domain")
+        self.assertEqual(2, instance.analyzers.get_by_type.call_count)
+
+    def test_an_unresolved_analyzer_still_exits_every_time_it_recurs(self):
+        """Caching a failure must not turn a hard stop into a silent skip."""
+        instance = self._cortex_sans_reseau()
+        instance.analyzers.get_by_name.return_value = None
+
+        with self.assertRaises(SystemExit):
+            instance.addJob(data="192.0.2.10", dataType="ip", analyzers="Ghost")
+
+
 if __name__ == '__main__':
     unittest.main()

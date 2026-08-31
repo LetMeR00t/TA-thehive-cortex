@@ -109,9 +109,12 @@ def common_args(helper, logger_file):
 def prepare_instances(helper, acronym):
     """Set the log level and open one TheHive connection per configured id.
 
-    ⚠️ These ~20 lines opened all six alert actions, identical except for the
-    four-letter acronym woven into two log prefixes. Six copies of a preamble
-    is six places to forget when the bootstrap changes.
+    ⚠️ Only the two creator actions (case, alert) call this. The other three
+    TheHive actions (run_function, add_observables, add_timeline_event) open
+    their instance through `create_thehive_instance` directly and repeat the
+    ~4 lines of bootstrap this function wraps (log level, `globals.
+    initialize_globals()`, splitting `thehive_instance_id`) inline instead --
+    a leftover from #22 flagged again in #32, not yet folded in.
 
     ⚠️ `create_thehive_instance` lives in `thehive`, NOT in
     `modalert_thehive_common`. Getting that wrong is an ImportError raised on

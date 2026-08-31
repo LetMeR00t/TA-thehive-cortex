@@ -145,6 +145,9 @@ def create_alert(
                         thehive.session.hive_url, str(alert), str(new_alert)
                     ),
                 )
+                # An id-less response means every downstream call this loop
+                # makes would KeyError on it; move on to what comes next.
+                continue
 
             # Processing TTPs if any -- shared with the case
             # helper, which carried the same ~35 lines and the same ambiguous

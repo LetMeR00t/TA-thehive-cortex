@@ -127,6 +127,8 @@ def create_case(
                         thehive.session.hive_url, str(case), str(new_case)
                     ),
                 )
+                # ⚠️ #32: nothing past this point can be read without an id.
+                continue
 
             # Processing Observables if any
             if "observables" in cases[srcRef]:

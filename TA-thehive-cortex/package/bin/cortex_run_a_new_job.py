@@ -26,30 +26,15 @@ class AlertActionWorkercortex_run_a_new_job(ModularAlertBase):
 
     def validate_params(self):
 
-        if not self.get_global_setting("cortex_max_jobs"):
-            self.log_error('cortex_max_jobs is a mandatory setup parameter, but its value is None.')
-            return False
-
-        if not self.get_global_setting("cortex_sort_jobs"):
-            self.log_error('cortex_sort_jobs is a mandatory setup parameter, but its value is None.')
-            return False
-
-        if not self.get_global_setting("thehive_max_cases"):
-            self.log_error('thehive_max_cases is a mandatory setup parameter, but its value is None.')
-            return False
-
-        if not self.get_global_setting("thehive_sort_cases"):
-            self.log_error('thehive_sort_cases is a mandatory setup parameter, but its value is None.')
-            return False
-
-        if not self.get_global_setting("thehive_max_alerts"):
-            self.log_error('thehive_max_alerts is a mandatory setup parameter, but its value is None.')
-            return False
-
-        if not self.get_global_setting("thehive_sort_alerts"):
-            self.log_error('thehive_sort_alerts is a mandatory setup parameter, but its value is None.')
-            return False
-
+        # ⚠️ cortex_max_jobs/cortex_sort_jobs and thehive_max_cases/
+        # thehive_sort_cases/thehive_max_alerts/thehive_sort_alerts used to be
+        # required here. None of the six is read by this action's own code
+        # path (submitting one job): they size and sort the JOB/CASE/ALERT
+        # LISTING dashboards, and `common.Settings` already falls back to a
+        # working default (100, "-createdAt", ...) when a global setting is
+        # absent -- see `getCortexJobsMax` and friends. Blocking job creation
+        # on a dashboard-only setting a user never touched was a false
+        # mandatory; see Gitea #32.
         if not self.get_param("cortex_instance_id"):
             self.log_error('cortex_instance_id is a mandatory parameter, but its value is None.')
             return False
