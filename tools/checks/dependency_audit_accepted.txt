@@ -1,0 +1,20 @@
+# Known vulnerabilities in what the .spl ships, accepted ON PURPOSE.
+#
+# One line per advisory: `<ID> <date accepted> <why it cannot be fixed>`.
+# tools/checks/dependency_audit.sh passes each ID to pip-audit as
+# --ignore-vuln; any advisory NOT listed here fails the check.
+#
+# ⚠️ An entry is a debt with a date, not a silence. Re-read the list whenever
+# a pin moves: the moment its blocker lifts, the entry must go.
+
+# urllib3 stays below 2 because splunktaucclib 8.2.0 requires it (see the
+# header of package/lib/requirements.txt). Every fix below lives in urllib3 2.x.
+PYSEC-2026-1999 2026-09-27 CVE-2025-50181 fixed in urllib3 2.5.0, blocked by splunktaucclib urllib3<2
+PYSEC-2026-1998 2026-09-27 CVE-2025-66418 fixed in urllib3 2.6.0, blocked by splunktaucclib urllib3<2
+PYSEC-2026-1994 2026-09-27 CVE-2025-66471 fixed in urllib3 2.6.0, blocked by splunktaucclib urllib3<2
+PYSEC-2026-1996 2026-09-27 CVE-2026-21441 fixed in urllib3 2.6.3, blocked by splunktaucclib urllib3<2
+PYSEC-2026-141  2026-09-27 CVE-2026-44431 fixed in urllib3 2.7.0, blocked by splunktaucclib urllib3<2
+
+# requests 2.33.0 declares Requires-Python >=3.10; the add-on targets 3.9, the
+# floor Splunk defaults to (same reason dependabot.yml excludes >=2.33).
+PYSEC-2026-2275 2026-09-27 CVE-2026-25645 fixed in requests 2.33.0, blocked by the Python 3.9 floor
