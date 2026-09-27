@@ -26,7 +26,7 @@ mocks = [
 ]
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from _isolation import mocks_temporaires  # noqa: E402
+from _isolation import temporary_mocks  # noqa: E402
 
 APP_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 BIN = os.path.join(APP_ROOT, 'TA-thehive-cortex', 'package', 'bin')
@@ -36,7 +36,7 @@ for p in (BIN,
     if p not in sys.path:
         sys.path.insert(0, p)
 
-with mocks_temporaires(mocks):
+with temporary_mocks(mocks):
     import common
 
 SEP = common.CRED_SEP
@@ -48,32 +48,32 @@ REALM = "__REST_CREDENTIAL__#TA-thehive-cortex#configs/conf-thehive_cortex_accou
 Entry = namedtuple("Entry", "realm username clear_password")
 
 
-def entry(account, value, realm=REALM, champ="api_key"):
-    return Entry(realm, f"{account}{SEP}{champ}", value)
+def entry(account, value, realm=REALM, field="api_key"):
+    return Entry(realm, f"{account}{SEP}{field}", value)
 
 
 class UccUsernameSplitting(unittest.TestCase):
 
-    def test_le_separateur_ucc_est_retire(self):
+    def test_the_ucc_separator_is_removed(self):
         self.assertEqual(
             common.account_from_ucc_username(f"local{SEP}api_key"), "local")
 
-    def test_un_nom_sans_separateur_est_rendu_tel_quel(self):
+    def test_a_name_without_separator_is_returned_unchanged(self):
         self.assertEqual(common.account_from_ucc_username("local"), "local")
 
 
 class PasswordSelection(unittest.TestCase):
 
-    def test_une_seule_entree_brute(self):
+    def test_a_single_raw_entry(self):
         passwords, discarded = common.pick_password([entry("local", "abcdef")])
         self.assertEqual(passwords, {"local": "abcdef"})
         self.assertEqual(discarded, [])
 
-    def test_un_objet_json_est_deballe(self):
+    def test_a_json_object_is_unwrapped(self):
         passwords, _ = common.pick_password([entry("local", '{"password": "abcdef"}')])
         self.assertEqual(passwords, {"local": "abcdef"})
 
-    def test_un_json_sans_membre_password_garde_le_texte_brut(self):
+    def test_a_json_without_password_member_keeps_the_raw_text(self):
         # `.get("password", raw)` returns the raw text, which equals `raw`,
         # so the entry is NOT considered JSON-sourced. That equality is the
         # whole marker of provenance.
@@ -81,28 +81,28 @@ class PasswordSelection(unittest.TestCase):
         passwords, _ = common.pick_password([entry("local", raw)])
         self.assertEqual(passwords, {"local": raw})
 
-    def test_un_json_qui_n_est_pas_un_objet_reste_brut(self):
+    def test_a_json_that_is_not_an_object_stays_raw(self):
         passwords, _ = common.pick_password([entry("local", '["abcdef"]')])
         self.assertEqual(passwords, {"local": '["abcdef"]'})
 
-    def test_un_texte_non_json_ne_leve_rien(self):
+    def test_a_non_json_text_raises_nothing(self):
         passwords, _ = common.pick_password([entry("local", "pas du json")])
         self.assertEqual(passwords, {"local": "pas du json"})
 
-    def test_un_realm_etranger_est_ignore(self):
+    def test_a_foreign_realm_is_ignored(self):
         passwords, _ = common.pick_password(
             [entry("local", "abcdef", realm="__REST_CREDENTIAL__#autre-app#x")])
         self.assertEqual(passwords, {})
 
-    def test_un_realm_vide_est_ignore(self):
+    def test_an_empty_realm_is_ignored(self):
         passwords, _ = common.pick_password([entry("local", "abcdef", realm="")])
         self.assertEqual(passwords, {})
 
-    def test_un_realm_absent_est_ignore(self):
+    def test_an_absent_realm_is_ignored(self):
         passwords, _ = common.pick_password([Entry(None, "local", "abcdef")])
         self.assertEqual(passwords, {})
 
-    def test_les_valeurs_masquees_sont_ignorees(self):
+    def test_masked_values_are_ignored(self):
         for mask in common.MASQUES:
             with self.subTest(mask=mask):
                 passwords, discarded = common.pick_password([entry("local", mask)])
@@ -110,12 +110,12 @@ class PasswordSelection(unittest.TestCase):
                 # A mask is not garbage: Splunk simply refused to show it.
                 self.assertEqual(discarded, [])
 
-    def test_une_valeur_contenant_le_separateur_est_du_rebut(self):
+    def test_a_value_containing_the_separator_is_junk(self):
         passwords, discarded = common.pick_password([entry("local", f"aa{SEP}bb")])
         self.assertEqual(passwords, {})
         self.assertEqual(discarded, ["local"])
 
-    def test_un_nom_de_compte_sans_separateur_fonctionne(self):
+    def test_an_account_name_without_separator_works(self):
         passwords, _ = common.pick_password([Entry(REALM, "local", "abcdef")])
         self.assertEqual(passwords, {"local": "abcdef"})
 
@@ -123,44 +123,44 @@ class PasswordSelection(unittest.TestCase):
 class Arbitration(unittest.TestCase):
     """Two entries for the same account. Which one wins, and why."""
 
-    def test_le_json_bat_le_brut_meme_plus_court(self):
+    def test_json_beats_raw_even_when_shorter(self):
         passwords, _ = common.pick_password([
             entry("local", "une-tres-longue-value-brute"),
-            entry("local", '{"password": "court"}', champ="password"),
+            entry("local", '{"password": "court"}', field="password"),
         ])
         self.assertEqual(passwords, {"local": "court"})
 
-    def test_le_json_gagne_aussi_quand_il_arrive_en_premier(self):
+    def test_json_also_wins_when_it_comes_first(self):
         # ⚠️ Order matters in a fold. A rule that only holds in one direction
         # is a rule that depends on how Splunk happens to enumerate.
         passwords, _ = common.pick_password([
-            entry("local", '{"password": "court"}', champ="password"),
+            entry("local", '{"password": "court"}', field="password"),
             entry("local", "une-tres-longue-value-brute"),
         ])
         self.assertEqual(passwords, {"local": "court"})
 
-    def test_a_provenance_egale_la_plus_longue_gagne(self):
+    def test_on_equal_origin_the_longer_wins(self):
         passwords, _ = common.pick_password([
             entry("local", "court"),
             entry("local", "beaucoup-plus-longue"),
         ])
         self.assertEqual(passwords, {"local": "beaucoup-plus-longue"})
 
-    def test_a_provenance_egale_la_plus_courte_ne_supplante_pas(self):
+    def test_on_equal_origin_the_shorter_does_not_supersede(self):
         passwords, _ = common.pick_password([
             entry("local", "beaucoup-plus-longue"),
             entry("local", "court"),
         ])
         self.assertEqual(passwords, {"local": "beaucoup-plus-longue"})
 
-    def test_deux_json_a_longueur_egale_le_premier_reste(self):
+    def test_two_json_of_equal_length_the_first_stays(self):
         passwords, _ = common.pick_password([
             entry("local", '{"password": "aaaaaa"}'),
             entry("local", '{"password": "bbbbbb"}'),
         ])
         self.assertEqual(passwords, {"local": "aaaaaa"})
 
-    def test_les_comptes_sont_arbitres_separement(self):
+    def test_accounts_are_arbitrated_separately(self):
         passwords, _ = common.pick_password([
             entry("local", "aaaa"),
             entry("distant", '{"password": "bb"}'),
@@ -179,7 +179,7 @@ class AMalformedEntryCostsOnlyItself(unittest.TestCase):
     single S3_ERROR line mentioning an unrelated-looking type error.
     """
 
-    def test_un_mot_de_passe_non_textuel_est_ecarte_seul(self):
+    def test_a_non_text_password_is_discarded_alone(self):
         passwords, discarded = common.pick_password([
             entry("local", '{"password": 1234}'),
             entry("distant", "abcdef"),
@@ -187,7 +187,7 @@ class AMalformedEntryCostsOnlyItself(unittest.TestCase):
         self.assertEqual(passwords, {"distant": "abcdef"})
         self.assertEqual(discarded, ["local"])
 
-    def test_un_password_objet_est_ecarte_seul(self):
+    def test_an_object_password_is_discarded_alone(self):
         passwords, discarded = common.pick_password([
             entry("local", '{"password": {"k": "v"}}'),
             entry("distant", "abcdef"),
@@ -199,7 +199,7 @@ class AMalformedEntryCostsOnlyItself(unittest.TestCase):
 class TheFunctionLogsNothing(unittest.TestCase):
     """A value that must never reach a log file is never handed to a logger."""
 
-    def test_aucune_dependance_a_un_logger(self):
+    def test_no_dependency_on_a_logger(self):
         # The signature takes no logger, and the module's own logger is not
         # touched: the caller decides what to say about the accounts named in
         # `discarded` -- account NAMES, never values.

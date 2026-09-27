@@ -24,7 +24,7 @@ for p in (BIN, os.path.join(BIN, 'ta_thehive_cortex')):
         sys.path.insert(0, p)
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from _isolation import mocks_temporaires  # noqa: E402
+from _isolation import temporary_mocks  # noqa: E402
 
 import modalert_args  # noqa: E402
 from modalert_args import common_args, as_int, split_tags, event_timestamp, default_if_none, default_if_blank  # noqa: E402
@@ -39,12 +39,12 @@ class StubHelper:
         self.globals_ = globals_ or {}
         self.calls = []
 
-    def get_param(self, nom):
-        self.calls.append(nom)
-        return self.params.get(nom)
+    def get_param(self, name_):
+        self.calls.append(name_)
+        return self.params.get(name_)
 
-    def get_global_setting(self, nom):
-        return self.globals_.get(nom)
+    def get_global_setting(self, name_):
+        return self.globals_.get(name_)
 
 
 class RecordingLogger:
@@ -55,7 +55,7 @@ class RecordingLogger:
         self.rows.append((id, message))
 
 
-FORMULAIRE = {
+FORM = {
     "unique_id_field": "src", "case_template": "tmpl", "source": "es",
     "timestamp_field": "", "title": "Un titre", "description": "Une description",
     "tags": "a,b,a", "scope": "0", "severity": "3", "tlp": "1", "pap": "0",
@@ -66,18 +66,18 @@ FORMULAIRE = {
 
 class TheTwoDefaultingRules(unittest.TestCase):
 
-    def test_si_vide_remplace_la_chaine_vide(self):
+    def test_if_blank_replaces_the_empty_string(self):
         self.assertEqual(default_if_blank("", "defaut"), "defaut")
         self.assertEqual(default_if_blank(None, "defaut"), "defaut")
         self.assertEqual(default_if_blank("value", "defaut"), "value")
 
-    def test_si_absent_GARDE_la_chaine_vide(self):
+    def test_if_absent_KEEPS_the_empty_string(self):
         # ⚠️ The whole difference. A global setting deliberately left empty is
         # a value, not an absence.
         self.assertEqual(default_if_none("", "defaut"), "")
         self.assertEqual(default_if_none(None, "defaut"), "defaut")
 
-    def test_entier_ne_convertit_que_ce_qui_existe(self):
+    def test_integer_only_converts_what_exists(self):
         self.assertEqual(as_int("3", 2), 3)
         self.assertEqual(as_int(None, 2), 2)
         # ⚠️ "0" is falsy as a string but is NOT absent: it must survive.
@@ -86,25 +86,25 @@ class TheTwoDefaultingRules(unittest.TestCase):
 
 class Tags(unittest.TestCase):
 
-    def test_les_doublons_partent_et_l_ordre_reste(self):
+    def test_duplicates_go_and_the_order_stays(self):
         self.assertEqual(split_tags("b,a,b,c"), ["b", "a", "c"])
 
-    def test_une_valeur_vide_donne_une_liste_vide(self):
+    def test_an_empty_value_gives_an_empty_list(self):
         self.assertEqual(split_tags(""), [])
         self.assertEqual(split_tags(None), [])
 
 
 class EventTimestamp(unittest.TestCase):
 
-    def test_sans_champ_c_est_maintenant_en_millisecondes(self):
-        avant = int(time.time() * 1000)
+    def test_without_a_field_it_is_now_in_milliseconds(self):
+        before = int(time.time() * 1000)
         value = event_timestamp("")
-        self.assertGreaterEqual(value, avant)
+        self.assertGreaterEqual(value, before)
 
-    def test_une_epoque_a_dix_chiffres_passe_en_millisecondes(self):
+    def test_a_ten_digit_epoch_becomes_milliseconds(self):
         self.assertEqual(event_timestamp("1700000000"), 1700000000000)
 
-    def test_tout_le_reste_ressort_TEL_QUEL(self):
+    def test_everything_else_comes_out_UNCHANGED(self):
         # ⚠️ Preserved on purpose, rough edge included: a date like
         # "2026-01-01" comes back as a string and blows up in whoever converts
         # it. Fixing that belongs to the parse_events work; this module must
@@ -119,12 +119,12 @@ class TheFullAssembly(unittest.TestCase):
         self.recorder = RecordingLogger()
 
     def build(self, **replacements):
-        params = dict(FORMULAIRE)
+        params = dict(FORM)
         params.update(replacements)
         self.helper = StubHelper(params, {})
         return common_args(self.helper, self.recorder)
 
-    def test_les_champs_du_formulaire(self):
+    def test_the_form_fields(self):
         args = self.build()
         self.assertEqual(args["unique_id_field"], "src")
         self.assertEqual(args["caseTemplate"], "tmpl")
@@ -137,7 +137,7 @@ class TheFullAssembly(unittest.TestCase):
         self.assertEqual(args["attach_results"], 2)
         self.assertEqual(args["attach_format"], 1)
 
-    def test_les_defauts_quand_le_formulaire_est_vide(self):
+    def test_the_defaults_when_the_form_is_empty(self):
         args = self.build(unique_id_field="", case_template="", source="",
                                title="", description="", tags="",
                                severity=None, tlp=None, pap=None)
@@ -149,38 +149,38 @@ class TheFullAssembly(unittest.TestCase):
         self.assertEqual(args["tags"], [])
         self.assertEqual((args["severity"], args["tlp"], args["pap"]), (2, 2, 2))
 
-    def test_scope_est_VRAI_quand_le_champ_vaut_zero(self):
+    def test_scope_is_TRUE_when_the_field_is_zero(self):
         # Inverted on purpose in the form, and easy to get backwards.
         self.assertTrue(self.build(scope="0")["scope"])
         self.assertFalse(self.build(scope="1")["scope"])
 
-    def test_les_antislashs_sont_convertis_quand_c_est_active(self):
+    def test_backslashes_are_converted_when_enabled(self):
         args = self.build(description="ligne1\\nligne2")
         self.assertEqual(args["description"], "ligne1\nligne2")
 
-    def test_ils_ne_le_sont_pas_quand_c_est_desactive(self):
+    def test_they_are_not_when_it_is_disabled(self):
         self.helper = StubHelper(
-            dict(FORMULAIRE, description="ligne1\\nligne2"),
+            dict(FORM, description="ligne1\\nligne2"),
             {"splunk_sanitize_backslashes": "DISABLED"})
         args = common_args(self.helper, self.recorder)
         self.assertEqual(args["description"], "ligne1\\nligne2")
 
-    def test_les_reglages_globaux_ont_leurs_defauts(self):
+    def test_global_settings_have_their_defaults(self):
         args = self.build()
         self.assertEqual(args["splunk_sanitize_backslashes"], "ENABLED")
         self.assertEqual(args["splunk_es_alerts_index"], "summary")
 
-    def test_les_deux_drapeaux_booleens(self):
+    def test_the_two_boolean_flags(self):
         args = self.build(description_results_enable="1",
                                description_results_keep_observable="1")
         self.assertTrue(args["description_results_enable"])
         self.assertTrue(args["description_results_keep_observable"])
 
-    def test_le_scope_est_trace(self):
+    def test_the_scope_is_traced(self):
         self.build()
         self.assertEqual([id for id, _ in self.recorder.rows], ["50"])
 
-    def test_chaque_parametre_n_est_lu_qu_UNE_fois(self):
+    def test_each_parameter_is_read_ONCE(self):
         # ⚠️ The duplicated pattern called get_param TWICE per field, about
         # twenty-five times over. Not a correctness bug -- a cost nobody chose.
         self.build()
@@ -192,30 +192,30 @@ class TheFullAssembly(unittest.TestCase):
 
 class BothCallersShareTheAssembly(unittest.TestCase):
 
-    def test_aucun_helper_ne_reconstruit_les_arguments_communs(self):
-        for nom in ("modalert_thehive_create_a_new_case_helper.py",
+    def test_no_helper_rebuilds_the_common_arguments(self):
+        for name_ in ("modalert_thehive_create_a_new_case_helper.py",
                     "modalert_thehive_create_a_new_alert_helper.py"):
-            with open(os.path.join(BIN, "ta_thehive_cortex", nom),
+            with open(os.path.join(BIN, "ta_thehive_cortex", name_),
                       encoding="utf-8") as f:
                 source = f.read()
-            with self.subTest(helper=nom):
+            with self.subTest(helper=name_):
                 self.assertIn("common_args(helper, logger_file)", source)
                 self.assertNotIn('alert_args["severity"]', source)
                 self.assertNotIn('alert_args["tlp"]', source)
 
 
 class InstanceBootstrap(unittest.TestCase):
-    """⚠️ La fonction que 123 tests verts n'exécutaient pas.
+    """⚠️ The function that 123 green tests never executed.
 
-    `prepare_instances` portait `from modalert_thehive_common import
-    create_thehive_instance` — la fonction vit dans `thehive`. C'est un
-    ImportError sur la première ligne utile des DEUX actions de création, et la
-    suite ne pouvait pas le voir : aucun test n'entrait dans cette fonction.
+    `prepare_instances` carried `from modalert_thehive_common import
+    create_thehive_instance` -- the function lives in `thehive`. That is an
+    ImportError on the first useful line of BOTH creation actions, and the
+    suite could not see it: no test ever entered this function.
 
-    Un test prouve les chemins qu'il PARCOURT. Celui-ci parcourt l'import.
+    A test proves the paths it WALKS. This one walks the import.
     """
 
-    def test_la_fonction_s_execute_vraiment(self):
+    def test_the_function_really_runs(self):
         from unittest.mock import MagicMock
 
         helper = StubHelper({"thehive_instance_id": "local,distant"})
@@ -234,11 +234,11 @@ class InstanceBootstrap(unittest.TestCase):
             built.append((instance_id, acronym))
             return ("thehive", "conf", "defaults", "logger", instance_id)
 
-        # ⚠️ On remplace les deux modules que la fonction importe PARESSEUSEMENT,
-        # donc l'import a bien lieu — c'est lui qu'on teste.
+        # ⚠️ Replace the two modules the function imports LAZILY, so the
+        # import really happens -- the import is what is under test.
         fake_thehive = MagicMock()
         fake_thehive.create_thehive_instance = fake_factory
-        with mocks_temporaires(["globals", "thehive"],
+        with temporary_mocks(["globals", "thehive"],
                                {"globals": fake_globals, "thehive": fake_thehive}):
             instances = modalert_args.prepare_instances(helper, acronym="THCC")
 
@@ -246,7 +246,7 @@ class InstanceBootstrap(unittest.TestCase):
         self.assertEqual(built, [("local", "THCC"), ("distant", "THCC")])
         fake_globals.initialize_globals.assert_called_once()
 
-    def test_l_acronyme_est_tisse_dans_les_deux_prefixes(self):
+    def test_the_acronym_is_woven_into_both_prefixes(self):
         from unittest.mock import MagicMock
 
         traces = []
@@ -261,7 +261,7 @@ class InstanceBootstrap(unittest.TestCase):
 
         fake_thehive = MagicMock()
         fake_thehive.create_thehive_instance = lambda **k: ("t", "c", "d", "l", "i")
-        with mocks_temporaires(["globals", "thehive"],
+        with temporary_mocks(["globals", "thehive"],
                                {"globals": MagicMock(), "thehive": fake_thehive}):
             modalert_args.prepare_instances(helper, acronym="THCA")
 

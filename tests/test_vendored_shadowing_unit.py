@@ -31,17 +31,17 @@ LIBS = os.path.join(APP_ROOT, 'TA-thehive-cortex', 'package', 'bin',
                     'ta_thehive_cortex', 'libs')
 
 
-class TestSupplantationDesLibsVendorisees(unittest.TestCase):
+class TestVendoredLibsShadowing(unittest.TestCase):
 
-    def _autre_add_on(self, racine, module, contenu):
+    def _other_add_on(self, root, module, content):
         """Simulate a neighbouring add-on shipping the same package name."""
-        paquet = os.path.join(racine, "cortex4py")
-        os.makedirs(paquet, exist_ok=True)
-        with open(os.path.join(paquet, module), "w", encoding="utf-8") as fh:
-            fh.write(contenu)
-        return racine
+        package = os.path.join(root, "cortex4py")
+        os.makedirs(package, exist_ok=True)
+        with open(os.path.join(package, module), "w", encoding="utf-8") as fh:
+            fh.write(content)
+        return root
 
-    def _resoudre(self, chemins, module):
+    def _resolve(self, file_paths, module):
         """Where would Python LOAD this module from?
 
         ⚠️ `find_spec` resolves without EXECUTING. Importing for real would drag
@@ -57,25 +57,25 @@ class TestSupplantationDesLibsVendorisees(unittest.TestCase):
             spec = importlib.util.find_spec({module!r})
             print(spec.origin if spec else "INTROUVABLE")
         """)
-        env = dict(os.environ, PYTHONPATH=os.pathsep.join(chemins))
-        rendu = subprocess.run([sys.executable, "-c", script],
+        env = dict(os.environ, PYTHONPATH=os.pathsep.join(file_paths))
+        returned = subprocess.run([sys.executable, "-c", script],
                                capture_output=True, text=True, env=env)
-        return rendu.stdout.strip(), rendu.stderr.strip()
+        return returned.stdout.strip(), returned.stderr.strip()
 
-    def test_cortex4py_a_bien_son_init(self):
+    def test_cortex4py_does_have_its_init(self):
         """The whole defence is one empty file; assert it exists before the rest.
 
         Checked separately so a failure says WHICH thing broke: the file being
         gone and the shadowing succeeding are the same symptom otherwise.
         """
-        chemin = os.path.join(LIBS, "cortex4py", "__init__.py")
-        self.assertTrue(os.path.isfile(chemin),
+        file_path = os.path.join(LIBS, "cortex4py", "__init__.py")
+        self.assertTrue(os.path.isfile(file_path),
                         "cortex4py/__init__.py is missing: the package falls back to a "
                         "namespace package and another add-on can shadow its root modules")
 
-    def test_notre_api_gagne_contre_un_homonyme(self):
+    def test_our_api_wins_against_a_namesake(self):
         with tempfile.TemporaryDirectory() as tmp:
-            intrus = self._autre_add_on(
+            intruder = self._other_add_on(
                 tmp, "api.py",
                 "ORIGINE = 'un autre add-on'\n"
                 "class Api:\n"
@@ -83,13 +83,13 @@ class TestSupplantationDesLibsVendorisees(unittest.TestCase):
                 "        raise RuntimeError('mauvaise implementation')\n",
             )
             # The intruder FIRST on the path: the least favourable order.
-            sortie, erreur = self._resoudre([intrus, LIBS], "cortex4py.api")
-            self.assertEqual("", erreur, f"import failed: {erreur}")
-            self.assertIn(LIBS, sortie,
-                          f"cortex4py.api was loaded from the other add-on ({sortie}): "
+            output, error_output = self._resolve([intruder, LIBS], "cortex4py.api")
+            self.assertEqual("", error_output, f"import failed: {error_output}")
+            self.assertIn(LIBS, output,
+                          f"cortex4py.api was loaded from the other add-on ({output}): "
                           f"the vendored copy was shadowed")
 
-    def test_les_sous_paquets_etaient_deja_proteges(self):
+    def test_the_subpackages_were_already_protected(self):
         """Documents WHY the first attempt to demonstrate this failed.
 
         `controllers/` has its own `__init__.py`, so it is a regular package and
@@ -97,13 +97,13 @@ class TestSupplantationDesLibsVendorisees(unittest.TestCase):
         made the real hole look absent at first.
         """
         with tempfile.TemporaryDirectory() as tmp:
-            paquet = os.path.join(tmp, "cortex4py", "controllers")
-            os.makedirs(paquet)
-            with open(os.path.join(paquet, "jobs.py"), "w", encoding="utf-8") as fh:
+            package = os.path.join(tmp, "cortex4py", "controllers")
+            os.makedirs(package)
+            with open(os.path.join(package, "jobs.py"), "w", encoding="utf-8") as fh:
                 fh.write("ORIGINE = 'un autre add-on'\n")
-            sortie, erreur = self._resoudre([tmp, LIBS], "cortex4py.controllers.jobs")
-            self.assertEqual("", erreur, f"import failed: {erreur}")
-            self.assertIn(LIBS, sortie)
+            output, error_output = self._resolve([tmp, LIBS], "cortex4py.controllers.jobs")
+            self.assertEqual("", error_output, f"import failed: {error_output}")
+            self.assertIn(LIBS, output)
 
 
 if __name__ == '__main__':

@@ -27,7 +27,7 @@ mocks = [
 ]
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from _isolation import mocks_temporaires  # noqa: E402
+from _isolation import temporary_mocks  # noqa: E402
 
 APP_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 BIN = os.path.join(APP_ROOT, 'TA-thehive-cortex', 'package', 'bin')
@@ -37,8 +37,8 @@ for p in (BIN,
     if p not in sys.path:
         sys.path.insert(0, p)
 
-with mocks_temporaires(mocks):
-    import modalert_thehive_common as commun
+with temporary_mocks(mocks):
+    import modalert_thehive_common as common_module
 
 
 class Session:
@@ -65,24 +65,24 @@ class FakeTheHive:
 class ReadOncePerExecution(unittest.TestCase):
 
     def setUp(self):
-        commun.reset_per_execution_cache()
+        common_module.reset_per_execution_cache()
         self.datatype_calls = 0
-        self._vrai = commun.get_datatype_dict
+        self._real = common_module.get_datatype_dict
 
-        def compter(thehive):
+        def counting(thehive):
             self.datatype_calls += 1
             return {"ip": "ip"}
 
-        commun.get_datatype_dict = compter
+        common_module.get_datatype_dict = counting
 
     def tearDown(self):
-        commun.get_datatype_dict = self._vrai
-        commun.reset_per_execution_cache()
+        common_module.get_datatype_dict = self._real
+        common_module.reset_per_execution_cache()
 
     def test_a_thousand_rows_cost_one_read(self):
         thehive = FakeTheHive()
         for _ in range(1000):
-            commun.per_execution_invariants(thehive)
+            common_module.per_execution_invariants(thehive)
         self.assertEqual(thehive.custom_field.calls, 1)
         self.assertEqual(self.datatype_calls, 1)
 
@@ -90,39 +90,39 @@ class ReadOncePerExecution(unittest.TestCase):
         # ⚠️ A cache returning something else on the second call would be worse
         # than no cache: the defect would only appear from the second row on.
         thehive = FakeTheHive()
-        premier = commun.per_execution_invariants(thehive)
+        first_ = common_module.per_execution_invariants(thehive)
         for _ in range(10):
-            self.assertEqual(commun.per_execution_invariants(thehive), premier)
+            self.assertEqual(common_module.per_execution_invariants(thehive), first_)
 
     def test_two_instances_do_not_share_a_catalogue(self):
         # ⚠️ One search can address several TheHive instances in the same
         # execution, and they share neither custom fields nor datatypes.
         # Memoising without a key would mix them.
-        une = FakeTheHive("https://un.invalid")
-        deux = FakeTheHive("https://deux.invalid")
-        commun.per_execution_invariants(une)
-        commun.per_execution_invariants(deux)
-        self.assertEqual(une.custom_field.calls, 1)
-        self.assertEqual(deux.custom_field.calls, 1)
+        one = FakeTheHive("https://un.invalid")
+        two = FakeTheHive("https://deux.invalid")
+        common_module.per_execution_invariants(one)
+        common_module.per_execution_invariants(two)
+        self.assertEqual(one.custom_field.calls, 1)
+        self.assertEqual(two.custom_field.calls, 1)
         self.assertEqual(self.datatype_calls, 2)
 
     def test_the_cache_can_be_forgotten(self):
         thehive = FakeTheHive()
-        commun.per_execution_invariants(thehive)
-        commun.reset_per_execution_cache()
-        commun.per_execution_invariants(thehive)
+        common_module.per_execution_invariants(thehive)
+        common_module.reset_per_execution_cache()
+        common_module.per_execution_invariants(thehive)
         self.assertEqual(thehive.custom_field.calls, 2)
 
 
 class TheCallSiteUsesIt(unittest.TestCase):
 
     def test_parse_events_no_longer_reads_them_itself(self):
-        chemin = os.path.join(BIN, "ta_thehive_cortex", "modalert_thehive_common.py")
-        with open(chemin, encoding="utf-8") as f:
+        file_path = os.path.join(BIN, "ta_thehive_cortex", "modalert_thehive_common.py")
+        with open(file_path, encoding="utf-8") as f:
             source = f.read()
-        corps = source[source.index("def parse_events"):]
-        self.assertIn("per_execution_invariants(thehive)", corps)
-        self.assertNotIn("thehive.custom_field.list()", corps)
+        body = source[source.index("def parse_events"):]
+        self.assertIn("per_execution_invariants(thehive)", body)
+        self.assertNotIn("thehive.custom_field.list()", body)
 
 
 if __name__ == "__main__":

@@ -15,7 +15,7 @@ import unittest
 from unittest.mock import MagicMock, patch
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from _isolation import mocks_temporaires  # noqa: E402
+from _isolation import temporary_mocks  # noqa: E402
 
 APP_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 BIN = os.path.join(APP_ROOT, "TA-thehive-cortex", "package", "bin")
@@ -30,7 +30,7 @@ MOCKS = [
     "requests.auth", "urllib3",
 ]
 
-with mocks_temporaires(MOCKS):
+with temporary_mocks(MOCKS):
     import thehive
     from thehive4py.errors import TheHiveError
 
@@ -58,7 +58,7 @@ class TestAuthenticationRefusalNamesTheMode(unittest.TestCase):
             api_self.user = MagicMock()
             api_self.user.get_current.side_effect = error
 
-        with patch.object(thehive.TheHiveApi, "__init__", fake_api_init), \
+        with patch.object(thehive.TheHiveApi, "__init__", fake_api_init),\
                 patch.object(thehive, "Utils", MagicMock()):
             with self.assertRaises(SystemExit) as raised:
                 thehive.TheHive4Splunk(
@@ -124,7 +124,7 @@ class TestUnreadableAnswerLogsNoCredential(unittest.TestCase):
             api_self.session = MagicMock()
             api_self.session.headers = {"Authorization": f"Bearer {key}", "User-Agent": "x"}
 
-        with patch.object(thehive.TheHiveApi, "__init__", fake_api_init), \
+        with patch.object(thehive.TheHiveApi, "__init__", fake_api_init),\
                 patch.object(thehive, "Utils", MagicMock()):
             thehive.TheHive4Splunk(
                 url="https://thehive.invalid", apiKey=key, verify=True,

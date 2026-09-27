@@ -26,12 +26,12 @@ from unittest.mock import MagicMock
 #: to load on the PC while staying green on the pod. This suite runs on both.
 #: `chmod 000` is also meaningless on Windows: the file stays readable, so the
 #: case this test needs simply cannot be built there.
-PEUT_RENDRE_ILLISIBLE = hasattr(os, "geteuid") and os.geteuid() != 0
+CAN_MAKE_UNREADABLE = hasattr(os, "geteuid") and os.geteuid() != 0
 
 mocks = ['splunk', 'splunk.Intersplunk', 'splunklib', 'splunklib.client']
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from _isolation import mocks_temporaires  # noqa: E402
+from _isolation import temporary_mocks  # noqa: E402
 
 APP_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 BIN = os.path.join(APP_ROOT, 'TA-thehive-cortex', 'package', 'bin')
@@ -40,43 +40,43 @@ if BIN not in sys.path:
 
 # The REAL module: this file is the one that tests it. If another test
 # module leaked a MagicMock for it, we would be asserting on the mock.
-with mocks_temporaires(mocks):
+with temporary_mocks(mocks):
     import ta_logging  # noqa: E402
 
 
-class CollecteurDAvertissements(logging.Handler):
+class WarningCollector(logging.Handler):
     """Keeps the records rather than the formatted text: we assert on levels."""
 
     def __init__(self):
         super().__init__()
-        self.enregistrements = []
+        self.records = []
 
     def emit(self, record):
-        self.enregistrements.append(record)
+        self.records.append(record)
 
-    def au_moins_un_avertissement(self):
-        return any(r.levelno >= logging.WARNING for r in self.enregistrements)
+    def at_least_one_warning(self):
+        return any(r.levelno >= logging.WARNING for r in self.records)
 
 
-class TestResolutionDuNiveau(unittest.TestCase):
+class TestLevelResolution(unittest.TestCase):
 
     def setUp(self):
-        self._racine = tempfile.TemporaryDirectory()
-        self.splunk_home = self._racine.name
+        self._root = tempfile.TemporaryDirectory()
+        self.splunk_home = self._root.name
         self.app = os.path.join(self.splunk_home, "etc", "apps", "TA-thehive-cortex")
         os.makedirs(os.path.join(self.app, "local"), exist_ok=True)
         os.makedirs(os.path.join(self.app, "default"), exist_ok=True)
         os.makedirs(os.path.join(self.splunk_home, "var", "log", "splunk"), exist_ok=True)
-        self._ancien = os.environ.get("SPLUNK_HOME")
+        self._previous = os.environ.get("SPLUNK_HOME")
         os.environ["SPLUNK_HOME"] = self.splunk_home
-        self._compteur = 0
+        self._counter = 0
         self._loggers = []
 
     def tearDown(self):
-        if self._ancien is None:
+        if self._previous is None:
             os.environ.pop("SPLUNK_HOME", None)
         else:
-            os.environ["SPLUNK_HOME"] = self._ancien
+            os.environ["SPLUNK_HOME"] = self._previous
         # ⚠️ setup_logging() installs a RotatingFileHandler that keeps the log
         # file OPEN. Windows refuses to unlink an open file, so the cleanup
         # below died with WinError 32 while Linux happily removed the tree:
@@ -87,57 +87,57 @@ class TestResolutionDuNiveau(unittest.TestCase):
                 logger.removeHandler(handler)
                 handler.close()
         self._loggers = []
-        self._racine.cleanup()
+        self._root.cleanup()
 
-    def _ecrire_reglages(self, contenu, ou="local"):
-        chemin = os.path.join(self.app, ou, "thehive_cortex_settings.conf")
-        with open(chemin, "w", encoding="utf-8") as fh:
-            fh.write(contenu)
-        return chemin
+    def _write_settings(self, content, where="local"):
+        file_path = os.path.join(self.app, where, "thehive_cortex_settings.conf")
+        with open(file_path, "w", encoding="utf-8") as fh:
+            fh.write(content)
+        return file_path
 
-    def _configurer(self):
+    def _configure(self):
         """A distinct name per call: loggers are cached by name."""
-        self._compteur += 1
-        nom = f"essai_niveau_{id(self)}_{self._compteur}"
-        collecteur = CollecteurDAvertissements()
-        logging.getLogger("TA-thehive-cortex_" + nom).addHandler(collecteur)
-        logger = ta_logging.setup_logging(nom)
+        self._counter += 1
+        name_ = f"level_test_{id(self)}_{self._counter}"
+        collector = WarningCollector()
+        logging.getLogger("TA-thehive-cortex_" + name_).addHandler(collector)
+        logger = ta_logging.setup_logging(name_)
         self._loggers.append(logger)
-        return logger, collecteur
+        return logger, collector
 
-    def test_le_niveau_demande_est_applique(self):
-        self._ecrire_reglages("[logging]\nloglevel = DEBUG\n")
-        logger, collecteur = self._configurer()
+    def test_the_requested_level_is_applied(self):
+        self._write_settings("[logging]\nloglevel = DEBUG\n")
+        logger, collector = self._configure()
         self.assertEqual(logging.DEBUG, logger.level)
-        self.assertFalse(collecteur.au_moins_un_avertissement(),
+        self.assertFalse(collector.at_least_one_warning(),
                          "a valid configuration must not warn")
 
-    def test_un_niveau_inconnu_est_signale(self):
-        self._ecrire_reglages("[logging]\nloglevel = VERBOSE\n")
-        logger, collecteur = self._configurer()
+    def test_an_unknown_level_is_reported(self):
+        self._write_settings("[logging]\nloglevel = VERBOSE\n")
+        logger, collector = self._configure()
         self.assertEqual(logging.INFO, logger.level,
                          "the fallback itself is fine")
-        self.assertTrue(collecteur.au_moins_un_avertissement(),
+        self.assertTrue(collector.at_least_one_warning(),
                         "falling back to INFO on an unknown level must be said, "
                         "otherwise the user never learns why DEBUG had no effect")
 
-    @unittest.skipUnless(PEUT_RENDRE_ILLISIBLE,
+    @unittest.skipUnless(CAN_MAKE_UNREADABLE,
                          "needs POSIX permissions: chmod 000 does not make a file "
                          "unreadable on Windows, and root reads everything anyway")
-    def test_une_configuration_illisible_est_signalee(self):
+    def test_an_unreadable_configuration_is_reported(self):
         # A real file that open() cannot read: this is what reaches the except.
         # A DIRECTORY would not do -- os.path.isfile() returns False for it, so
         # the code takes the ordinary "no local settings" path and must NOT warn.
-        chemin = self._ecrire_reglages("[logging]\nloglevel = DEBUG\n")
-        os.chmod(chemin, 0o000)
+        file_path = self._write_settings("[logging]\nloglevel = DEBUG\n")
+        os.chmod(file_path, 0o000)
         try:
-            logger, collecteur = self._configurer()
+            logger, collector = self._configure()
         finally:
             # Restored here, not via addCleanup: cleanups run AFTER tearDown,
             # which has already removed the temporary tree.
-            os.chmod(chemin, 0o600)
+            os.chmod(file_path, 0o600)
         self.assertEqual(logging.INFO, logger.level)
-        self.assertTrue(collecteur.au_moins_un_avertissement(),
+        self.assertTrue(collector.at_least_one_warning(),
                         "an unreadable configuration must leave a trace")
 
 

@@ -110,9 +110,9 @@ class DecidingOnOneId(Base):
 
     def test_shape_alone_is_no_longer_enough(self):
         # ⚠️ The whole point: these all satisfied `startswith("T")`.
-        for invente in ("T", "TOTO", "T99999", "T1566x"):
-            with self.subTest(id=invente):
-                self.assertFalse(is_known(invente, {"T1566"}))
+        for invented in ("T", "TOTO", "T99999", "T1566x"):
+            with self.subTest(id=invented):
+                self.assertFalse(is_known(invented, {"T1566"}))
 
     def test_when_we_could_not_check_we_let_it_through(self):
         # ⚠️ None means "I could not verify", NOT "the catalogue is empty".
@@ -130,8 +130,8 @@ class TheSettingIsActuallyCarried(unittest.TestCase):
     """The half that made the other invisible."""
 
     def test_the_instance_carries_the_catalogue_name(self):
-        chemin = os.path.join(BIN, "thehive.py")
-        with open(chemin, encoding="utf-8") as f:
+        file_path = os.path.join(BIN, "thehive.py")
+        with open(file_path, encoding="utf-8") as f:
             source = f.read()
         self.assertIn('thehive.ttp_catalog_name = defaults["TTP_CATALOG_NAME"]', source)
 

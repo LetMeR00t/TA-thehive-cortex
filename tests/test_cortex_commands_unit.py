@@ -36,7 +36,7 @@ mocks = [
 
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from _isolation import mocks_temporaires  # noqa: E402
+from _isolation import temporary_mocks  # noqa: E402
 
 APP_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 BIN = os.path.join(APP_ROOT, 'TA-thehive-cortex', 'package', 'bin')
@@ -46,7 +46,7 @@ for p in (BIN,
     if p not in sys.path:
         sys.path.insert(0, p)
 
-with mocks_temporaires(mocks):
+with temporary_mocks(mocks):
     import cortex as cortex_module  # noqa: E402
 
 
@@ -59,57 +59,57 @@ class TestInitializeCortexInstanceCallSites(unittest.TestCase):
 
     #: Arguments we can substitute for any expression, since only ARITY and
     #: keyword NAMES decide whether the call binds.
-    JETON = object()
+    TOKEN = object()
 
     #: Every locally-defined callable whose call sites must bind. Adding a name
     #: here is cheaper than discovering the mismatch in production: a keyword
     #: that does not exist is a TypeError on the FIRST call, not an edge case.
-    CIBLES = ("initialize_cortex_instance", "create_cortex_instance", "Cortex")
+    TARGETS = ("initialize_cortex_instance", "create_cortex_instance", "Cortex")
 
     def _call_sites(self):
         signatures = {}
-        for nom in self.CIBLES:
-            objet = getattr(cortex_module, nom, None)
-            if objet is None:
+        for name_ in self.TARGETS:
+            obj = getattr(cortex_module, name_, None)
+            if obj is None:
                 continue
-            signatures[nom] = inspect.signature(objet)
-        for nom in sorted(os.listdir(BIN)):
-            if not nom.endswith('.py'):
+            signatures[name_] = inspect.signature(obj)
+        for name_ in sorted(os.listdir(BIN)):
+            if not name_.endswith('.py'):
                 continue
-            chemin = os.path.join(BIN, nom)
-            with open(chemin, encoding='utf-8') as fh:
-                arbre = ast.parse(fh.read(), filename=nom)
-            for noeud in ast.walk(arbre):
-                if not isinstance(noeud, ast.Call):
+            file_path = os.path.join(BIN, name_)
+            with open(file_path, encoding='utf-8') as fh:
+                tree = ast.parse(fh.read(), filename=name_)
+            for node in ast.walk(tree):
+                if not isinstance(node, ast.Call):
                     continue
-                cible = noeud.func
-                if isinstance(cible, ast.Name) and cible.id in signatures:
-                    yield nom, noeud, signatures[cible.id], cible.id
+                target = node.func
+                if isinstance(target, ast.Name) and target.id in signatures:
+                    yield name_, node, signatures[target.id], target.id
 
     def test_every_call_binds(self):
-        trouves = 0
-        fautifs = []
-        for nom, noeud, signature, appele in self._call_sites():
-            trouves += 1
-            positionnels = [self.JETON] * len(noeud.args)
-            nommes = {kw.arg: self.JETON for kw in noeud.keywords if kw.arg}
+        found = 0
+        offenders = []
+        for name_, node, signature, callee in self._call_sites():
+            found += 1
+            positional = [self.TOKEN] * len(node.args)
+            named = {kw.arg: self.TOKEN for kw in node.keywords if kw.arg}
             try:
-                signature.bind(*positionnels, **nommes)
+                signature.bind(*positional, **named)
             except TypeError as err:
-                fautifs.append(f"{nom}:{noeud.lineno} {appele}(): {err}")
+                offenders.append(f"{name_}:{node.lineno} {callee}(): {err}")
 
-        self.assertGreater(trouves, 0, "no call site found -- the test is blind")
+        self.assertGreater(found, 0, "no call site found -- the test is blind")
         self.assertEqual(
-            [], fautifs,
+            [], offenders,
             "call sites that do not bind against their signature:\n  "
-            + "\n  ".join(fautifs),
+            + "\n  ".join(offenders),
         )
 
 
 class TestCortexAddJobAttributes(unittest.TestCase):
     """`addJob` must only read attributes that `__init__` actually sets."""
 
-    def _cortex_sans_reseau(self):
+    def _cortex_without_network(self):
         """A Cortex whose __init__ is bypassed: it performs a live API call."""
         instance = object.__new__(cortex_module.Cortex)
         instance.logger_file = MagicMock()
@@ -120,7 +120,7 @@ class TestCortexAddJobAttributes(unittest.TestCase):
         return instance
 
     def test_addjob_does_not_read_an_undefined_attribute(self):
-        instance = self._cortex_sans_reseau()
+        instance = self._cortex_without_network()
         # A dataType from the hardcoded list, so the type gate is not what fails.
         instance.addJob(data="1.2.3.4", dataType="ip")
         self.assertEqual(1, len(instance.getJobs()))
@@ -132,7 +132,7 @@ class TestCortexAddJobAttributes(unittest.TestCase):
         while being present in the one carried by modalert_thehive_common.py --
         the two copies disagree, and the stricter one used to call sys.exit().
         """
-        instance = self._cortex_sans_reseau()
+        instance = self._cortex_without_network()
         instance.addJob(data="a-host", dataType="hostname")
         self.assertEqual(1, len(instance.getJobs()))
 
@@ -150,7 +150,7 @@ class TestCortexAddJobAnalyzerCaching(unittest.TestCase):
     test_cortex_jobs_unit.py.
     """
 
-    def _cortex_sans_reseau(self):
+    def _cortex_without_network(self):
         instance = object.__new__(cortex_module.Cortex)
         instance.logger_file = MagicMock()
         instance.analyzers = MagicMock()
@@ -161,7 +161,7 @@ class TestCortexAddJobAnalyzerCaching(unittest.TestCase):
         return instance
 
     def test_named_analyzer_is_resolved_once_across_rows(self):
-        instance = self._cortex_sans_reseau()
+        instance = self._cortex_without_network()
 
         instance.addJob(data="192.0.2.10", dataType="ip", analyzers="VirusTotal")
         instance.addJob(data="192.0.2.11", dataType="ip", analyzers="VirusTotal")
@@ -171,7 +171,7 @@ class TestCortexAddJobAnalyzerCaching(unittest.TestCase):
         self.assertEqual(3, len(instance.getJobs()))
 
     def test_all_analyzers_resolved_once_per_datatype(self):
-        instance = self._cortex_sans_reseau()
+        instance = self._cortex_without_network()
 
         instance.addJob(data="192.0.2.10", dataType="ip", analyzers="all")
         instance.addJob(data="192.0.2.11", dataType="ip", analyzers="all")
@@ -183,7 +183,7 @@ class TestCortexAddJobAnalyzerCaching(unittest.TestCase):
 
     def test_an_unresolved_analyzer_still_exits_every_time_it_recurs(self):
         """Caching a failure must not turn a hard stop into a silent skip."""
-        instance = self._cortex_sans_reseau()
+        instance = self._cortex_without_network()
         instance.analyzers.get_by_name.return_value = None
 
         with self.assertRaises(SystemExit):

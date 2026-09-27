@@ -34,8 +34,8 @@ class RecordingLogger:
     def error(self, id="?", message=""):
         self.rows.append(("error", id, message))
 
-    def ids(self, niveau=None):
-        return [i for n, i, _ in self.rows if niveau is None or n == niveau]
+    def ids(self, level=None):
+        return [i for n, i, _ in self.rows if level is None or n == level]
 
 
 class ServiceError(Exception):
@@ -67,45 +67,45 @@ class Base(unittest.TestCase):
                 raise r
             return r
 
-        rendu = create_with_retry(create, max_retry, self.recorder, ids, context)
-        return rendu, calls["n"]
+        returned = create_with_retry(create, max_retry, self.recorder, ids, context)
+        return returned, calls["n"]
 
 
 class ACreationThatEventuallySucceeds(Base):
 
-    def test_reussite_du_premier_coup_ne_journalise_rien(self):
-        rendu, calls = self.launch([{"_id": "~1"}])
-        self.assertEqual(rendu, {"_id": "~1"})
+    def test_success_at_first_try_logs_nothing(self):
+        returned, calls = self.launch([{"_id": "~1"}])
+        self.assertEqual(returned, {"_id": "~1"})
         self.assertEqual(calls, 1)
         self.assertEqual(self.recorder.rows, [])
 
-    def test_reussite_a_la_DEUXIEME_tentative_n_est_pas_un_echec(self):
+    def test_success_on_the_SECOND_attempt_is_not_a_failure(self):
         # ⚠️ THE defect. max_retry=2, success on attempt 2 => retry_count == 2
         # in the old code => "creation has failed, after retries" logged as an
         # ERROR, on an object that exists. And then NameError on str(e).
-        rendu, calls = self.launch([ServiceError("boom"), {"_id": "~1"}])
-        self.assertEqual(rendu, {"_id": "~1"})
+        returned, calls = self.launch([ServiceError("boom"), {"_id": "~1"}])
+        self.assertEqual(returned, {"_id": "~1"})
         self.assertEqual(calls, 2)
         self.assertEqual(self.recorder.ids("error"), [])
         self.assertEqual(self.recorder.ids("warning"), ["123"])
 
-    def test_reussite_a_la_derniere_tentative_autorisee(self):
-        rendu, calls = self.launch(
+    def test_success_on_the_last_allowed_attempt(self):
+        returned, calls = self.launch(
             [ServiceError("a"), ServiceError("b"), {"_id": "~1"}])
-        self.assertEqual(rendu, {"_id": "~1"})
+        self.assertEqual(returned, {"_id": "~1"})
         self.assertEqual(calls, 3)  # max_retry + 1 attempts
         self.assertEqual(self.recorder.ids("error"), [])
 
 
 class ACreationThatTrulyFails(Base):
 
-    def test_toutes_les_tentatives_echouent(self):
-        rendu, calls = self.launch([ServiceError("x")] * 3)
-        self.assertIsNone(rendu)
+    def test_every_attempt_fails(self):
+        returned, calls = self.launch([ServiceError("x")] * 3)
+        self.assertIsNone(returned)
         self.assertEqual(calls, 3)
         self.assertEqual(self.recorder.ids("error"), ["125"])
 
-    def test_le_message_final_porte_la_DERNIERE_erreur(self):
+    def test_the_final_message_carries_the_LAST_error(self):
         # ⚠️ Not `str(e)` read after the except block, which is a NameError in
         # Python 3. The exception is bound outside the handler on purpose.
         self.launch([ServiceError("premiere"), ServiceError("derniere"),
@@ -113,7 +113,7 @@ class ACreationThatTrulyFails(Base):
         final = [m for n, i, m in self.recorder.rows if n == "error"][0]
         self.assertIn("derniere", final)
 
-    def test_le_nombre_de_reprises_est_dans_le_message(self):
+    def test_the_retry_count_is_in_the_message(self):
         # The old message carried the literal "{max_retry}": an f-string
         # placeholder inside a NON-f string, so the number never appeared.
         self.launch([ServiceError("x")] * 4, max_retry=3)
@@ -124,15 +124,15 @@ class ACreationThatTrulyFails(Base):
 
 class TheDuplicateCase(Base):
 
-    def test_un_doublon_annonce_par_le_texte(self):
+    def test_a_duplicate_announced_by_the_text(self):
         self.launch([ServiceError("Alert already exists"), {"_id": "~1"}])
         self.assertEqual(self.recorder.ids("warning"), ["122"])
 
-    def test_un_doublon_annonce_par_le_code_409(self):
+    def test_a_duplicate_announced_by_code_409(self):
         self.launch([ServiceError("nope", status_code=409), {"_id": "~1"}])
         self.assertEqual(self.recorder.ids("warning"), ["122"])
 
-    def test_le_code_lu_sur_la_reponse_quand_il_n_est_pas_sur_l_erreur(self):
+    def test_the_code_is_read_on_the_response_when_absent_from_the_error(self):
         class Response:
             status_code = 400
 
@@ -141,7 +141,7 @@ class TheDuplicateCase(Base):
         self.launch([e, {"_id": "~1"}])
         self.assertEqual(self.recorder.ids("warning"), ["122"])
 
-    def test_sans_identifiant_de_doublon_on_retombe_sur_celui_de_reprise(self):
+    def test_without_a_duplicate_id_the_retry_id_is_used(self):
         # The case helper has no dedicated duplicate identifier, and must not
         # crash for lack of one.
         self.launch([ServiceError("already exists"), {"_id": "~1"}],
@@ -151,15 +151,15 @@ class TheDuplicateCase(Base):
 
 class ContextIsBuiltOnlyWhenLogging(Base):
 
-    def test_aucun_appel_quand_tout_va_bien(self):
+    def test_no_call_when_all_is_well(self):
         calls = {"n": 0}
 
-        def contexte_compte():
+        def account_context():
             calls["n"] += 1
             return "ctx"
 
         create_with_retry(lambda: {"_id": "~1"}, 2, self.recorder, IDS,
-                          contexte_compte)
+                          account_context)
         # Serialising a payload nobody will read is a cost that only shows up
         # under load.
         self.assertEqual(calls["n"], 0)

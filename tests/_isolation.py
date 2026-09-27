@@ -16,7 +16,7 @@ the innocent file.
 
 The fix is to keep the mocks only for the duration of the import:
 
-    with mocks_temporaires(MOCKS):
+    with temporary_mocks(MOCKS):
         import modalert_thehive_common
 
 The imported module keeps the mocked dependencies it bound at import time --
@@ -41,7 +41,7 @@ MOCKS_SPLUNK = [
 ]
 
 #: Third-party libraries vendored in the add-on, not installed on a dev machine.
-MOCKS_TIERS = [
+MOCKS_THIRD_PARTY = [
     'certifi', 'requests', 'requests.adapters', 'requests.auth',
     'urllib3', 'tomark',
 ]
@@ -137,33 +137,33 @@ def stub_splunklib():
     So the parent must be a real module too, carrying the stub as an attribute.
     """
     modularinput = stub_modularinput()
-    paquet = types.ModuleType("splunklib")
-    paquet.modularinput = modularinput
-    paquet.client = MagicMock()
-    return {"splunklib": paquet, "splunklib.modularinput": modularinput}
+    package = types.ModuleType("splunklib")
+    package.modularinput = modularinput
+    package.client = MagicMock()
+    return {"splunklib": package, "splunklib.modularinput": modularinput}
 
 
 @contextlib.contextmanager
-def mocks_temporaires(noms, remplacements=None):
-    """Stub `noms` in sys.modules, then restore the table exactly as it was.
+def temporary_mocks(names, replacements=None):
+    """Stub `names` in sys.modules, then restore the table exactly as it was.
 
     Restoring matters more than stubbing: a name that was ABSENT must go back
     to absent, not to None, otherwise a later `import` finds a null entry and
     fails in a way that looks nothing like the cause.
     """
-    remplacements = remplacements or {}
-    sentinelle = object()
-    precedent = {nom: sys.modules.get(nom, sentinelle) for nom in noms}
-    for nom in noms:
-        sys.modules[nom] = remplacements.get(nom) or MagicMock()
+    replacements = replacements or {}
+    sentinel = object()
+    saved = {name_: sys.modules.get(name_, sentinel) for name_ in names}
+    for name_ in names:
+        sys.modules[name_] = replacements.get(name_) or MagicMock()
     try:
         yield
     finally:
-        for nom, ancien in precedent.items():
-            if ancien is sentinelle:
-                sys.modules.pop(nom, None)
+        for name_, previous in saved.items():
+            if previous is sentinel:
+                sys.modules.pop(name_, None)
             else:
-                sys.modules[nom] = ancien
+                sys.modules[name_] = previous
 
 
 def remove_tree(path):

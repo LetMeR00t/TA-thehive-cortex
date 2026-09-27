@@ -20,7 +20,7 @@ import unittest
 
 #: The suite must run without Splunk's bundled libraries. Skipping is the only
 #: honest option -- and it has to SAY it skipped, not die like the old harness.
-REQUESTS_DISPONIBLE = importlib.util.find_spec("requests") is not None
+REQUESTS_AVAILABLE = importlib.util.find_spec("requests") is not None
 
 mocks = [
     'splunklib', 'splunklib.client', 'solnlib', 'solnlib.log',
@@ -29,7 +29,7 @@ mocks = [
 ]
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from _isolation import mocks_temporaires  # noqa: E402
+from _isolation import temporary_mocks  # noqa: E402
 
 APP_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 BIN = os.path.join(APP_ROOT, 'TA-thehive-cortex', 'package', 'bin')
@@ -41,13 +41,13 @@ for p in (BIN, os.path.join(BIN, 'ta_thehive_cortex', 'libs')):
 # ⚠️ The guard has to wrap the IMPORT, not just the test methods: without
 # `requests` the module fails to load and unittest reports an error, which is
 # exactly the "dies instead of skipping" behaviour this suite was cured of.
-if REQUESTS_DISPONIBLE:
-    with mocks_temporaires(mocks):
+if REQUESTS_AVAILABLE:
+    with temporary_mocks(mocks):
         from thehive4py.session import TheHiveSession
         from cortex4py.api import Api
 
 
-class ServeurMuet:
+class SilentServer:
     """Accepts the connection, then never writes a byte."""
 
     def __init__(self):
@@ -57,11 +57,11 @@ class ServeurMuet:
         self._sock.listen(8)
         self.port = self._sock.getsockname()[1]
         self._stop = threading.Event()
-        self._retenues = []
-        self._fil = threading.Thread(target=self._boucle, daemon=True)
-        self._fil.start()
+        self._held = []
+        self._thread = threading.Thread(target=self._loop, daemon=True)
+        self._thread.start()
 
-    def _boucle(self):
+    def _loop(self):
         self._sock.settimeout(0.2)
         while not self._stop.is_set():
             try:
@@ -69,16 +69,16 @@ class ServeurMuet:
             except (socket.timeout, OSError):
                 continue
             # Kept open on purpose: closing would end the wait and hide the bug.
-            self._retenues.append(conn)
+            self._held.append(conn)
 
     @property
     def url(self):
         return f"http://127.0.0.1:{self.port}"
 
-    def fermer(self):
+    def shutdown(self):
         self._stop.set()
-        self._fil.join(timeout=2)
-        for c in self._retenues:
+        self._thread.join(timeout=2)
+        for c in self._held:
             try:
                 c.close()
             except OSError:
@@ -86,20 +86,20 @@ class ServeurMuet:
         self._sock.close()
 
 
-@unittest.skipUnless(REQUESTS_DISPONIBLE, "requests is not installed here")
-class TestDelaiHttp(unittest.TestCase):
+@unittest.skipUnless(REQUESTS_AVAILABLE, "requests is not installed here")
+class TestHttpTimeout(unittest.TestCase):
 
     #: Short enough to keep the suite fast, long enough not to fire by accident.
-    DELAI = 2
+    TIMEOUT = 2
     #: The wait must stay in the same order of magnitude as the timeout.
     #: Retries multiply it, so the margin is generous on purpose.
-    PLAFOND = 15
+    CEILING = 15
 
     def setUp(self):
-        self.serveur = ServeurMuet()
-        self.addCleanup(self.serveur.fermer)
+        self.server = SilentServer()
+        self.addCleanup(self.server.shutdown)
 
-    def _rend_la_main_avant_le_plafond(self, appel):
+    def _returns_before_the_ceiling(self, call_it):
         """Run the call in a thread and judge on the JOIN, not on a stopwatch.
 
         ⚠️ Measuring elapsed time after the call returns would make this test
@@ -110,23 +110,23 @@ class TestDelaiHttp(unittest.TestCase):
         """
         issue = {}
 
-        def executer():
+        def run_call():
             try:
-                appel()
+                call_it()
                 issue["resultat"] = "returned without raising"
             except Exception as err:  # noqa: BLE001
                 issue["resultat"] = type(err).__name__
 
-        fil = threading.Thread(target=executer, daemon=True)
-        fil.start()
-        fil.join(timeout=self.PLAFOND)
+        thread = threading.Thread(target=run_call, daemon=True)
+        thread.start()
+        thread.join(timeout=self.CEILING)
         self.assertFalse(
-            fil.is_alive(),
-            f"the call was still waiting after {self.PLAFOND}s: no timeout applied",
+            thread.is_alive(),
+            f"the call was still waiting after {self.CEILING}s: no timeout applied",
         )
         self.assertIn("resultat", issue)
 
-    def test_thehive_session_rend_la_main(self):
+    def test_thehive_session_returns_in_time(self):
         # ⚠️ `max_retries=None` ON PURPOSE. The library ships DEFAULT_RETRY with
         # total=5 and backoff_factor=1, so the timeout bounds each ATTEMPT and
         # the retries multiply the wait: 6 attempts plus 0+2+4+8+16s of backoff.
@@ -134,20 +134,20 @@ class TestDelaiHttp(unittest.TestCase):
         # is bounded -- which is the point of this ticket -- but it is not what
         # the setting says, and it deserves to be known.
         # Here we isolate the timeout itself.
-        session = TheHiveSession(url=self.serveur.url, apikey="0" * 12,
-                                 timeout=self.DELAI, max_retries=None)
+        session = TheHiveSession(url=self.server.url, apikey="0" * 12,
+                                 timeout=self.TIMEOUT, max_retries=None)
         # ⚠️ NOT `session.get("/api/v1/status")`: a relative URL makes
         # requests raise MissingSchema instantly, and the test would pass in
         # 0.2s WITHOUT EVER OPENING A SOCKET -- green for the wrong reason.
         # make_request() is what the add-on actually calls, and it builds the
         # absolute URL.
-        self._rend_la_main_avant_le_plafond(
+        self._returns_before_the_ceiling(
             lambda: session.make_request("GET", "/api/v1/status")
         )
 
-    def test_cortex_api_rend_la_main(self):
-        api = Api(self.serveur.url, "0" * 12, timeout=self.DELAI)
-        self._rend_la_main_avant_le_plafond(lambda: api.do_get("status"))
+    def test_cortex_api_returns_in_time(self):
+        api = Api(self.server.url, "0" * 12, timeout=self.TIMEOUT)
+        self._returns_before_the_ceiling(lambda: api.do_get("status"))
 
 
 if __name__ == '__main__':
