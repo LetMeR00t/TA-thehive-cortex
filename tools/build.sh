@@ -12,10 +12,12 @@
 #      local test run ships -- and pip itself compiles what it builds from
 #      source. The output is purged of compiled Python AFTER the build and
 #      BEFORE the archive, never "before building".
-#   2. On Windows, pip installs Windows wheels: charset_normalizer arrives as
-#      two `.cp39-win_amd64.pyd` extensions. Forcing its pure-Python source
-#      distribution gives the same package the Linux build ships minus the
-#      platform code. Only on Windows -- the Linux build is left as it is.
+#   2. pip installs the wheel of the machine that builds: charset_normalizer
+#      arrives as two `.cp39-win_amd64.pyd` extensions on Windows and as two
+#      `.cpython-39-x86_64-linux-gnu.so` on Linux. One archive serves EVERY
+#      Splunk platform, so its pure-Python source distribution is forced on
+#      every OS (decided 2026-09-27, #10): the archive no longer depends on
+#      the build machine, at the cost of the mypyc speed-up.
 #   3. pip writes console-script launchers into lib/bin (`normalizer.exe` on
 #      Windows). Splunk never runs them; a `.exe` in an add-on only fails
 #      vetting.
@@ -49,16 +51,14 @@ if [ "$PY_VERSION" != "3.9" ]; then
 	exit 2
 fi
 PY_EXE="$("$PYTHON" -c 'import sys; print(sys.executable)')"
-IS_WINDOWS="$("$PYTHON" -c 'import os; print(int(os.name == "nt"))')"
 
-BUILD_ARGS=(build --source package --ta-version "$VERSION" --python-binary-name "$PY_EXE")
-if [ "$IS_WINDOWS" = "1" ]; then
-	BUILD_ARGS+=("--pip-custom-flag=--no-binary=charset_normalizer")
-fi
+# ⚠️ Glued to its flag on purpose: argparse swallows a detached `--no-binary=…`.
+BUILD_ARGS=(build --source package --ta-version "$VERSION" --python-binary-name "$PY_EXE"
+	"--pip-custom-flag=--no-binary=charset_normalizer")
 
 cd "$PROJECT"
 rm -f TA-thehive-cortex-*.tar.gz
-echo "building $VERSION with $PY_EXE (windows=$IS_WINDOWS)"
+echo "building $VERSION with $PY_EXE (pure Python)"
 "$PYTHON" -m splunk_add_on_ucc_framework.main "${BUILD_ARGS[@]}"
 
 APP="output/TA-thehive-cortex"

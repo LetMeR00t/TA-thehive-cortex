@@ -68,8 +68,15 @@ require() {
 
 # Compiled Python: reborn on every local test run, and copied verbatim by ucc-gen.
 refuse '\.pyc$|/__pycache__/' "compiled Python"
-# Windows binaries have no business in a Splunk Cloud package.
-refuse '\.(exe|pyd|dll)$' "Windows binaries"
+# Native extensions, on EVERY platform. An add-on ships ONE archive for every
+# Splunk platform, so a compiled extension is right for one OS/architecture and
+# dead weight -- or an import error -- on the others. Decided 2026-09-27 (#10):
+# pure Python everywhere. The Linux build used to ship charset_normalizer's
+# `.cpython-39-x86_64-linux-gnu.so` pair unnoticed, because this line only knew
+# the Windows suffixes.
+refuse '\.(so|pyd|dll|dylib)(\.[0-9]+)*$' "native extensions (.so/.pyd/.dll/.dylib)"
+# Executables: pip's console-script launchers (`normalizer.exe` on Windows).
+refuse '\.exe$' "executables"
 # UCC scaffold left in production: get_data_from_api() returned {"line1": "hello"}.
 refuse 'bin/thehive_cortex_helper\.py$' "UCC scaffold residue"
 # Development material. The vendoring patch series lived under package/bin for a

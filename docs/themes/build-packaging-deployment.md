@@ -28,9 +28,13 @@ fails the build. The CI build job runs the same script.
 5.0.0 that skipped them shipped **209 compiled Python files and 3 Windows
 binaries** (#10): `ucc-gen` copies `package/bin` verbatim (so the `__pycache__`
 of every local test run), pip compiles what it builds from source, and pip on
-Windows installs Windows wheels. On Windows the script therefore forces
+Windows installs Windows wheels. The script therefore forces
 `charset_normalizer`'s pure-Python source distribution
-(`--no-binary=charset_normalizer`); the Linux build is left as it is.
+(`--no-binary=charset_normalizer`) **on every platform**: pip on Linux ships
+`.so` extensions just as pip on Windows ships `.pyd`, and one archive serves
+every Splunk platform. The archive is pure Python whatever machine builds it,
+and `package_contents.sh` refuses any native extension (`.so`, `.pyd`,
+`.dll`, `.dylib`) and any `.exe` (decided 2026-09-27, #10).
 
 ### Who decides the version
 
