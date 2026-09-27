@@ -18,6 +18,7 @@ created — including after a failure.
 | `E2E_TEMPLATE_INSTANCE` | id of an existing add-on instance whose host, port, uri, organisation and account the run copies |
 | `E2E_SPLUNK_MGMT` | optional, defaults to `https://localhost:8089` |
 | `E2E_JOB_TIMEOUT`, `E2E_THEHIVE_TIMEOUT` | optional, seconds |
+| `E2E_THEHIVE_FUNCTION` | optional: the TheHive Function UC5 pushes to — `e2e-uc5-echo` (see below). Unset, UC5 **skips with the reason**. Not a secret |
 
 Put them in the environment, or in an **unversioned** `tests/e2e/.env`
 (`KEY=value` per line; the real environment always wins). There is **no
@@ -48,9 +49,28 @@ It covers the round trip's **collection input** and its **throwaway index**
 round trip left an input polling TheHive every minute while `purge` reported
 nothing.
 
+The alert UC5's Function creates is titled with the run prefix too, so the
+per-test teardown and `purge` remove it like any other. The Function itself
+is **kept** (next section).
+
 `--purge` re-counts afterwards and says so if anything survived. Claiming
 "cleaned" while something is left is the failure this script exists to
 prevent.
+
+## The one TheHive object the campaign keeps: the Function `e2e-uc5-echo`
+
+UC5 needs a Function to push to, and creating one per run would be a TheHive
+configuration change at every run. So ONE Function is installed once and left
+in place (user decision, 2026-09-27):
+
+| | |
+| :--- | :--- |
+| Name | `e2e-uc5-echo` — type `api`, mode `Enabled`, on the template instance's organisation |
+| Source | `tests/e2e/uc5_echo_function.js` (versioned) |
+| What it does | receives the add-on's `{"events": [...]}` and creates **one** alert: title = first event's `name` (the run prefix, so teardown and `purge` find it), type `e2e-uc5-echo`, source `splunk-e2e`, tags `e2e`, `uc5`. Returns `{"result": …}`: the add-on logs `THC-80 ERROR` for a response without a `result` key |
+| Install | `python -m tests.e2e.uc5_function --install` (idempotent; without `--install` it only says whether it is there). Needs a Platinum licence and `manageFunction/create` |
+| Use | `E2E_THEHIVE_FUNCTION=e2e-uc5-echo` in the environment or in `tests/e2e/.env` |
+| Remove | TheHive UI → Organisation → Functions → `e2e-uc5-echo` → delete; then unset `E2E_THEHIVE_FUNCTION` (UC5 skips again, saying why). Not scripted on purpose: the campaign never deletes it |
 
 ## What each case is for
 
@@ -61,7 +81,7 @@ prevent.
 | `e2e_uc3_correlation_case.py` | the **case** creation path, and the reserved `th_severity` / `th_tlp` / `th_pap` overrides beating the dialog — the dialog is configured with different values on purpose, so a pass can only mean the search won |
 | `e2e_uc4_notable_es_mode.py` | the one decision `es_mode` actually changes: `sourceRef` taken from the notable's `event_id`. ⚠️ It deliberately does **not** create a real notable — that would write into the `notable` index, which the campaign could not clean up |
 | `e2e_collection_roundtrip.py` | the **return trip**: an alert created from Splunk, collected back by the modular input into a throwaway index, checked on its content. ⚠️ Creates and drops its own index — indexed events cannot be deleted, so writing into the operator's `thehive` index would leave rows no teardown could remove |
-| `e2e_uc5_thehive_function.py` | pushing to a TheHive **Function**. Skips **with the reason** unless `E2E_THEHIVE_FUNCTION` is set: Functions are licensed and `listFunction` is empty on the lab instance |
+| `e2e_uc5_thehive_function.py` | pushing to a TheHive **Function**, asserted on **TheHive's side**: the Function turns the pushed events into one alert titled with the pushed `name`. Skips **with the reason** unless `E2E_THEHIVE_FUNCTION` is set. ⚠️ It used to skip because no Function existed (`listFunction` empty) — **not** for want of a licence, as this line wrongly said: the lab instance is Platinum |
 | `e2e_password_auth_mode.py` | the `password` authentication mode, on an account of its own (#38): either the alert is created, or the action says in terms of the **mode** (`TH111`) why TheHive refused it — never a bare `TH110`. ⚠️ The only case that writes `THEHIVE_USER`/`THEHIVE_PASSWORD` into Splunk's credential store; the account carries the run prefix and is deleted with the run |
 
 ⚠️ Asserting that the alert **exists** proves almost nothing. The defects that

@@ -204,6 +204,24 @@ class TheHiveClient:
         )
         return response.ok or response.status_code == 404
 
+    # -- functions (UC5) ----------------------------------------------------
+
+    def function_names(self):
+        return {f.get("name") for f in self._query({"_name": "listFunction"})}
+
+    def create_function(self, name, definition, types, mode, description):
+        """POST /api/v1/function with TheHive 5.7.5's InputFunction body."""
+        response = self._session.post(
+            f"{self.base}/api/v1/function",
+            json={"name": name, "mode": mode, "definition": definition,
+                  "types": types, "description": description},
+            headers=self._headers,
+            timeout=60,
+        )
+        if not response.ok:
+            raise TheHiveError(f"function creation refused with HTTP {response.status_code}")
+        return response.json()
+
     def delete_by_prefix(self, prefix):
         """Remove every alert and case carrying the prefix. Returns the count.
 
