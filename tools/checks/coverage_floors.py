@@ -21,10 +21,10 @@ import subprocess
 import sys
 from pathlib import Path
 
-RACINE = Path(__file__).resolve().parents[2]
-BIN = RACINE / "TA-thehive-cortex" / "package" / "bin"
+ROOT = Path(__file__).resolve().parents[2]
+BIN = ROOT / "TA-thehive-cortex" / "package" / "bin"
 
-#: (fichier, fonction, plancher EXIGÉ, cible VISÉE) — motivé un par un.
+#: (file, function, REQUIRED floor, TARGET aimed at) -- each one justified.
 #:
 #: ⚠️ The floor is a RATCHET, not an ambition. It sits at or just below what is
 #: measured today, so the build goes red on a regression and only on that. A
@@ -34,7 +34,7 @@ BIN = RACINE / "TA-thehive-cortex" / "package" / "bin"
 #: The target is the ambition, and it is REPORTED, never enforced. Raising the
 #: floor towards it is a deliberate act, taken once the tests that justify it
 #: exist.
-PLANCHERS = [
+FLOORS = [
     # ⚠️ THE FLOOR FOLLOWED THE CODE, AND IT HAD TO. `parse_events` was the
     # heart of the data loss at CC 126; the dispatch that decided what a field
     # IS now lives in `field_mapping`. Left alone, this line would have gone on
@@ -67,69 +67,69 @@ PLANCHERS = [
 ]
 
 
-def mesurer() -> int:
-    lance = subprocess.run(
+def measure() -> int:
+    run = subprocess.run(
         [sys.executable, "-m", "coverage", "run", "--branch",
          "--source", str(BIN),
          "-m", "unittest", "discover", "-s", "tests", "-p", "test_*.py"],
-        cwd=RACINE, capture_output=True, text=True,
+        cwd=ROOT, capture_output=True, text=True,
     )
-    if lance.returncode != 0:
+    if run.returncode != 0:
         print("the test suite is not green; coverage is meaningless until it is.")
-        print(lance.stderr[-2000:])
+        print(run.stderr[-2000:])
         return 1
 
     import json
     subprocess.run([sys.executable, "-m", "coverage", "json", "-o", "coverage.json"],
-                   cwd=RACINE, capture_output=True, text=True)
-    rapport = json.loads((RACINE / "coverage.json").read_text(encoding="utf-8"))
+                   cwd=ROOT, capture_output=True, text=True)
+    report = json.loads((ROOT / "coverage.json").read_text(encoding="utf-8"))
 
-    echecs = []
-    for fichier, fonction, plancher, cible in PLANCHERS:
-        chemin = str(BIN / fichier)
-        donnees = None
-        for cle, valeur in rapport.get("files", {}).items():
-            if Path(cle).resolve() == Path(chemin).resolve():
-                donnees = valeur
+    failures = []
+    for source_file, function, floor, target in FLOORS:
+        path = str(BIN / source_file)
+        data = None
+        for key, value in report.get("files", {}).items():
+            if Path(key).resolve() == Path(path).resolve():
+                data = value
                 break
-        if donnees is None:
-            echecs.append(f"{fichier}: not measured at all -- the floor guards nothing")
+        if data is None:
+            failures.append(f"{source_file}: not measured at all -- the floor guards nothing")
             continue
 
-        bornes = _bornes_de_fonction(Path(chemin), fonction)
-        if bornes is None:
-            echecs.append(f"{fichier}:{fonction}: function not found -- renamed? the "
+        bounds = _function_bounds(Path(path), function)
+        if bounds is None:
+            failures.append(f"{source_file}:{function}: function not found -- renamed? the "
                           f"floor must follow it, or it silently stops guarding")
             continue
 
-        debut, fin = bornes
-        executees = {n for n in donnees["executed_lines"] if debut <= n <= fin}
-        manquantes = {n for n in donnees["missing_lines"] if debut <= n <= fin}
-        total = len(executees) + len(manquantes)
-        pct = 100 * len(executees) // total if total else 100
-        marque = "ok " if pct >= plancher else "LOW"
-        ecart = f", {cible - pct} points below the {cible} % target" if pct < cible else ""
-        print(f"  {marque} {fichier}:{fonction}  {pct} % (floor {plancher} %{ecart})")
-        if pct < plancher:
-            echecs.append(f"{fichier}:{fonction} at {pct} %, floor is {plancher} %")
+        start, end = bounds
+        executed = {n for n in data["executed_lines"] if start <= n <= end}
+        missing = {n for n in data["missing_lines"] if start <= n <= end}
+        total = len(executed) + len(missing)
+        pct = 100 * len(executed) // total if total else 100
+        mark = "ok " if pct >= floor else "LOW"
+        gap = f", {target - pct} points below the {target} % target" if pct < target else ""
+        print(f"  {mark} {source_file}:{function}  {pct} % (floor {floor} %{gap})")
+        if pct < floor:
+            failures.append(f"{source_file}:{function} at {pct} %, floor is {floor} %")
 
-    if echecs:
+    if failures:
         print()
-        for e in echecs:
+        for e in failures:
             print(f"  {e}")
         return 1
     return 0
 
 
-def _bornes_de_fonction(chemin: Path, nom: str):
+def _function_bounds(path: Path, name: str):
     """First and last line of a function, by AST rather than by grep."""
     import ast
-    arbre = ast.parse(chemin.read_text(encoding="utf-8"), filename=str(chemin))
-    for noeud in ast.walk(arbre):
-        if isinstance(noeud, (ast.FunctionDef, ast.AsyncFunctionDef)) and noeud.name == nom:
-            return noeud.lineno, (noeud.end_lineno or noeud.lineno)
+    tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+    for node in ast.walk(tree):
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)) and node.name == name:
+            return node.lineno, (node.end_lineno or node.lineno)
     return None
 
 
 if __name__ == "__main__":
-    raise SystemExit(mesurer())
+    raise SystemExit(measure())

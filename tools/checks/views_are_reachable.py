@@ -38,64 +38,64 @@ import sys
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
-RACINE = Path(__file__).resolve().parents[2]
-UI = RACINE / "TA-thehive-cortex" / "package" / "default" / "data" / "ui"
+ROOT = Path(__file__).resolve().parents[2]
+UI = ROOT / "TA-thehive-cortex" / "package" / "default" / "data" / "ui"
 
-#: Jetons que Splunk fournit lui-même, jamais posés par la vue.
-FOURNIS_PAR_SPLUNK = re.compile(
+#: Tokens Splunk provides itself, never set by the view.
+PROVIDED_BY_SPLUNK = re.compile(
     r"^(?:env:|job\.|result\.|click\.|row\.|earliest|latest|form\.)"
 )
 
-#: L'idiome « panneau porteur de CSS », délibérément invisible.
-IDIOMES_INVISIBLES = {"alwaysHideCSSPanel"}
+#: The "CSS-carrying panel" idiom, deliberately invisible.
+INVISIBLE_IDIOMS = {"alwaysHideCSSPanel"}
 
 
-def vues():
-    for chemin in sorted(UI.rglob("*.xml")):
-        yield chemin
+def views():
+    for path in sorted(UI.rglob("*.xml")):
+        yield path
 
 
-def jetons_poses(texte: str) -> set[str]:
-    poses = set()
-    poses.update(re.findall(r'<set\s+token="([^"]+)"', texte))
-    poses.update(re.findall(r'<eval\s+token="([^"]+)"', texte))
-    poses.update(re.findall(r'<input[^>]*\stoken="([^"]+)"', texte))
-    poses.update(re.findall(r'<unset\s+token="([^"]+)"', texte))
-    return poses
+def tokens_set(text: str) -> set[str]:
+    set_tokens = set()
+    set_tokens.update(re.findall(r'<set\s+token="([^"]+)"', text))
+    set_tokens.update(re.findall(r'<eval\s+token="([^"]+)"', text))
+    set_tokens.update(re.findall(r'<input[^>]*\stoken="([^"]+)"', text))
+    set_tokens.update(re.findall(r'<unset\s+token="([^"]+)"', text))
+    return set_tokens
 
 
-def jetons_absents_au_chargement(texte: str) -> set[str]:
-    """Les jetons qu'aucune valeur PAR DÉFAUT ne produit.
+def tokens_absent_on_load(text: str) -> set[str]:
+    """The tokens that no DEFAULT value produces.
 
-    Pour chaque input : sa valeur par défaut, puis les jetons que son `<change>`
-    pose pour cette valeur-là. Un jeton posé uniquement pour une AUTRE valeur
-    est absent au chargement, et le panneau qui en dépend avec lui.
+    For each input: its default value, then the tokens its `<change>`
+    sets for that very value. A token set only for ANOTHER value
+    is absent on load, and so is the panel that depends on it.
     """
-    absents = set()
-    for bloc in re.findall(r"<input\b.*?</input>", texte, re.S):
-        defaut = re.search(r"<default>(.*?)</default>", bloc, re.S)
-        if not defaut:
+    absent = set()
+    for block in re.findall(r"<input\b.*?</input>", text, re.S):
+        default = re.search(r"<default>(.*?)</default>", block, re.S)
+        if not default:
             continue
-        valeur_defaut = defaut.group(1).strip()
+        default_value = default.group(1).strip()
         for condition in re.findall(r"<condition\b([^>]*)>(.*?)</condition>",
-                                    bloc, re.S):
-            attributs, corps = condition
-            vise = re.search(r'value="([^"]*)"', attributs)
-            if not vise:
+                                    block, re.S):
+            attributes, body = condition
+            targeted = re.search(r'value="([^"]*)"', attributes)
+            if not targeted:
                 continue
-            # ⚠️ SEUL ce cas est un défaut : la condition vise la valeur que
-            # l'input porte DÉJÀ, donc le panneau devrait être là à l'arrivée
-            # — et il n'y est pas, parce qu'un <change> ne se déclenche pas au
-            # chargement.
+            # ⚠️ ONLY this case is a defect: the condition targets the value the
+            # input ALREADY holds, so the panel should be there on arrival
+            # -- and it is not, because a <change> does not fire on
+            # load.
             #
-            # Une condition qui vise une AUTRE valeur cache le panneau
-            # volontairement : c'est tout l'intérêt d'un formulaire à modes.
-            # Le signaler serait crier au loup, et un garde qui crie au loup
-            # finit débranché.
-            if vise.group(1) == valeur_defaut:
-                absents |= set(re.findall(r'<set\s+token="([^"]+)"', corps))
-    hors_change = jetons_poses(re.sub(r"<change>.*?</change>", "", texte, flags=re.S))
-    return absents - hors_change
+            # A condition targeting ANOTHER value hides the panel
+            # on purpose: that is the whole point of a form with modes.
+            # Reporting it would be crying wolf, and a guard that cries wolf
+            # ends up switched off.
+            if targeted.group(1) == default_value:
+                absent |= set(re.findall(r'<set\s+token="([^"]+)"', body))
+    outside_change = tokens_set(re.sub(r"<change>.*?</change>", "", text, flags=re.S))
+    return absent - outside_change
 
 
 def main() -> int:
@@ -103,93 +103,93 @@ def main() -> int:
         print(f"views not found: {UI}", file=sys.stderr)
         return 1
 
-    constats = []
-    avertissements = []
+    findings = []
+    warnings_found = []
 
-    for chemin in vues():
-        relatif = chemin.relative_to(RACINE)
-        brut = chemin.read_text(encoding="utf-8")
-        # ⚠️ Retirer les commentaires AVANT de chercher un motif : sinon le
-        # garde se dénonce sur la phrase qui explique le défaut qu'il corrige.
-        texte = re.sub(r"<!--.*?-->", "", brut, flags=re.S)
+    for path in views():
+        relative = path.relative_to(ROOT)
+        raw = path.read_text(encoding="utf-8")
+        # ⚠️ Strip the comments BEFORE looking for a pattern: otherwise the
+        # guard denounces itself on the sentence explaining the defect it fixes.
+        text = re.sub(r"<!--.*?-->", "", raw, flags=re.S)
 
-        # --- 3. un `--` dans un commentaire rend le fichier illisible --------
-        for corps in re.findall(r"<!--(.*?)-->", brut, re.S):
-            if "--" in corps:
-                constats.append(
-                    f"{relatif}: a comment contains a double dash, which is "
+        # --- 3. a `--` inside a comment makes the file unreadable -------------
+        for body in re.findall(r"<!--(.*?)-->", raw, re.S):
+            if "--" in body:
+                findings.append(
+                    f"{relative}: a comment contains a double dash, which is "
                     f"illegal in XML and makes the whole view unparseable"
                 )
 
         try:
-            ET.parse(chemin)
+            ET.parse(path)
         except ET.ParseError as e:
-            constats.append(f"{relatif}: does not parse — {e}")
+            findings.append(f"{relative}: does not parse — {e}")
             continue
 
-        poses = jetons_poses(texte)
-        absents_au_chargement = jetons_absents_au_chargement(texte)
+        set_tokens = tokens_set(text)
+        absent_on_load = tokens_absent_on_load(text)
 
-        # ⚠️ Une règle « un input dont personne ne lit le jeton » a été écrite
-        # ici puis RETIRÉE le jour même : elle rendait 21 constats dont une
-        # vingtaine décrivaient un fonctionnement correct. Un jeton de mode
-        # (`action`, `view_mode`) n'est jamais lu par un `$jeton$` — c'est son
-        # propre `<change>` qui l'exploite — et un `depths` porté PAR un input
-        # disparaît quand on retire les inputs pour chercher les lecteurs.
+        # ⚠️ A rule "an input whose token nobody reads" was written
+        # here and then REMOVED the same day: it returned 21 findings, about
+        # twenty of which described correct behaviour. A mode token
+        # (`action`, `view_mode`) is never read through a `$token$` -- its
+        # own `<change>` is what uses it -- and a `depths` carried BY an input
+        # disappears when the inputs are stripped to look for readers.
         #
-        # Le constat de départ reste vrai : un contrôle qui ne pilote rien est
-        # pire qu'un contrôle absent, parce que l'utilisateur croit avoir agi.
-        # Mais on ne le détecte pas à ce prix-là, et un garde qui crie au loup
-        # finit débranché — ce qui coûte les trois règles ci-dessus avec lui.
+        # The starting observation still holds: a control that drives nothing is
+        # worse than no control, because the user believes they acted.
+        # But it is not detected at that price, and a guard that cries wolf
+        # ends up switched off -- taking the three rules above with it.
 
-        # --- 4. un rafraîchissement posé sur la recherche d'un INPUT --------
-        # ⚠️ Un panneau qui se rafraîchit est utile ; une liste déroulante qui
-        # se rafraîchit fait sauter la sélection sous les doigts de
-        # l'utilisateur toutes les minutes. Constaté sur moi-même : une
-        # substitution posée sur « toutes les recherches de panneau » en a
-        # touché trois qui alimentaient des inputs DANS des panneaux.
-        for bloc in re.findall(r"<input\b.*?</input>", texte, re.S):
-            if "<refresh>" in bloc:
-                etiquette = re.search(r"<label>(.*?)</label>", bloc, re.S)
-                nom = etiquette.group(1).strip() if etiquette else "?"
-                constats.append(
-                    f"{relatif}: the input \"{nom}\" carries an auto-refresh. "
+        # --- 4. a refresh set on the search of an INPUT ----------------------
+        # ⚠️ A panel that refreshes is useful; a dropdown that
+        # refreshes yanks the selection from under the user's fingers
+        # every minute. Seen on my own work: a
+        # substitution applied to "every panel search" hit
+        # three that fed inputs INSIDE panels.
+        for block in re.findall(r"<input\b.*?</input>", text, re.S):
+            if "<refresh>" in block:
+                label = re.search(r"<label>(.*?)</label>", block, re.S)
+                name = label.group(1).strip() if label else "?"
+                findings.append(
+                    f"{relative}: the input \"{name}\" carries an auto-refresh. "
                     f"Its selection will jump under the user every cycle"
                 )
 
-        for attribut in ("depends", "rejects"):
-            for expression in re.findall(rf'{attribut}="([^"]+)"', texte):
-                for jeton in re.findall(r"\$([^$,]+)\$", expression):
-                    if jeton in IDIOMES_INVISIBLES or FOURNIS_PAR_SPLUNK.match(jeton):
+        for attribute in ("depends", "rejects"):
+            for expression in re.findall(rf'{attribute}="([^"]+)"', text):
+                for token in re.findall(r"\$([^$,]+)\$", expression):
+                    if token in INVISIBLE_IDIOMS or PROVIDED_BY_SPLUNK.match(token):
                         continue
-                    if jeton not in poses:
-                        constats.append(
-                            f"{relatif}: a panel is gated on ${jeton}$, which "
+                    if token not in set_tokens:
+                        findings.append(
+                            f"{relative}: a panel is gated on ${token}$, which "
                             f"nothing in this view ever sets. It can never "
                             f"appear, and its searches never run"
                         )
-                    elif attribut == "depends" and jeton in absents_au_chargement:
-                        avertissements.append(
-                            f"{relatif}: a panel is gated on ${jeton}$, set by "
+                    elif attribute == "depends" and token in absent_on_load:
+                        warnings_found.append(
+                            f"{relative}: a panel is gated on ${token}$, set by "
                             f"a <condition> matching an input's DEFAULT value. "
                             f"A <change> does not fire at load, so the panel is "
                             f"absent on arrival until the user moves that input "
                             f"away and back"
                         )
 
-    for a in avertissements:
+    for a in warnings_found:
         print(f"  ⚠️  {a}")
-    for c in constats:
+    for c in findings:
         print(f"  {c}")
 
-    if constats:
+    if findings:
         print()
         print("A panel that cannot appear does not report an error: it is simply")
         print("not there, and its searches never run.")
         return 1
 
     print(f"every view parses; every gated panel can appear"
-          + (f" ({len(avertissements)} reported)" if avertissements else ""))
+          + (f" ({len(warnings_found)} reported)" if warnings_found else ""))
     return 0
 
 

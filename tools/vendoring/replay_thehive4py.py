@@ -40,13 +40,13 @@ B = "\033[1m"
 D = "\033[2m"
 Z = "\033[0m"
 
-RACINE = Path(__file__).resolve().parents[2]
-LIBS = RACINE / "TA-thehive-cortex" / "package" / "bin" / "ta_thehive_cortex" / "libs"
-VENDORISE = LIBS / "thehive4py"
+ROOT = Path(__file__).resolve().parents[2]
+LIBS = ROOT / "TA-thehive-cortex" / "package" / "bin" / "ta_thehive_cortex" / "libs"
+VENDORED = LIBS / "thehive4py"
 # ⚠️ OUTSIDE package/. `ucc-gen` copies package/bin verbatim, so a patch series
 # left in there ships inside the .spl -- development material delivered to every
 # user, and extra surface for AppInspect to chew on.
-PATCHES = RACINE / "tools" / "vendoring" / "patches" / "thehive4py"
+PATCHES = ROOT / "tools" / "vendoring" / "patches" / "thehive4py"
 
 #: Upstream release the series is written against.
 BASE = "2.1.0"
@@ -54,15 +54,15 @@ BASE = "2.1.0"
 #: Files that exist ONLY here. They are not patches: upstream has no such file,
 #: so there is nothing to diff against. `function.py` backs TheHive Functions,
 #: which `modalert_thehive_run_function_helper.py` depends on.
-PROPRES = ["endpoints/function.py", "types/catalog.py", "types/pattern.py"]
+OWN_FILES = ["endpoints/function.py", "types/catalog.py", "types/pattern.py"]
 
 #: Grafted methods that MUST exist once the replay is done. This is the actual
 #: safety net: a patch can apply with fuzz, or apply to the wrong place, and
 #: still leave the method missing. Checking the RESULT beats checking the
 #: process.
-INTERPRETEUR = [sys.executable]
+INTERPRETER = [sys.executable]
 
-ATTENDUS = {
+EXPECTED = {
     "endpoints.procedure:ProcedureEndpoint": ["find_list_catalog", "get_catalog"],
     "endpoints.task:TaskEndpoint": ["get_tasks", "count_case_tasks", "get_case_tasks"],
     "endpoints.observable_type:ObservableTypeEndpoint": ["list"],
@@ -75,7 +75,7 @@ ATTENDUS = {
 }
 
 
-def _telecharger(version: str, ou: Path) -> Path:
+def _download(version: str, dest: Path) -> Path:
     # ⚠️ --ignore-requires-python: 2.1.0 declares `>=3.10`, so pip on 3.9 --
     # the interpreter this repository builds with -- answers "no matching
     # distribution", and the guard died before replaying anything. The copy
@@ -83,38 +83,38 @@ def _telecharger(version: str, ou: Path) -> Path:
     # of 2026-08-19: Python 3.9 is kept), and the test matrix proves 3.9.
     subprocess.run(
         [sys.executable, "-m", "pip", "download", f"thehive4py=={version}",
-         "--no-deps", "--ignore-requires-python", "-q", "-d", str(ou)],
+         "--no-deps", "--ignore-requires-python", "-q", "-d", str(dest)],
         check=True, capture_output=True, text=True,
     )
-    roue = next(ou.glob("thehive4py-*.whl"))
-    with zipfile.ZipFile(roue) as z:
-        z.extractall(ou / "amont")
-    return ou / "amont" / "thehive4py"
+    wheel = next(dest.glob("thehive4py-*.whl"))
+    with zipfile.ZipFile(wheel) as z:
+        z.extractall(dest / "amont")
+    return dest / "amont" / "thehive4py"
 
 
-def _appliquer(arbre: Path) -> list[str]:
-    echecs = []
+def _apply(tree: Path) -> list[str]:
+    failures = []
     for patch in sorted(PATCHES.glob("*.patch")):
-        rendu = subprocess.run(
+        output = subprocess.run(
             ["git", "apply", "--3way", str(patch)],
-            cwd=arbre, capture_output=True, text=True,
+            cwd=tree, capture_output=True, text=True,
         )
-        if rendu.returncode != 0:
-            rendu = subprocess.run(
-                ["git", "apply", str(patch)], cwd=arbre, capture_output=True, text=True
+        if output.returncode != 0:
+            output = subprocess.run(
+                ["git", "apply", str(patch)], cwd=tree, capture_output=True, text=True
             )
-        if rendu.returncode != 0:
-            echecs.append(patch.name)
-    return echecs
+        if output.returncode != 0:
+            failures.append(patch.name)
+    return failures
 
 
-def _verifier_greffes(arbre: Path) -> list[str]:
+def _check_grafts(tree: Path) -> list[str]:
     """Import the rebuilt tree and check every grafted method is really there."""
     script = "\n".join([
         "import importlib, sys",
-        f"sys.path.insert(0, {str(arbre.parent)!r})",
+        f"sys.path.insert(0, {str(tree.parent)!r})",
         "manque = []",
-        f"for cle, methodes in {ATTENDUS!r}.items():",
+        f"for cle, methodes in {EXPECTED!r}.items():",
         "    module, classe = cle.split(':')",
         "    try:",
         "        m = importlib.import_module('thehive4py.' + module)",
@@ -128,10 +128,10 @@ def _verifier_greffes(arbre: Path) -> list[str]:
         "            manque.append(cle + '.' + meth)",
         "print('\\n'.join(manque))",
     ])
-    rendu = subprocess.run([INTERPRETEUR[0], "-c", script], capture_output=True, text=True)
-    if rendu.returncode != 0:
-        return [f"could not import the rebuilt tree: {rendu.stderr.strip()[:200]}"]
-    return [l for l in rendu.stdout.splitlines() if l.strip()]
+    output = subprocess.run([INTERPRETER[0], "-c", script], capture_output=True, text=True)
+    if output.returncode != 0:
+        return [f"could not import the rebuilt tree: {output.stderr.strip()[:200]}"]
+    return [l for l in output.stdout.splitlines() if l.strip()]
 
 
 def main() -> int:
@@ -153,56 +153,56 @@ def main() -> int:
     # `requests` reports every graft as LOST. A missing dependency and a lost
     # graft are entirely different problems, and one message for both sends the
     # reader hunting in the wrong place.
-    sonde = subprocess.run(
+    probe = subprocess.run(
         [args.python, "-c", "import requests, typing_extensions"],
         capture_output=True, text=True,
     )
-    if sonde.returncode != 0:
+    if probe.returncode != 0:
         print(f" {R}cannot VERIFY{Z}: {args.python} lacks the runtime "
-              f"dependencies ({sonde.stderr.strip().splitlines()[-1] if sonde.stderr else '?'})")
+              f"dependencies ({probe.stderr.strip().splitlines()[-1] if probe.stderr else '?'})")
         print(f"        {D}this is NOT a lost graft -- install "
               f"package/lib/requirements.txt, or pass --python{Z}")
         return 1
 
-    INTERPRETEUR[0] = args.python
+    INTERPRETER[0] = args.python
     print(f"{B}Replaying thehive4py {args.upstream} + {len(list(PATCHES.glob('*.patch')))} grafts{Z}")
 
     with tempfile.TemporaryDirectory() as tmp:
-        chantier = Path(tmp)
+        workdir = Path(tmp)
         try:
-            amont = _telecharger(args.upstream, chantier)
+            upstream = _download(args.upstream, workdir)
         except Exception as err:  # noqa: BLE001
             print(f" {R}upstream download failed{Z}: {err}")
             return 1
         print(f" {V}ok{Z}     upstream {args.upstream} fetched")
 
-        echecs = _appliquer(amont)
-        if echecs:
-            print(f" {R}FAIL{Z}   grafts that did not apply: {', '.join(echecs)}")
+        failures = _apply(upstream)
+        if failures:
+            print(f" {R}FAIL{Z}   grafts that did not apply: {', '.join(failures)}")
             print(f"        {D}upstream changed the same lines -- look at it, do not force it{Z}")
             return 1
         print(f" {V}ok{Z}     graft series applied")
 
-        for propre in PROPRES:
-            source = VENDORISE / propre
+        for own in OWN_FILES:
+            source = VENDORED / own
             if not source.is_file():
-                print(f" {R}FAIL{Z}   fork-only file missing: {propre}")
+                print(f" {R}FAIL{Z}   fork-only file missing: {own}")
                 return 1
-            (amont / propre).parent.mkdir(parents=True, exist_ok=True)
-            shutil.copy2(source, amont / propre)
-        print(f" {V}ok{Z}     {len(PROPRES)} fork-only file(s) copied")
+            (upstream / own).parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(source, upstream / own)
+        print(f" {V}ok{Z}     {len(OWN_FILES)} fork-only file(s) copied")
 
-        perdues = _verifier_greffes(amont)
-        if perdues:
+        lost = _check_grafts(upstream)
+        if lost:
             print(f" {R}FAIL{Z}   grafts lost despite the patches applying:")
-            for p in perdues:
+            for p in lost:
                 print(f"          {p}")
             return 1
         print(f" {V}ok{Z}     every graft is present at arrival")
 
         if args.write:
-            shutil.rmtree(VENDORISE)
-            shutil.copytree(amont, VENDORISE)
+            shutil.rmtree(VENDORED)
+            shutil.copytree(upstream, VENDORED)
             print(f" {V}ok{Z}     vendored tree replaced")
             print(f"{D}        now run tools/checks/tests_on_both_pythons.sh{Z}")
         else:

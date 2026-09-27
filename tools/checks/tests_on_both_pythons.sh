@@ -39,8 +39,8 @@
 
 set -u
 
-RACINE="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-REQUIREMENTS="$RACINE/TA-thehive-cortex/package/lib/requirements.txt"
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+REQUIREMENTS="$ROOT/TA-thehive-cortex/package/lib/requirements.txt"
 
 # ⚠️ Certificates, and the trap inside the trap.
 #
@@ -54,18 +54,18 @@ REQUIREMENTS="$RACINE/TA-thehive-cortex/package/lib/requirements.txt"
 # `uv run` in the same shell succeeded. The two stores are not alternatives:
 # one signs the internal hosts, the other the public index. They are
 # CONCATENATED, and neither is lost.
-FAISCEAU_CA="${TMPDIR:-/tmp}/thc_ca_bundle.pem"
-: > "$FAISCEAU_CA"
-for magasin in /etc/ssl/certs/ca-certificates.crt "${SSL_CERT_FILE:-}"; do
-	[ -n "$magasin" ] && [ -r "$magasin" ] && cat "$magasin" >> "$FAISCEAU_CA"
+CA_BUNDLE="${TMPDIR:-/tmp}/thc_ca_bundle.pem"
+: > "$CA_BUNDLE"
+for store in /etc/ssl/certs/ca-certificates.crt "${SSL_CERT_FILE:-}"; do
+	[ -n "$store" ] && [ -r "$store" ] && cat "$store" >> "$CA_BUNDLE"
 done
-if [ -s "$FAISCEAU_CA" ]; then
-	export SSL_CERT_FILE="$FAISCEAU_CA"
+if [ -s "$CA_BUNDLE" ]; then
+	export SSL_CERT_FILE="$CA_BUNDLE"
 	export UV_SYSTEM_CERTS="${UV_SYSTEM_CERTS:-1}"
 fi
 V=$'\033[32m'; R=$'\033[31m'; B=$'\033[1m'; D=$'\033[2m'; Z=$'\033[0m'
 
-trouver() {
+find_python() {
 	local version="$1" var="$2"
 	if [ -n "${!var:-}" ] && [ -x "${!var}" ]; then echo "${!var}"; return; fi
 	if command -v uv >/dev/null 2>&1; then
@@ -75,81 +75,81 @@ trouver() {
 	command -v "python$version" 2>/dev/null || true
 }
 
-echo "${B}Suite unitaire sur les deux interpréteurs servis par Splunk${Z}"
+echo "${B}Unit suite on both interpreters Splunk serves${Z}"
 echo
 
-total_echecs=0
-total_sautes=0
+total_failures=0
+total_skipped=0
 
-for couple in "3.9:PYTHON39" "3.13:PYTHON313"; do
-	version="${couple%%:*}"; var="${couple##*:}"
-	interp="$(trouver "$version" "$var")"
+for pair in "3.9:PYTHON39" "3.13:PYTHON313"; do
+	version="${pair%%:*}"; var="${pair##*:}"
+	interp="$(find_python "$version" "$var")"
 
 	if [ -z "$interp" ]; then
-		echo " ${D}SAUTÉ${Z}  Python $version introuvable — posez ${var}=/chemin/vers/python"
-		total_sautes=$((total_sautes + 1))
+		echo " ${D}SKIPPED${Z}  Python $version not found — set ${var}=/path/to/python"
+		total_skipped=$((total_skipped + 1))
 		continue
 	fi
 
-	reel="$("$interp" -c 'import sys;print(".".join(map(str,sys.version_info[:3])))' 2>/dev/null)"
+	actual="$("$interp" -c 'import sys;print(".".join(map(str,sys.version_info[:3])))' 2>/dev/null)"
 
 	# The suite imports the vendored libraries, which import third-party
 	# modules. Run it WITH the shipped requirements, exactly as the CI does.
 	if command -v uv >/dev/null 2>&1 && [ -r "$REQUIREMENTS" ]; then
-		sortie="$(cd "$RACINE" && uv run --no-project --python "$interp" \
+		output="$(cd "$ROOT" && uv run --no-project --python "$interp" \
 			--with-requirements "$REQUIREMENTS" \
 			python -m unittest discover -s tests -p "test_*.py" 2>&1)"
 		code=$?
-		if [ "$code" -ne 0 ] && echo "$sortie" | grep -qE 'Failed to fetch|No solution found|error sending request'; then
-			echo " ${D}SAUTÉ${Z}  Python $reel — dépendances non installables (réseau ou index)"
-			echo "          ${D}Ce n'est PAS un échec du code : rien n'a été vérifié sur cette version.${Z}"
-			total_sautes=$((total_sautes + 1))
+		if [ "$code" -ne 0 ] && echo "$output" | grep -qE 'Failed to fetch|No solution found|error sending request'; then
+			echo " ${D}SKIPPED${Z}  Python $actual — dependencies cannot be installed (network or index)"
+			echo "          ${D}This is NOT a code failure: nothing was verified on this version.${Z}"
+			total_skipped=$((total_skipped + 1))
 			continue
 		fi
 	else
-		manque="$("$interp" -c 'import importlib.util as u; print(" ".join(m for m in ("requests","typing_extensions") if u.find_spec(m) is None))' 2>/dev/null)"
-		if [ -n "$manque" ]; then
-			echo " ${D}SAUTÉ${Z}  Python $reel — module(s) absent(s) : $manque"
-			echo "          ${D}Une dépendance manquante n'est pas un test rouge. Installez :${Z}"
+		missing="$("$interp" -c 'import importlib.util as u; print(" ".join(m for m in ("requests","typing_extensions") if u.find_spec(m) is None))' 2>/dev/null)"
+		if [ -n "$missing" ]; then
+			echo " ${D}SKIPPED${Z}  Python $actual — missing module(s): $missing"
+			echo "          ${D}A missing dependency is not a red test. Install:${Z}"
 			echo "          ${D}$interp -m pip install -r $REQUIREMENTS${Z}"
-			total_sautes=$((total_sautes + 1))
+			total_skipped=$((total_skipped + 1))
 			continue
 		fi
-		sortie="$(cd "$RACINE" && "$interp" -m unittest discover -s tests -p "test_*.py" 2>&1)"
+		output="$(cd "$ROOT" && "$interp" -m unittest discover -s tests -p "test_*.py" 2>&1)"
 		code=$?
 	fi
-	resume="$(echo "$sortie" | grep -E '^(Ran|OK|FAILED)' | tr '\n' ' ')"
+	summary="$(echo "$output" | grep -E '^(Ran|OK|FAILED)' | tr '\n' ' ')"
 
 	if [ "$code" -eq 0 ]; then
-		echo " ${V}ok${Z}     Python $reel  $resume"
+		echo " ${V}ok${Z}     Python $actual  $summary"
 	else
-		echo " ${R}ÉCHEC${Z}  Python $reel  $resume"
-		echo "$sortie" | grep -E '^(ERROR|FAIL):' | sed 's/^/          /' | head -10
-		total_echecs=$((total_echecs + 1))
+		echo " ${R}FAIL${Z}  Python $actual  $summary"
+		echo "$output" | grep -E '^(ERROR|FAIL):' | sed 's/^/          /' | head -10
+		total_failures=$((total_failures + 1))
 	fi
 done
 
 echo
-if [ "$total_sautes" -eq 2 ]; then
+if [ "$total_skipped" -eq 2 ]; then
 	# ⚠️ A skip now has two causes -- interpreter absent, dependencies
 	# unobtainable -- so this line must not name one of them. Each skip has
 	# already said why, above.
-	echo "${R}Aucune version n'a été exécutée : rien n'a été vérifié.${Z}"
+	echo "${R}No version was run: nothing was verified.${Z}"
 	exit 1
 fi
-if [ "$total_sautes" -gt 0 ]; then
-	echo "${D}⚠️ Une version n'a pas été exécutée. Ce n'est pas un succès sur cette version.${Z}"
+if [ "$total_skipped" -gt 0 ]; then
+	echo "${D}⚠️ One version was not run. That is not a success on that version.${Z}"
 fi
-if [ "$total_echecs" -gt 0 ]; then
-	echo "${R}$total_echecs interpréteur(s) en échec.${Z}"
+if [ "$total_failures" -gt 0 ]; then
+	echo "${R}$total_failures interpreter(s) failing.${Z}"
 	exit 1
 fi
-# ⚠️ This script used to end on "les deux interpréteurs sont verts" even after
+# ⚠️ This script used to end on "both interpreters are green" even after
 # skipping one -- contradicting, in its own last line, the doctrine stated at
 # the top. The summary must count what actually RAN.
-executes=$((2 - total_sautes))
-if [ "$total_sautes" -gt 0 ]; then
-	echo "${V}$executes interpréteur(s) vert(s)${Z}, ${D}$total_sautes non vérifié(s).${Z}"
+executed=$((2 - total_skipped))
+if [ "$total_skipped" -gt 0 ]; then
+	echo "${V}$executed interpreter(s) green${Z}, ${D}$total_skipped not verified.${Z}"
 	exit 1
 fi
-echo "${V}Les deux interpréteurs sont verts.${Z}"
+echo "${V}Both interpreters are green.${Z}"

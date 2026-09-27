@@ -28,10 +28,10 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
-RACINE = Path(__file__).resolve().parents[2]
+ROOT = Path(__file__).resolve().parents[2]
 
 #: (marker, why it matters, paths allowed to carry it)
-MARQUEURS = [
+MARKERS = [
     (
         "``splunk_cred_sep``",
         "the UCC credential arbitration -- it decides which secret is used",
@@ -40,57 +40,57 @@ MARQUEURS = [
 ]
 
 #: Directories that are not ours to police.
-IGNORES = {".git", "__pycache__", "node_modules", "output", "libs"}
+IGNORED = {".git", "__pycache__", "node_modules", "output", "libs"}
 
 
-MOI = Path(__file__).resolve()
+SELF_PATH = Path(__file__).resolve()
 
 
-def fichiers_source():
-    for chemin in RACINE.rglob("*.py"):
-        if any(part in IGNORES for part in chemin.parts):
+def source_files():
+    for path in ROOT.rglob("*.py"):
+        if any(part in IGNORED for part in path.parts):
             continue
         # ⚠️ The table below spells the marker out, so without this the check
         # reports ITSELF -- a guard tripping on its own declaration is the
         # fastest way to get a guard switched off.
-        if chemin.resolve() == MOI:
+        if path.resolve() == SELF_PATH:
             continue
-        yield chemin
+        yield path
 
 
 def main() -> int:
-    constats = []
-    for marqueur, motif, autorises in MARQUEURS:
-        porteurs = set()
-        for chemin in fichiers_source():
+    findings = []
+    for marker, pattern, allowed in MARKERS:
+        carriers = set()
+        for path in source_files():
             try:
-                if marqueur in chemin.read_text(encoding="utf-8"):
-                    porteurs.add(chemin.relative_to(RACINE).as_posix())
+                if marker in path.read_text(encoding="utf-8"):
+                    carriers.add(path.relative_to(ROOT).as_posix())
             except (OSError, UnicodeDecodeError):
                 continue
 
-        for surnumeraire in sorted(porteurs - autorises):
-            constats.append(
-                f"{surnumeraire} carries `{marqueur}`, which belongs to "
-                f"{motif}. Expected only: {', '.join(sorted(autorises))}."
+        for extra in sorted(carriers - allowed):
+            findings.append(
+                f"{extra} carries `{marker}`, which belongs to "
+                f"{pattern}. Expected only: {', '.join(sorted(allowed))}."
             )
-        for absent in sorted(autorises - porteurs):
+        for absent in sorted(allowed - carriers):
             # ⚠️ Just as important: if the marker vanishes from the file that
             # OWNS the rule, this check would silently pass forever after.
-            constats.append(
-                f"{absent} no longer carries `{marqueur}`: either the rule "
+            findings.append(
+                f"{absent} no longer carries `{marker}`: either the rule "
                 f"moved, or this check has stopped guarding anything."
             )
 
-    for c in constats:
+    for c in findings:
         print(f"  {c}")
-    if constats:
+    if findings:
         print()
         print("A rule in two places is a rule that drifts, and the copy is the")
         print("one nobody tests.")
         return 1
 
-    print(f"{len(MARQUEURS)} rule marker(s), each in its single place.")
+    print(f"{len(MARKERS)} rule marker(s), each in its single place.")
     return 0
 
 

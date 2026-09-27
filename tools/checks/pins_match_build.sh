@@ -23,8 +23,8 @@
 
 set -u
 
-RACINE="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-PINS="$RACINE/TA-thehive-cortex/package/lib/requirements.txt"
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+PINS="$ROOT/TA-thehive-cortex/package/lib/requirements.txt"
 PYTHON="${PYTHON:-python3}"
 
 if [ ! -f "$PINS" ]; then
@@ -32,46 +32,46 @@ if [ ! -f "$PINS" ]; then
 	exit 1
 fi
 
-CIBLE="$(mktemp -d)"
-trap 'rm -rf "$CIBLE"' EXIT
+TARGET="$(mktemp -d)"
+trap 'rm -rf "$TARGET"' EXIT
 
 echo "resolving with $("$PYTHON" -V 2>&1) ..."
-if ! "$PYTHON" -m pip install -q -r "$PINS" -t "$CIBLE" 2>"$CIBLE/.err"; then
+if ! "$PYTHON" -m pip install -q -r "$PINS" -t "$TARGET" 2>"$TARGET/.err"; then
 	echo "install failed:" >&2
-	tail -5 "$CIBLE/.err" >&2
+	tail -5 "$TARGET/.err" >&2
 	exit 1
 fi
 
-"$PYTHON" - "$PINS" "$CIBLE" <<'PY'
+"$PYTHON" - "$PINS" "$TARGET" <<'PY'
 import pathlib, sys
 
-pins_path, cible = pathlib.Path(sys.argv[1]), pathlib.Path(sys.argv[2])
+pins_path, target = pathlib.Path(sys.argv[1]), pathlib.Path(sys.argv[2])
 
-def normaliser(nom):
-    return nom.replace("_", "-").lower()
+def normalise(name):
+    return name.replace("_", "-").lower()
 
-installe = {
-    normaliser(d.name[: -len(".dist-info")].rsplit("-", 1)[0])
-    for d in cible.glob("*.dist-info")
+installed = {
+    normalise(d.name[: -len(".dist-info")].rsplit("-", 1)[0])
+    for d in target.glob("*.dist-info")
 }
-epingle = {
-    normaliser(l.split("==")[0].strip())
+pinned = {
+    normalise(l.split("==")[0].strip())
     for l in pins_path.read_text(encoding="utf-8").splitlines()
     if "==" in l and not l.lstrip().startswith("#")
 }
 
-flottants = sorted(installe - epingle)
-fantomes = sorted(epingle - installe)
+floating = sorted(installed - pinned)
+phantoms = sorted(pinned - installed)
 
-for nom in flottants:
-    print(f"  shipped but not pinned: {nom}  -> its version floats between builds")
-for nom in fantomes:
-    print(f"  pinned but not shipped: {nom}  -> the pin describes nothing")
+for name in floating:
+    print(f"  shipped but not pinned: {name}  -> its version floats between builds")
+for name in phantoms:
+    print(f"  pinned but not shipped: {name}  -> the pin describes nothing")
 
-if flottants or fantomes:
+if floating or phantoms:
     print()
-    print(f"{len(flottants) + len(fantomes)} discrepancy(ies): what ships is not what is declared.")
+    print(f"{len(floating) + len(phantoms)} discrepancy(ies): what ships is not what is declared.")
     raise SystemExit(1)
 
-print(f"{len(epingle)} packages: pinned set and shipped set are identical.")
+print(f"{len(pinned)} packages: pinned set and shipped set are identical.")
 PY

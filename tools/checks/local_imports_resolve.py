@@ -27,85 +27,85 @@ import ast
 import sys
 from pathlib import Path
 
-RACINE = Path(__file__).resolve().parents[2]
-BIN = RACINE / "TA-thehive-cortex" / "package" / "bin"
+ROOT = Path(__file__).resolve().parents[2]
+BIN = ROOT / "TA-thehive-cortex" / "package" / "bin"
 
-DOSSIERS_IGNORES = {"libs", "__pycache__", "modinput_wrapper"}
+IGNORED_DIRS = {"libs", "__pycache__", "modinput_wrapper"}
 
 
-def modules_locaux() -> dict[str, Path]:
-    """Nom de module -> chemin, pour tout ce que le paquet livre lui-même."""
-    trouves = {}
-    for chemin in BIN.rglob("*.py"):
-        if any(p in DOSSIERS_IGNORES for p in chemin.parts):
+def local_module_paths() -> dict[str, Path]:
+    """Module name -> path, for everything the package ships itself."""
+    found = {}
+    for path in BIN.rglob("*.py"):
+        if any(p in IGNORED_DIRS for p in path.parts):
             continue
-        trouves.setdefault(chemin.stem, chemin)
-    return trouves
+        found.setdefault(path.stem, path)
+    return found
 
 
-def noms_exposes(chemin: Path) -> set[str] | None:
-    """Ce qu'un module définit ou ré-exporte. None si illisible."""
+def exposed_names(path: Path) -> set[str] | None:
+    """What a module defines or re-exports. None if unreadable."""
     try:
-        arbre = ast.parse(chemin.read_text(encoding="utf-8"))
+        tree = ast.parse(path.read_text(encoding="utf-8"))
     except SyntaxError:
         return None
-    exposes = set()
-    for noeud in arbre.body:
-        if isinstance(noeud, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
-            exposes.add(noeud.name)
-        elif isinstance(noeud, ast.Assign):
-            for cible in noeud.targets:
-                if isinstance(cible, ast.Name):
-                    exposes.add(cible.id)
-        elif isinstance(noeud, ast.AnnAssign) and isinstance(noeud.target, ast.Name):
-            exposes.add(noeud.target.id)
-        elif isinstance(noeud, ast.Import):
-            exposes.update((al.asname or al.name.split(".")[0]) for al in noeud.names)
-        elif isinstance(noeud, ast.ImportFrom):
-            # ⚠️ Un ré-export compte : `from x import y` rend `y` accessible
-            # comme attribut du module, et du code s'appuie dessus.
-            exposes.update((al.asname or al.name) for al in noeud.names)
-    return exposes
+    exposed = set()
+    for node in tree.body:
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
+            exposed.add(node.name)
+        elif isinstance(node, ast.Assign):
+            for target in node.targets:
+                if isinstance(target, ast.Name):
+                    exposed.add(target.id)
+        elif isinstance(node, ast.AnnAssign) and isinstance(node.target, ast.Name):
+            exposed.add(node.target.id)
+        elif isinstance(node, ast.Import):
+            exposed.update((al.asname or al.name.split(".")[0]) for al in node.names)
+        elif isinstance(node, ast.ImportFrom):
+            # ⚠️ A re-export counts: `from x import y` makes `y` reachable
+            # as an attribute of the module, and code relies on it.
+            exposed.update((al.asname or al.name) for al in node.names)
+    return exposed
 
 
 def main() -> int:
-    locaux = modules_locaux()
-    expose = {nom: noms_exposes(chemin) for nom, chemin in locaux.items()}
+    local = local_module_paths()
+    exposed_by_module = {name: exposed_names(path) for name, path in local.items()}
 
-    constats = []
-    for nom_module, chemin in sorted(locaux.items()):
+    findings = []
+    for module_name, path in sorted(local.items()):
         try:
-            arbre = ast.parse(chemin.read_text(encoding="utf-8"))
+            tree = ast.parse(path.read_text(encoding="utf-8"))
         except SyntaxError:
             continue
-        for noeud in ast.walk(arbre):
-            if not isinstance(noeud, ast.ImportFrom) or noeud.level:
+        for node in ast.walk(tree):
+            if not isinstance(node, ast.ImportFrom) or node.level:
                 continue
-            cible = (noeud.module or "").split(".")[0]
-            if cible not in locaux or expose.get(cible) is None:
-                continue  # bibliothèque tierce, ou module illisible
-            for al in noeud.names:
+            target = (node.module or "").split(".")[0]
+            if target not in local or exposed_by_module.get(target) is None:
+                continue  # third-party library, or unreadable module
+            for al in node.names:
                 if al.name == "*":
                     continue
-                if al.name not in expose[cible]:
-                    ou = ", ".join(
-                        m for m, n in expose.items() if n and al.name in n
+                if al.name not in exposed_by_module[target]:
+                    where = ", ".join(
+                        m for m, n in exposed_by_module.items() if n and al.name in n
                     ) or "nowhere in the package"
-                    constats.append(
-                        f"{chemin.relative_to(RACINE)}:{noeud.lineno} imports "
-                        f"`{al.name}` from `{cible}`, which does not define it "
-                        f"-- it is defined in: {ou}"
+                    findings.append(
+                        f"{path.relative_to(ROOT)}:{node.lineno} imports "
+                        f"`{al.name}` from `{target}`, which does not define it "
+                        f"-- it is defined in: {where}"
                     )
 
-    for c in constats:
+    for c in findings:
         print(f"  {c}")
-    if constats:
+    if findings:
         print()
         print("An import that names nothing is an ImportError at load time, and")
         print("a test suite only proves the paths it actually runs.")
         return 1
 
-    print(f"every local import across {len(locaux)} modules resolves.")
+    print(f"every local import across {len(local)} modules resolves.")
     return 0
 
 

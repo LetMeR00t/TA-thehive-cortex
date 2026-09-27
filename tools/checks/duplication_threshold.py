@@ -25,10 +25,10 @@ import re
 import sys
 from pathlib import Path
 
-RACINE = Path(__file__).resolve().parents[2]
-HELPERS = RACINE / "TA-thehive-cortex" / "package" / "bin" / "ta_thehive_cortex"
+ROOT = Path(__file__).resolve().parents[2]
+HELPERS = ROOT / "TA-thehive-cortex" / "package" / "bin" / "ta_thehive_cortex"
 
-#: (fichier A, fichier B, plafond EXIGÉ, cible VISÉE)
+#: (file A, file B, REQUIRED ceiling, TARGET aimed at)
 #:
 #: ⚠️ The ceiling is a RATCHET, like the coverage floors: it sits at today's
 #: measurement, so it goes red on a REGROWTH and only on that. Setting it at
@@ -39,7 +39,7 @@ HELPERS = RACINE / "TA-thehive-cortex" / "package" / "bin" / "ta_thehive_cortex"
 #: `new_case["_id"]`/`new_alert["_id"]` and would otherwise KeyError. One
 #: `continue` line, unavoidable in both, deliberately not chased away by
 #: rewording -- see the commit for the measurement.
-PAIRES = [
+PAIRS = [
     (
         "modalert_thehive_create_a_new_case_helper.py",
         "modalert_thehive_create_a_new_alert_helper.py",
@@ -56,49 +56,49 @@ _SUBSTITUTIONS = [
 ]
 
 
-def normaliser(chemin: Path) -> list[str]:
-    texte = chemin.read_text(encoding="utf-8")
-    for motif, remplacement in _SUBSTITUTIONS:
-        texte = re.sub(motif, remplacement, texte)
-    return [l.rstrip() for l in texte.splitlines() if l.strip()]
+def normalise(path: Path) -> list[str]:
+    text = path.read_text(encoding="utf-8")
+    for pattern, replacement in _SUBSTITUTIONS:
+        text = re.sub(pattern, replacement, text)
+    return [l.rstrip() for l in text.splitlines() if l.strip()]
 
 
-def lignes_communes(a: Path, b: Path) -> int:
-    ga, gb = normaliser(a), normaliser(b)
-    apparieur = difflib.SequenceMatcher(None, ga, gb, autojunk=False)
-    return sum(bloc.size for bloc in apparieur.get_matching_blocks())
+def common_lines(a: Path, b: Path) -> int:
+    ga, gb = normalise(a), normalise(b)
+    matcher = difflib.SequenceMatcher(None, ga, gb, autojunk=False)
+    return sum(block.size for block in matcher.get_matching_blocks())
 
 
 def main() -> int:
-    echecs = []
-    for nom_a, nom_b, plafond, cible in PAIRES:
-        a, b = HELPERS / nom_a, HELPERS / nom_b
-        for chemin in (a, b):
-            if not chemin.is_file():
-                print(f"  {chemin.name}: absent -- the ceiling guards nothing")
+    failures = []
+    for name_a, name_b, ceiling, target in PAIRS:
+        a, b = HELPERS / name_a, HELPERS / name_b
+        for path in (a, b):
+            if not path.is_file():
+                print(f"  {path.name}: absent -- the ceiling guards nothing")
                 return 1
 
-        communes = lignes_communes(a, b)
-        marque = "ok " if communes <= plafond else "NON"
-        ecart = f", {communes - cible} above the {cible} target" if communes > cible else ""
-        print(f"  {marque} {nom_a} ↔ {nom_b}: {communes} common lines "
-              f"(ceiling {plafond}{ecart})")
+        common = common_lines(a, b)
+        mark = "ok " if common <= ceiling else "NON"
+        gap = f", {common - target} above the {target} target" if common > target else ""
+        print(f"  {mark} {name_a} ↔ {name_b}: {common} common lines "
+              f"(ceiling {ceiling}{gap})")
 
-        if communes > plafond:
-            echecs.append(
-                f"{nom_a} and {nom_b} share {communes} lines, ceiling is {plafond}"
+        if common > ceiling:
+            failures.append(
+                f"{name_a} and {name_b} share {common} lines, ceiling is {ceiling}"
             )
-        elif communes < plafond - 15:
+        elif common < ceiling - 15:
             # ⚠️ Same reasoning as a coverage floor: a ceiling left far above
             # reality stops guarding. Lowering it is a deliberate act.
-            echecs.append(
-                f"{nom_a} and {nom_b} are down to {communes} lines: lower the "
-                f"ceiling from {plafond}, or it no longer catches a regrowth"
+            failures.append(
+                f"{name_a} and {name_b} are down to {common} lines: lower the "
+                f"ceiling from {ceiling}, or it no longer catches a regrowth"
             )
 
-    for e in echecs:
+    for e in failures:
         print(f"  {e}")
-    if echecs:
+    if failures:
         print()
         print("Duplication is invisible in a diff review; only a measurement sees it.")
         return 1

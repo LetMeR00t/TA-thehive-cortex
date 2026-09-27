@@ -36,36 +36,36 @@ import ast
 import sys
 from pathlib import Path
 
-RACINE = Path(__file__).resolve().parents[2]
-SOURCES = RACINE / "TA-thehive-cortex" / "package" / "bin"
+ROOT = Path(__file__).resolve().parents[2]
+SOURCES = ROOT / "TA-thehive-cortex" / "package" / "bin"
 SESSION = SOURCES / "ta_thehive_cortex" / "libs" / "thehive4py" / "session.py"
 
-VERBES = {"get", "post", "put", "patch", "delete", "head", "options", "request"}
-EXCLUS_REPERTOIRES = {"__pycache__"}
+VERBS = {"get", "post", "put", "patch", "delete", "head", "options", "request"}
+EXCLUDED_DIRS = {"__pycache__"}
 
 
-def appels_requests_nus(chemin: Path) -> list[tuple[int, str]]:
+def bare_requests_calls(path: Path) -> list[tuple[int, str]]:
     """`requests.<verb>(...)` without `timeout=`. No ambiguity possible here."""
-    arbre = ast.parse(chemin.read_text(encoding="utf-8"), filename=str(chemin))
-    trouves: list[tuple[int, str]] = []
-    for noeud in ast.walk(arbre):
-        if not isinstance(noeud, ast.Call):
+    tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+    found: list[tuple[int, str]] = []
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Call):
             continue
-        f = noeud.func
-        if not (isinstance(f, ast.Attribute) and f.attr in VERBES):
+        f = node.func
+        if not (isinstance(f, ast.Attribute) and f.attr in VERBS):
             continue
         if not (isinstance(f.value, ast.Name) and f.value.id == "requests"):
             continue
-        mots = {kw.arg for kw in noeud.keywords}
+        words = {kw.arg for kw in node.keywords}
         # `**kwargs` (arg is None) may carry it; not decidable, and flagging it
         # would be a false positive.
-        if "timeout" in mots or None in mots:
+        if "timeout" in words or None in words:
             continue
-        trouves.append((noeud.lineno, f"requests.{f.attr}() without timeout="))
-    return trouves
+        found.append((node.lineno, f"requests.{f.attr}() without timeout="))
+    return found
 
 
-def surcharge_de_session_presente() -> bool:
+def session_override_present() -> bool:
     """`TheHiveSession.request` must exist and set a default timeout.
 
     Checking the METHOD rather than its call sites is what keeps this guard
@@ -74,14 +74,14 @@ def surcharge_de_session_presente() -> bool:
     """
     if not SESSION.is_file():
         return False
-    arbre = ast.parse(SESSION.read_text(encoding="utf-8"), filename=str(SESSION))
-    for classe in ast.walk(arbre):
-        if not (isinstance(classe, ast.ClassDef) and classe.name == "TheHiveSession"):
+    tree = ast.parse(SESSION.read_text(encoding="utf-8"), filename=str(SESSION))
+    for class_node in ast.walk(tree):
+        if not (isinstance(class_node, ast.ClassDef) and class_node.name == "TheHiveSession"):
             continue
-        for membre in classe.body:
-            if isinstance(membre, ast.FunctionDef) and membre.name == "request":
-                corps = ast.dump(membre)
-                return "timeout" in corps and "setdefault" in corps
+        for member in class_node.body:
+            if isinstance(member, ast.FunctionDef) and member.name == "request":
+                body = ast.dump(member)
+                return "timeout" in body and "setdefault" in body
     return False
 
 
@@ -91,15 +91,15 @@ def main() -> int:
         return 1
 
     total = 0
-    for chemin in sorted(SOURCES.rglob("*.py")):
-        if EXCLUS_REPERTOIRES & set(chemin.relative_to(SOURCES).parts):
+    for path in sorted(SOURCES.rglob("*.py")):
+        if EXCLUDED_DIRS & set(path.relative_to(SOURCES).parts):
             continue
-        for ligne, quoi in appels_requests_nus(chemin):
-            print(f"{chemin.relative_to(RACINE)}:{ligne}: {quoi}")
+        for line, what in bare_requests_calls(path):
+            print(f"{path.relative_to(ROOT)}:{line}: {what}")
             total += 1
 
-    if not surcharge_de_session_presente():
-        print(f"{SESSION.relative_to(RACINE)}: TheHiveSession no longer overrides "
+    if not session_override_present():
+        print(f"{SESSION.relative_to(ROOT)}: TheHiveSession no longer overrides "
               "request() with a default timeout — the local patch is gone")
         total += 1
 

@@ -41,94 +41,94 @@ import re
 import sys
 from pathlib import Path
 
-RACINE = Path(__file__).resolve().parents[2]
-PAQUET = RACINE / "TA-thehive-cortex" / "package"
-CONF = PAQUET / "default" / "alert_actions.conf"
-HELPERS = PAQUET / "bin" / "ta_thehive_cortex"
+ROOT = Path(__file__).resolve().parents[2]
+PACKAGE = ROOT / "TA-thehive-cortex" / "package"
+CONF = PACKAGE / "default" / "alert_actions.conf"
+HELPERS = PACKAGE / "bin" / "ta_thehive_cortex"
 
-#: Réglages GLOBAUX, lus par `get_global_setting` ou par la configuration, pas
-#: passés en `param.*`. Les déclarer serait faux.
-HORS_FORMULAIRE = {
+#: GLOBAL settings, read by `get_global_setting` or from the configuration, not
+#: passed as `param.*`. Declaring them would be wrong.
+NOT_IN_FORM = {
     "splunk_sanitize_backslashes", "splunk_es_alerts_index",
 }
 
-#: Fournis par Splunk à toute action, jamais déclarés par l'add-on.
-FOURNIS_PAR_SPLUNK = {"search_name", "sid", "results_file", "results_link"}
+#: Provided by Splunk to every action, never declared by the add-on.
+PROVIDED_BY_SPLUNK = {"search_name", "sid", "results_file", "results_link"}
 
 
-def declares() -> dict[str, set[str]]:
-    """Stanza -> paramètres déclarés."""
-    par_stanza: dict[str, set[str]] = {}
+def declared_params() -> dict[str, set[str]]:
+    """Stanza -> declared parameters."""
+    by_stanza: dict[str, set[str]] = {}
     stanza = None
-    for ligne in CONF.read_text(encoding="utf-8").splitlines():
-        nu = ligne.strip()
-        if nu.startswith("[") and nu.endswith("]"):
-            stanza = nu[1:-1]
-            par_stanza[stanza] = set()
-        elif stanza and nu.startswith("param.") and "=" in nu:
-            nom = nu.split("=", 1)[0].strip()[len("param."):]
-            if not nom.startswith("_"):
-                par_stanza[stanza].add(nom)
-    return par_stanza
+    for line in CONF.read_text(encoding="utf-8").splitlines():
+        bare = line.strip()
+        if bare.startswith("[") and bare.endswith("]"):
+            stanza = bare[1:-1]
+            by_stanza[stanza] = set()
+        elif stanza and bare.startswith("param.") and "=" in bare:
+            name = bare.split("=", 1)[0].strip()[len("param."):]
+            if not name.startswith("_"):
+                by_stanza[stanza].add(name)
+    return by_stanza
 
 
-def lus(stanza: str) -> set[str] | None:
-    """Paramètres réellement lus par le helper de cette action."""
+def read_params(stanza: str) -> set[str] | None:
+    """Parameters actually read by this action's helper."""
     helper = HELPERS / f"modalert_{stanza}_helper.py"
     if not helper.is_file():
         return None
     sources = [helper.read_text(encoding="utf-8")]
-    # Le code commun lit lui aussi des paramètres pour le compte de l'action.
-    for commun in ("modalert_args.py",):
-        chemin = HELPERS / commun
-        if chemin.is_file() and commun.replace(".py", "") in sources[0]:
-            sources.append(chemin.read_text(encoding="utf-8"))
+    # The shared code also reads parameters on the action's behalf.
+    for shared in ("modalert_args.py",):
+        path = HELPERS / shared
+        if path.is_file() and shared.replace(".py", "") in sources[0]:
+            sources.append(path.read_text(encoding="utf-8"))
 
-    noms = set()
+    names = set()
     for source in sources:
         try:
-            arbre = ast.parse(source)
+            tree = ast.parse(source)
         except SyntaxError:
             continue
 
-        # Les fonctions locales qui transmettent leur argument à get_param :
+        # Local functions that forward their argument to get_param:
         # `def resolve_date(param_name): … helper.get_param(param_name) …`
-        relais = _fonctions_relais(arbre)
+        relays = _relay_functions(tree)
 
-        for noeud in ast.walk(arbre):
-            if not isinstance(noeud, ast.Call):
+        for node in ast.walk(tree):
+            if not isinstance(node, ast.Call):
                 continue
-            appele = getattr(noeud.func, "attr", None) or getattr(noeud.func, "id", None)
-            if appele == "get_param" and noeud.args:
-                if isinstance(noeud.args[0], ast.Constant):
-                    noms.add(noeud.args[0].value)
-            elif appele in relais and noeud.args:
-                position = relais[appele]
-                if position < len(noeud.args) and isinstance(noeud.args[position], ast.Constant):
-                    noms.add(noeud.args[position].value)
-    return noms
+            callee = getattr(node.func, "attr", None) or getattr(node.func, "id", None)
+            if callee == "get_param" and node.args:
+                if isinstance(node.args[0], ast.Constant):
+                    names.add(node.args[0].value)
+            elif callee in relays and node.args:
+                position = relays[callee]
+                if position < len(node.args) and isinstance(node.args[position], ast.Constant):
+                    names.add(node.args[position].value)
+    return names
 
 
-def _fonctions_relais(arbre) -> dict[str, int]:
-    """Nom -> position de l'argument transmis à `get_param`.
+def _relay_functions(tree) -> dict[str, int]:
+    """Name -> position of the argument forwarded to `get_param`.
 
-    ⚠️ Sans ça, un paramètre lu par un tour de passe-passe d'une ligne passe
-    pour mort. Le nom du paramètre n'est pas toujours collé à `get_param`.
+    ⚠️ Without this, a parameter read through a one-line sleight of hand looks
+    dead. The parameter name does not always sit right next to `get_param`.
     """
-    relais: dict[str, int] = {}
-    for noeud in ast.walk(arbre):
-        if not isinstance(noeud, (ast.FunctionDef, ast.AsyncFunctionDef)):
+    relays: dict[str, int] = {}
+    for node in ast.walk(tree):
+        if not isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
             continue
-        arguments = [a.arg for a in noeud.args.args]
-        for interne in ast.walk(noeud):
-            if not isinstance(interne, ast.Call) or not interne.args:
+        arguments = [a.arg for a in node.args.args]
+        for inner in ast.walk(node):
+            if not isinstance(inner, ast.Call) or not inner.args:
                 continue
-            appele = getattr(interne.func, "attr", None)
-            premier = interne.args[0]
-            if appele == "get_param" and isinstance(premier, ast.Name):
-                if premier.id in arguments:
-                    relais[noeud.name] = arguments.index(premier.id)
-    return relais
+            callee = getattr(inner.func, "attr", None)
+            first = inner.args[0]
+            if callee == "get_param" and isinstance(first, ast.Name):
+                if first.id in arguments:
+                    relays[node.name] = arguments.index(first.id)
+    return relays
 
 
 def main() -> int:
@@ -136,27 +136,27 @@ def main() -> int:
         print(f"not found: {CONF}", file=sys.stderr)
         return 1
 
-    constats = []
-    for stanza, declaration in sorted(declares().items()):
-        lecture = lus(stanza)
-        if lecture is None:
-            continue  # pas d'aide dédiée : rien à comparer
+    findings = []
+    for stanza, declaration in sorted(declared_params().items()):
+        read = read_params(stanza)
+        if read is None:
+            continue  # no dedicated helper: nothing to compare
 
-        for nom in sorted(lecture - declaration - FOURNIS_PAR_SPLUNK - HORS_FORMULAIRE):
-            constats.append(
-                f"[{stanza}] reads `{nom}` and declares it nowhere. Splunk does "
+        for name in sorted(read - declaration - PROVIDED_BY_SPLUNK - NOT_IN_FORM):
+            findings.append(
+                f"[{stanza}] reads `{name}` and declares it nowhere. Splunk does "
                 f"not pass an undeclared parameter, so the code gets None — for "
                 f"a field the form may well call required"
             )
-        for nom in sorted(declaration - lecture - HORS_FORMULAIRE):
-            constats.append(
-                f"[{stanza}] declares `param.{nom}` and nothing reads it. The "
+        for name in sorted(declaration - read - NOT_IN_FORM):
+            findings.append(
+                f"[{stanza}] declares `param.{name}` and nothing reads it. The "
                 f"user is shown a field that does nothing"
             )
 
-    for c in constats:
+    for c in findings:
         print(f"  {c}")
-    if constats:
+    if findings:
         print()
         print("The declaration, the form and the code are three independent")
         print("statements about the same parameter, and nothing else compares them.")

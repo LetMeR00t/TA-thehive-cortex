@@ -31,12 +31,12 @@ import re
 import sys
 from pathlib import Path
 
-RACINE = Path(__file__).resolve().parents[2]
-PAQUET = RACINE / "TA-thehive-cortex" / "package"
-BIN = PAQUET / "bin"
-DEFAULT = PAQUET / "default"
+ROOT = Path(__file__).resolve().parents[2]
+PACKAGE = ROOT / "TA-thehive-cortex" / "package"
+BIN = PACKAGE / "bin"
+DEFAULT = PACKAGE / "default"
 
-REPERTOIRE_JOURNAL = "/opt/splunk/var/log/splunk/"
+LOG_DIR = "/opt/splunk/var/log/splunk/"
 SOURCETYPE = "tathehivecortex:log"
 
 
@@ -44,34 +44,34 @@ SOURCETYPE = "tathehivecortex:log"
 # 1. What names does the code actually produce?
 # --------------------------------------------------------------------------
 
-def modele_ta_logging() -> str:
+def ta_logging_template() -> str:
     """Read the file-name template out of ta_logging.py, instead of assuming it.
 
     Returns the prefix, e.g. ``TA-thehive-cortex_``. Raises when the source no
     longer builds the name the way this check believes.
     """
     source = (BIN / "ta_logging.py").read_text(encoding="utf-8")
-    arbre = ast.parse(source)
+    tree = ast.parse(source)
     ta_name = None
-    gabarit_vu = False
-    for noeud in ast.walk(arbre):
-        if isinstance(noeud, ast.Assign) and len(noeud.targets) == 1:
-            cible = noeud.targets[0]
-            if not isinstance(cible, ast.Name):
+    template_seen = False
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Assign) and len(node.targets) == 1:
+            target = node.targets[0]
+            if not isinstance(target, ast.Name):
                 continue
-            if cible.id == "ta_name" and isinstance(noeud.value, ast.Constant):
-                ta_name = noeud.value.value
-            if cible.id == "LOGGING_FILE_NAME":
+            if target.id == "ta_name" and isinstance(node.value, ast.Constant):
+                ta_name = node.value.value
+            if target.id == "LOGGING_FILE_NAME":
                 # ta_name + "_" + name + ".log" -- we only need the constants.
                 # ⚠️ ast.walk is breadth-first, so the constants come out in
                 # tree order, not source order. Compare the SET.
-                constantes = {
-                    n.value for n in ast.walk(noeud.value)
+                constants = {
+                    n.value for n in ast.walk(node.value)
                     if isinstance(n, ast.Constant) and isinstance(n.value, str)
                 }
-                if constantes == {"_", ".log"}:
-                    gabarit_vu = True
-    if ta_name is None or not gabarit_vu:
+                if constants == {"_", ".log"}:
+                    template_seen = True
+    if ta_name is None or not template_seen:
         raise SystemExit(
             "ta_logging.py no longer builds the log file name as "
             '`ta_name + "_" + name + ".log"`. This check models a shape that '
@@ -80,39 +80,39 @@ def modele_ta_logging() -> str:
     return f"{ta_name}_"
 
 
-def noms_de_commandes() -> set[str]:
+def command_names() -> set[str]:
     """Every literal name handed to setup_logging, directly or via logger_name."""
-    noms: set[str] = set()
-    for fichier in sorted(BIN.rglob("*.py")):
+    names: set[str] = set()
+    for source_file in sorted(BIN.rglob("*.py")):
         try:
-            arbre = ast.parse(fichier.read_text(encoding="utf-8"))
+            tree = ast.parse(source_file.read_text(encoding="utf-8"))
         except SyntaxError:
             continue
-        for noeud in ast.walk(arbre):
+        for node in ast.walk(tree):
             # setup_logging("thehive_audit")
-            if isinstance(noeud, ast.Call):
-                fonction = noeud.func
-                nom = getattr(fonction, "id", None) or getattr(fonction, "attr", None)
-                if nom == "setup_logging" and noeud.args:
-                    if isinstance(noeud.args[0], ast.Constant):
-                        noms.add(noeud.args[0].value)
+            if isinstance(node, ast.Call):
+                function = node.func
+                name = getattr(function, "id", None) or getattr(function, "attr", None)
+                if name == "setup_logging" and node.args:
+                    if isinstance(node.args[0], ast.Constant):
+                        names.add(node.args[0].value)
                 # initialize_thehive_instances(..., logger_name="thehive_get_case")
-                for kw in noeud.keywords:
+                for kw in node.keywords:
                     if kw.arg == "logger_name" and isinstance(kw.value, ast.Constant):
-                        noms.add(kw.value.value)
+                        names.add(kw.value.value)
             # def initialize_...(..., logger_name="script") -- the default is a
             # real file the day a caller forgets the argument.
-            if isinstance(noeud, ast.FunctionDef):
-                for arg, defaut in zip(
-                    noeud.args.args[-len(noeud.args.defaults):] if noeud.args.defaults else [],
-                    noeud.args.defaults,
+            if isinstance(node, ast.FunctionDef):
+                for arg, default in zip(
+                    node.args.args[-len(node.args.defaults):] if node.args.defaults else [],
+                    node.args.defaults,
                 ):
-                    if arg.arg == "logger_name" and isinstance(defaut, ast.Constant):
-                        noms.add(defaut.value)
-    return noms
+                    if arg.arg == "logger_name" and isinstance(default, ast.Constant):
+                        names.add(default.value)
+    return names
 
 
-def noms_d_alert_actions() -> set[str]:
+def alert_action_names() -> set[str]:
     """Alert actions log through solnlib, under `<alert>_modalert`."""
     base = (BIN / "ta_thehive_cortex" / "alert_actions_base.py").read_text(encoding="utf-8")
     if '_logger_name = alert_name + "_modalert"' not in base:
@@ -121,10 +121,10 @@ def noms_d_alert_actions() -> set[str]:
             '`alert_name + "_modalert"`. Update this check before trusting it.'
         )
     conf = (DEFAULT / "alert_actions.conf").read_text(encoding="utf-8")
-    return {f"{nom}_modalert" for nom in re.findall(r"^\[([^\]]+)\]", conf, re.M)}
+    return {f"{name}_modalert" for name in re.findall(r"^\[([^\]]+)\]", conf, re.M)}
 
 
-def verifier_absence_de_namespace() -> str | None:
+def check_no_namespace() -> str | None:
     """solnlib prefixes the file ONLY when a namespace is set via set_context.
 
     Proven on solnlib's source: `Logs._get_log_file` returns `<name>.log` when
@@ -132,10 +132,10 @@ def verifier_absence_de_namespace() -> str | None:
     alert action files gain a prefix and the stanzas below stop matching --
     exactly the v4.0.0 defect, in the other direction.
     """
-    for fichier in BIN.rglob("*.py"):
-        if "set_context" in fichier.read_text(encoding="utf-8"):
+    for source_file in BIN.rglob("*.py"):
+        if "set_context" in source_file.read_text(encoding="utf-8"):
             return (
-                f"{fichier.relative_to(RACINE)} calls solnlib's set_context: the "
+                f"{source_file.relative_to(ROOT)} calls solnlib's set_context: the "
                 "alert action log files are now namespaced, so their props.conf "
                 "stanzas need the prefix too."
             )
@@ -146,93 +146,93 @@ def verifier_absence_de_namespace() -> str | None:
 # 2. What does props.conf cover?
 # --------------------------------------------------------------------------
 
-def motifs_de_source() -> list[tuple[str, re.Pattern[str]]]:
+def source_patterns() -> list[tuple[str, re.Pattern[str]]]:
     """Translate Splunk `[source::...]` stanzas into regexes.
 
     Splunk's rules: `...` matches anything including path separators, `*`
     matches anything except a path separator.
     """
-    texte = (DEFAULT / "props.conf").read_text(encoding="utf-8")
-    motifs = []
+    text = (DEFAULT / "props.conf").read_text(encoding="utf-8")
+    patterns = []
     stanza = None
-    for ligne in texte.splitlines():
-        nu = ligne.strip()
-        if nu.startswith("[") and nu.endswith("]"):
-            stanza = nu[1:-1]
+    for line in text.splitlines():
+        bare = line.strip()
+        if bare.startswith("[") and bare.endswith("]"):
+            stanza = bare[1:-1]
             continue
         if not stanza or not stanza.startswith("source::"):
             continue
-        if nu.replace(" ", "").lower() == f"sourcetype={SOURCETYPE}":
-            motif = stanza[len("source::"):]
+        if bare.replace(" ", "").lower() == f"sourcetype={SOURCETYPE}":
+            pattern = stanza[len("source::"):]
             regex = ""
             i = 0
-            while i < len(motif):
-                if motif.startswith("...", i):
+            while i < len(pattern):
+                if pattern.startswith("...", i):
                     regex += ".*"
                     i += 3
-                elif motif[i] == "*":
+                elif pattern[i] == "*":
                     regex += r"[^/\\]*"
                     i += 1
                 else:
-                    regex += re.escape(motif[i])
+                    regex += re.escape(pattern[i])
                     i += 1
-            motifs.append((stanza, re.compile(f"^{regex}$")))
-    return motifs
+            patterns.append((stanza, re.compile(f"^{regex}$")))
+    return patterns
 
 
-def sourcetype_defini() -> bool:
+def sourcetype_defined() -> bool:
     """The sourcetype was assigned everywhere and defined nowhere until v4.2.3."""
-    texte = (DEFAULT / "props.conf").read_text(encoding="utf-8")
-    return any(l.strip() == f"[{SOURCETYPE}]" for l in texte.splitlines())
+    text = (DEFAULT / "props.conf").read_text(encoding="utf-8")
+    return any(l.strip() == f"[{SOURCETYPE}]" for l in text.splitlines())
 
 
 # --------------------------------------------------------------------------
 
 def main() -> int:
-    if not PAQUET.is_dir():
-        print(f"package not found: {PAQUET}", file=sys.stderr)
+    if not PACKAGE.is_dir():
+        print(f"package not found: {PACKAGE}", file=sys.stderr)
         return 1
 
-    prefixe = modele_ta_logging()
-    attendus = {f"{prefixe}{n}.log" for n in noms_de_commandes()}
-    attendus |= {f"{n}.log" for n in noms_d_alert_actions()}
+    prefix = ta_logging_template()
+    expected = {f"{prefix}{n}.log" for n in command_names()}
+    expected |= {f"{n}.log" for n in alert_action_names()}
 
-    motifs = motifs_de_source()
-    if not motifs:
+    patterns = source_patterns()
+    if not patterns:
         print(f"props.conf assigns {SOURCETYPE} from no [source::] stanza at all.")
         return 1
 
-    constats = []
-    derive = verifier_absence_de_namespace()
-    if derive:
-        constats.append(derive)
+    findings = []
+    derived = check_no_namespace()
+    if derived:
+        findings.append(derived)
 
-    for fichier in sorted(attendus):
-        chemin = REPERTOIRE_JOURNAL + fichier
-        if not any(rx.match(chemin) for _, rx in motifs):
-            constats.append(
-                f"{fichier} is written by the add-on, but no [source::] stanza "
+    for source_file in sorted(expected):
+        path = LOG_DIR + source_file
+        if not any(rx.match(path) for _, rx in patterns):
+            findings.append(
+                f"{source_file} is written by the add-on, but no [source::] stanza "
                 f"of props.conf assigns it {SOURCETYPE}. Splunk will auto-learn "
                 f"a sourcetype from the file name instead."
             )
 
-    if not sourcetype_defini():
-        constats.append(
-            f"[{SOURCETYPE}] is assigned by {len(motifs)} stanza(s) and defined "
+    if not sourcetype_defined():
+        findings.append(
+            f"[{SOURCETYPE}] is assigned by {len(patterns)} stanza(s) and defined "
             f"by none: line breaking and timestamping fall back to Splunk's "
             f"defaults on a format that starts with an ISO date."
         )
 
-    for c in constats:
+    for c in findings:
         print(f"  {c}")
 
-    if constats:
+    if findings:
         print()
         print("Both files are individually valid; the break is between them.")
         return 1
 
-    print(f"{len(attendus)} log file name(s) produced, all covered by "
-          f"{len(motifs)} stanza(s); [{SOURCETYPE}] is defined.")
+    print(f"{len(expected)} log file name(s) produced, all covered by "
+          f"{len(patterns)} stanza(s); [{SOURCETYPE}] is defined.")
     return 0
 
 

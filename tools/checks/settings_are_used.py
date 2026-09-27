@@ -35,83 +35,83 @@ import re
 import sys
 from pathlib import Path
 
-RACINE = Path(__file__).resolve().parents[2]
-BIN = RACINE / "TA-thehive-cortex" / "package" / "bin"
+ROOT = Path(__file__).resolve().parents[2]
+BIN = ROOT / "TA-thehive-cortex" / "package" / "bin"
 
-DOSSIERS_IGNORES = {"libs", "__pycache__", "modinput_wrapper"}
+IGNORED_DIRS = {"libs", "__pycache__", "modinput_wrapper"}
 
 
 def modules():
-    for chemin in sorted(BIN.rglob("*.py")):
-        if any(p in DOSSIERS_IGNORES for p in chemin.parts):
+    for path in sorted(BIN.rglob("*.py")):
+        if any(p in IGNORED_DIRS for p in path.parts):
             continue
-        yield chemin
+        yield path
 
 
-def cles_deposees() -> dict[str, tuple[Path, int]]:
-    """Les clés écrites dans un littéral `defaults = { … }`."""
-    deposees: dict[str, tuple[Path, int]] = {}
-    for chemin in modules():
+def stored_keys() -> dict[str, tuple[Path, int]]:
+    """The keys written in a `defaults = { … }` literal."""
+    stored: dict[str, tuple[Path, int]] = {}
+    for path in modules():
         try:
-            arbre = ast.parse(chemin.read_text(encoding="utf-8"))
+            tree = ast.parse(path.read_text(encoding="utf-8"))
         except SyntaxError:
             continue
-        for noeud in ast.walk(arbre):
-            if not isinstance(noeud, ast.Assign):
+        for node in ast.walk(tree):
+            if not isinstance(node, ast.Assign):
                 continue
-            cibles = [c.id for c in noeud.targets if isinstance(c, ast.Name)]
-            if "defaults" not in cibles or not isinstance(noeud.value, ast.Dict):
+            targets = [c.id for c in node.targets if isinstance(c, ast.Name)]
+            if "defaults" not in targets or not isinstance(node.value, ast.Dict):
                 continue
-            for cle in noeud.value.keys:
-                if isinstance(cle, ast.Constant) and isinstance(cle.value, str):
-                    deposees.setdefault(cle.value, (chemin, noeud.lineno))
-    return deposees
+            for key in node.value.keys:
+                if isinstance(key, ast.Constant) and isinstance(key.value, str):
+                    stored.setdefault(key.value, (path, node.lineno))
+    return stored
 
 
-def cles_relues() -> set[str]:
-    """Les clés lues, quelle que soit la variable qui porte le dictionnaire.
+def read_keys() -> set[str]:
+    """The keys read, whatever variable carries the dictionary.
 
-    ⚠️ Volontairement large : `defaults["X"]`, `conf["X"]`, `.get("X")`. Le but
-    est de repérer une valeur que PERSONNE ne consomme, pas d'auditer par quel
-    nom elle voyage. Trop étroit, le contrôle inventerait des morts.
+    ⚠️ Deliberately broad: `defaults["X"]`, `conf["X"]`, `.get("X")`. The aim
+    is to spot a value that NOBODY consumes, not to audit under which
+    name it travels. Too narrow, and the check would invent dead values.
     """
-    lues = set()
-    motif = re.compile(r'(?:\[|\.get\()\s*["\']([A-Z][A-Z0-9_]+)["\']')
-    for chemin in modules():
-        texte = chemin.read_text(encoding="utf-8")
-        # On retire les littéraux de dépôt, sinon une clé se lit elle-même.
-        sans_depot = re.sub(r"defaults\s*=\s*\{.*?\}", "", texte, flags=re.S)
-        lues.update(motif.findall(sans_depot))
-    return lues
+    read = set()
+    pattern = re.compile(r'(?:\[|\.get\()\s*["\']([A-Z][A-Z0-9_]+)["\']')
+    for path in modules():
+        text = path.read_text(encoding="utf-8")
+        # The storing literals are removed, otherwise a key reads itself.
+        without_store = re.sub(r"defaults\s*=\s*\{.*?\}", "", text, flags=re.S)
+        read.update(pattern.findall(without_store))
+    return read
 
 
 def main() -> int:
-    deposees = cles_deposees()
-    if not deposees:
+    stored = stored_keys()
+    if not stored:
         print("no `defaults` dictionary found: this check guards nothing")
         return 1
 
-    lues = cles_relues()
-    constats = []
-    for cle, (chemin, ligne) in sorted(deposees.items()):
-        if cle not in lues:
-            constats.append(
-                f"{chemin.relative_to(RACINE)}:{ligne} puts {cle!r} into "
+    read = read_keys()
+    findings = []
+    for key, (path, line) in sorted(stored.items()):
+        if key not in read:
+            findings.append(
+                f"{path.relative_to(ROOT)}:{line} puts {key!r} into "
                 f"`defaults`, and nothing ever reads it. The setting behind it "
                 f"has no effect: a user can change it, save, and see nothing "
                 f"happen"
             )
 
-    for c in constats:
+    for c in findings:
         print(f"  {c}")
-    if constats:
+    if findings:
         print()
         print("A setting read and dropped looks wired from every angle: the page")
         print("shows it, the getter exists, the getter is called. Only the last")
         print("hop is missing, and only a check can see that.")
         return 1
 
-    print(f"{len(deposees)} setting(s) handed over, all of them consumed.")
+    print(f"{len(stored)} setting(s) handed over, all of them consumed.")
     return 0
 
 

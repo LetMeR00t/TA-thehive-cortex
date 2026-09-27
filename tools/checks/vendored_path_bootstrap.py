@@ -34,72 +34,72 @@ import ast
 import sys
 from pathlib import Path
 
-RACINE = Path(__file__).resolve().parents[2]
-BIN = RACINE / "TA-thehive-cortex" / "package" / "bin"
+ROOT = Path(__file__).resolve().parents[2]
+BIN = ROOT / "TA-thehive-cortex" / "package" / "bin"
 
-BON_AMORCAGE = "ta_thehive_cortex_declare"
-AMORCAGE_UCC = "import_declare_test"
+GOOD_BOOTSTRAP = "ta_thehive_cortex_declare"
+UCC_BOOTSTRAP = "import_declare_test"
 
-#: Ce que seul `ta_thehive_cortex_declare` rend atteignable.
-VENDORISES = {"thehive4py", "cortex4py"}
-
-
-def paquets_importes(arbre) -> set[str]:
-    paquets = set()
-    for noeud in ast.walk(arbre):
-        if isinstance(noeud, ast.Import):
-            paquets.update(al.name.split(".")[0] for al in noeud.names)
-        elif isinstance(noeud, ast.ImportFrom) and noeud.module and noeud.level == 0:
-            paquets.add(noeud.module.split(".")[0])
-    return paquets
+#: What only `ta_thehive_cortex_declare` makes reachable.
+VENDORED = {"thehive4py", "cortex4py"}
 
 
-def premier_import(arbre) -> str | None:
-    for noeud in arbre.body:
-        if isinstance(noeud, ast.Import):
-            return noeud.names[0].name
-        if isinstance(noeud, ast.ImportFrom):
-            return noeud.module
+def imported_packages(tree) -> set[str]:
+    packages = set()
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            packages.update(al.name.split(".")[0] for al in node.names)
+        elif isinstance(node, ast.ImportFrom) and node.module and node.level == 0:
+            packages.add(node.module.split(".")[0])
+    return packages
+
+
+def first_import(tree) -> str | None:
+    for node in tree.body:
+        if isinstance(node, ast.Import):
+            return node.names[0].name
+        if isinstance(node, ast.ImportFrom):
+            return node.module
     return None
 
 
 def main() -> int:
-    constats = []
+    findings = []
     for module in sorted(BIN.rglob("*.py")):
         if "libs" in module.parts or "__pycache__" in module.parts:
             continue
-        if module.name in (f"{BON_AMORCAGE}.py",):
+        if module.name in (f"{GOOD_BOOTSTRAP}.py",):
             continue
         try:
-            arbre = ast.parse(module.read_text(encoding="utf-8"))
+            tree = ast.parse(module.read_text(encoding="utf-8"))
         except SyntaxError:
             continue
 
-        paquets = paquets_importes(arbre)
-        if not (paquets & VENDORISES):
+        packages = imported_packages(tree)
+        if not (packages & VENDORED):
             continue
 
-        relatif = module.relative_to(RACINE)
-        if BON_AMORCAGE not in paquets:
-            constats.append(
-                f"{relatif} imports {', '.join(sorted(paquets & VENDORISES))} but "
-                f"never imports `{BON_AMORCAGE}`"
-                + (f" -- it uses `{AMORCAGE_UCC}`, which does NOT add the vendored "
-                   f"libs directory" if AMORCAGE_UCC in paquets else "")
+        relative = module.relative_to(ROOT)
+        if GOOD_BOOTSTRAP not in packages:
+            findings.append(
+                f"{relative} imports {', '.join(sorted(packages & VENDORED))} but "
+                f"never imports `{GOOD_BOOTSTRAP}`"
+                + (f" -- it uses `{UCC_BOOTSTRAP}`, which does NOT add the vendored "
+                   f"libs directory" if UCC_BOOTSTRAP in packages else "")
             )
             continue
 
-        premier = premier_import(arbre)
-        if premier != BON_AMORCAGE:
-            constats.append(
-                f"{relatif} imports `{BON_AMORCAGE}` but not FIRST (first is "
-                f"`{premier}`): the path is fixed after something has already "
+        first = first_import(tree)
+        if first != GOOD_BOOTSTRAP:
+            findings.append(
+                f"{relative} imports `{GOOD_BOOTSTRAP}` but not FIRST (first is "
+                f"`{first}`): the path is fixed after something has already "
                 f"needed it"
             )
 
-    for c in constats:
+    for c in findings:
         print(f"  {c}")
-    if constats:
+    if findings:
         print()
         print("A vendored library is only importable once its directory is on")
         print("sys.path. Relying on another module's import to do it is a trap:")

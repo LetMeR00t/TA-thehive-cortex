@@ -47,88 +47,88 @@ import collections
 import sys
 from pathlib import Path
 
-RACINE = Path(__file__).resolve().parents[2]
-BIN = RACINE / "TA-thehive-cortex" / "package" / "bin"
-REGISTRE = RACINE / "docs" / "log_ids.md"
+ROOT = Path(__file__).resolve().parents[2]
+BIN = ROOT / "TA-thehive-cortex" / "package" / "bin"
+REGISTRY = ROOT / "docs" / "log_ids.md"
 
-NIVEAUX = {"debug", "info", "warn", "warning", "error", "critical"}
+LEVELS = {"debug", "info", "warn", "warning", "error", "critical"}
 
 
 def sites(module: Path):
     """Every (id, niveau, message) logged by this module, in source order."""
     try:
-        arbre = ast.parse(module.read_text(encoding="utf-8"))
+        tree = ast.parse(module.read_text(encoding="utf-8"))
     except SyntaxError:
         return []
-    trouves = []
-    for noeud in ast.walk(arbre):
-        if not isinstance(noeud, ast.Call):
+    found = []
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Call):
             continue
 
-        # ⚠️ Les identifiants passés en DONNÉE aux aides partagées.
-        for kw in noeud.keywords:
+        # ⚠️ Identifiers passed as DATA to the shared helpers.
+        for kw in node.keywords:
             if kw.arg == "ids" and isinstance(kw.value, ast.Dict):
-                for cle, valeur in zip(kw.value.keys, kw.value.values):
-                    if isinstance(valeur, ast.Constant) and isinstance(cle, ast.Constant):
-                        trouves.append(
-                            (noeud.lineno, str(valeur.value), "via helper",
-                             f"passed as `{cle.value}` to {_nom_appele(noeud)}")
+                for key, value in zip(kw.value.keys, kw.value.values):
+                    if isinstance(value, ast.Constant) and isinstance(key, ast.Constant):
+                        found.append(
+                            (node.lineno, str(value.value), "via helper",
+                             f"passed as `{key.value}` to {_callee_name(node)}")
                         )
 
-        niveau = getattr(noeud.func, "attr", None)
-        if niveau not in NIVEAUX:
+        level = getattr(node.func, "attr", None)
+        if level not in LEVELS:
             continue
-        identifiant = message = None
-        for kw in noeud.keywords:
+        identifier = message = None
+        for kw in node.keywords:
             if kw.arg == "id" and isinstance(kw.value, ast.Constant):
-                identifiant = str(kw.value.value)
+                identifier = str(kw.value.value)
             if kw.arg == "message":
-                message = _resume(kw.value)
-        if identifiant is not None:
-            trouves.append((noeud.lineno, identifiant, niveau, message or ""))
-    return sorted(trouves)
+                message = _summary(kw.value)
+        if identifier is not None:
+            found.append((node.lineno, identifier, level, message or ""))
+    return sorted(found)
 
 
-def _nom_appele(noeud) -> str:
-    fonction = noeud.func
-    return getattr(fonction, "id", None) or getattr(fonction, "attr", None) or "?"
+def _callee_name(node) -> str:
+    function = node.func
+    return getattr(function, "id", None) or getattr(function, "attr", None) or "?"
 
 
-def _resume(noeud) -> str:
+def _summary(node) -> str:
     """A readable one-liner for the registry, from whatever expression it is."""
-    if isinstance(noeud, ast.Constant) and isinstance(noeud.value, str):
-        texte = noeud.value
-    elif isinstance(noeud, ast.JoinedStr):
-        texte = "".join(
-            p.value if isinstance(p, ast.Constant) else "{…}" for p in noeud.values
+    if isinstance(node, ast.Constant) and isinstance(node.value, str):
+        text = node.value
+    elif isinstance(node, ast.JoinedStr):
+        text = "".join(
+            p.value if isinstance(p, ast.Constant) else "{…}" for p in node.values
         )
-    elif isinstance(noeud, ast.BinOp):
-        texte = _resume(noeud.left) + " …"
-    elif isinstance(noeud, ast.Call):
-        texte = _resume(noeud.func.value) if isinstance(noeud.func, ast.Attribute) else "…"
+    elif isinstance(node, ast.BinOp):
+        text = _summary(node.left) + " …"
+    elif isinstance(node, ast.Call):
+        text = _summary(node.func.value) if isinstance(node.func, ast.Attribute) else "…"
     else:
-        texte = "…"
-    texte = " ".join(texte.split())
-    return (texte[:77] + "…") if len(texte) > 78 else texte
+        text = "…"
+    text = " ".join(text.split())
+    return (text[:77] + "…") if len(text) > 78 else text
 
 
 def modules():
-    for chemin in sorted(BIN.rglob("*.py")):
-        if "libs" in chemin.parts or "__pycache__" in chemin.parts:
+    for path in sorted(BIN.rglob("*.py")):
+        if "libs" in path.parts or "__pycache__" in path.parts:
             continue
-        yield chemin
+        yield path
 
 
-DEBUT = "<!-- INVENTAIRE:DEBUT -->"
-FIN = "<!-- INVENTAIRE:FIN -->"
+START = "<!-- INVENTAIRE:DEBUT -->"
+END = "<!-- INVENTAIRE:FIN -->"
 
-#: Les niveaux dont un code DOIT être interprété à la main.
-NIVEAUX_A_EXPLIQUER = {"error", "warn", "warning"}
+#: The levels whose code MUST be explained by hand.
+LEVELS_TO_EXPLAIN = {"error", "warn", "warning"}
 
 
-def construire_registre() -> tuple[str, list[str]]:
-    lignes = [
-        DEBUT,
+def build_registry() -> tuple[str, list[str]]:
+    lines = [
+        START,
         "",
         "# Complete inventory",
         "",
@@ -136,118 +136,118 @@ def construire_registre() -> tuple[str, list[str]]:
         "> `python tools/checks/log_ids_unique.py --write` rebuilds it.",
         "",
     ]
-    constats = []
+    findings = []
     total = 0
 
     for module in modules():
-        trouves = sites(module)
-        if not trouves:
+        found = sites(module)
+        if not found:
             continue
-        total += len(trouves)
-        compte = collections.Counter(i for _, i, _, _ in trouves)
-        for identifiant, n in sorted(compte.items()):
+        total += len(found)
+        count = collections.Counter(i for _, i, _, _ in found)
+        for identifier, n in sorted(count.items()):
             if n > 1:
-                ou = [str(l) for l, i, _, _ in trouves if i == identifiant]
-                constats.append(
-                    f"{module.relative_to(RACINE)}: id={identifiant} designates "
-                    f"{n} places (lines {', '.join(ou)}) -- so it designates none"
+                where = [str(l) for l, i, _, _ in found if i == identifier]
+                findings.append(
+                    f"{module.relative_to(ROOT)}: id={identifier} designates "
+                    f"{n} places (lines {', '.join(where)}) -- so it designates none"
                 )
 
         # ⚠️ as_posix(): the inventory is committed and compared byte for byte.
         # A Windows run wrote `\` separators, and every Linux run after it
         # then found the inventory stale -- red CI from a docs refresh.
-        lignes.append(f"## `{module.relative_to(BIN).as_posix()}`")
-        lignes.append("")
-        lignes.append("| id | line | level | message |")
-        lignes.append("| :--- | ---: | :--- | :--- |")
-        for ligne, identifiant, niveau, message in trouves:
+        lines.append(f"## `{module.relative_to(BIN).as_posix()}`")
+        lines.append("")
+        lines.append("| id | line | level | message |")
+        lines.append("| :--- | ---: | :--- | :--- |")
+        for line, identifier, level, message in found:
             message = message.replace("|", "\\|")
-            lignes.append(f"| `{identifiant}` | {ligne} | {niveau} | {message} |")
-        lignes.append("")
+            lines.append(f"| `{identifier}` | {line} | {level} | {message} |")
+        lines.append("")
 
-    lignes.append(f"*{total} call sites.*")
-    lignes.append("")
-    lignes.append(FIN)
-    return "\n".join(lignes) + "\n", constats
-
-
-def remplacer_inventaire(document: str, inventaire: str) -> str:
-    """Substitue le bloc généré, en laissant l'interprétation intacte."""
-    i, j = document.index(DEBUT), document.index(FIN) + len(FIN)
-    return document[:i] + inventaire.rstrip("\n") + document[j:]
+    lines.append(f"*{total} call sites.*")
+    lines.append("")
+    lines.append(END)
+    return "\n".join(lines) + "\n", findings
 
 
-def acronymes(module: Path) -> set[str]:
-    """Les préfixes sous lesquels ce module apparaît dans une ligne rendue.
+def replace_inventory(document: str, inventory: str) -> str:
+    """Substitute the generated block, leaving the explanation untouched."""
+    i, j = document.index(START), document.index(END) + len(END)
+    return document[:i] + inventory.rstrip("\n") + document[j:]
 
-    ⚠️ Un code nu ne désigne rien pour un lecteur : `135` veut dire deux choses
-    différentes selon le module. La documentation l'écrit donc préfixé
-    (`THCC-135`), et c'est cette forme-là que le contrôle doit accepter.
+
+def acronyms(module: Path) -> set[str]:
+    """The prefixes under which this module appears in a rendered line.
+
+    ⚠️ A bare code designates nothing to a reader: `135` means two different
+    things depending on the module. The documentation therefore writes it prefixed
+    (`THCC-135`), and that is the form the check must accept.
     """
     import re
     return set(re.findall(r'acronym\s*=\s*["\'](\w+)["\']',
                           module.read_text(encoding="utf-8")))
 
 
-def codes_a_expliquer() -> list[tuple[str, set[str]]]:
-    """(code, formes acceptables) pour tout ce qui signale un problème."""
-    besoin = {}
+def codes_to_explain() -> list[tuple[str, set[str]]]:
+    """(code, acceptable forms) for everything that reports a problem."""
+    needed = {}
     for module in modules():
-        prefixes = acronymes(module)
-        for _, identifiant, niveau, _ in sites(module):
-            if niveau not in NIVEAUX_A_EXPLIQUER:
+        prefixes = acronyms(module)
+        for _, identifier, level, _ in sites(module):
+            if level not in LEVELS_TO_EXPLAIN:
                 continue
-            formes = besoin.setdefault(identifiant, set())
-            formes.add(identifiant)
-            formes.update(f"{p}-{identifiant}" for p in prefixes)
-    return sorted(besoin.items())
+            forms = needed.setdefault(identifier, set())
+            forms.add(identifier)
+            forms.update(f"{p}-{identifier}" for p in prefixes)
+    return sorted(needed.items())
 
 
 def main() -> int:
-    inventaire, constats = construire_registre()
+    inventory, findings = build_registry()
 
-    if not REGISTRE.is_file():
-        print(f"  {REGISTRE.relative_to(RACINE)} is missing")
+    if not REGISTRY.is_file():
+        print(f"  {REGISTRY.relative_to(ROOT)} is missing")
         return 1
-    document = REGISTRE.read_text(encoding="utf-8")
-    if DEBUT not in document or FIN not in document:
-        print(f"  {REGISTRE.relative_to(RACINE)} has lost its {DEBUT} markers")
+    document = REGISTRY.read_text(encoding="utf-8")
+    if START not in document or END not in document:
+        print(f"  {REGISTRY.relative_to(ROOT)} has lost its {START} markers")
         return 1
 
     if "--write" in sys.argv:
-        REGISTRE.write_text(remplacer_inventaire(document, inventaire), encoding="utf-8")
-        print(f"inventory refreshed in {REGISTRE.relative_to(RACINE)}; "
+        REGISTRY.write_text(replace_inventory(document, inventory), encoding="utf-8")
+        print(f"inventory refreshed in {REGISTRY.relative_to(ROOT)}; "
               f"the hand-written part is untouched")
-        return 1 if constats else 0
+        return 1 if findings else 0
 
-    # ⚠️ L'interprétation est cherchée AVANT les marqueurs seulement : une
-    # mention dans l'inventaire généré ne vaut pas une explication.
-    redige = document[: document.index(DEBUT)]
-    for code, formes in codes_a_expliquer():
-        if not any(f"`{f}`" in redige for f in formes):
-            attendu = " or ".join(f"`{f}`" for f in sorted(formes))
-            constats.append(
-                f"{attendu} is logged as an error or a warning but is explained "
-                f"nowhere in {REGISTRE.relative_to(RACINE)}: someone will read it "
+    # ⚠️ The explanation is searched for BEFORE the markers only: a
+    # mention in the generated inventory is not an explanation.
+    written = document[: document.index(START)]
+    for code, forms in codes_to_explain():
+        if not any(f"`{f}`" in written for f in forms):
+            expected = " or ".join(f"`{f}`" for f in sorted(forms))
+            findings.append(
+                f"{expected} is logged as an error or a warning but is explained "
+                f"nowhere in {REGISTRY.relative_to(ROOT)}: someone will read it "
                 f"during an incident with nothing to go on"
             )
 
-    if remplacer_inventaire(document, inventaire) != document:
-        constats.append(
-            f"the generated inventory of {REGISTRE.relative_to(RACINE)} no longer "
+    if replace_inventory(document, inventory) != document:
+        findings.append(
+            f"the generated inventory of {REGISTRY.relative_to(ROOT)} no longer "
             f"matches the code: run `--write`"
         )
 
-    for c in constats:
+    for c in findings:
         print(f"  {c}")
-    if constats:
+    if findings:
         print()
         print("An identifier that designates two places designates none, and one")
         print("nobody explained is a code you meet for the first time mid-incident.")
         return 1
 
     print(f"every identifier designates a single place; "
-          f"{len(codes_a_expliquer())} problem code(s) explained; inventory up to date.")
+          f"{len(codes_to_explain())} problem code(s) explained; inventory up to date.")
     return 0
 
 

@@ -26,16 +26,16 @@ import ast
 import sys
 from pathlib import Path
 
-RACINE = Path(__file__).resolve().parents[2]
-SOURCES = RACINE / "TA-thehive-cortex" / "package" / "bin"
+ROOT = Path(__file__).resolve().parents[2]
+SOURCES = ROOT / "TA-thehive-cortex" / "package" / "bin"
 
 #: Vendored third-party libraries: not ours to fix.
-EXCLUS_REPERTOIRES = {"libs", "__pycache__"}
+EXCLUDED_DIRS = {"libs", "__pycache__"}
 
 #: Emitted by ucc-gen / the Splunk Add-on Builder and rewritten at every build.
 #: Listing them by name rather than guessing keeps the check honest: a NEW
 #: generated file must be added here deliberately, not slip through a pattern.
-EXCLUS_FICHIERS = {
+EXCLUDED_FILES = {
     "cim_actions.py",
     "alert_actions_base.py",
     "ta_thehive_cortex_declare.py",
@@ -43,12 +43,12 @@ EXCLUS_FICHIERS = {
 }
 
 
-def _est_pass_seul(handler: ast.ExceptHandler) -> bool:
+def _is_pass_only(handler: ast.ExceptHandler) -> bool:
     """A body that is exactly `pass`, possibly preceded by a docstring."""
-    corps = [n for n in handler.body if not (isinstance(n, ast.Expr)
+    body = [n for n in handler.body if not (isinstance(n, ast.Expr)
                                              and isinstance(n.value, ast.Constant)
                                              and isinstance(n.value.value, str))]
-    return len(corps) == 1 and isinstance(corps[0], ast.Pass)
+    return len(body) == 1 and isinstance(body[0], ast.Pass)
 
 
 #: An `except ...: pass` is defensible when the SURROUNDING code reports the
@@ -61,33 +61,33 @@ def _est_pass_seul(handler: ast.ExceptHandler) -> bool:
 #: The waiver is deliberately local and motivated. A distant tolerance list is
 #: how a guard ends up covering the very defect it was built to catch, long
 #: after the reason was forgotten.
-DEROGATION = "silent-except:"
+EXEMPTION = "silent-except:"
 
 
-def analyser(chemin: Path) -> list[tuple[int, str]]:
-    texte = chemin.read_text(encoding="utf-8")
-    lignes = texte.splitlines()
-    arbre = ast.parse(texte, filename=str(chemin))
-    trouves: list[tuple[int, str]] = []
-    for noeud in ast.walk(arbre):
-        if not isinstance(noeud, ast.ExceptHandler):
+def analyse(path: Path) -> list[tuple[int, str]]:
+    text = path.read_text(encoding="utf-8")
+    lines = text.splitlines()
+    tree = ast.parse(text, filename=str(path))
+    found: list[tuple[int, str]] = []
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.ExceptHandler):
             continue
 
         # A bare `except:` is never waivable: it swallows KeyboardInterrupt and
         # SystemExit, which no reason can justify.
-        if noeud.type is None:
-            trouves.append((noeud.lineno, "bare `except:` — also catches KeyboardInterrupt and SystemExit"))
+        if node.type is None:
+            found.append((node.lineno, "bare `except:` — also catches KeyboardInterrupt and SystemExit"))
             continue
 
-        if not _est_pass_seul(noeud):
+        if not _is_pass_only(node):
             continue
 
         # The waiver may sit on the `except` line or on the `pass` line.
-        portee = range(noeud.lineno - 1, min(noeud.lineno + len(noeud.body), len(lignes)))
-        if any(DEROGATION in lignes[i] for i in portee):
+        scope = range(node.lineno - 1, min(node.lineno + len(node.body), len(lines)))
+        if any(EXEMPTION in lines[i] for i in scope):
             continue
-        trouves.append((noeud.lineno, "`except ...: pass` — the cause is discarded without a trace"))
-    return trouves
+        found.append((node.lineno, "`except ...: pass` — the cause is discarded without a trace"))
+    return found
 
 
 def main() -> int:
@@ -96,13 +96,13 @@ def main() -> int:
         return 1
 
     total = 0
-    for chemin in sorted(SOURCES.rglob("*.py")):
-        if EXCLUS_REPERTOIRES & set(chemin.relative_to(SOURCES).parts):
+    for path in sorted(SOURCES.rglob("*.py")):
+        if EXCLUDED_DIRS & set(path.relative_to(SOURCES).parts):
             continue
-        if chemin.name in EXCLUS_FICHIERS:
+        if path.name in EXCLUDED_FILES:
             continue
-        for ligne, forme in analyser(chemin):
-            print(f"{chemin.relative_to(RACINE)}:{ligne}: {forme}")
+        for line, form in analyse(path):
+            print(f"{path.relative_to(ROOT)}:{line}: {form}")
             total += 1
 
     if total:
