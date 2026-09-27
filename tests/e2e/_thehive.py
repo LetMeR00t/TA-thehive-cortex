@@ -19,58 +19,58 @@ import urllib3
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 
-class ErreurTheHive(RuntimeError):
+class TheHiveError(RuntimeError):
     pass
 
 
-class ClientTheHive:
-    def __init__(self, base_url, utilisateur, mot_de_passe, organisation, verifier_tls=False):
+class TheHiveClient:
+    def __init__(self, base_url, user, password, organisation, verify_tls=False):
         self.base = base_url.rstrip("/")
         self.organisation = organisation
         self._session = requests.Session()
         # The lab certificate is signed by an internal CA that this test host
         # does not necessarily trust. The campaign is not the place to prove
         # the PKI: it is the place to prove the add-on's field mapping.
-        self._session.verify = verifier_tls
-        reponse = self._session.post(
+        self._session.verify = verify_tls
+        response = self._session.post(
             f"{self.base}/api/v1/login",
-            json={"user": utilisateur, "password": mot_de_passe},
+            json={"user": user, "password": password},
             timeout=30,
         )
-        if not reponse.ok:
-            raise ErreurTheHive(f"login refused with HTTP {reponse.status_code}")
+        if not response.ok:
+            raise TheHiveError(f"login refused with HTTP {response.status_code}")
 
     # -- plumbing ---------------------------------------------------------
 
     @property
-    def _entetes(self):
+    def _headers(self):
         return {"X-Organisation": self.organisation}
 
     def _query(self, *operations):
-        reponse = self._session.post(
+        response = self._session.post(
             f"{self.base}/api/v1/query",
             json={"query": list(operations)},
-            headers=self._entetes,
+            headers=self._headers,
             timeout=60,
         )
-        if not reponse.ok:
-            raise ErreurTheHive(
-                f"query {operations[0].get('_name')} failed with HTTP {reponse.status_code}"
+        if not response.ok:
+            raise TheHiveError(
+                f"query {operations[0].get('_name')} failed with HTTP {response.status_code}"
             )
-        return reponse.json()
+        return response.json()
 
     @staticmethod
-    def _page(taille=200):
-        return {"_name": "page", "from": 0, "to": taille}
+    def _page(size=200):
+        return {"_name": "page", "from": 0, "to": size}
 
     # -- reading ----------------------------------------------------------
 
     @staticmethod
-    def _commence_par(prefixe):
-        return {"_name": "filter", "_startsWith": {"_field": "title", "_value": prefixe}}
+    def _starts_with(prefix):
+        return {"_name": "filter", "_startsWith": {"_field": "title", "_value": prefix}}
 
-    def _par_prefixe(self, operation, prefixe):
-        """Objects whose title starts with `prefixe`, filtered SERVER-side.
+    def _by_prefix(self, operation, prefix):
+        """Objects whose title starts with `prefix`, filtered SERVER-side.
 
         ⚠️ The filter is not an optimisation. Listing and filtering in Python
         looked identical on alerts and quietly failed on cases: this
@@ -84,83 +84,83 @@ class ClientTheHive:
         parallel would steal each other's objects.
         """
         return [
-            objet
-            for objet in self._query(
-                {"_name": operation}, self._commence_par(prefixe), self._page(500)
+            obj
+            for obj in self._query(
+                {"_name": operation}, self._starts_with(prefix), self._page(500)
             )
-            if str(objet.get("title", "")).startswith(prefixe)
+            if str(obj.get("title", "")).startswith(prefix)
         ]
 
-    def alertes_par_prefixe_de_titre(self, prefixe):
-        return self._par_prefixe("listAlert", prefixe)
+    def alerts_by_title_prefix(self, prefix):
+        return self._by_prefix("listAlert", prefix)
 
-    def cas_par_prefixe_de_titre(self, prefixe):
-        return self._par_prefixe("listCase", prefixe)
+    def cases_by_title_prefix(self, prefix):
+        return self._by_prefix("listCase", prefix)
 
-    def attendre_alertes(self, prefixe, combien, delai):
-        """Poll until `combien` alerts carry the prefix, or give up.
+    def wait_for_alerts(self, prefix, how_many, timeout_s):
+        """Poll until `how_many` alerts carry the prefix, or give up.
 
         ⚠️ Polling, not sleeping. The alert action returns as soon as TheHive
         has accepted the request; the object becomes queryable slightly later.
         A fixed sleep is a coin toss dressed as a test.
         """
-        limite = time.time() + delai
-        vues = []
-        while time.time() < limite:
-            vues = self.alertes_par_prefixe_de_titre(prefixe)
-            if len(vues) >= combien:
-                return vues
+        deadline = time.time() + timeout_s
+        seen_ones = []
+        while time.time() < deadline:
+            seen_ones = self.alerts_by_title_prefix(prefix)
+            if len(seen_ones) >= how_many:
+                return seen_ones
             time.sleep(2)
-        return vues
+        return seen_ones
 
-    def attendre_cas(self, prefixe, combien, delai):
-        limite = time.time() + delai
-        vus = []
-        while time.time() < limite:
-            vus = self.cas_par_prefixe_de_titre(prefixe)
-            if len(vus) >= combien:
-                return vus
+    def wait_for_cases(self, prefix, how_many, timeout_s):
+        deadline = time.time() + timeout_s
+        seen_set = []
+        while time.time() < deadline:
+            seen_set = self.cases_by_title_prefix(prefix)
+            if len(seen_set) >= how_many:
+                return seen_set
             time.sleep(2)
-        return vus
+        return seen_set
 
-    def observables_de_l_alerte(self, alerte_id):
+    def alert_observables(self, alert_id):
         return self._query(
-            {"_name": "getAlert", "idOrName": alerte_id},
+            {"_name": "getAlert", "idOrName": alert_id},
             {"_name": "observables"},
             self._page(500),
         )
 
-    def procedures_de_l_alerte(self, alerte_id):
+    def alert_procedures(self, alert_id):
         """The TTPs. TheHive calls them procedures once attached."""
         return self._query(
-            {"_name": "getAlert", "idOrName": alerte_id},
+            {"_name": "getAlert", "idOrName": alert_id},
             {"_name": "procedures"},
             self._page(500),
         )
 
-    def observables_du_cas(self, cas_id):
+    def case_observables(self, case_id):
         return self._query(
-            {"_name": "getCase", "idOrName": cas_id},
+            {"_name": "getCase", "idOrName": case_id},
             {"_name": "observables"},
             self._page(500),
         )
 
-    def procedures_du_cas(self, cas_id):
+    def case_procedures(self, case_id):
         return self._query(
-            {"_name": "getCase", "idOrName": cas_id},
+            {"_name": "getCase", "idOrName": case_id},
             {"_name": "procedures"},
             self._page(500),
         )
 
-    def attendre_observables_de_l_alerte(self, alerte_id, combien, delai):
-        return self._attendre(self.observables_de_l_alerte, alerte_id, combien, delai)
+    def wait_for_alert_observables(self, alert_id, how_many, timeout_s):
+        return self._wait(self.alert_observables, alert_id, how_many, timeout_s)
 
-    def attendre_observables_du_cas(self, cas_id, combien, delai):
-        return self._attendre(self.observables_du_cas, cas_id, combien, delai)
+    def wait_for_case_observables(self, case_id, how_many, timeout_s):
+        return self._wait(self.case_observables, case_id, how_many, timeout_s)
 
     @staticmethod
-    def _attendre(lecture, identifiant, combien, delai):
-        """Poll until `combien` items are there, then return what there is.
+    def _wait(reading, identifier, how_many, timeout_s):
+        """Poll until `how_many` items are there, then return what there is.
 
         ⚠️ The add-on creates the alert or the case FIRST and attaches the
         observables afterwards, one API call each. Measured on UC3: the case
@@ -170,55 +170,55 @@ class ClientTheHive:
         a flake that looks exactly like the silent loss this campaign was
         written to catch, which is the worst kind.
         """
-        limite = time.time() + delai
-        vus = []
-        while time.time() < limite:
-            vus = lecture(identifiant)
-            if len(vus) >= combien:
-                return vus
+        deadline = time.time() + timeout_s
+        seen_set = []
+        while time.time() < deadline:
+            seen_set = reading(identifier)
+            if len(seen_set) >= how_many:
+                return seen_set
             time.sleep(2)
-        return vus
+        return seen_set
 
-    def champs_personnalises_declares(self):
+    def declared_custom_fields(self):
         """name -> type, as TheHive declares them.
 
         A test that asserts on a custom field it invented proves nothing; this
         is how the campaign checks it is asking for something that exists.
         """
         return {
-            champ["name"]: champ.get("type")
-            for champ in self._query({"_name": "listCustomField"}, self._page(500))
+            field["name"]: field.get("type")
+            for field in self._query({"_name": "listCustomField"}, self._page(500))
         }
 
     # -- demolition -------------------------------------------------------
 
-    def supprimer_alerte(self, alerte_id):
-        reponse = self._session.delete(
-            f"{self.base}/api/v1/alert/{alerte_id}", headers=self._entetes, timeout=30
+    def delete_alert(self, alert_id):
+        response = self._session.delete(
+            f"{self.base}/api/v1/alert/{alert_id}", headers=self._headers, timeout=30
         )
-        return reponse.ok or reponse.status_code == 404
+        return response.ok or response.status_code == 404
 
-    def supprimer_cas(self, cas_id):
-        reponse = self._session.delete(
-            f"{self.base}/api/v1/case/{cas_id}", headers=self._entetes, timeout=30
+    def delete_case(self, case_id):
+        response = self._session.delete(
+            f"{self.base}/api/v1/case/{case_id}", headers=self._headers, timeout=30
         )
-        return reponse.ok or reponse.status_code == 404
+        return response.ok or response.status_code == 404
 
-    def supprimer_par_prefixe(self, prefixe):
+    def delete_by_prefix(self, prefix):
         """Remove every alert and case carrying the prefix. Returns the count.
 
         Used both by the per-test teardown and by `purge.py`; a cleanup that
         needs a human is not a cleanup.
         """
-        efface = 0
-        for alerte in self.alertes_par_prefixe_de_titre(prefixe):
-            efface += bool(self.supprimer_alerte(alerte["_id"]))
-        for cas in self.cas_par_prefixe_de_titre(prefixe):
-            efface += bool(self.supprimer_cas(cas["_id"]))
-        return efface
+        erased = 0
+        for alert in self.alerts_by_title_prefix(prefix):
+            erased += bool(self.delete_alert(alert["_id"]))
+        for cases in self.cases_by_title_prefix(prefix):
+            erased += bool(self.delete_case(cases["_id"]))
+        return erased
 
 
-def champs_personnalises(objet):
+def custom_fields(obj):
     """Normalise the customFields of an alert or a case to {name: value}.
 
     TheHive returns them as a list of dicts whose value key depends on the
@@ -226,18 +226,18 @@ def champs_personnalises(objet):
     every test from re-deriving the same shape -- and from quietly reading
     `None` because it guessed the wrong key.
     """
-    plat = {}
-    for champ in objet.get("customFields") or []:
-        if not isinstance(champ, dict):
+    flat = {}
+    for field in obj.get("customFields") or []:
+        if not isinstance(field, dict):
             continue
-        nom = champ.get("name")
-        if nom is None:
+        name = field.get("name")
+        if name is None:
             continue
-        if "value" in champ:
-            plat[nom] = champ["value"]
+        if "value" in field:
+            flat[name] = field["value"]
         else:
-            for cle in ("string", "integer", "float", "boolean", "date", "url"):
-                if cle in champ:
-                    plat[nom] = champ[cle]
+            for key in ("string", "integer", "float", "boolean", "date", "url"):
+                if key in field:
+                    flat[name] = field[key]
                     break
-    return plat
+    return flat

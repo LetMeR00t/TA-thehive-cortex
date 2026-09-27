@@ -15,74 +15,74 @@ whole reason every object carries it.
 import sys
 
 from . import _config
-from ._case import PREFIXE
-from ._splunk import ClientSplunk
-from ._thehive import ClientTheHive
+from ._case import PREFIX
+from ._splunk import SplunkClient
+from ._thehive import TheHiveClient
 
 
 def _clients():
-    splunk = ClientSplunk(
+    splunk = SplunkClient(
         _config.SPLUNK_MGMT,
-        _config.valeur("SPLUNK_USER"),
-        _config.valeur("SPLUNK_PASSWORD"),
+        _config.value("SPLUNK_USER"),
+        _config.value("SPLUNK_PASSWORD"),
         _config.APP,
     )
-    modele = splunk.lire_instance(_config.valeur("E2E_TEMPLATE_INSTANCE"))
-    schema = "https" if str(modele.get("port")) == "443" else "http"
-    thehive = ClientTheHive(
-        f"{schema}://{modele['host']}:{modele.get('port', '443')}",
-        _config.valeur("THEHIVE_USER"),
-        _config.valeur("THEHIVE_PASSWORD"),
-        modele.get("organisation"),
+    template = splunk.read_instance(_config.value("E2E_TEMPLATE_INSTANCE"))
+    schema = "https" if str(template.get("port")) == "443" else "http"
+    thehive = TheHiveClient(
+        f"{schema}://{template['host']}:{template.get('port', '443')}",
+        _config.value("THEHIVE_USER"),
+        _config.value("THEHIVE_PASSWORD"),
+        template.get("organisation"),
     )
     return splunk, thehive
 
 
-def inventaire(splunk, thehive):
+def inventory(splunk, thehive):
     return {
-        "saved searches": splunk.recherches_par_prefixe(PREFIXE),
-        "instances": splunk.instances_par_prefixe(PREFIXE),
-        "accounts": splunk.comptes_par_prefixe(PREFIXE),
-        "thehive alerts": [a.get("title") for a in thehive.alertes_par_prefixe_de_titre(PREFIXE)],
-        "thehive cases": [c.get("title") for c in thehive.cas_par_prefixe_de_titre(PREFIXE)],
+        "saved searches": splunk.searches_by_prefix(PREFIX),
+        "instances": splunk.instances_by_prefix(PREFIX),
+        "accounts": splunk.accounts_by_prefix(PREFIX),
+        "thehive alerts": [a.get("title") for a in thehive.alerts_by_title_prefix(PREFIX)],
+        "thehive cases": [c.get("title") for c in thehive.cases_by_title_prefix(PREFIX)],
     }
 
 
 def main(argv):
-    raison = _config.raison_du_saut()
-    if raison:
-        print(raison)
+    reason = _config.skip_reason()
+    if reason:
+        print(reason)
         return 2
 
     splunk, thehive = _clients()
-    restes = inventaire(splunk, thehive)
-    total = sum(len(v) for v in restes.values())
+    leftovers = inventory(splunk, thehive)
+    total = sum(len(v) for v in leftovers.values())
 
-    for genre, noms in restes.items():
-        print(f"{genre}: {len(noms)}")
-        for nom in noms:
-            print(f"    {nom}")
+    for kind, names in leftovers.items():
+        print(f"{kind}: {len(names)}")
+        for name in names:
+            print(f"    {name}")
 
     if "--purge" not in argv:
         print("\nnothing was deleted; pass --purge to remove the objects listed above")
         return 0 if total == 0 else 1
 
-    for nom in restes["saved searches"]:
-        splunk.supprimer_recherche_sauvegardee(nom)
-    for nom in restes["instances"]:
-        splunk.supprimer_instance(nom)
-    for nom in restes["accounts"]:
-        splunk.supprimer_compte(nom)
-    efface = thehive.supprimer_par_prefixe(PREFIXE)
+    for name in leftovers["saved searches"]:
+        splunk.delete_saved_search(name)
+    for name in leftovers["instances"]:
+        splunk.delete_instance(name)
+    for name in leftovers["accounts"]:
+        splunk.delete_account(name)
+    erased = thehive.delete_by_prefix(PREFIX)
 
-    reste = inventaire(splunk, thehive)
-    encore = sum(len(v) for v in reste.values())
-    print(f"\ndeleted {total - encore} object(s) ({efface} of them in TheHive)")
-    if encore:
+    leftover = inventory(splunk, thehive)
+    still = sum(len(v) for v in leftover.values())
+    print(f"\ndeleted {total - still} object(s) ({erased} of them in TheHive)")
+    if still:
         # Saying "cleaned" while something is left is exactly the lie this
         # script exists to prevent.
-        print(f"⚠️  {encore} object(s) still carry the prefix; see the listing above")
-    return 1 if encore else 0
+        print(f"⚠️  {still} object(s) still carry the prefix; see the listing above")
+    return 1 if still else 0
 
 
 if __name__ == "__main__":

@@ -25,27 +25,27 @@ import unittest
 _ENV_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env")
 
 
-def _charger_env_local():
+def _load_local_env():
     if not os.path.isfile(_ENV_FILE):
         return
     with open(_ENV_FILE, encoding="utf-8") as fh:
-        for ligne in fh:
-            ligne = ligne.strip()
-            if not ligne or ligne.startswith("#") or "=" not in ligne:
+        for row in fh:
+            row = row.strip()
+            if not row or row.startswith("#") or "=" not in row:
                 continue
-            cle, _, valeur = ligne.partition("=")
-            cle = cle.strip()
-            valeur = valeur.strip().strip('"').strip("'")
-            os.environ.setdefault(cle, valeur)
+            key, _, value = row.partition("=")
+            key = key.strip()
+            value = value.strip().strip('"').strip("'")
+            os.environ.setdefault(key, value)
 
 
-_charger_env_local()
+_load_local_env()
 
 
 #: Everything the campaign needs, and what each one is for. Keep the list here
-#: rather than scattered across the tests: `manque()` below is what decides
+#: rather than scattered across the tests: `missing()` below is what decides
 #: whether the suite runs at all, and it can only be honest if it is complete.
-REQUIS = {
+REQUIRED = {
     "SPLUNK_USER": "Splunk account able to create saved searches and add-on configuration",
     "SPLUNK_PASSWORD": "its password",
     "THEHIVE_USER": "TheHive account the test authenticates as",
@@ -62,32 +62,32 @@ APP = "TA-thehive-cortex"
 
 #: Seconds. A dispatched saved search is polled, never slept on: a fixed sleep
 #: is either too short (flaky) or too long (a suite nobody runs).
-DELAI_JOB = int(os.environ.get("E2E_JOB_TIMEOUT", "180"))
+JOB_TIMEOUT = int(os.environ.get("E2E_JOB_TIMEOUT", "180"))
 #: TheHive is not synchronous with Splunk: the alert action returns before the
 #: object is queryable. Same rule -- poll, do not sleep.
-DELAI_THEHIVE = int(os.environ.get("E2E_THEHIVE_TIMEOUT", "90"))
+THEHIVE_TIMEOUT = int(os.environ.get("E2E_THEHIVE_TIMEOUT", "90"))
 
 
-def manque():
+def missing():
     """Return the names of the required variables that are not set."""
-    return [nom for nom in REQUIS if not os.environ.get(nom)]
+    return [name for name in REQUIRED if not os.environ.get(name)]
 
 
-def raison_du_saut():
-    absents = manque()
-    if not absents:
+def skip_reason():
+    missing_ones = missing()
+    if not missing_ones:
         return None
-    details = ", ".join(f"{nom} ({REQUIS[nom]})" for nom in absents)
+    details = ", ".join(f"{name} ({REQUIRED[name]})" for name in missing_ones)
     return (
         "end-to-end campaign not configured; set " + details + " in the environment "
         "or in tests/e2e/.env"
     )
 
 
-#: Use as `@unittest.skipIf(*SAUT)` -- a skipped test that says why.
-SAUT = (raison_du_saut() is not None, raison_du_saut() or "")
+#: Use as `@unittest.skipIf(*SKIP_REASON)` -- a skipped test that says why.
+SKIP_REASON = (skip_reason() is not None, skip_reason() or "")
 
 
-def valeur(nom):
+def value(name):
     """Read a required value. Never log it, never put it on a command line."""
-    return os.environ[nom]
+    return os.environ[name]

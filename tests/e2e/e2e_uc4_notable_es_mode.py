@@ -25,33 +25,33 @@ silently merges or splits alerts that should not be.
 import unittest
 
 from . import _config
-from ._case import CampagneE2E
-from ._thehive import champs_personnalises
+from ._case import E2ECampaign
+from ._thehive import custom_fields
 
 ACTION = "thehive_create_a_new_alert"
 
 #: The documented UC4 search, plus the `event_id` an ES notable carries. Note
 #: what is NOT here: any field called `unique`. That absence is the point.
-RECHERCHE = """| makeresults
+SEARCH = """| makeresults
 | eval other="account-12345", hostname="mycloud.aws.instance.corp"
 | eval cert-alerted-on=now(), risk="Medium"
-| eval event_id = "{event_id}", name = "{titre}"
+| eval event_id = "{event_id}", name = "{title}"
 """
 
 
-class TestUC4NotableEsMode(CampagneE2E):
+class TestUC4NotableEsMode(E2ECampaign):
 
-    def test_le_sourceref_vient_de_l_event_id_du_notable(self):
-        titre = f"{self.prefixe} Notable - adaptive response"
-        event_id = f"{self.prefixe}_notable_event_id"
-        recherche = RECHERCHE.format(titre=titre, event_id=event_id)
+    def test_the_sourceref_comes_from_the_notable_event_id(self):
+        title = f"{self.prefix} Notable - adaptive response"
+        event_id = f"{self.prefix}_notable_event_id"
+        search = SEARCH.format(title=title, event_id=event_id)
 
-        nom = self.jouer(
+        name = self.play(
             "uc4",
-            recherche,
+            search,
             ACTION,
             {
-                "thehive_instance_id": self.nom_instance,
+                "thehive_instance_id": self.instance_name,
                 "alert_mode": "es_mode",
                 # Declared, and deliberately absent from the rows: that is the
                 # condition under which es_mode reaches for `event_id`.
@@ -74,21 +74,21 @@ class TestUC4NotableEsMode(CampagneE2E):
             },
         )
 
-        alertes = self.thehive.attendre_alertes(self.prefixe, 1, _config.DELAI_THEHIVE)
-        self.assertEqual(1, len(alertes), "exactly one alert should have been created")
-        alerte = alertes[0]
+        alerts = self.thehive.wait_for_alerts(self.prefix, 1, _config.THEHIVE_TIMEOUT)
+        self.assertEqual(1, len(alerts), "exactly one alert should have been created")
+        alert = alerts[0]
 
         self.assertEqual(
             event_id,
-            alerte.get("sourceRef"),
+            alert.get("sourceRef"),
             "in es_mode with the unique id field absent, sourceRef is the notable's event_id",
         )
-        self.assertEqual(titre, alerte.get("title"))
+        self.assertEqual(title, alert.get("title"))
 
         observables = {
             (obs.get("data"), obs.get("dataType"))
-            for obs in self.thehive.attendre_observables_de_l_alerte(
-                alerte["_id"], 2, _config.DELAI_THEHIVE
+            for obs in self.thehive.wait_for_alert_observables(
+                alert["_id"], 2, _config.THEHIVE_TIMEOUT
             )
         }
         self.assertEqual(
@@ -96,11 +96,11 @@ class TestUC4NotableEsMode(CampagneE2E):
             observables,
         )
 
-        champs = champs_personnalises(alerte)
-        self.assertEqual("Medium", champs.get("risk"))
-        self.assertIsNotNone(champs.get("cert-alerted-on"))
+        fields = custom_fields(alert)
+        self.assertEqual("Medium", fields.get("risk"))
+        self.assertIsNotNone(fields.get("cert-alerted-on"))
 
-        self.assert_journal_propre(nom)
+        self.assert_clean_log(name)
 
 
 if __name__ == "__main__":

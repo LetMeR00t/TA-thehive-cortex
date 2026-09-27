@@ -18,94 +18,94 @@ _ATOM = "{http://www.w3.org/2005/Atom}"
 _SPL = "{http://dev.splunk.com/ns/rest}"
 
 
-class ErreurSplunk(RuntimeError):
+class SplunkError(RuntimeError):
     pass
 
 
-class ClientSplunk:
-    def __init__(self, mgmt_url, utilisateur, mot_de_passe, app):
+class SplunkClient:
+    def __init__(self, mgmt_url, user, password, app):
         self.base = mgmt_url.rstrip("/")
         self.app = app
         self._session = requests.Session()
         self._session.verify = False
-        self._session.auth = (utilisateur, mot_de_passe)
+        self._session.auth = (user, password)
 
     # -- plumbing ---------------------------------------------------------
 
-    def _ns(self, chemin):
-        return f"{self.base}/servicesNS/nobody/{self.app}/{chemin}"
+    def _ns(self, file_path):
+        return f"{self.base}/servicesNS/nobody/{self.app}/{file_path}"
 
-    def _appel(self, methode, url, **kwargs):
+    def _call(self, method, url, **kwargs):
         kwargs.setdefault("timeout", 60)
         params = kwargs.setdefault("params", {})
         params.setdefault("output_mode", "json")
-        reponse = self._session.request(methode, url, **kwargs)
-        if not reponse.ok:
+        response = self._session.request(method, url, **kwargs)
+        if not response.ok:
             # The body carries Splunk's own explanation; it never contains a
             # credential, only the object and the reason.
-            raise ErreurSplunk(
-                f"{methode} {url.rsplit('/', 1)[-1]} -> HTTP {reponse.status_code}: "
-                f"{reponse.text[:300]}"
+            raise SplunkError(
+                f"{method} {url.rsplit('/', 1)[-1]} -> HTTP {response.status_code}: "
+                f"{response.text[:300]}"
             )
-        return reponse
+        return response
 
     # -- add-on configuration --------------------------------------------
 
-    def creer_compte(self, nom, utilisateur, mot_de_passe):
-        self._appel(
+    def create_account(self, name, user, password):
+        self._call(
             "POST",
             self._ns("thehive_cortex_accounts"),
-            data={"name": nom, "username": utilisateur, "password": mot_de_passe},
+            data={"name": name, "username": user, "password": password},
         )
 
-    def supprimer_compte(self, nom):
-        self._supprimer_silencieux(self._ns(f"thehive_cortex_accounts/{nom}"))
+    def delete_account(self, name):
+        self._delete_quietly(self._ns(f"thehive_cortex_accounts/{name}"))
 
-    def lire_instance(self, nom):
-        reponse = self._appel("GET", self._ns(f"thehive_cortex_instances/{nom}"))
-        entrees = reponse.json().get("entry") or []
-        if not entrees:
-            raise ErreurSplunk(f"instance {nom!r} does not exist")
-        return entrees[0]["content"]
+    def read_instance(self, name):
+        response = self._call("GET", self._ns(f"thehive_cortex_instances/{name}"))
+        entries = response.json().get("entry") or []
+        if not entries:
+            raise SplunkError(f"instance {name!r} does not exist")
+        return entries[0]["content"]
 
-    def creer_instance(self, nom, modele, compte, authentification="password"):
+    def create_instance(self, name, template, account, authentication="password"):
         """Clone an existing instance's target, but point it at our account.
 
         Copying the template rather than declaring a host is what keeps this
         file free of anybody's URL: the run necessarily talks to the TheHive
         the operator already configured.
         """
-        champs = {
-            "name": nom,
-            "account_name": compte,
-            "authentication_type": authentification,
-            "type": modele.get("type", "TheHive5"),
-            "environment": modele.get("environment", "DEVELOPMENT"),
-            "host": modele["host"],
-            "port": modele.get("port", "443"),
-            "uri": modele.get("uri", "/"),
-            "organisation": modele.get("organisation", ""),
-            "proxy_url": modele.get("proxy_url", "-"),
-            "client_cert": modele.get("client_cert", "-"),
-            "ca_cert_path": modele.get("ca_cert_path", "-"),
+        fields = {
+            "name": name,
+            "account_name": account,
+            "authentication_type": authentication,
+            "type": template.get("type", "TheHive5"),
+            "environment": template.get("environment", "DEVELOPMENT"),
+            "host": template["host"],
+            "port": template.get("port", "443"),
+            "uri": template.get("uri", "/"),
+            "organisation": template.get("organisation", ""),
+            "proxy_url": template.get("proxy_url", "-"),
+            "client_cert": template.get("client_cert", "-"),
+            "ca_cert_path": template.get("ca_cert_path", "-"),
         }
-        self._appel("POST", self._ns("thehive_cortex_instances"), data=champs)
+        self._call("POST", self._ns("thehive_cortex_instances"), data=fields)
 
-    def supprimer_instance(self, nom):
-        self._supprimer_silencieux(self._ns(f"thehive_cortex_instances/{nom}"))
+    def delete_instance(self, name):
+        self._delete_quietly(self._ns(f"thehive_cortex_instances/{name}"))
 
     # -- saved searches ---------------------------------------------------
 
-    def creer_recherche_sauvegardee(self, nom, recherche, action, parametres):
+    def create_saved_search(self, name, search, action, parameters):
         """A scheduled saved search carrying one alert action.
 
         ⚠️ It is scheduled on purpose. Alert actions belong to the scheduler:
         an ad-hoc `| sendalert` would exercise a different path from the one
         UC1 and UC2 describe, and it is the described path that ships.
         """
-        donnees = {
-            "name": nom,
-            "search": recherche,
+        payload = {
+            "name": name,
+            "search": search,
             "is_scheduled": "1",
             # Far enough in the future that the scheduler never fires it on its
             # own: the test decides when it runs, and cleans up right after.
@@ -122,47 +122,47 @@ class ClientSplunk:
             "dispatch.ttl": "600",
             "actions": action,
         }
-        for cle, valeur in parametres.items():
-            donnees[f"action.{action}.param.{cle}"] = valeur
-        self._appel("POST", self._ns("saved/searches"), data=donnees)
+        for key, value in parameters.items():
+            payload[f"action.{action}.param.{key}"] = value
+        self._call("POST", self._ns("saved/searches"), data=payload)
 
-    def supprimer_recherche_sauvegardee(self, nom):
-        self._supprimer_silencieux(self._ns(f"saved/searches/{nom}"))
+    def delete_saved_search(self, name):
+        self._delete_quietly(self._ns(f"saved/searches/{name}"))
 
-    def declencher(self, nom):
+    def dispatch(self, name):
         """Dispatch the saved search AND its actions, and return the sid.
 
         `trigger_actions=1` is the whole point: without it Splunk runs the
         search and skips the alert action, which would make this campaign an
         elaborate way of proving that `makeresults` works.
         """
-        reponse = self._appel(
+        response = self._call(
             "POST",
-            self._ns(f"saved/searches/{nom}/dispatch"),
+            self._ns(f"saved/searches/{name}/dispatch"),
             data={"trigger_actions": "1", "dispatch.now": str(int(time.time()))},
         )
-        return reponse.json()["sid"]
+        return response.json()["sid"]
 
-    def attendre_le_job(self, sid, delai):
+    def wait_for_job(self, sid, timeout_s):
         """Poll the job until it is done. Returns its final state."""
-        limite = time.time() + delai
-        while time.time() < limite:
-            reponse = self._session.get(
+        deadline = time.time() + timeout_s
+        while time.time() < deadline:
+            response = self._session.get(
                 f"{self.base}/services/search/jobs/{sid}",
                 params={"output_mode": "json"},
                 timeout=30,
                 verify=False,
             )
-            if reponse.ok:
-                contenu = reponse.json()["entry"][0]["content"]
-                if contenu.get("isDone"):
-                    return contenu
+            if response.ok:
+                content = response.json()["entry"][0]["content"]
+                if content.get("isDone"):
+                    return content
             time.sleep(2)
-        raise ErreurSplunk(f"job did not finish within {delai}s")
+        raise SplunkError(f"job did not finish within {timeout_s}s")
 
     # -- the collection side ----------------------------------------------
 
-    def creer_index(self, nom):
+    def create_index(self, name):
         """A throwaway index for the return trip.
 
         ⚠️ Indexed events cannot be deleted. Sending the collected data into
@@ -170,63 +170,63 @@ class ClientSplunk:
         teardown could remove, so the campaign gives itself an index and drops
         the whole thing afterwards -- data included.
         """
-        self._appel(
-            "POST", f"{self.base}/services/data/indexes", data={"name": nom}
+        self._call(
+            "POST", f"{self.base}/services/data/indexes", data={"name": name}
         )
 
-    def supprimer_index(self, nom):
-        self._supprimer_silencieux(f"{self.base}/services/data/indexes/{nom}")
+    def delete_index(self, name):
+        self._delete_quietly(f"{self.base}/services/data/indexes/{name}")
 
-    def creer_input_collecte(self, nom, modele, instance, index, intervalle="60"):
+    def create_collection_input(self, name, template, instance, index, interval="60"):
         """A modular input pulling alerts and cases back from TheHive."""
-        champs = {
-            "name": nom,
+        fields = {
+            "name": name,
             "instance_id": instance,
             "index": index,
-            "interval": intervalle,
-            "type": modele.get("type", "alerts,cases"),
-            "date": modele.get("date", "_createdAt,_updatedAt,date,startDate"),
-            "additional_information": modele.get("additional_information", ""),
-            "extra_data": modele.get("extra_data", ""),
-            "max_size_value": modele.get("max_size_value", "1000"),
+            "interval": interval,
+            "type": template.get("type", "alerts,cases"),
+            "date": template.get("date", "_createdAt,_updatedAt,date,startDate"),
+            "additional_information": template.get("additional_information", ""),
+            "extra_data": template.get("extra_data", ""),
+            "max_size_value": template.get("max_size_value", "1000"),
         }
-        self._appel(
-            "POST", self._ns("thehive_cortex_thehive_alerts_cases"), data=champs
+        self._call(
+            "POST", self._ns("thehive_cortex_thehive_alerts_cases"), data=fields
         )
 
-    def lire_input_collecte(self, nom):
-        reponse = self._appel(
-            "GET", self._ns(f"thehive_cortex_thehive_alerts_cases/{nom}")
+    def read_collection_input(self, name):
+        response = self._call(
+            "GET", self._ns(f"thehive_cortex_thehive_alerts_cases/{name}")
         )
-        entrees = reponse.json().get("entry") or []
-        if not entrees:
-            raise ErreurSplunk(f"input {nom!r} does not exist")
-        return entrees[0]["content"]
+        entries = response.json().get("entry") or []
+        if not entries:
+            raise SplunkError(f"input {name!r} does not exist")
+        return entries[0]["content"]
 
-    def supprimer_input_collecte(self, nom):
-        self._supprimer_silencieux(
-            self._ns(f"thehive_cortex_thehive_alerts_cases/{nom}")
+    def delete_collection_input(self, name):
+        self._delete_quietly(
+            self._ns(f"thehive_cortex_thehive_alerts_cases/{name}")
         )
 
-    def inputs_collecte_par_prefixe(self, prefixe):
-        return self._noms_par_prefixe("thehive_cortex_thehive_alerts_cases", prefixe)
+    def collection_inputs_by_prefix(self, prefix):
+        return self._names_by_prefix("thehive_cortex_thehive_alerts_cases", prefix)
 
-    def index_par_prefixe(self, prefixe):
-        reponse = self._appel(
+    def indexes_by_prefix(self, prefix):
+        response = self._call(
             "GET", f"{self.base}/services/data/indexes",
             params={"output_mode": "json", "count": "0"},
         )
         return [
-            entree["name"]
-            for entree in reponse.json().get("entry", [])
-            if entree["name"].startswith(prefixe)
+            entry["name"]
+            for entry in response.json().get("entry", [])
+            if entry["name"].startswith(prefix)
         ]
 
     # -- searching --------------------------------------------------------
 
-    def rechercher(self, spl, delai=120, earliest="-15m", latest="now"):
+    def search_events(self, spl, timeout_s=120, earliest="-15m", latest="now"):
         """Run a one-shot search and return its rows as dictionaries."""
-        reponse = self._appel(
+        response = self._call(
             "POST",
             f"{self.base}/services/search/jobs/export",
             data={
@@ -236,23 +236,23 @@ class ClientSplunk:
                 "output_mode": "json",
                 "exec_mode": "oneshot",
             },
-            timeout=delai,
+            timeout=timeout_s,
             stream=False,
         )
-        lignes = []
-        for ligne in reponse.text.splitlines():
-            ligne = ligne.strip()
-            if not ligne:
+        rows = []
+        for row in response.text.splitlines():
+            row = row.strip()
+            if not row:
                 continue
             try:
-                objet = __import__("json").loads(ligne)
+                obj = __import__("json").loads(row)
             except ValueError:
                 continue
-            if "result" in objet:
-                lignes.append(objet["result"])
-        return lignes
+            if "result" in obj:
+                rows.append(obj["result"])
+        return rows
 
-    def journal_de_l_action(self, nom_recherche, depuis="-15m"):
+    def action_log(self, search_name, since="-15m"):
         """The alert action's own log lines for one saved search.
 
         ⚠️ It reads `index=cim_modactions`, not `_internal`. Splunk_SA_CIM
@@ -262,16 +262,16 @@ class ClientSplunk:
         """
         spl = (
             'search index=cim_modactions source="*_modalert.log*" '
-            f'"{nom_recherche}" | table _time, _raw'
+            f'"{search_name}" | table _time, _raw'
         )
-        return self._rechercher_brut(spl, depuis)
+        return self._raw_search(spl, since)
 
-    def _rechercher_brut(self, spl, depuis):
-        return [ligne.get("_raw", "") for ligne in self.rechercher(spl, earliest=depuis)]
+    def _raw_search(self, spl, since):
+        return [row.get("_raw", "") for row in self.search_events(spl, earliest=since)]
 
     # -- demolition -------------------------------------------------------
 
-    def _supprimer_silencieux(self, url):
+    def _delete_quietly(self, url):
         try:
             self._session.delete(url, params={"output_mode": "json"}, timeout=60, verify=False)
         except requests.RequestException:
@@ -280,28 +280,28 @@ class ClientSplunk:
             # cleanup error, which is how a test lies about what broke.
             pass
 
-    def recherches_par_prefixe(self, prefixe):
-        reponse = self._appel(
+    def searches_by_prefix(self, prefix):
+        response = self._call(
             "GET", self._ns("saved/searches"), params={"output_mode": "json", "count": "0"}
         )
         return [
-            entree["name"]
-            for entree in reponse.json().get("entry", [])
-            if entree["name"].startswith(prefixe)
+            entry["name"]
+            for entry in response.json().get("entry", [])
+            if entry["name"].startswith(prefix)
         ]
 
-    def instances_par_prefixe(self, prefixe):
-        return self._noms_par_prefixe("thehive_cortex_instances", prefixe)
+    def instances_by_prefix(self, prefix):
+        return self._names_by_prefix("thehive_cortex_instances", prefix)
 
-    def comptes_par_prefixe(self, prefixe):
-        return self._noms_par_prefixe("thehive_cortex_accounts", prefixe)
+    def accounts_by_prefix(self, prefix):
+        return self._names_by_prefix("thehive_cortex_accounts", prefix)
 
-    def _noms_par_prefixe(self, endpoint, prefixe):
-        reponse = self._appel(
+    def _names_by_prefix(self, endpoint, prefix):
+        response = self._call(
             "GET", self._ns(endpoint), params={"output_mode": "json", "count": "0"}
         )
         return [
-            entree["name"]
-            for entree in reponse.json().get("entry", [])
-            if entree["name"].startswith(prefixe)
+            entry["name"]
+            for entry in response.json().get("entry", [])
+            if entry["name"].startswith(prefix)
         ]

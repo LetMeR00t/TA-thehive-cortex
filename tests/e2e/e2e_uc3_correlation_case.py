@@ -18,31 +18,31 @@ TLP 3 -- a level that did not exist in TheHive 4. It is the interesting one.
 import unittest
 
 from . import _config
-from ._case import CampagneE2E
-from ._thehive import champs_personnalises
+from ._case import E2ECampaign
+from ._thehive import custom_fields
 
 ACTION = "thehive_create_a_new_case"
 
 #: Verbatim from the documentation, with the title carrying the run prefix.
-RECHERCHE = """| makeresults
+SEARCH = """| makeresults
 | eval other="account-12345", hostname="mycloud.aws.instance.corp"
 | eval cert-alerted-on=now(), risk="Medium", th_severity=4, th_tlp="AMBER+STRICT", th_pap="2"
-| eval name = "{titre}", unique = "{unique}"
+| eval name = "{title}", unique = "{unique}"
 """
 
 
-class TestUC3UnSeulCas(CampagneE2E):
+class TestUC3SingleCase(E2ECampaign):
 
-    def test_le_cas_arrive_et_les_champs_reserves_gagnent(self):
-        titre = f"{self.prefixe} Correlation search - single case"
-        recherche = RECHERCHE.format(titre=titre, unique=f"{self.prefixe}_uc3")
+    def test_the_case_arrives_and_reserved_fields_win(self):
+        title = f"{self.prefix} Correlation search - single case"
+        search = SEARCH.format(title=title, unique=f"{self.prefix}_uc3")
 
-        nom = self.jouer(
+        name = self.play(
             "uc3",
-            recherche,
+            search,
             ACTION,
             {
-                "thehive_instance_id": self.nom_instance,
+                "thehive_instance_id": self.instance_name,
                 "case_mode": "regular_mode",
                 "unique_id_field": "unique",
                 "case_template": "",
@@ -64,19 +64,19 @@ class TestUC3UnSeulCas(CampagneE2E):
             },
         )
 
-        cas = self.thehive.attendre_cas(self.prefixe, 1, _config.DELAI_THEHIVE)
-        self.assertEqual(1, len(cas), "exactly one case should have been created")
-        le_cas = cas[0]
+        cases = self.thehive.wait_for_cases(self.prefix, 1, _config.THEHIVE_TIMEOUT)
+        self.assertEqual(1, len(cases), "exactly one case should have been created")
+        the_case = cases[0]
 
-        self.assertEqual(titre, le_cas.get("title"))
-        self.assertEqual(4, le_cas.get("severity"), "th_severity=4 must beat the dialog's 1")
-        self.assertEqual(3, le_cas.get("tlp"), 'th_tlp="AMBER+STRICT" must beat the dialog\'s WHITE')
-        self.assertEqual(2, le_cas.get("pap"), 'th_pap="2" must beat the dialog\'s WHITE')
+        self.assertEqual(title, the_case.get("title"))
+        self.assertEqual(4, the_case.get("severity"), "th_severity=4 must beat the dialog's 1")
+        self.assertEqual(3, the_case.get("tlp"), 'th_tlp="AMBER+STRICT" must beat the dialog\'s WHITE')
+        self.assertEqual(2, the_case.get("pap"), 'th_pap="2" must beat the dialog\'s WHITE')
 
         observables = {
             (obs.get("data"), obs.get("dataType"))
-            for obs in self.thehive.attendre_observables_du_cas(
-                le_cas["_id"], 2, _config.DELAI_THEHIVE
+            for obs in self.thehive.wait_for_case_observables(
+                the_case["_id"], 2, _config.THEHIVE_TIMEOUT
             )
         }
         self.assertEqual(
@@ -85,19 +85,19 @@ class TestUC3UnSeulCas(CampagneE2E):
             "both fields are declared in thehive_datatypes.csv and must keep their type",
         )
 
-        champs = champs_personnalises(le_cas)
-        self.assertEqual("Medium", champs.get("risk"))
-        self.assertIsNotNone(champs.get("cert-alerted-on"))
+        fields = custom_fields(the_case)
+        self.assertEqual("Medium", fields.get("risk"))
+        self.assertIsNotNone(fields.get("cert-alerted-on"))
 
         # The documentation states it plainly: a correlation search cannot
         # reach its own TTPs, so none is expected here. Asserting the absence
         # keeps that documented limitation from silently becoming a defect.
         self.assertEqual(
-            [], self.thehive.procedures_du_cas(le_cas["_id"]),
+            [], self.thehive.case_procedures(the_case["_id"]),
             "UC3 documents that no TTP can come from a correlation search",
         )
 
-        self.assert_journal_propre(nom)
+        self.assert_clean_log(name)
 
 
 if __name__ == "__main__":

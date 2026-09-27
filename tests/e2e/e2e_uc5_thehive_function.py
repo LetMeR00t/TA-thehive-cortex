@@ -18,36 +18,36 @@ import os
 import unittest
 
 from . import _config
-from ._case import CampagneE2E
+from ._case import E2ECampaign
 
 ACTION = "thehive_run_function"
 
-RECHERCHE = """| makeresults
+SEARCH = """| makeresults
 | eval other="account-12345", hostname="mycloud.aws.instance.corp"
-| eval name = "{titre}"
+| eval name = "{title}"
 """
 
 
-def _fonction_configuree():
+def _configured_function():
     return os.environ.get("E2E_THEHIVE_FUNCTION")
 
 
-class TestUC5FonctionTheHive(CampagneE2E):
+class TestUC5TheHiveFunction(E2ECampaign):
 
     @unittest.skipUnless(
-        _fonction_configuree(),
+        _configured_function(),
         "no TheHive Function to push to: Functions are a licensed feature and "
         "listFunction is empty on this instance; set E2E_THEHIVE_FUNCTION to run this case",
     )
-    def test_les_evenements_partent_vers_la_fonction(self):
-        titre = f"{self.prefixe} Function push"
-        nom = self.jouer(
+    def test_events_are_sent_to_the_function(self):
+        title = f"{self.prefix} Function push"
+        name = self.play(
             "uc5",
-            RECHERCHE.format(titre=titre),
+            SEARCH.format(title=title),
             ACTION,
             {
-                "thehive_instance_id": self.nom_instance,
-                "name": _fonction_configuree(),
+                "thehive_instance_id": self.instance_name,
+                "name": _configured_function(),
             },
         )
 
@@ -55,11 +55,11 @@ class TestUC5FonctionTheHive(CampagneE2E):
         # add-on can be held to here is that it reported success and logged no
         # error. Asserting on TheHive's side would need the Function's own
         # side effect, which is specific to whatever it was written to do.
-        self.assert_journal_propre(nom)
+        self.assert_clean_log(name)
 
-        lignes = self.splunk.journal_de_l_action(nom)
+        rows = self.splunk.action_log(name)
         self.assertTrue(
-            any("Invoking modular action" in ligne for ligne in lignes),
+            any("Invoking modular action" in row for row in rows),
             "the alert action must at least have been invoked",
         )
 

@@ -21,45 +21,45 @@ import time
 import unittest
 
 from . import _config
-from ._case import CampagneE2E
+from ._case import E2ECampaign
 
 ACTION = "thehive_create_a_new_alert"
 
-RECHERCHE = """| makeresults
+SEARCH = """| makeresults
 | eval ip="1.2.3.4", fqdn="fake-website.com"
-| eval name = "{titre}", risk="Medium", unique = "{unique}"
+| eval name = "{title}", risk="Medium", unique = "{unique}"
 | eval ttp="defense-evasion::T1027.003::"+tostring(strftime(now(),"%Y-%m-%d"))
 """
 
 #: The input polls on an interval and queries a window ending at "now"; a fresh
 #: alert therefore needs at least one full cycle, plus indexing time.
-DELAI_COLLECTE = 420
+COLLECTION_TIMEOUT = 420
 
 
-class TestCollecteDeRetour(CampagneE2E):
+class TestCollectionRoundTrip(E2ECampaign):
 
     def setUp(self):
         super().setUp()
         self.index = f"e2e{self.runid}"
-        self.nom_input = f"{self.prefixe}_collect"
-        self._modele_input = None
-        self.splunk.creer_index(self.index)
+        self.input_name = f"{self.prefix}_collect"
+        self._input_template = None
+        self.splunk.create_index(self.index)
 
     def tearDown(self):
-        self.splunk.supprimer_input_collecte(self.nom_input)
+        self.splunk.delete_collection_input(self.input_name)
         # The index goes last and takes its events with it: that is the only
         # way this test can honestly claim to leave nothing behind.
-        self.splunk.supprimer_index(self.index)
+        self.splunk.delete_index(self.index)
         super().tearDown()
 
-    def test_l_alerte_creee_revient_dans_splunk(self):
-        titre = f"{self.prefixe} round trip"
+    def test_the_created_alert_comes_back_into_splunk(self):
+        title = f"{self.prefix} round trip"
 
         # The input must exist BEFORE the alert: it queries a window ending at
         # "now", so an alert created earlier than its first cycle is simply
         # outside every window it will ever ask for.
-        self.splunk.creer_input_collecte(
-            self.nom_input,
+        self.splunk.create_collection_input(
+            self.input_name,
             {
                 "type": "alerts,cases",
                 "date": "_createdAt,_updatedAt,date,startDate",
@@ -67,24 +67,24 @@ class TestCollecteDeRetour(CampagneE2E):
                 "extra_data": "",
                 "max_size_value": "1000",
             },
-            self.nom_instance,
+            self.instance_name,
             self.index,
-            intervalle="60",
+            interval="60",
         )
 
-        nom = self.jouer(
-            "collecte",
-            RECHERCHE.format(titre=titre, unique=f"{self.prefixe}_rt"),
+        name = self.play(
+            "collection",
+            SEARCH.format(title=title, unique=f"{self.prefix}_rt"),
             ACTION,
             {
-                "thehive_instance_id": self.nom_instance,
+                "thehive_instance_id": self.instance_name,
                 "alert_mode": "regular_mode",
                 "unique_id_field": "unique",
                 "type": "alert",
                 "source": "splunk",
                 "title": "name",
                 "description": "name",
-                "tags": "e2e,collecte",
+                "tags": "e2e,collection",
                 "scope": "0",
                 "severity": "2",
                 "tlp": "2",
@@ -96,27 +96,27 @@ class TestCollecteDeRetour(CampagneE2E):
             },
         )
 
-        alertes = self.thehive.attendre_alertes(self.prefixe, 1, _config.DELAI_THEHIVE)
-        self.assertEqual(1, len(alertes), "the alert must reach TheHive first")
+        alerts = self.thehive.wait_for_alerts(self.prefix, 1, _config.THEHIVE_TIMEOUT)
+        self.assertEqual(1, len(alerts), "the alert must reach TheHive first")
 
-        lignes = self._attendre_la_collecte(titre)
+        rows = self._wait_for_collection(title)
         self.assertTrue(
-            lignes,
+            rows,
             "the modular input never indexed the alert it had every chance to see: "
             f"nothing matching the title landed in index={self.index} within "
-            f"{DELAI_COLLECTE}s",
+            f"{COLLECTION_TIMEOUT}s",
         )
 
         # ⚠️ Assert on the CONTENT that came back, not merely on the count.
         # An input that indexes an empty envelope is indistinguishable from a
         # working one if all you count is events.
-        evenement = str(lignes[0].get("_raw", ""))
-        self.assertIn(titre, evenement)
-        for attendu in ("Medium", "fake-website.com", "MEDIUM", "AMBER", '"dataType": "ip"'):
+        event = str(rows[0].get("_raw", ""))
+        self.assertIn(title, event)
+        for expected in ("Medium", "fake-website.com", "MEDIUM", "AMBER", '"dataType": "ip"'):
             self.assertIn(
-                attendu,
-                evenement,
-                f"{attendu!r} left Splunk, reached TheHive, and must come back",
+                expected,
+                event,
+                f"{expected!r} left Splunk, reached TheHive, and must come back",
             )
 
         # #37: the alert's TTP must come back too. Until then the input
@@ -126,22 +126,22 @@ class TestCollecteDeRetour(CampagneE2E):
         # carries the procedure -- UC1 asserts it on TheHive's side.
         self.assertIn(
             "T1027.003",
-            evenement,
+            event,
             "the alert carries a TTP and the input asks for `ttps`: it must be "
             "indexed with the alert (collection_options.py / get_alerts_events)",
         )
 
-        self.assert_journal_propre(nom)
+        self.assert_clean_log(name)
 
-    def _attendre_la_collecte(self, titre):
+    def _wait_for_collection(self, title):
         """Poll the throwaway index until the alert comes back, or give up."""
-        limite = time.time() + DELAI_COLLECTE
-        while time.time() < limite:
-            lignes = self.splunk.rechercher(
-                f'search index={self.index} "{titre}"', earliest="-1h"
+        deadline = time.time() + COLLECTION_TIMEOUT
+        while time.time() < deadline:
+            rows = self.splunk.search_events(
+                f'search index={self.index} "{title}"', earliest="-1h"
             )
-            if lignes:
-                return lignes
+            if rows:
+                return rows
             time.sleep(10)
         return []
 

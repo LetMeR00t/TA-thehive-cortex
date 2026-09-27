@@ -18,23 +18,23 @@ import unittest
 import uuid
 
 from . import _config
-from ._splunk import ClientSplunk
-from ._thehive import ClientTheHive
+from ._splunk import SplunkClient
+from ._thehive import TheHiveClient
 
 #: ⚠️ Underscore, not hyphen. The add-on's REST handlers validate account and
 #: instance names against `^[a-zA-Z]\w*$`: a hyphen is rejected with a 400 that
 #: names a pattern and not the field. One prefix for every object, on both
 #: sides, is what makes the cleanup provably total.
-PREFIXE = "e2e_"
+PREFIX = "e2e_"
 
 
-def nouvel_identifiant():
+def new_identifier():
     """Short, unique, and readable in a TheHive list without scrolling."""
     return uuid.uuid4().hex[:8]
 
 
-@unittest.skipIf(*_config.SAUT)
-class CampagneE2E(unittest.TestCase):
+@unittest.skipIf(*_config.SKIP_REASON)
+class E2ECampaign(unittest.TestCase):
     """Base class: builds the configuration once, destroys everything after."""
 
     #: Overridden by the tests that need the alert action to see a specific
@@ -43,18 +43,18 @@ class CampagneE2E(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        cls.runid = nouvel_identifiant()
-        cls.prefixe = f"{PREFIXE}{cls.runid}"
+        cls.runid = new_identifier()
+        cls.prefix = f"{PREFIX}{cls.runid}"
 
-        cls.splunk = ClientSplunk(
+        cls.splunk = SplunkClient(
             _config.SPLUNK_MGMT,
-            _config.valeur("SPLUNK_USER"),
-            _config.valeur("SPLUNK_PASSWORD"),
+            _config.value("SPLUNK_USER"),
+            _config.value("SPLUNK_PASSWORD"),
             _config.APP,
         )
 
-        modele = cls.splunk.lire_instance(_config.valeur("E2E_TEMPLATE_INSTANCE"))
-        cls.organisation = cls.organisation or modele.get("organisation")
+        template = cls.splunk.read_instance(_config.value("E2E_TEMPLATE_INSTANCE"))
+        cls.organisation = cls.organisation or template.get("organisation")
 
         # ⚠️ The run creates its own INSTANCE but reuses the template's
         # ACCOUNT. Two measured reasons, both worth keeping written down:
@@ -70,57 +70,57 @@ class CampagneE2E(unittest.TestCase):
         # THEHIVE_USER/PASSWORD are still required: they authenticate the
         # VERIFICATION client, which must reach TheHive independently of the
         # add-on to be worth anything.
-        cls.nom_instance = f"{cls.prefixe}_instance"
-        cls._objets_splunk = []
+        cls.instance_name = f"{cls.prefix}_instance"
+        cls._splunk_objects = []
 
-        cls.splunk.creer_instance(cls.nom_instance, modele, modele.get("account_name"),
-                                  modele.get("authentication_type", "api_key"))
-        cls._objets_splunk.append(("instance", cls.nom_instance))
+        cls.splunk.create_instance(cls.instance_name, template, template.get("account_name"),
+                                  template.get("authentication_type", "api_key"))
+        cls._splunk_objects.append(("instance", cls.instance_name))
 
-        schema = "https" if str(modele.get("port")) == "443" else "http"
-        base = f"{schema}://{modele['host']}:{modele.get('port', '443')}"
-        cls.thehive = ClientTheHive(
+        schema = "https" if str(template.get("port")) == "443" else "http"
+        base = f"{schema}://{template['host']}:{template.get('port', '443')}"
+        cls.thehive = TheHiveClient(
             base,
-            _config.valeur("THEHIVE_USER"),
-            _config.valeur("THEHIVE_PASSWORD"),
+            _config.value("THEHIVE_USER"),
+            _config.value("THEHIVE_PASSWORD"),
             cls.organisation,
         )
 
     @classmethod
     def tearDownClass(cls):
-        for genre, nom in reversed(getattr(cls, "_objets_splunk", [])):
-            if genre == "instance":
-                cls.splunk.supprimer_instance(nom)
-            elif genre == "compte":
-                cls.splunk.supprimer_compte(nom)
+        for kind, name in reversed(getattr(cls, "_splunk_objects", [])):
+            if kind == "instance":
+                cls.splunk.delete_instance(name)
+            elif kind == "account":
+                cls.splunk.delete_account(name)
 
     def setUp(self):
-        self._recherches = []
+        self._searches = []
 
     def tearDown(self):
-        for nom in self._recherches:
-            self.splunk.supprimer_recherche_sauvegardee(nom)
+        for name in self._searches:
+            self.splunk.delete_saved_search(name)
         # TheHive last: if deleting an alert fails we still want the Splunk
         # side gone, otherwise the next run inherits a scheduled search.
-        self.thehive.supprimer_par_prefixe(self.prefixe)
+        self.thehive.delete_by_prefix(self.prefix)
 
     # -- helpers used by the use cases ------------------------------------
 
-    def jouer(self, suffixe, recherche, action, parametres):
+    def play(self, suffix, search, action, parameters):
         """Create the saved search, fire it with its action, wait for the job."""
-        nom = f"{self.prefixe}_{suffixe}"
-        self.splunk.creer_recherche_sauvegardee(nom, recherche, action, parametres)
-        self._recherches.append(nom)
-        sid = self.splunk.declencher(nom)
-        etat = self.splunk.attendre_le_job(sid, _config.DELAI_JOB)
+        name = f"{self.prefix}_{suffix}"
+        self.splunk.create_saved_search(name, search, action, parameters)
+        self._searches.append(name)
+        sid = self.splunk.dispatch(name)
+        state = self.splunk.wait_for_job(sid, _config.JOB_TIMEOUT)
         self.assertNotEqual(
             "FAILED",
-            etat.get("dispatchState"),
+            state.get("dispatchState"),
             "the saved search itself failed before the alert action could run",
         )
-        return nom
+        return name
 
-    def assert_journal_propre(self, nom_recherche, tolere=()):
+    def assert_clean_log(self, search_name, tolerated=()):
         """No ERROR, and no silent-loss warning, unless the case expects one.
 
         ⚠️ This is half of what makes the campaign worth running. The defects
@@ -129,15 +129,15 @@ class CampagneE2E(unittest.TestCase):
         never told, and a test that only checks Splunk would miss the ones
         where Splunk was told and got it wrong.
         """
-        lignes = self.splunk.journal_de_l_action(nom_recherche)
-        fautives = [
-            ligne
-            for ligne in lignes
-            if ("ERROR" in ligne or "THC-117" in ligne)
-            and not any(code in ligne for code in tolere)
+        rows = self.splunk.action_log(search_name)
+        offending = [
+            row
+            for row in rows
+            if ("ERROR" in row or "THC-117" in row)
+            and not any(code in row for code in tolerated)
         ]
         self.assertEqual(
             [],
-            [ligne[:200] for ligne in fautives],
+            [row[:200] for row in offending],
             "the alert action logged an error or a silent-loss warning",
         )
