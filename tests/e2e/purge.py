@@ -12,6 +12,7 @@ It only ever touches names starting with the campaign prefix. That is the
 whole reason every object carries it.
 """
 
+import re
 import sys
 
 from . import _config
@@ -38,9 +39,22 @@ def _clients():
     return splunk, thehive
 
 
+#: The return trip's throwaway index is `e2e<runid>` -- no underscore, index
+#: names refuse it -- so it cannot share PREFIX. Matched exactly, never as a
+#: bare "e2e" prefix that an operator's own index could carry.
+THROWAWAY_INDEX = re.compile(r"^e2e[0-9a-f]{8}$")
+
+
 def inventory(splunk, thehive):
+    # ⚠️ Collection inputs and throwaway indexes were missing from this list
+    # until 2026-09-27: a killed round trip left an input polling TheHive every
+    # 60 s, and `--purge` reported "nothing left".
     return {
         "saved searches": splunk.searches_by_prefix(PREFIX),
+        "collection inputs": splunk.collection_inputs_by_prefix(PREFIX),
+        "throwaway indexes": [
+            name for name in splunk.indexes_by_prefix("e2e") if THROWAWAY_INDEX.match(name)
+        ],
         "instances": splunk.instances_by_prefix(PREFIX),
         "accounts": splunk.accounts_by_prefix(PREFIX),
         "thehive alerts": [a.get("title") for a in thehive.alerts_by_title_prefix(PREFIX)],
@@ -69,6 +83,11 @@ def main(argv):
 
     for name in leftovers["saved searches"]:
         splunk.delete_saved_search(name)
+    # The input goes before the instance it points at, the index after both.
+    for name in leftovers["collection inputs"]:
+        splunk.delete_collection_input(name)
+    for name in leftovers["throwaway indexes"]:
+        splunk.delete_index(name)
     for name in leftovers["instances"]:
         splunk.delete_instance(name)
     for name in leftovers["accounts"]:

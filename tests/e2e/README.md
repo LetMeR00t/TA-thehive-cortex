@@ -43,6 +43,11 @@ python -m tests.e2e.purge            # list what is left, change nothing
 python -m tests.e2e.purge --purge    # delete it
 ```
 
+It covers the round trip's **collection input** and its **throwaway index**
+(`e2e<runid>`, matched exactly) too: until 2026-09-27 it did not, and a killed
+round trip left an input polling TheHive every minute while `purge` reported
+nothing.
+
 `--purge` re-counts afterwards and says so if anything survived. Claiming
 "cleaned" while something is left is the failure this script exists to
 prevent.
