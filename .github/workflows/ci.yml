@@ -160,8 +160,11 @@ jobs:
       - name: Coverage floors on the critical paths
         # Per-path floors, never a global one: a global floor over 8,685 lines
         # is either trivially met or unreachable, and says nothing either way.
+        # It RUNS the suite, so it needs the runtime dependencies exactly like
+        # the tests job -- without them 10 test modules fail to import
+        # (typing_extensions), measured on the first Gitea run.
         run: |
-          python -m pip install --quiet coverage
+          python -m pip install --quiet -r TA-thehive-cortex/package/lib/requirements.txt coverage
           python tools/checks/coverage_floors.py
 
   build:
