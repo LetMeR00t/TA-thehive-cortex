@@ -1,0 +1,5 @@
+# Patch files are applied byte for byte by `git apply`. With core.autocrlf=true
+# (the Windows default) they were checked out with CRLF and not ONE of the
+# ten grafts applied to the LF upstream -- the replay guard went red for a
+# reason that had nothing to do with upstream (#25).
+*.patch text eol=lf

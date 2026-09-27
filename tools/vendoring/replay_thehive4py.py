@@ -76,9 +76,14 @@ ATTENDUS = {
 
 
 def _telecharger(version: str, ou: Path) -> Path:
+    # ⚠️ --ignore-requires-python: 2.1.0 declares `>=3.10`, so pip on 3.9 --
+    # the interpreter this repository builds with -- answers "no matching
+    # distribution", and the guard died before replaying anything. The copy
+    # is vendored, not installed: Requires-Python does not bind it (decision
+    # of 2026-08-19: Python 3.9 is kept), and the test matrix proves 3.9.
     subprocess.run(
         [sys.executable, "-m", "pip", "download", f"thehive4py=={version}",
-         "--no-deps", "-q", "-d", str(ou)],
+         "--no-deps", "--ignore-requires-python", "-q", "-d", str(ou)],
         check=True, capture_output=True, text=True,
     )
     roue = next(ou.glob("thehive4py-*.whl"))
@@ -173,7 +178,7 @@ def main() -> int:
 
         echecs = _appliquer(amont)
         if echecs:
-            print(f" {R}ÉCHEC{Z}  grafts that did not apply: {', '.join(echecs)}")
+            print(f" {R}FAIL{Z}   grafts that did not apply: {', '.join(echecs)}")
             print(f"        {D}upstream changed the same lines -- look at it, do not force it{Z}")
             return 1
         print(f" {V}ok{Z}     graft series applied")
@@ -181,7 +186,7 @@ def main() -> int:
         for propre in PROPRES:
             source = VENDORISE / propre
             if not source.is_file():
-                print(f" {R}ÉCHEC{Z}  fork-only file missing: {propre}")
+                print(f" {R}FAIL{Z}   fork-only file missing: {propre}")
                 return 1
             (amont / propre).parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(source, amont / propre)
@@ -189,7 +194,7 @@ def main() -> int:
 
         perdues = _verifier_greffes(amont)
         if perdues:
-            print(f" {R}ÉCHEC{Z}  grafts lost despite the patches applying:")
+            print(f" {R}FAIL{Z}   grafts lost despite the patches applying:")
             for p in perdues:
                 print(f"          {p}")
             return 1
