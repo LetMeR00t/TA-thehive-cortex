@@ -153,7 +153,10 @@ def construire_registre() -> tuple[str, list[str]]:
                     f"{n} places (lines {', '.join(ou)}) -- so it designates none"
                 )
 
-        lignes.append(f"## `{module.relative_to(BIN)}`")
+        # ⚠️ as_posix(): the inventory is committed and compared byte for byte.
+        # A Windows run wrote `\` separators, and every Linux run after it
+        # then found the inventory stale -- red CI from a docs refresh.
+        lignes.append(f"## `{module.relative_to(BIN).as_posix()}`")
         lignes.append("")
         lignes.append("| id | line | level | message |")
         lignes.append("| :--- | ---: | :--- | :--- |")
