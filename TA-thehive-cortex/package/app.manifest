@@ -1,0 +1,59 @@
+{
+    "dependencies": null,
+    "incompatibleApps": null,
+    "info": {
+        "author": [
+            {
+                "company": null,
+                "email": null,
+                "name": "LetMeR00t"
+            }
+        ],
+        "classification": {
+            "categories": [],
+            "developmentStatus": null,
+            "intendedAudience": null
+        },
+        "commonInformationModels": null,
+        "description": "Splunk Add-on for TheHive and Cortex",
+        "id": {
+            "group": null,
+            "name": "TA-thehive-cortex",
+            "version": "4.0.0"
+        },
+        "license": {
+            "name": null,
+            "text": null,
+            "uri": null
+        },
+        "privacyPolicy": {
+            "name": null,
+            "text": null,
+            "uri": null
+        },
+        "releaseDate": null,
+        "releaseNotes": {
+            "name": null,
+            "text": null,
+            "uri": null
+        },
+        "title": "TheHive-Cortex"
+    },
+    "inputGroups": null,
+    "platformRequirements": {
+        "splunk": {
+            "Enterprise": "*"
+        }
+    },
+    "schemaVersion": "2.0.0",
+    "supportedDeployments": [
+        "_standalone",
+        "_distributed",
+        "_search_head_clustering"
+    ],
+    "targetWorkloads": [
+        "_search_heads",
+        "_indexers"
+    ],
+    "tasks": null
+}

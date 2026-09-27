@@ -48,9 +48,10 @@ and `package_contents.sh` refuses any native extension (`.so`, `.pyd`,
   reachable tag it does NOT refuse: it builds `0.0.0+<sha>` (measured in CI,
   #16). Never ship that archive.
 - `package/app.manifest` is **required** by `ucc-gen build` (without it:
-  `FileNotFoundError`, #16) but is **not versioned** — `.gitignore` excludes
-  `*.manifest`. A clean clone cannot build until it is committed (#16). Its
-  version field is rewritten from `--ta-version` at build time.
+  `FileNotFoundError`, #16). `.gitignore` excludes `*.manifest` (PyInstaller
+  heritage), so it carries a narrow `!` exception for this one file — it was
+  unversioned, and no clean clone could build, until 2026-09-27. Its version
+  field is rewritten from `--ta-version` at build time.
 
 ### Tagging on red is a convention, not a lock
 
