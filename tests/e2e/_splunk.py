@@ -6,6 +6,7 @@ is also what lets two runs share an instance without stealing each other's
 objects.
 """
 
+import re
 import time
 import xml.etree.ElementTree as ET
 
@@ -259,12 +260,22 @@ class SplunkClient:
         applies index-time TRANSFORMS to `*_modalert.log` that force the index
         AND the sourcetype; on any instance carrying CIM -- every ES
         deployment -- the add-on's own props.conf never gets a say.
+
+        ⚠️ Filtering on the search name alone returns only the FRAMEWORK's
+        lines ("Initializing modaction. search_name=... pid=N"): the add-on's
+        own lines -- its errors included -- carry an exec_id and the pid, never
+        the search name. Measured on 2026-09-27 (#38): `THCA-TH110-ERROR` was
+        in the log, and `assert_clean_log` saw nothing, in every case of the
+        campaign. So the lines naming the search only give the run's pid(s);
+        every line of those pids is then read.
         """
-        spl = (
-            'search index=cim_modactions source="*_modalert.log*" '
-            f'"{search_name}" | table _time, _raw'
-        )
-        return self._raw_search(spl, since)
+        base = 'search index=cim_modactions source="*_modalert.log*" '
+        named = self._raw_search(f'{base}"{search_name}" | table _time, _raw', since)
+        pids = sorted(set(re.findall(r"\bpid=(\d+)", " ".join(named))))
+        if not pids:
+            return named
+        terms = " OR ".join(f'"pid={pid}"' for pid in pids)
+        return self._raw_search(f"{base}({terms}) | table _time, _raw", since)
 
     def _raw_search(self, spl, since):
         return [row.get("_raw", "") for row in self.search_events(spl, earliest=since)]

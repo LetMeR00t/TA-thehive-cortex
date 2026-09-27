@@ -302,6 +302,48 @@ def create_thehive_instance_modular_input(instance_id, helper, acronym, logger=N
     return (thehive, configuration, logger_file)
 
 
+def _is_authentication_refusal(error):
+    """True when TheHive answered, and what it said is "who are you?".
+
+    thehive4py does not always attach the response, so the message TheHive 5
+    sends (`AuthenticationError`) stands in for a 401 -- but only when no
+    status is known: a status, when there is one, is the fact.
+    """
+    status = getattr(getattr(error, "response", None), "status_code", None)
+    if isinstance(status, int):
+        return status == 401
+    return "AuthenticationError" in str(error)
+
+
+def _authentication_refused_message(mode):
+    """Name the authentication MODE that was refused, and what it requires.
+
+    ⚠️ #38: a bare `AuthenticationError` accuses the credentials, and the user
+    who knows them to be right has nowhere to go. Measured on TheHive 5.7.5
+    (scalligraph `BasicAuthSrv`): Basic credentials are read as
+    `user:password[:otp]` by splitting on EVERY ':', so a password containing
+    ':' is cut short and can never pass -- while the very same credentials are
+    accepted by the web login. Nothing here looks at the password itself: even
+    "it contains a ':'" is a fact derived from a secret.
+    """
+    if mode == "password":
+        return (
+            "THEHIVE_AUTHENTICATION_REFUSED - TheHive refused the 'password' "
+            "authentication mode of this instance. That mode sends the username "
+            "and password as HTTP Basic, which TheHive reads as user:password[:otp], "
+            "cut at every ':'. Before suspecting the credentials, check that: the "
+            "password contains no ':' (it would be truncated and can never match); "
+            "the account has no multi-factor authentication (its one-time code "
+            "cannot be supplied); the 'basic' provider is enabled in TheHive's "
+            "auth.providers (it is by default). The 'api_key' mode avoids all three."
+        )
+    return (
+        "THEHIVE_AUTHENTICATION_REFUSED - TheHive refused the 'api_key' "
+        "authentication mode of this instance: the API key is unknown, revoked, "
+        "or belongs to a locked account."
+    )
+
+
 class TheHive4Splunk(TimelineEventsMixin, TheHiveApi):
     """This class is used to represent a TheHive instance
     Most of parameters are reused from the python library of TheHive
@@ -413,76 +455,92 @@ class TheHive4Splunk(TimelineEventsMixin, TheHiveApi):
                 )
 
         except Exception as e:
-            if "CERTIFICATE_VERIFY_FAILED" in str(e):
-                # Point at the mechanism that survives an upgrade (the instance's
-                # own CA bundle under local/), never at the bundled certifi store:
-                # that one ships with the add-on and is overwritten on every deploy.
-                if isinstance(verify, str):
-                    remediation = (
-                        'the CA bundle configured for this instance ("'
-                        + verify
-                        + '") does not certify the server. Append the issuing certificate '
-                        "authority to that file."
-                    )
-                else:
-                    remediation = (
-                        "no custom certificate authority is configured for this instance. "
-                        "Place a PEM bundle in the app's local/ folder and set the instance "
-                        'field "CA Certificate Path" to its filename. Do not edit "'
-                        + str(certifi.where())
-                        + '": it ships with the add-on and is overwritten on every upgrade.'
-                    )
-                self.logger_file.warn(
-                    id="TH85",
-                    message="THE_HIVE_CERTIFICATE_FAILED - It seems that the certificate "
-                    "verification failed: "
-                    + remediation
-                    + " Complete error: "
-                    + str(e),
-                )
-                sys.exit(85)
-            elif "HANDSHAKE_FAILURE" in str(e):
-                self.logger_file.warn(
-                    id="TH90",
-                    message="THE_HIVE_HANDHSHAKE_FAILURE - It seems that the SSL handshake failed. A possible solution is to check if the remote server/proxy is not expecting a client certificate. Complete error: "
-                    + str(e),
-                )
-                sys.exit(90)
-            elif "Proxy Authentication Required" in str(e):
-                self.logger_file.warn(
-                    id="TH95",
-                    message="THE_HIVE_PROXY_AUTHENTICATION_ERROR - It seems that the connection to the proxy has failed as it's required an authentication (none was provided or the username/password is not working). Proxy information are: "
-                    + str(proxies)
-                    + ". Complete error: "
-                    + str(e),
-                )
-                sys.exit(95)
-            elif "ProxyError" in str(e):
-                self.logger_file.warn(
-                    id="TH100",
-                    message="THE_HIVE_PROXY_ERROR - It seems that the connection to the proxy has failed. Proxy information are: "
-                    + str(proxies)
-                    + ". Complete error: "
-                    + str(e),
-                )
-                sys.exit(100)
-            else:
-                error_msg = str(e)
-                if "<!DOCTYPE html>" in error_msg or "<html>" in error_msg.lower():
-                    self.logger_file.error(
-                        id="TH109",
-                        message=f"THEHIVE_HTML_RESPONSE_ERROR - The server at {url} returned an HTML page instead of JSON. This often happens if the URL is incorrect (e.g., missing /api/ or pointing to a login page) or if a proxy/WAF is intercepting the request. Partial response: {error_msg[:200]}...",
-                    )
-                else:
-                    self.logger_file.error(
-                        id="TH110",
-                        message="THEHIVE_CONNECTION_ERROR - Error: "
-                        + error_msg
-                        + ". Check any error in the TheHive instance logs following this API REST call. If the error is persisting after several tries, please raise an issue to the application maintainer.",
-                    )
-                sys.exit(110)
+            self._exit_on_connection_error(
+                e, url, verify, proxies, "api_key" if apiKey is not None else "password"
+            )
 
         self.__sid = sid
+
+    def _exit_on_connection_error(self, e, url, verify, proxies, auth_mode):
+        """Log the one diagnosis that fits a failed first call, then exit.
+
+        Split out of `__init__` when #38 added the authentication branch: the
+        complexity ceiling turned red (CC 17 > 15) and was not raised.
+        """
+        if "CERTIFICATE_VERIFY_FAILED" in str(e):
+            # Point at the mechanism that survives an upgrade (the instance's
+            # own CA bundle under local/), never at the bundled certifi store:
+            # that one ships with the add-on and is overwritten on every deploy.
+            if isinstance(verify, str):
+                remediation = (
+                    'the CA bundle configured for this instance ("'
+                    + verify
+                    + '") does not certify the server. Append the issuing certificate '
+                    "authority to that file."
+                )
+            else:
+                remediation = (
+                    "no custom certificate authority is configured for this instance. "
+                    "Place a PEM bundle in the app's local/ folder and set the instance "
+                    'field "CA Certificate Path" to its filename. Do not edit "'
+                    + str(certifi.where())
+                    + '": it ships with the add-on and is overwritten on every upgrade.'
+                )
+            self.logger_file.warn(
+                id="TH85",
+                message="THE_HIVE_CERTIFICATE_FAILED - It seems that the certificate "
+                "verification failed: "
+                + remediation
+                + " Complete error: "
+                + str(e),
+            )
+            sys.exit(85)
+        elif "HANDSHAKE_FAILURE" in str(e):
+            self.logger_file.warn(
+                id="TH90",
+                message="THE_HIVE_HANDHSHAKE_FAILURE - It seems that the SSL handshake failed. A possible solution is to check if the remote server/proxy is not expecting a client certificate. Complete error: "
+                + str(e),
+            )
+            sys.exit(90)
+        elif "Proxy Authentication Required" in str(e):
+            self.logger_file.warn(
+                id="TH95",
+                message="THE_HIVE_PROXY_AUTHENTICATION_ERROR - It seems that the connection to the proxy has failed as it's required an authentication (none was provided or the username/password is not working). Proxy information are: "
+                + str(proxies)
+                + ". Complete error: "
+                + str(e),
+            )
+            sys.exit(95)
+        elif "ProxyError" in str(e):
+            self.logger_file.warn(
+                id="TH100",
+                message="THE_HIVE_PROXY_ERROR - It seems that the connection to the proxy has failed. Proxy information are: "
+                + str(proxies)
+                + ". Complete error: "
+                + str(e),
+            )
+            sys.exit(100)
+        elif _is_authentication_refusal(e):
+            self.logger_file.error(
+                id="TH111",
+                message=_authentication_refused_message(auth_mode),
+            )
+            sys.exit(111)
+        else:
+            error_msg = str(e)
+            if "<!DOCTYPE html>" in error_msg or "<html>" in error_msg.lower():
+                self.logger_file.error(
+                    id="TH109",
+                    message=f"THEHIVE_HTML_RESPONSE_ERROR - The server at {url} returned an HTML page instead of JSON. This often happens if the URL is incorrect (e.g., missing /api/ or pointing to a login page) or if a proxy/WAF is intercepting the request. Partial response: {error_msg[:200]}...",
+                )
+            else:
+                self.logger_file.error(
+                    id="TH110",
+                    message="THEHIVE_CONNECTION_ERROR - Error: "
+                    + error_msg
+                    + ". Check any error in the TheHive instance logs following this API REST call. If the error is persisting after several tries, please raise an issue to the application maintainer.",
+                )
+            sys.exit(110)
 
     @property
     def logger_file(self):

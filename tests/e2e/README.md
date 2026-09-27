@@ -57,6 +57,7 @@ prevent.
 | `e2e_uc4_notable_es_mode.py` | the one decision `es_mode` actually changes: `sourceRef` taken from the notable's `event_id`. ⚠️ It deliberately does **not** create a real notable — that would write into the `notable` index, which the campaign could not clean up |
 | `e2e_collection_roundtrip.py` | the **return trip**: an alert created from Splunk, collected back by the modular input into a throwaway index, checked on its content. ⚠️ Creates and drops its own index — indexed events cannot be deleted, so writing into the operator's `thehive` index would leave rows no teardown could remove |
 | `e2e_uc5_thehive_function.py` | pushing to a TheHive **Function**. Skips **with the reason** unless `E2E_THEHIVE_FUNCTION` is set: Functions are licensed and `listFunction` is empty on the lab instance |
+| `e2e_password_auth_mode.py` | the `password` authentication mode, on an account of its own (#38): either the alert is created, or the action says in terms of the **mode** (`TH111`) why TheHive refused it — never a bare `TH110`. ⚠️ The only case that writes `THEHIVE_USER`/`THEHIVE_PASSWORD` into Splunk's credential store; the account carries the run prefix and is deleted with the run |
 
 ⚠️ Asserting that the alert **exists** proves almost nothing. The defects that
 hurt in this add-on do not fail: the alert is created, Splunk reports success,
@@ -64,13 +65,18 @@ and one field is missing. Every case here asserts on **content** — the value
 *and* the type of each observable, each custom field, each TTP — and on what
 the alert action wrote in its own log.
 
-## Four things measured here that are worth knowing
+## Five things measured here that are worth knowing
 
 - The run creates its own **instance** but reuses the template's **account**.
-  The add-on's `password` authentication mode sends HTTP Basic, and TheHive 5
-  answers `401` to Basic on `/api/v1` while accepting `/api/v1/login`; an
-  account built from `THEHIVE_USER`/`THEHIVE_PASSWORD` gets `THCA-TH110
-  AuthenticationError` and no alert is ever created.
+  The add-on's `password` authentication mode sends HTTP Basic, and TheHive
+  reads Basic as `user:password[:otp]`, splitting on **every** `:` (scalligraph
+  `BasicAuthSrv`, 5.7.5): a password containing `:` is truncated and answered
+  `401`, while `/api/v1/login` accepts it. Basic itself is on by default.
+- The alert action's log is read by **pid**, not by search name. Only the
+  framework's lines name the saved search; the add-on's own lines — its errors
+  included — carry an `exec_id` and the pid. Filtering on the name made
+  `assert_clean_log` blind to every add-on error, in every case, until
+  2026-09-27.
 - TheHive listings are filtered **server-side** with `_startsWith`. Listing and
   filtering in Python looked identical on alerts and quietly failed on cases:
   the lab organisation holds more than 3 600 of them, `listCase` does not

@@ -59,10 +59,11 @@ class E2ECampaign(unittest.TestCase):
         # ⚠️ The run creates its own INSTANCE but reuses the template's
         # ACCOUNT. Two measured reasons, both worth keeping written down:
         #
-        # * the add-on's `password` authentication mode sends HTTP Basic, and
-        #   this TheHive 5 answers 401 to Basic on /api/v1 while accepting
-        #   /api/v1/login -- an account built from THEHIVE_USER/PASSWORD gets
-        #   THCA-TH110 "AuthenticationError" and no alert is ever created;
+        # * the add-on's `password` authentication mode sends HTTP Basic, which
+        #   TheHive splits on EVERY ':' (user:password[:otp]); the lab
+        #   account's password contains one, so an account built from
+        #   THEHIVE_USER/PASSWORD is refused (TH111, #38) and no alert is ever
+        #   created -- `e2e_password_auth_mode.py` watches that path;
         # * reusing the configured account means the campaign never writes a
         #   human's password into Splunk's credential store, which is exactly
         #   the kind of leftover a cleanup can fail to remove.

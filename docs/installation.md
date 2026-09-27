@@ -43,7 +43,9 @@ Once you've done that, you can configure all your instances. An instance is an e
 2. On this dashboard, you need to add every instance you want to use. To do so, select the "**Add a new instance**" as action and fill these fields:
 
 - **Account name (Global accounts)**: This is the name of the account to use that you added under "Accounts". It will list you all available accounts you have previously set up.
-- **Authentication type**: Authentication type for your instance. Password is working only with TheHive but we recommand you to use an API key everytime
+- **Authentication type**: Authentication type for your instance. Password is working only with TheHive but we recommand you to use an API key everytime. What each mode requires on the TheHive side:
+  - **API key** (`api_key`): an API key generated for the account (the key goes in the account's password field). Nothing else.
+  - **Password** (`password`): the credentials are sent as **HTTP Basic** on every call. TheHive reads them as `user:password[:otp]` and cuts at every `:`, so the password **must not contain `:`**; an account with **multi-factor authentication** cannot use this mode (its one-time code cannot be supplied); and the `basic` provider must be enabled in TheHive's `auth.providers` (it is by default). When TheHive refuses, the add-on logs `TH111`, naming the mode.
 - **Type**: Type of your instance (TheHive (v3 or v4) or Cortex (v3)).
 - **Organisation**: The name of the organisation against which api calls will be run. Default to "-" meaning None.
 - **Proxy URL**: A string that indicates what is the proxy URL to use for this instance if there is any. You can specify http/https if you want but the same value will be used for both protocols. Default to "-" meaning None
