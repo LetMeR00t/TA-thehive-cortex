@@ -196,30 +196,13 @@ jobs:
       - name: Install ucc-gen
         run: python -m pip install --quiet splunk-add-on-ucc-framework==6.5.3
 
-      - name: Build the add-on
-        # ⚠️ Without --ta-version, ucc-gen takes the version from `git
-        # describe`, NOT from globalConfig.json -- and a shallow checkout has
-        # no tag, so it builds `0.0.0+<sha>` (measured). Fine for a gate; not
-        # an artefact to ship.
-        # ⚠️ ucc-gen 6.5.3 can crash on an uncaught exception and still exit 0
-        # (measured on Gitea: FileNotFoundError on app.manifest, step green).
-        # The output directory is the only honest proof that a build happened.
-        run: |
-          ucc-gen build --source TA-thehive-cortex/package
-          if [ ! -f output/TA-thehive-cortex/app.manifest ]; then
-            echo "ucc-gen produced no add-on in output/ -- the build failed."
-            exit 1
-          fi
-
-      - name: Refuse compiled artefacts in the output
-        # ucc-gen copies package/bin verbatim. A stale __pycache__ left by a
-        # local test run would ship inside the .spl and fail Splunk Cloud
-        # vetting -- a defect that only ever appears on someone else's machine.
-        run: |
-          trouves=$(find output -name '__pycache__' -o -name '*.pyc' | head -20)
-          if [ -n "$trouves" ]; then
-            echo "compiled Python artefacts in the build output:"
-            echo "$trouves"
-            exit 1
-          fi
-          echo "no compiled artefact in the build output."
+      - name: Build the archive and inspect IT
+        # The same script a person runs to build a release (tools/build.sh):
+        # build, purge compiled Python, package, then
+        # tools/checks/package_contents.sh on the ARCHIVE -- the folder is not
+        # what Splunk receives. The version is a placeholder: without one,
+        # ucc-gen takes it from `git describe` and a shallow checkout has no
+        # tag. Fine for a gate; not an artefact to ship.
+        env:
+          PYTHON: python
+        run: bash tools/build.sh 0.0.0

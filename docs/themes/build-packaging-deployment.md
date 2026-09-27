@@ -13,12 +13,24 @@ The Add-on uses the [Splunk UCC Generator](https://splunk.github.io/addonfactory
 
 **Prerequisite:** You MUST use **Python 3.9** to run the UCC generator to ensure compatibility with Splunk's internal libraries.
 
-To build the application:
-```powershell
-# Recommended build command
-ucc-gen build --source TA-thehive-cortex/package --config TA-thehive-cortex/globalConfig.json --output output --ta-version 4.2.2 --overwrite -v --python-binary-name python
+To build the application, use the script -- it is the only supported way:
+
+```bash
+PYTHON=/path/to/python3.9 tools/build.sh 5.0.0
 ```
-*Note: You may need to specify `--python-binary-name` (e.g., `python3.9` or the full path) if your default Python is not compatible.*
+
+It runs `ucc-gen build` with the interpreter named explicitly, purges compiled
+Python from `output/`, drops pip's `.exe` launchers, packages the archive, and
+then runs `tools/checks/package_contents.sh` **on the archive**: a red check
+fails the build. The CI build job runs the same script.
+
+⚠️ Each of those steps used to be prose in this document. A Windows build of
+5.0.0 that skipped them shipped **209 compiled Python files and 3 Windows
+binaries** (#10): `ucc-gen` copies `package/bin` verbatim (so the `__pycache__`
+of every local test run), pip compiles what it builds from source, and pip on
+Windows installs Windows wheels. On Windows the script therefore forces
+`charset_normalizer`'s pure-Python source distribution
+(`--no-binary=charset_normalizer`); the Linux build is left as it is.
 
 ### Who decides the version
 
@@ -47,22 +59,12 @@ Practical consequence: after a build, `git status` shows `globalConfig.json` as
 modified even if you changed nothing. That is the generator writing into its own
 input, not a stray edit.
 
-### 2. Packaging (.spl)
-For the agent's environment, the following cleanup is applied to the `output/` folder before packaging:
+### 2. Packaging
 
-```powershell
-# Cleanup compiled-Python artifacts. ucc-gen copies the source bin/ as-is, so any
-# stale __pycache__/*.pyc left in package/bin (e.g. from running tests locally)
-# would ship inside the .spl and fail Splunk Cloud AppInspect.
-Get-ChildItem "output/TA-thehive-cortex" -Recurse -Include *.pyc, *.pyo -File | Remove-Item -Force -ErrorAction SilentlyContinue;
-Get-ChildItem "output/TA-thehive-cortex" -Recurse -Directory | Where-Object { $_.Name -eq "__pycache__" } | Remove-Item -Recurse -Force -ErrorAction SilentlyContinue;
-
-# Cleanup Windows binaries (keep Mako templates as they are required for UI)
-Get-ChildItem "output/TA-thehive-cortex/lib" -Recurse -Include *.exe, *.pyd -File | Remove-Item -Force -ErrorAction SilentlyContinue;
-
-# Create the .spl file
-tar -czf TA-thehive-cortex.spl -C output TA-thehive-cortex
-```
+Done by `tools/build.sh` above. `ucc-gen package` names the archive
+`TA-thehive-cortex/TA-thehive-cortex-<version>.tar.gz`; that file is what
+Splunk receives and what every later step (AppInspect, deployment) must use --
+never `output/`.
 
 ### 3. AppInspect (Splunk Cloud vetting)
 
