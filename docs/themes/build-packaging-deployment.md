@@ -29,10 +29,19 @@ ucc-gen build --source TA-thehive-cortex/package --config TA-thehive-cortex/glob
   (`meta.version` is rewritten, then saved). Editing `meta.version` by hand
   before a build is redundant: the build overwrites it either way.
 - **Omit `--ta-version` and the version comes from the latest git tag.** With no
-  usable tag, the build refuses to run rather than guess.
-- `package/app.manifest` carries a stale `4.0.0` in the sources. It is **inert**
-  — the generated manifest is rewritten from `--ta-version`. Do not trust it,
-  and do not bother fixing it.
+  reachable tag it does NOT refuse: it builds `0.0.0+<sha>` (measured in CI,
+  #16). Never ship that archive.
+- `package/app.manifest` is **required** by `ucc-gen build` (without it:
+  `FileNotFoundError`, #16) but is **not versioned** — `.gitignore` excludes
+  `*.manifest`. A clean clone cannot build until it is committed (#16). Its
+  version field is rewritten from `--ta-version` at build time.
+
+### Tagging on red is a convention, not a lock
+
+The Gitea CI (`.gitea/workflows/ci.yml`) runs on every push and on `v*` tags,
+and turns red on a regression. **Nothing stops a `v*` tag from being pushed on a
+red commit**: no tag protection is set (decision of 2026-09-27, #16). Check the
+run of the exact commit is green before tagging.
 
 Practical consequence: after a build, `git status` shows `globalConfig.json` as
 modified even if you changed nothing. That is the generator writing into its own
