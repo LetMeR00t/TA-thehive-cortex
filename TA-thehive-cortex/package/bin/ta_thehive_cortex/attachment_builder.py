@@ -74,8 +74,25 @@ def build_attachment(
 
     logger_file.debug(id="141", message=f"Processing results file: {results_file}")
 
-    results_file_name = os.path.basename(results_file).split(".")[0]
     tmp_directory = tempfile.mkdtemp(prefix="thc_attach_")
+    # ⚠️ The directory only reaches the caller on success, so on failure
+    # nobody else can remove it: every failed attachment used to leave one
+    # behind in the temp dir shared by every alert action worker.
+    try:
+        after_rename = _build_in(
+            tmp_directory, results_file, attach_results, attach_format,
+            attachment_prefix, object_id, logger_file,
+        )
+    except BaseException:
+        shutil.rmtree(tmp_directory, ignore_errors=True)
+        raise
+    return tmp_directory, after_rename
+
+
+def _build_in(tmp_directory, results_file, attach_results, attach_format,
+              attachment_prefix, object_id, logger_file):
+    """Write the attachment into `tmp_directory` and return its final path."""
+    results_file_name = os.path.basename(results_file).split(".")[0]
     file_ext = MODES[attach_results]
     before_rename = os.path.join(tmp_directory, results_file_name + file_ext)
 
@@ -102,7 +119,7 @@ def build_attachment(
                    logger_file),
     )
     os.rename(before_rename, after_rename)
-    return tmp_directory, after_rename
+    return after_rename
 
 
 def _read_results(results_file, logger_file):

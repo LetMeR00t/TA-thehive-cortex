@@ -25,6 +25,8 @@ was, so the next test module starts from a clean table.
 """
 
 import contextlib
+import os
+import shutil
 import sys
 import types
 from unittest.mock import MagicMock
@@ -162,3 +164,21 @@ def mocks_temporaires(noms, remplacements=None):
                 sys.modules.pop(nom, None)
             else:
                 sys.modules[nom] = ancien
+
+
+def remove_tree(path):
+    """Remove a directory a test created -- and FAIL if something holds it.
+
+    ⚠️ `shutil.rmtree(path, ignore_errors=True)` is the reflex, and it hides
+    exactly the defect a test should report: a file the code under test left
+    OPEN. Linux unlinks an open file without a word; Windows refuses
+    (WinError 32). With `ignore_errors` the refusal is swallowed and the leak
+    only shows as litter in the temp dir. Without it, the same leak is a red
+    test on a Windows checkout -- that is how the RotatingFileHandler left open
+    by `setup_logging()` was found.
+
+    Only an already-absent path is tolerated: the code under test may have
+    cleaned up after itself, which is what it should do.
+    """
+    if os.path.exists(path):
+        shutil.rmtree(path)

@@ -13,10 +13,10 @@ import csv
 import gzip
 import json
 import os
-import shutil
 import sys
 import tempfile
 import unittest
+import unittest.mock
 
 APP_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 BIN = os.path.join(APP_ROOT, 'TA-thehive-cortex', 'package', 'bin')
@@ -26,6 +26,7 @@ for p in (BIN, os.path.join(BIN, 'ta_thehive_cortex')):
 
 import attachment_builder  # noqa: E402
 from attachment_builder import AttachmentError, build_attachment  # noqa: E402
+from _isolation import remove_tree  # noqa: E402
 
 
 class RecordingLogger:
@@ -72,7 +73,7 @@ class Base(unittest.TestCase):
 
     def tearDown(self):
         for d in self.to_clean:
-            shutil.rmtree(d, ignore_errors=True)
+            remove_tree(d)
 
     def build(self, attach_results=1, attach_format=0, prefix="events_",
                    object_id="~123~456"):
@@ -183,6 +184,37 @@ class WhatGoesWrong(Base):
         tmp2, _ = self.build()
         self.assertNotEqual(tmp1, tmp2)
         self.assertTrue(os.path.isdir(tmp1) and os.path.isdir(tmp2))
+
+    def test_a_failed_build_leaves_no_directory_behind(self):
+        # ⚠️ The directory is created before anything can fail, and it is only
+        # handed to the caller on success -- so on failure nobody else can
+        # remove it. Every failed attachment left one in the shared temp dir
+        # of the Splunk host, and the suite left two per run on this machine.
+        created = []
+        real_mkdtemp = tempfile.mkdtemp
+
+        def recording_mkdtemp(*args, **kwargs):
+            path = real_mkdtemp(*args, **kwargs)
+            created.append(path)
+            return path
+
+        with open(self.results, "wb") as f:
+            f.write(b"this is not gzip")
+        failures = {
+            "unreadable results": dict(attach_results=2),
+            "unknown file name format": dict(attach_format=9),
+        }
+        for label, kwargs in failures.items():
+            with self.subTest(failure=label):
+                created.clear()
+                with unittest.mock.patch.object(
+                    attachment_builder.tempfile, "mkdtemp", recording_mkdtemp
+                ):
+                    with self.assertRaises(AttachmentError):
+                        self.build(**kwargs)
+                self.assertEqual(len(created), 1)
+                self.to_clean.extend(created)
+                self.assertFalse(os.path.exists(created[0]))
 
     def test_le_repertoire_survit_a_l_appel(self):
         # The caller uploads FROM it, then removes it. Cleaning up here would

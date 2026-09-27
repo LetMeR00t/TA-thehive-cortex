@@ -1,6 +1,5 @@
 import csv
 import os
-import shutil
 import sys
 import tempfile
 import unittest
@@ -17,7 +16,7 @@ mocks = [
 
 # Add bin and libs to path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from _isolation import mocks_temporaires  # noqa: E402
+from _isolation import mocks_temporaires, remove_tree  # noqa: E402
 
 APP_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(APP_ROOT, 'TA-thehive-cortex', 'package', 'bin'))
@@ -94,7 +93,7 @@ class TestDatatypeLookup(unittest.TestCase):
             del os.environ["SPLUNK_HOME"]
         else:
             os.environ["SPLUNK_HOME"] = self._old_splunk_home
-        shutil.rmtree(self.splunk_home, ignore_errors=True)
+        remove_tree(self.splunk_home)
 
     def _write_legacy_csv(self, rows):
         os.makedirs(self.lookup_dir, exist_ok=True)
