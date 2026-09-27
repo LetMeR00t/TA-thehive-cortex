@@ -42,7 +42,10 @@ BIN = ROOT / "TA-thehive-cortex" / "package" / "bin"
 
 #: Identifiers that name, or plainly hold, a credential.
 SENSITIVE_NAME = re.compile(
-    r"(secret|password|passwd|pwd|apikey|api_key|token|passphrase|credential)",
+    r"(secret|password|passwd|pwd|apikey|api_key|token|passphrase|credential"
+    # HTTP headers carry the credential itself (`Authorization: Bearer <key>`
+    # or Basic `user:password`); logging them is logging the secret (TH46).
+    r"|headers|authorization)",
     re.IGNORECASE,
 )
 

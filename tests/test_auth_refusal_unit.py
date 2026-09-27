@@ -111,5 +111,31 @@ class TestAuthenticationRefusalNamesTheMode(unittest.TestCase):
                 self.assertNotIn(secret.split(":")[0], message, log_id)
 
 
+class TestUnreadableAnswerLogsNoCredential(unittest.TestCase):
+    """TH46 used to log `session.headers`, i.e. `Authorization` and its value."""
+
+    def test_th46_logs_header_names_not_values(self):
+        logger = MagicMock()
+        key = "dummy-key-for-tests"
+
+        def fake_api_init(api_self, *args, **kwargs):
+            api_self.user = MagicMock()
+            api_self.user.get_current.return_value = {}  # no "_id": TH45/TH46 path
+            api_self.session = MagicMock()
+            api_self.session.headers = {"Authorization": f"Bearer {key}", "User-Agent": "x"}
+
+        with patch.object(thehive.TheHiveApi, "__init__", fake_api_init), \
+                patch.object(thehive, "Utils", MagicMock()):
+            thehive.TheHive4Splunk(
+                url="https://thehive.invalid", apiKey=key, verify=True,
+                version="TheHive5", logger_file=logger,
+            )
+        debug = {c.kwargs.get("id"): c.kwargs.get("message", "") for c in logger.debug.call_args_list}
+        self.assertIn("TH46", debug)
+        self.assertIn("Authorization", debug["TH46"], "the header NAME is useful and harmless")
+        for log_id, message in debug.items():
+            self.assertNotIn(key, message, log_id)
+
+
 if __name__ == "__main__":
     unittest.main()

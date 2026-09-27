@@ -429,9 +429,13 @@ class TheHive4Splunk(TimelineEventsMixin, TheHiveApi):
                     id="TH45",
                     message="THE_HIVE_AUTHENTICATION_RESPONSE - Server didn't respond with a valid response.",
                 )
-                self.logger_file.debug(
+                # ⚠️ Header NAMES only. The values carry the credential itself
+                # (`Authorization: Bearer <key>`, or Basic `user:password`):
+                # this line used to write them into an indexed log file.
+                self.logger_file.debug(  # credential-free: header names only, never values
                     id="TH46",
-                    message="Payload content - Headers: " + str(self.session.headers),
+                    message="Payload content - Header names: "
+                    + ", ".join(sorted(self.session.headers)),
                 )
                 self.logger_file.debug(
                     id="TH47",
