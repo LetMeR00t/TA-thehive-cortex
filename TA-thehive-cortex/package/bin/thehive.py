@@ -601,30 +601,7 @@ class TheHive4Splunk(TimelineEventsMixin, TheHiveApi):
                 # Set the _time of the event to the created/updated time
                 event["_time"] = int(event.get(kwargs["date"], event.get("_createdAt", 0)))
 
-                if "observables" in kwargs["additional_information"]:
-                    ## OBSERVABLES ##
-                    observables = []
-                    ## ALERTS ##
-                    observables = self.alert.get_alert_observables(
-                        alert_id=event["_id"]
-                    )
-                    event["observables"] = observables
-                    self.logger_file.debug(
-                        id="TH122",
-                        message="thehive - observables: " + str(event["observables"]),
-                    )
-
-                ## ATTACHMENTS ##
-                if "attachments" in kwargs["additional_information"]:
-                    ## ALERTS ##
-                    attachments = self.alert.get_alert_attachments(
-                        alert_id=event["_id"]
-                    )
-                    event["attachments"] = attachments
-                    self.logger_file.debug(
-                        id="TH123",
-                        message="thehive - attachments: " + str(event["attachments"]),
-                    )
+                self._add_alert_details(event, kwargs["additional_information"])
 
                 # Rework of the custom fields
                 if "customFields" in event and len(event["customFields"]) > 0:
@@ -678,6 +655,28 @@ class TheHive4Splunk(TimelineEventsMixin, TheHiveApi):
             )
 
         return processed_events
+
+    def _add_alert_details(self, event: dict, additional_information: list) -> None:
+        """Attach to an alert event the related objects the input asked for."""
+        if "observables" in additional_information:
+            event["observables"] = self.alert.get_alert_observables(alert_id=event["_id"])
+            self.logger_file.debug(
+                id="TH122",
+                message="thehive - observables: " + str(event["observables"]),
+            )
+        if "attachments" in additional_information:
+            event["attachments"] = self.alert.get_alert_attachments(alert_id=event["_id"])
+            self.logger_file.debug(
+                id="TH123",
+                message="thehive - attachments: " + str(event["attachments"]),
+            )
+        if "ttps" in additional_information:
+            event["ttps"] = self.alert.find_procedures(
+                event["_id"], paginate=Paginate(start=0, end=100)
+            )
+            self.logger_file.debug(
+                id="TH124", message="thehive - ttps: " + str(len(event["ttps"]))
+            )
 
     def get_cases_events(
         self, filters: _FilterBase = None, sortby: SortExpr = None, **kwargs

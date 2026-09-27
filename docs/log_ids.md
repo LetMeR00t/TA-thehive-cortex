@@ -179,9 +179,9 @@ explains the manual purge of `etc/apps/learned/local/props.conf`. Fall back to
 
 | id | line | level | message |
 | :--- | ---: | :--- | :--- |
-| `MI-ERR-DATES` | 94 | error | … |
-| `70` | 142 | info | {…} events (type: {…}, date: {…}) were recovered. |
-| `MI-ERR-COLLECT` | 144 | error | Error: {…} |
+| `MI-ERR-DATES` | 95 | error | … |
+| `70` | 140 | info | {…} events (type: {…}, date: {…}) were recovered. |
+| `MI-ERR-COLLECT` | 142 | error | Error: {…} |
 
 ## `backfill_audit.py`
 
@@ -323,7 +323,7 @@ explains the manual purge of `etc/apps/learned/local/props.conf`. Fall back to
 | `30` | 162 | warn | WAIT_NOT_A_NUMBER - wait=" … … |
 | `10` | 182 | info | Query is: … |
 
-## `ta_thehive_cortex/alert_actions_base.py`
+## `ta_thehive_cortex\alert_actions_base.py`
 
 | id | line | level | message |
 | :--- | ---: | :--- | :--- |
@@ -332,7 +332,7 @@ explains the manual purge of `etc/apps/learned/local/props.conf`. Fall back to
 | `MA-DBG` | 67 | debug | … |
 | `MA-WRN` | 71 | warn | … |
 
-## `ta_thehive_cortex/attachment_builder.py`
+## `ta_thehive_cortex\attachment_builder.py`
 
 | id | line | level | message |
 | :--- | ---: | :--- | :--- |
@@ -341,7 +341,7 @@ explains the manual purge of `etc/apps/learned/local/props.conf`. Fall back to
 | `148` | 116 | error | Error during uncompressing process: {…} |
 | `146` | 159 | error | Attachment format isn't supported, given: {…} |
 
-## `ta_thehive_cortex/field_mapping.py`
+## `ta_thehive_cortex\field_mapping.py`
 
 | id | line | level | message |
 | :--- | ---: | :--- | :--- |
@@ -358,13 +358,13 @@ explains the manual purge of `etc/apps/learned/local/props.conf`. Fall back to
 | `THC-106` | 273 | warn | key is used by TheHive as an internal field (scope is False): {}. Key ignored… |
 | `THC-90` | 301 | debug | field to process: {…} |
 
-## `ta_thehive_cortex/modalert_args.py`
+## `ta_thehive_cortex\modalert_args.py`
 
 | id | line | level | message |
 | :--- | ---: | :--- | :--- |
 | `50` | 86 | debug | scope: {} |
 
-## `ta_thehive_cortex/modalert_cortex_run_a_new_job_helper.py`
+## `ta_thehive_cortex\modalert_cortex_run_a_new_job_helper.py`
 
 | id | line | level | message |
 | :--- | ---: | :--- | :--- |
@@ -373,7 +373,7 @@ explains the manual purge of `etc/apps/learned/local/props.conf`. Fall back to
 | `45` | 82 | info | Job preparation is finished. Running the job... |
 | `46` | 84 | info | Job creation is done. |
 
-## `ta_thehive_cortex/modalert_thehive_add_observables_helper.py`
+## `ta_thehive_cortex\modalert_thehive_add_observables_helper.py`
 
 | id | line | level | message |
 | :--- | ---: | :--- | :--- |
@@ -386,7 +386,7 @@ explains the manual purge of `etc/apps/learned/local/props.conf`. Fall back to
 | `THAO-60` | 199 | warning | Observable already exists in {…} {…} (Status={…}). Skipping. |
 | `THAO-70` | 205 | error | Failed to add observable to {…} {…}: {…}{…} |
 
-## `ta_thehive_cortex/modalert_thehive_add_timeline_event_helper.py`
+## `ta_thehive_cortex\modalert_thehive_add_timeline_event_helper.py`
 
 | id | line | level | message |
 | :--- | ---: | :--- | :--- |
@@ -394,7 +394,7 @@ explains the manual purge of `etc/apps/learned/local/props.conf`. Fall back to
 | `THTE-30` | 86 | warning | Invalid date format for {…}: {…} |
 | `THTE-ERR` | 101 | error | Failed to create timeline event for case {…}: {…} |
 
-## `ta_thehive_cortex/modalert_thehive_common.py`
+## `ta_thehive_cortex\modalert_thehive_common.py`
 
 | id | line | level | message |
 | :--- | ---: | :--- | :--- |
@@ -424,7 +424,7 @@ explains the manual purge of `etc/apps/learned/local/props.conf`. Fall back to
 | `THC-116` | 549 | debug | No observable found in current row (sourceRef={…}). |
 | `THC-77` | 585 | debug | Append results to description as markdown table |
 
-## `ta_thehive_cortex/modalert_thehive_create_a_new_alert_helper.py`
+## `ta_thehive_cortex\modalert_thehive_create_a_new_alert_helper.py`
 
 | id | line | level | message |
 | :--- | ---: | :--- | :--- |
@@ -446,7 +446,7 @@ explains the manual purge of `etc/apps/learned/local/props.conf`. Fall back to
 | `155` | 198 | via helper | passed as `attached` to upload_attachment |
 | `160` | 198 | via helper | passed as `not_attached` to upload_attachment |
 
-## `ta_thehive_cortex/modalert_thehive_create_a_new_case_helper.py`
+## `ta_thehive_cortex\modalert_thehive_create_a_new_case_helper.py`
 
 | id | line | level | message |
 | :--- | ---: | :--- | :--- |
@@ -470,7 +470,7 @@ explains the manual purge of `etc/apps/learned/local/props.conf`. Fall back to
 | `170` | 236 | via helper | passed as `attached` to upload_attachment |
 | `180` | 236 | via helper | passed as `not_attached` to upload_attachment |
 
-## `ta_thehive_cortex/modalert_thehive_run_function_helper.py`
+## `ta_thehive_cortex\modalert_thehive_run_function_helper.py`
 
 | id | line | level | message |
 | :--- | ---: | :--- | :--- |
@@ -483,7 +483,7 @@ explains the manual purge of `etc/apps/learned/local/props.conf`. Fall back to
 | `75` | 128 | info | Function was run on the events: {} |
 | `80` | 132 | error | Function didn't run correctly on the events: {} |
 
-## `ta_thehive_cortex/observable_builder.py`
+## `ta_thehive_cortex\observable_builder.py`
 
 | id | line | level | message |
 | :--- | ---: | :--- | :--- |
@@ -492,7 +492,7 @@ explains the manual purge of `etc/apps/learned/local/props.conf`. Fall back to
 | `THC-123` | 76 | warning | Unreadable sighted_at for {…}: '{…}' is not an epoch in seconds or millisecon… |
 | `THC-112` | 92 | debug | Multi-value split for {…}: '{…}' -> {…} |
 
-## `ta_thehive_cortex/post_creation.py`
+## `ta_thehive_cortex\post_creation.py`
 
 | id | line | level | message |
 | :--- | ---: | :--- | :--- |
@@ -501,7 +501,7 @@ explains the manual purge of `etc/apps/learned/local/props.conf`. Fall back to
 | `138` | 68 | info | Object {…} was successfully updated with the TTPs on url={…} |
 | `139` | 73 | error | TTPs update on recent creation has failed. url={…}, {…}, content={…}, ttp={…} |
 
-## `ta_thehive_cortex/timeline_events.py`
+## `ta_thehive_cortex\timeline_events.py`
 
 | id | line | level | message |
 | :--- | ---: | :--- | :--- |
@@ -515,14 +515,14 @@ explains the manual purge of `etc/apps/learned/local/props.conf`. Fall back to
 | `TH201` | 183 | info | Custom timeline event created successfully for case {…} |
 | `TH202` | 189 | error | FAILED_TO_CREATE_TIMELINE_EVENT - Error: {…} |
 
-## `ta_thehive_cortex/ttp_catalogue.py`
+## `ta_thehive_cortex\ttp_catalogue.py`
 
 | id | line | level | message |
 | :--- | ---: | :--- | :--- |
 | `THC-120` | 59 | warn | the MITRE catalogue '{…}' could not be read ({…}); pattern ids are forwarded … |
 | `THC-121` | 72 | debug | MITRE catalogue '{…}': {…} pattern id(s) loaded |
 
-## `ta_thehive_cortex/value_codecs.py`
+## `ta_thehive_cortex\value_codecs.py`
 
 | id | line | level | message |
 | :--- | ---: | :--- | :--- |
@@ -569,37 +569,38 @@ explains the manual purge of `etc/apps/learned/local/props.conf`. Fall back to
 | `TH117` | 540 | error | FAILED_TO_GET_INSTANCE_STATUS - Error: {…} |
 | `TH120` | 561 | info | Retrieving alerts count... |
 | `TH121` | 563 | info | Got {…} alerts. Estimated time for processing all events: less than {…} secon… |
-| `TH122` | 612 | debug | thehive - observables: … |
-| `TH123` | 624 | debug | thehive - attachments: … |
-| `TH125` | 668 | debug | Event after processing (check_and_reduce_values_size): {…} |
-| `TH126` | 675 | info | {…} events have been processed... |
-| `TH130` | 694 | info | Retrieving cases count... |
-| `TH131` | 696 | info | Got {…} cases. Estimated time for processing all events: less than {…} seconds |
-| `TH133` | 750 | debug | thehive - observables: … |
-| `TH134` | 761 | debug | thehive - attachments: … |
-| `TH135` | 772 | debug | thehive - pages: … |
-| `TH136` | 783 | debug | thehive - ttps: … |
-| `TH137` | 827 | debug | Event after processing (check_and_reduce_values_size): {…} |
-| `TH138` | 834 | info | {…} events have been processed... |
-| `TH141` | 846 | info | Tasks recovery detected. Got {…} tasks with filters: {…}. |
-| `TH142` | 880 | debug | Event after processing (check_and_reduce_values_size): {…} |
-| `TH139` | 887 | debug | TheHive - Tasks: … |
-| `TH140` | 906 | info | Retrieving observables count... |
-| `TH143` | 908 | info | Got {…} observables. Estimated time for processing all events: less than {…} … |
-| `TH145` | 984 | debug | Event after processing (check_and_reduce_values_size): {…} |
-| `TH146` | 990 | info | {…} events have been processed... |
-| `TH170` | 1009 | info | Retrieving audit logs count... |
-| `TH171` | 1011 | info | Got {…} audit logs. Estimated time for processing all events: less than {…} s… |
-| `TH175` | 1076 | debug | Event after processing (check_and_reduce_values_size): {…} |
-| `TH176` | 1082 | info | {…} events have been processed... |
-| `TH190` | 1101 | info | Retrieving tasks... |
-| `TH191` | 1110 | info | Got {…} tasks. |
+| `TH125` | 645 | debug | Event after processing (check_and_reduce_values_size): {…} |
+| `TH126` | 652 | info | {…} events have been processed... |
+| `TH122` | 663 | debug | thehive - observables: … |
+| `TH123` | 669 | debug | thehive - attachments: … |
+| `TH124` | 677 | debug | thehive - ttps: … |
+| `TH130` | 693 | info | Retrieving cases count... |
+| `TH131` | 695 | info | Got {…} cases. Estimated time for processing all events: less than {…} seconds |
+| `TH133` | 749 | debug | thehive - observables: … |
+| `TH134` | 760 | debug | thehive - attachments: … |
+| `TH135` | 771 | debug | thehive - pages: … |
+| `TH136` | 782 | debug | thehive - ttps: … |
+| `TH137` | 826 | debug | Event after processing (check_and_reduce_values_size): {…} |
+| `TH138` | 833 | info | {…} events have been processed... |
+| `TH141` | 845 | info | Tasks recovery detected. Got {…} tasks with filters: {…}. |
+| `TH142` | 879 | debug | Event after processing (check_and_reduce_values_size): {…} |
+| `TH139` | 886 | debug | TheHive - Tasks: … |
+| `TH140` | 905 | info | Retrieving observables count... |
+| `TH143` | 907 | info | Got {…} observables. Estimated time for processing all events: less than {…} … |
+| `TH145` | 983 | debug | Event after processing (check_and_reduce_values_size): {…} |
+| `TH146` | 989 | info | {…} events have been processed... |
+| `TH170` | 1008 | info | Retrieving audit logs count... |
+| `TH171` | 1010 | info | Got {…} audit logs. Estimated time for processing all events: less than {…} s… |
+| `TH175` | 1075 | debug | Event after processing (check_and_reduce_values_size): {…} |
+| `TH176` | 1081 | info | {…} events have been processed... |
+| `TH190` | 1100 | info | Retrieving tasks... |
+| `TH191` | 1109 | info | Got {…} tasks. |
 
 ## `thehive_alerts_cases.py`
 
 | id | line | level | message |
 | :--- | ---: | :--- | :--- |
-| `MI-ERR` | 123 | error | Error: {…} |
+| `MI-ERR` | 121 | error | Error: {…} |
 
 ## `thehive_audit.py`
 
@@ -729,6 +730,6 @@ explains the manual purge of `etc/apps/learned/local/props.conf`. Fall back to
 | `2` | 110 | info | Successfully indexed {…} timeline events. |
 | `ERR` | 113 | error | Error during timeline collection: {…} |
 
-*364 call sites.*
+*365 call sites.*
 
 <!-- INVENTAIRE:FIN -->

@@ -25,6 +25,7 @@ python tools/checks/unused_imports.py
 python tools/checks/local_imports_resolve.py
 python tools/checks/views_are_reachable.py
 python tools/checks/settings_are_used.py
+python tools/checks/collection_options_honoured.py
 python tools/checks/alert_action_params.py
 PYTHON=python3.9 tools/checks/pins_match_build.sh
 tools/checks/tests_on_both_pythons.sh
@@ -156,3 +157,14 @@ self.logger_file.debug(
 the reason it was written for. And the marker is searched across the whole call,
 not one line — a message long enough to be a finding is long enough to be
 wrapped, and refusing a reason written above would get you no reason at all.
+
+### `collection_options_honoured.py`
+
+Compares what the alerts & cases input **form** offers each object type
+(`globalConfig.json` groups "Common", "Alerts only", "Cases only") with what
+`collection_options.py` keeps at run time. #37 lived in that gap: `ttps` was
+offered for alerts, saved in the configuration, and dropped at every run.
+Offered-but-dropped options that are still open questions sit in its
+`KNOWN_GAPS` ratchet (today: part of `extra_data`); an entry that stops being a
+gap fails the check until it is removed. It also refuses an input that carries
+its own literal allow-list instead of calling `options_for`.

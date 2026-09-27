@@ -152,6 +152,10 @@ jobs:
         # from every angle. Only the last hop is missing.
         run: python tools/checks/settings_are_used.py
 
+      - name: Every input option offered is collected
+        # The form offers it, the conf saves it, the run dropped it (#37).
+        run: python tools/checks/collection_options_honoured.py
+
       - name: Alert actions declare what they read
         # The .conf, the hand-written form and the code are three independent
         # statements about the same parameter, and nothing else compares them.

@@ -12,6 +12,7 @@ import splunk.entity as entity
 import globals
 from thehive import create_thehive_instance_modular_input
 from ta_logging import setup_logging
+from collection_options import options_for
 from thehive4py.query.filters import Between
 from thehive4py.query.sort import Desc
 
@@ -90,12 +91,9 @@ class THEHIVE_ALERTS_CASES(smi.Script):
                 if input_type == "cases" and date_field == "date": continue
                 
                 current_modular_input_args = modular_input_args.copy()
-                if input_type == "alerts":
-                    current_modular_input_args["additional_information"] = [item for item in modular_input_args["additional_information"] if item in ["observables", "attachments"]]
-                    current_modular_input_args["extra_data"] = [item for item in modular_input_args["extra_data"] if item in ["caseNumber", "status"]]
-                elif input_type == "cases":
-                    current_modular_input_args["additional_information"] = [item for item in modular_input_args["additional_information"] if item in ["tasks", "observables", "attachments", "pages", "ttps"]]
-                    current_modular_input_args["extra_data"] = [item for item in modular_input_args["extra_data"] if item in ["status", "alerts"]]
+                (current_modular_input_args["additional_information"],
+                 current_modular_input_args["extra_data"]) = options_for(
+                    input_type, modular_input_args["additional_information"], modular_input_args["extra_data"])
 
                 current_modular_input_args["type"] = input_type
                 current_modular_input_args["date"] = date_field

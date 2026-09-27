@@ -119,19 +119,16 @@ class TestCollecteDeRetour(CampagneE2E):
                 f"{attendu!r} left Splunk, reached TheHive, and must come back",
             )
 
-        # ⚠️ The TTP does NOT come back, and that is deliberate rather than a
-        # loss: `thehive_alerts_cases.py:94` filters an ALERT's additional
-        # information down to observables and attachments, and keeps `ttps`
-        # only for CASES (line 97). The alert really does carry the procedure
-        # -- UC1 asserts it on TheHive's side -- so this is a collection gap,
-        # not a creation one. Pinned here so that changing it is a decision
-        # rather than an accident.
-        self.assertNotIn(
+        # #37: the alert's TTP must come back too. Until then the input
+        # filtered `ttps` out of an ALERT's additional information (it was
+        # kept for cases only), while the form offered it for both; this
+        # assertion was the reverse one and pinned the gap. The alert really
+        # carries the procedure -- UC1 asserts it on TheHive's side.
+        self.assertIn(
             "T1027.003",
             evenement,
-            "alerts are collected without their TTPs by design; if this starts "
-            "failing, thehive_alerts_cases.py:94 changed and the indexed shape "
-            "changed with it",
+            "the alert carries a TTP and the input asks for `ttps`: it must be "
+            "indexed with the alert (collection_options.py / get_alerts_events)",
         )
 
         self.assert_journal_propre(nom)
