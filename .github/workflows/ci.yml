@@ -187,11 +187,19 @@ jobs:
         run: python -m pip install --quiet splunk-add-on-ucc-framework==6.5.3
 
       - name: Build the add-on
-        # Reads the version from globalConfig.json. ⚠️ ucc-gen REWRITES that
-        # file with whatever --ta-version says, so the flag is deliberately not
-        # passed here: CI builds what the repository declares, it does not
-        # decide the version.
-        run: ucc-gen build --source TA-thehive-cortex/package
+        # ⚠️ Without --ta-version, ucc-gen takes the version from `git
+        # describe`, NOT from globalConfig.json -- and a shallow checkout has
+        # no tag, so it builds `0.0.0+<sha>` (measured). Fine for a gate; not
+        # an artefact to ship.
+        # ⚠️ ucc-gen 6.5.3 can crash on an uncaught exception and still exit 0
+        # (measured on Gitea: FileNotFoundError on app.manifest, step green).
+        # The output directory is the only honest proof that a build happened.
+        run: |
+          ucc-gen build --source TA-thehive-cortex/package
+          if [ ! -f output/TA-thehive-cortex/app.manifest ]; then
+            echo "ucc-gen produced no add-on in output/ -- the build failed."
+            exit 1
+          fi
 
       - name: Refuse compiled artefacts in the output
         # ucc-gen copies package/bin verbatim. A stale __pycache__ left by a
