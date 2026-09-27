@@ -36,6 +36,29 @@ with temporary_mocks(MOCKS):
 
 import collection_options  # noqa: E402
 
+GROUP_TYPES = {"Common": ("alerts", "cases"), "Alerts only": ("alerts",),
+               "Cases only": ("cases",)}
+
+
+def _form_extra_data():
+    """{input type: extra_data options the alerts & cases form offers it}."""
+    import json
+    with open(os.path.join(APP_ROOT, "TA-thehive-cortex", "globalConfig.json"),
+              encoding="utf-8") as fh:
+        config = json.load(fh)
+    offered = {"alerts": set(), "cases": set()}
+    for service in config["pages"]["inputs"]["services"]:
+        if service["name"] != "thehive_alerts_cases":
+            continue
+        for entity in service["entity"]:
+            if entity.get("field") != "extra_data":
+                continue
+            for group in entity["options"]["groups"]:
+                for input_type in GROUP_TYPES[group["label"]]:
+                    offered[input_type].update(group["fields"])
+    assert offered["alerts"] and offered["cases"], "form not found"
+    return offered
+
 
 class TestOptionsFor(unittest.TestCase):
     def test_alert_keeps_ttps(self):
@@ -52,12 +75,23 @@ class TestOptionsFor(unittest.TestCase):
             "alerts", ["tasks", "pages", "attachments"], [])
         self.assertEqual(info, ["attachments"])
 
-    def test_extra_data_behaviour_is_unchanged(self):
+    def test_extra_data_offered_by_the_form_is_kept_for_its_type(self):
+        # #37, user decision 2026-09-27: every extra_data option the form
+        # offers is collected. Read from the form itself, so an option added
+        # there and forgotten here turns this red.
+        for input_type, offered in _form_extra_data().items():
+            _, extra = collection_options.options_for(input_type, [], sorted(offered))
+            self.assertEqual(
+                sorted(extra), sorted(offered),
+                f"{input_type}: offered by the form but dropped: "
+                f"{sorted(set(offered) - set(extra))}")
+
+    def test_extra_data_of_the_other_type_is_not_asked_for(self):
         _, extra = collection_options.options_for(
-            "alerts", [], ["status", "caseNumber", "alerts"])
+            "alerts", [], ["status", "caseNumber", "alerts", "taskStats"])
         self.assertEqual(extra, ["status", "caseNumber"])
         _, extra = collection_options.options_for(
-            "cases", [], ["status", "caseNumber", "alerts"])
+            "cases", [], ["status", "caseNumber", "alerts", "importDate"])
         self.assertEqual(extra, ["status", "alerts"])
 
     def test_unknown_type_keeps_nothing(self):
@@ -95,6 +129,38 @@ class TestAlertEventsCarryTtps(unittest.TestCase):
         events = self._collect(["observables"])
         self.hive.alert.find_procedures.assert_not_called()
         self.assertNotIn("ttps", events[0])
+
+
+class TestExtraDataReachesTheQuery(unittest.TestCase):
+    """Keeping an option is worthless if the query never asks TheHive for it."""
+
+    def setUp(self):
+        with patch.object(thehive.TheHive4Splunk, "__init__", return_value=None):
+            self.hive = thehive.TheHive4Splunk()
+        self.hive._logger_file = MagicMock()
+        self.hive._utils = MagicMock()
+
+    def _paginate_extra_data(self, getter, obj, row):
+        obj.count.return_value = 1
+        obj.find.return_value = [row]
+        getter(date="_createdAt", additional_information=[],
+               extra_data=["procedureCount", "status"],
+               fields_removal=None, max_size_value=None)
+        return obj.find.call_args.kwargs["paginate"]["extraData"]
+
+    def test_alert_query_asks_for_the_extra_data(self):
+        self.hive.alert = MagicMock()
+        extra = self._paginate_extra_data(
+            self.hive.get_alerts_events, self.hive.alert,
+            {"_id": "~1", "_createdAt": 1000, "title": "t"})
+        self.assertEqual(extra, ["procedureCount", "status"])
+
+    def test_case_query_asks_for_the_extra_data(self):
+        self.hive.case = MagicMock()
+        extra = self._paginate_extra_data(
+            self.hive.get_cases_events, self.hive.case,
+            {"_id": "~2", "_createdAt": 1000, "startDate": 1000, "title": "t"})
+        self.assertEqual(extra, ["procedureCount", "status"])
 
 
 if __name__ == "__main__":

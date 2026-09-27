@@ -17,6 +17,7 @@ and drops. Indexed events cannot be deleted; sending them into the operator's
 own `thehive` index would leave rows behind that no teardown could remove.
 """
 
+import json
 import time
 import unittest
 
@@ -24,6 +25,13 @@ from . import _config
 from ._case import E2ECampaign
 
 ACTION = "thehive_create_a_new_alert"
+CASE_ACTION = "thehive_create_a_new_case"
+
+#: #37, 2026-09-27: every "Extra data" option the form offers is collected.
+#: One representative per type that the input used to DROP: `procedureCount`
+#: (offered as "Common", kept for neither type before), `observableStats` and
+#: `alertCount` ("Cases only", dropped for cases).
+EXTRA_DATA = "procedureCount,observableStats,alertCount"
 
 SEARCH = """| makeresults
 | eval ip="1.2.3.4", fqdn="fake-website.com"
@@ -64,7 +72,7 @@ class TestCollectionRoundTrip(E2ECampaign):
                 "type": "alerts,cases",
                 "date": "_createdAt,_updatedAt,date,startDate",
                 "additional_information": "observables,ttps",
-                "extra_data": "",
+                "extra_data": EXTRA_DATA,
                 "max_size_value": "1000",
             },
             self.instance_name,
@@ -96,8 +104,36 @@ class TestCollectionRoundTrip(E2ECampaign):
             },
         )
 
+        case_title = f"{self.prefix} round trip case"
+        case_name = self.play(
+            "collection_case",
+            SEARCH.format(title=case_title, unique=f"{self.prefix}_rtc"),
+            CASE_ACTION,
+            {
+                "thehive_instance_id": self.instance_name,
+                "case_mode": "regular_mode",
+                "unique_id_field": "unique",
+                "case_template": "",
+                "source": "splunk",
+                "timestamp_field": "",
+                "title": "name",
+                "description": "name",
+                "tags": "e2e,collection",
+                "scope": "0",
+                "severity": "2",
+                "tlp": "2",
+                "pap": "2",
+                "description_results_enable": "0",
+                "description_results_keep_observable": "0",
+                "attach_results": "0",
+                "attach_format": "0",
+            },
+        )
+
         alerts = self.thehive.wait_for_alerts(self.prefix, 1, _config.THEHIVE_TIMEOUT)
         self.assertEqual(1, len(alerts), "the alert must reach TheHive first")
+        cases = self.thehive.wait_for_cases(self.prefix, 1, _config.THEHIVE_TIMEOUT)
+        self.assertEqual(1, len(cases), "the case must reach TheHive first")
 
         rows = self._wait_for_collection(title)
         self.assertTrue(
@@ -131,19 +167,58 @@ class TestCollectionRoundTrip(E2ECampaign):
             "indexed with the alert (collection_options.py / get_alerts_events)",
         )
 
-        self.assert_clean_log(name)
+        # #37 extra_data: the ticked option must come back under `extraData`.
+        # Consistent with the same event rather than with a guess: the alert
+        # carries exactly the procedures indexed with it.
+        alert_event = json.loads(rows[0]["_raw"])
+        extra = alert_event.get("extraData") or {}
+        self.assertIn(
+            "procedureCount", extra,
+            "`procedureCount` is ticked for an alert and must be collected "
+            "(collection_options.EXTRA_DATA)")
+        self.assertEqual(len(alert_event.get("ttps") or []), extra["procedureCount"])
 
-    def _wait_for_collection(self, title):
-        """Poll the throwaway index until the alert comes back, or give up."""
+        case_rows = self._wait_for_collection(case_title, event_type="Case")
+        self.assertTrue(case_rows, f"the case never came back into index={self.index}")
+        case_event = json.loads(case_rows[0]["_raw"])
+        case_extra = case_event.get("extraData") or {}
+        for option in ("procedureCount", "observableStats", "alertCount"):
+            self.assertIn(
+                option, case_extra,
+                f"`{option}` is ticked for a case and must be collected "
+                "(collection_options.EXTRA_DATA)")
+        self.assertIsInstance(case_extra["observableStats"], dict)
+        self.assertEqual(0, case_extra["alertCount"], "the case was created directly, from no alert")
+
+        self.assert_clean_log(name)
+        self.assert_clean_log(case_name)
+
+    def _wait_for_collection(self, title, event_type="Alert"):
+        """Poll the throwaway index until the object comes back, or give up.
+
+        ⚠️ Filtered on the object type AND the exact title: the alert's title
+        is a prefix of the case's, so a bare phrase search would hand the
+        alert back to the case assertions.
+        """
         deadline = time.time() + COLLECTION_TIMEOUT
         while time.time() < deadline:
-            rows = self.splunk.search_events(
-                f'search index={self.index} "{title}"', earliest="-1h"
-            )
+            rows = [
+                row for row in self.splunk.search_events(
+                    f'search index={self.index} "{title}"', earliest="-1h")
+                if self._is(row, title, event_type)
+            ]
             if rows:
                 return rows
             time.sleep(10)
         return []
+
+    @staticmethod
+    def _is(row, title, event_type):
+        try:
+            event = json.loads(row.get("_raw", ""))
+        except ValueError:
+            return False
+        return event.get("title") == title and event.get("type", event_type) == event_type
 
 
 if __name__ == "__main__":

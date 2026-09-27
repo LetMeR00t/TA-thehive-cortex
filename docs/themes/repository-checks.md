@@ -165,7 +165,8 @@ Compares what the alerts & cases input **form** offers each object type
 (`globalConfig.json` groups "Common", "Alerts only", "Cases only") with what
 `collection_options.py` keeps at run time. #37 lived in that gap: `ttps` was
 offered for alerts, saved in the configuration, and dropped at every run.
-Offered-but-dropped options that are still open questions sit in its
-`KNOWN_GAPS` ratchet (today: part of `extra_data`); an entry that stops being a
-gap fails the check until it is removed. It also refuses an input that carries
-its own literal allow-list instead of calling `options_for`.
+It is **strict**: no offered-but-dropped option is tolerated. Its ratchet
+list of 19 `extra_data` gaps reached zero on 2026-09-27 (every option is now
+collected, #37) and was removed rather than left empty. It also refuses an
+input that carries its own literal allow-list instead of calling
+`options_for`.

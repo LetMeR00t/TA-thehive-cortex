@@ -12,18 +12,18 @@ Rules:
 
 1. Every option `globalConfig.json` offers to a type (group "Common" = both,
    "Alerts only", "Cases only") must be kept for that type by
-   `ta_thehive_cortex/collection_options.py`, unless it is listed in
-   `KNOWN_GAPS` below.
-2. `KNOWN_GAPS` is a ratchet: an entry that is no longer a gap fails the
-   check too, so the list can only shrink.
-3. A form option outside any group has no declared applicability: refused.
-4. Each input that collects alerts & cases filters through `options_for`, and
+   `ta_thehive_cortex/collection_options.py`. STRICT: no tolerated gap. The
+   ratchet list that used to hold 19 `extra_data` gaps reached zero on
+   2026-09-27 (#37, user decision: collect them all) and was removed -- an
+   empty allow-list is an invitation to refill it.
+2. A form option outside any group has no declared applicability: refused.
+3. Each input that collects alerts & cases filters through `options_for`, and
    carries no literal allow-list of its own -- a second copy is how the two
    inputs would drift apart again.
 
     python tools/checks/collection_options_honoured.py
 
-Exit 0 when every offered option is honoured or knowingly listed.
+Exit 0 when every offered option is honoured.
 """
 
 from __future__ import annotations
@@ -42,21 +42,6 @@ MODULE = BIN / "ta_thehive_cortex" / "collection_options.py"
 SERVICES = ("thehive_alerts_cases", "backfill_alerts_cases")
 FIELDS = {"additional_information": "ADDITIONAL_INFORMATION", "extra_data": "EXTRA_DATA"}
 GROUP_TYPES = {"Common": ("alerts", "cases"), "Alerts only": ("alerts",), "Cases only": ("cases",)}
-
-#: Offered by the form, dropped at run time, and knowingly so. Every entry is
-#: an open question for the maintainer (collect it, or stop offering it), not
-#: a decision. Remove an entry when its gap closes -- the check insists.
-KNOWN_GAPS = {
-    ("extra_data", "alerts"): {"procedureCount", "importDate", "relatedCase"},
-    ("extra_data", "cases"): {
-        "procedureCount", "observableStats", "taskStats", "alertCount",
-        "isOwner", "shareCount", "permissions", "actionRequired",
-        "attachmentCount", "contributors", "computed.handlingDuration",
-        "computed.handlingDurationInSeconds", "computed.handlingDurationInMinutes",
-        "computed.handlingDurationInHours", "computed.handlingDurationInDays",
-        "links",
-    },
-}
 
 LITERAL_FILTER = re.compile(r"if item in \[")
 
@@ -111,16 +96,10 @@ def main() -> int:
 
     for (field, input_type), options in sorted(offered.items()):
         honoured = kept.get(FIELDS[field], {}).get(input_type, set())
-        gaps = options - honoured
-        known = KNOWN_GAPS.get((field, input_type), set())
-        for option in sorted(gaps - known):
+        for option in sorted(options - honoured):
             errors.append(
                 f"`{option}` is offered for {input_type} in `{field}` but "
                 f"collection_options.py drops it at run time")
-        for option in sorted(known - gaps):
-            errors.append(
-                f"KNOWN_GAPS lists `{option}` ({field}, {input_type}) but it is no "
-                "longer a gap: remove it from the list")
 
     for script in SERVICES:
         source = (BIN / f"{script}.py").read_text(encoding="utf-8")
@@ -135,7 +114,7 @@ def main() -> int:
             print(f"  - {error}")
         return 1
     print(f"collection_options_honoured: OK ({sum(len(v) for v in offered.values())} "
-          f"offered options checked, {sum(len(v) for v in KNOWN_GAPS.values())} known gaps)")
+          f"offered options checked, every one honoured)")
     return 0
 
 

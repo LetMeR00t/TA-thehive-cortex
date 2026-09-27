@@ -18,9 +18,21 @@ ADDITIONAL_INFORMATION = {
     "cases": ("tasks", "observables", "attachments", "pages", "ttps"),
 }
 
+#: Every extra_data option the form offers, per type (#37, user decision
+#: 2026-09-27: collect them all). Each one was probed against TheHive 5.7.5:
+#: accepted by the query's `page.extraData` and returned under the event's
+#: `extraData` key, at no measurable cost per page. They are all opt-in: a
+#: box the user leaves unticked is never asked for.
 EXTRA_DATA = {
-    "alerts": ("caseNumber", "status"),
-    "cases": ("status", "alerts"),
+    "alerts": ("status", "procedureCount", "caseNumber", "importDate", "relatedCase"),
+    "cases": (
+        "status", "procedureCount", "observableStats", "taskStats", "alerts",
+        "alertCount", "isOwner", "shareCount", "permissions", "actionRequired",
+        "attachmentCount", "contributors", "computed.handlingDuration",
+        "computed.handlingDurationInSeconds", "computed.handlingDurationInMinutes",
+        "computed.handlingDurationInHours", "computed.handlingDurationInDays",
+        "links",
+    ),
 }
 
 
