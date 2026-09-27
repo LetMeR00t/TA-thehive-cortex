@@ -23,6 +23,43 @@ configuration manager -- build the object with `object.__new__(Cls)` and set the
 attributes the method under test actually reads. That tests the method rather
 than the connection.
 
+### Inheriting from a mock makes the `class` statement mute
+
+A modular input is `class X(smi.Script)`. Mock `splunklib.modularinput`
+wholesale and `smi.Script` is a `MagicMock` -- so the `class` statement
+evaluates to a **mock**, not a class. `X()` returns a mock, `X().stream_events()`
+calls a mock on a mock, and the test goes green having executed not one line
+of production code. Two "integration" tests here did exactly that.
+
+The template for any test of a UCC modular input is in `tests/_isolation.py`:
+
+```python
+from _isolation import temporary_mocks, stub_splunklib
+
+with temporary_mocks(MOCKS, stub_splunklib()):
+    import my_input
+```
+
+`stub_splunklib()` replaces **both** `splunklib` and `splunklib.modularinput`
+with real modules carrying a real `Script` base class. Replacing only the
+submodule is not enough: `from splunklib import modularinput` reads an
+attribute of the parent, and a mocked parent wins silently. The stubs copy the
+SDK's attribute names exactly (`sourceType`, capital T included): a stub that
+invents its own names lets assertions pass against something production never
+reads.
+
+### Every test module must pass alone
+
+`tools/checks/tests_run_alone.py` runs each module in a process of its own,
+then the whole suite in **reversed** order. A module that only imports because
+an earlier one put a folder on `sys.path`, or only passes because an earlier
+one left a mock in `sys.modules`, is green in discovery and red alone -- two
+modules were, for weeks, after a file moved into the package folder.
+
+Remove what a test creates with `_isolation.remove_tree()`, never
+`shutil.rmtree(..., ignore_errors=True)`: the latter swallows the WinError 32
+that is Windows' way of saying the code under test left a file open.
+
 ⚠️ And prefer a **named exception** to `sys.exit()`. A search command already
 turns any exception into a readable SPL error
 (`Intersplunk.generateErrorResults`); calling `sys.exit()` instead gives the

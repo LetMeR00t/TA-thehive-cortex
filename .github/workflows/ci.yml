@@ -49,6 +49,12 @@ jobs:
         # public and real credentials have no business in its secrets.
         run: python -m unittest discover -s tests -p "test_*.py" --verbose
 
+      - name: Every test module passes alone
+        # Discovery is one order among many: a module can lean on a path or a
+        # mock an earlier one left behind. Each runs in a fresh interpreter,
+        # then all run in reversed order.
+        run: python tools/checks/tests_run_alone.py
+
   checks:
     name: Repository checks
     runs-on: ubuntu-latest

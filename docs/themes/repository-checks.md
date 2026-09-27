@@ -9,6 +9,7 @@ because each one comes from a defect that shipped.
 
 ```bash
 python -m unittest discover -s tests -p "test_*.py"
+python tools/checks/tests_run_alone.py
 python tools/checks/no_bare_except.py
 python tools/checks/requests_timeout.py
 python tools/checks/declared_files_exist.py

@@ -19,6 +19,10 @@ from _isolation import temporary_mocks  # noqa: E402
 
 APP_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(APP_ROOT, 'TA-thehive-cortex', 'package', 'bin'))
+# ta_thehive_cortex_declare is mocked, and it is what puts the package
+# folder on the path in production: without this line the module only
+# imported when an EARLIER test module had added the folder.
+sys.path.insert(0, os.path.join(APP_ROOT, 'TA-thehive-cortex', 'package', 'bin', 'ta_thehive_cortex'))
 sys.path.insert(0, os.path.join(APP_ROOT, 'TA-thehive-cortex', 'package', 'bin', 'ta_thehive_cortex', 'libs'))
 
 # Import TheHive4Splunk AFTER path setup
