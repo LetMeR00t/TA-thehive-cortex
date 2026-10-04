@@ -33,3 +33,17 @@ python tools/manual/diag_conn.py
 
 ⚠️ Never put those credentials in the repository, in a command line that ends
 up in shell history, or in a CI secret of this **public** repository.
+
+## What each one answers
+
+| Script | Question |
+| :--- | :--- |
+| `diag_account.py [instance]` | Does the add-on resolve the expected API key for an instance? Prints match and lengths, **never a character of a key**. |
+| `diag_conn.py [--insecure]` | Does plain `requests` reach TheHive with the app's CA file? `--insecure` tells a CA problem from a network one. |
+| `diag_tls.py` | Which TLS protocol version does the server accept? |
+| `diag_thehive4py.py` | Does the vendored `thehive4py` client reach TheHive? |
+| `diag_rest_direct.py` | Which credential entries does Splunk's `storage/passwords` hold (realm and user only)? |
+
+The `_fixed` / `_final` variants that accumulated while chasing one problem were
+merged into these (#42). Two of them printed the full API key: a diagnostic
+prints whether a secret matches, never the secret.
