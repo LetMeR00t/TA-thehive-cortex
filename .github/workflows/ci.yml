@@ -85,6 +85,10 @@ jobs:
         # defect always lives BETWEEN two files, so neither can shout alone.
         run: python tools/checks/declared_files_exist.py
 
+      - name: One version across the sources
+        # ucc-gen aligns the archive only; the sources drift unseen (#42).
+        run: python tools/checks/versions_agree.py
+
       - name: Every log file has a sourcetype
         # props.conf enumerated the v3.x command names for three minor
         # versions while ta_logging.py wrote different ones. 23 of 27 log

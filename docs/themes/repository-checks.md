@@ -13,6 +13,7 @@ python tools/checks/tests_run_alone.py
 python tools/checks/no_bare_except.py
 python tools/checks/requests_timeout.py
 python tools/checks/declared_files_exist.py
+python tools/checks/versions_agree.py
 python tools/checks/log_sourcetype_covered.py
 python tools/checks/rule_not_duplicated.py
 python tools/checks/duplication_threshold.py
