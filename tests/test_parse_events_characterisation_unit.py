@@ -42,6 +42,7 @@ for p in (BIN,
 
 with temporary_mocks(mocks):
     import modalert_thehive_common
+    import datatypes  # imported by modalert_thehive_common: same module object
     import ttp_catalogue
 
 
@@ -75,7 +76,7 @@ DEFAULT_ARGS = {
 class Base(unittest.TestCase):
 
     def setUp(self):
-        modalert_thehive_common.reset_per_execution_cache()
+        datatypes.reset_per_execution_cache()
         ttp_catalogue.reset_cache()
 
     def run_rows(self, rows, custom_fields=None, data_type=None,
@@ -97,7 +98,7 @@ class Base(unittest.TestCase):
         alert_args = dict(DEFAULT_ARGS)
         alert_args.update(overrides)
 
-        with patch.object(modalert_thehive_common, "get_datatype_dict",
+        with patch.object(datatypes, "get_datatype_dict",
                           return_value=data_type or {}),\
              patch.object(modalert_thehive_common, "pattern_ids",
                           return_value=catalogue),\

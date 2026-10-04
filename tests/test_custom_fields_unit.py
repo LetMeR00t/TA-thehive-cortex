@@ -22,6 +22,7 @@ sys.path.insert(0, os.path.join(APP_ROOT, 'TA-thehive-cortex', 'package', 'bin',
 
 with temporary_mocks(mocks):
     import modalert_thehive_common
+    import datatypes  # imported by modalert_thehive_common: same module object
 
 
 class TestCustomFieldTypes(unittest.TestCase):
@@ -64,7 +65,7 @@ class TestCustomFieldTypes(unittest.TestCase):
             "scope": "0",
         }
 
-        with patch.object(modalert_thehive_common, "get_datatype_dict", return_value={}):
+        with patch.object(datatypes, "get_datatype_dict", return_value={}):
             parsed = modalert_thehive_common.parse_events(helper, thehive, alert_args)
 
         self.assertEqual(len(parsed), 1, "exactly one alert should be produced")
@@ -113,7 +114,7 @@ class TestCustomFieldTypes(unittest.TestCase):
             "scope": "0",
         }
 
-        with patch.object(modalert_thehive_common, "get_datatype_dict", return_value={}):
+        with patch.object(datatypes, "get_datatype_dict", return_value={}):
             parsed = modalert_thehive_common.parse_events(helper, thehive, alert_args)
 
         alert = next(iter(parsed.values()))

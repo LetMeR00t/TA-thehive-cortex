@@ -61,7 +61,6 @@ GENERATED = {
 CEILINGS: dict[str, int] = {
     "thehive.py": 1297,
     "common.py": 897,
-    "ta_thehive_cortex/modalert_thehive_common.py": 656,
 }
 
 

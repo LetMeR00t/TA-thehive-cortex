@@ -49,6 +49,7 @@ for p in (BIN,
 
 with temporary_mocks(mocks):
     import modalert_thehive_common
+    import datatypes  # imported by modalert_thehive_common: same module object
 
 
 def parse_row(row, custom_fields=None, data_type=None, **overrides):
@@ -85,7 +86,7 @@ def parse_row(row, custom_fields=None, data_type=None, **overrides):
                 " | ".join(f"{k}={v}" for k, v in row.items()) for row in rows_
             )
 
-    with patch.object(modalert_thehive_common, "get_datatype_dict",
+    with patch.object(datatypes, "get_datatype_dict",
                       return_value=data_type or {}),\
          patch.object(modalert_thehive_common, "Tomark", RealTable):
         parsed = modalert_thehive_common.parse_events(helper, thehive, alert_args)

@@ -39,6 +39,7 @@ for p in (BIN,
 
 with temporary_mocks(mocks):
     import modalert_thehive_common as common_module
+    import datatypes as datatypes_module  # same object modalert_thehive_common bound
 
 
 class Session:
@@ -65,24 +66,24 @@ class FakeTheHive:
 class ReadOncePerExecution(unittest.TestCase):
 
     def setUp(self):
-        common_module.reset_per_execution_cache()
+        datatypes_module.reset_per_execution_cache()
         self.datatype_calls = 0
-        self._real = common_module.get_datatype_dict
+        self._real = datatypes_module.get_datatype_dict
 
         def counting(thehive):
             self.datatype_calls += 1
             return {"ip": "ip"}
 
-        common_module.get_datatype_dict = counting
+        datatypes_module.get_datatype_dict = counting
 
     def tearDown(self):
-        common_module.get_datatype_dict = self._real
-        common_module.reset_per_execution_cache()
+        datatypes_module.get_datatype_dict = self._real
+        datatypes_module.reset_per_execution_cache()
 
     def test_a_thousand_rows_cost_one_read(self):
         thehive = FakeTheHive()
         for _ in range(1000):
-            common_module.per_execution_invariants(thehive)
+            datatypes_module.per_execution_invariants(thehive)
         self.assertEqual(thehive.custom_field.calls, 1)
         self.assertEqual(self.datatype_calls, 1)
 
@@ -90,9 +91,9 @@ class ReadOncePerExecution(unittest.TestCase):
         # ⚠️ A cache returning something else on the second call would be worse
         # than no cache: the defect would only appear from the second row on.
         thehive = FakeTheHive()
-        first_ = common_module.per_execution_invariants(thehive)
+        first_ = datatypes_module.per_execution_invariants(thehive)
         for _ in range(10):
-            self.assertEqual(common_module.per_execution_invariants(thehive), first_)
+            self.assertEqual(datatypes_module.per_execution_invariants(thehive), first_)
 
     def test_two_instances_do_not_share_a_catalogue(self):
         # ⚠️ One search can address several TheHive instances in the same
@@ -100,21 +101,29 @@ class ReadOncePerExecution(unittest.TestCase):
         # Memoising without a key would mix them.
         one = FakeTheHive("https://un.invalid")
         two = FakeTheHive("https://deux.invalid")
-        common_module.per_execution_invariants(one)
-        common_module.per_execution_invariants(two)
+        datatypes_module.per_execution_invariants(one)
+        datatypes_module.per_execution_invariants(two)
         self.assertEqual(one.custom_field.calls, 1)
         self.assertEqual(two.custom_field.calls, 1)
         self.assertEqual(self.datatype_calls, 2)
 
     def test_the_cache_can_be_forgotten(self):
         thehive = FakeTheHive()
-        common_module.per_execution_invariants(thehive)
-        common_module.reset_per_execution_cache()
-        common_module.per_execution_invariants(thehive)
+        datatypes_module.per_execution_invariants(thehive)
+        datatypes_module.reset_per_execution_cache()
+        datatypes_module.per_execution_invariants(thehive)
         self.assertEqual(thehive.custom_field.calls, 2)
 
 
 class TheCallSiteUsesIt(unittest.TestCase):
+
+    def test_the_patched_module_is_the_one_parse_events_calls(self):
+        # ⚠️ Every test above replaces `get_datatype_dict` on `datatypes_module`.
+        # If that were a second copy of the module (re-imported after the
+        # temporary mocks were lifted), the replacement would be inert and the
+        # tests would exercise the real lookup without saying so.
+        self.assertIs(common_module.per_execution_invariants.__globals__,
+                      vars(datatypes_module))
 
     def test_parse_events_no_longer_reads_them_itself(self):
         file_path = os.path.join(BIN, "ta_thehive_cortex", "modalert_thehive_common.py")

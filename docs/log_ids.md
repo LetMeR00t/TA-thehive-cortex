@@ -342,6 +342,24 @@ explains the manual purge of `etc/apps/learned/local/props.conf`. Fall back to
 | `148` | 133 | error | Error during uncompressing process: {…} |
 | `146` | 176 | error | Attachment format isn't supported, given: {…} |
 
+## `ta_thehive_cortex/datatypes.py`
+
+| id | line | level | message |
+| :--- | ---: | :--- | :--- |
+| `THC-7` | 57 | error | no Splunk client carried by the TheHive instance: the datatype lookup cannot … |
+| `THC-8` | 68 | error | KV store collection '{…}' is not reachable: {…} |
+| `THC-9` | 93 | warn | {} exists but could not be read; the collection will be seeded from TheHive o… |
+| `THC-14` | 101 | info | seeding '{}' with {} row(s) migrated from {} |
+| `THC-4` | 132 | error | the datatype collection could not be read ({}), refresh aborted to avoid losi… |
+| `THC-17` | 149 | error | the migrated rows could not be written to '{}': {} |
+| `THC-2` | 166 | debug | Datatypes recovered from TheHive: … |
+| `THC-5` | 190 | error | FATAL {} new datatype(s) could not be written to '{}': {} |
+| `THC-6` | 197 | error | Could not recover datatypes from TheHive API: … |
+| `THC-12` | 265 | warn | API refresh failed ({…}). Falling back to the rows already in the collection. |
+| `THC-16` | 273 | error | collection '{…}' is empty, malformed or not readable: {…} |
+| `THC-13` | 280 | error | API refresh failed and collection '{…}' holds no datatype. |
+| `THC-15` | 289 | debug | dataType_dict built from '{}' ({} datatype(s)) |
+
 ## `ta_thehive_cortex/field_mapping.py`
 
 | id | line | level | message |
@@ -399,31 +417,18 @@ explains the manual purge of `etc/apps/learned/local/props.conf`. Fall back to
 
 | id | line | level | message |
 | :--- | ---: | :--- | :--- |
-| `THC-7` | 89 | error | no Splunk client carried by the TheHive instance: the datatype lookup cannot … |
-| `THC-8` | 100 | error | KV store collection '{…}' is not reachable: {…} |
-| `THC-9` | 125 | warn | {} exists but could not be read; the collection will be seeded from TheHive o… |
-| `THC-14` | 133 | info | seeding '{}' with {} row(s) migrated from {} |
-| `THC-4` | 164 | error | the datatype collection could not be read ({}), refresh aborted to avoid losi… |
-| `THC-17` | 181 | error | the migrated rows could not be written to '{}': {} |
-| `THC-2` | 198 | debug | Datatypes recovered from TheHive: … |
-| `THC-5` | 222 | error | FATAL {} new datatype(s) could not be written to '{}': {} |
-| `THC-6` | 229 | error | Could not recover datatypes from TheHive API: … |
-| `THC-12` | 297 | warn | API refresh failed ({…}). Falling back to the rows already in the collection. |
-| `THC-16` | 305 | error | collection '{…}' is empty, malformed or not readable: {…} |
-| `THC-13` | 312 | error | API refresh failed and collection '{…}' holds no datatype. |
-| `THC-15` | 321 | debug | dataType_dict built from '{}' ({} datatype(s)) |
-| `THC-61` | 336 | debug | Row before pre-processing: … |
-| `THC-62` | 353 | debug | Row after pre-processing: … |
-| `THC-63` | 384 | debug | original sourceRef: {} was cut as it was a string too long (max 128 char). |
-| `THC-64` | 392 | debug | sourceRef: {} |
-| `THC-86` | 465 | warn | timestamp_field '{…}' missing; falling back to current time |
-| `THC-85` | 478 | debug | alert timestamp: {} |
-| `THC-87` | 488 | warn | timestamp_field '{…}' holds a non-numeric value ('{…}'); falling back to curr… |
-| `THC-80` | 495 | debug | new Timestamp from row: {} |
-| `THC-88` | 501 | warn | timestamp_field '{…}' is neither a 10 nor a 13 digit epoch ('{…}'); falling b… |
-| `THC-115` | 544 | debug | observables found for an alert: … |
-| `THC-116` | 549 | debug | No observable found in current row (sourceRef={…}). |
-| `THC-77` | 585 | debug | Append results to description as markdown table |
+| `THC-61` | 60 | debug | Row before pre-processing: … |
+| `THC-62` | 77 | debug | Row after pre-processing: … |
+| `THC-63` | 108 | debug | original sourceRef: {} was cut as it was a string too long (max 128 char). |
+| `THC-64` | 116 | debug | sourceRef: {} |
+| `THC-86` | 189 | warn | timestamp_field '{…}' missing; falling back to current time |
+| `THC-85` | 202 | debug | alert timestamp: {} |
+| `THC-87` | 212 | warn | timestamp_field '{…}' holds a non-numeric value ('{…}'); falling back to curr… |
+| `THC-80` | 219 | debug | new Timestamp from row: {} |
+| `THC-88` | 225 | warn | timestamp_field '{…}' is neither a 10 nor a 13 digit epoch ('{…}'); falling b… |
+| `THC-115` | 268 | debug | observables found for an alert: … |
+| `THC-116` | 273 | debug | No observable found in current row (sourceRef={…}). |
+| `THC-77` | 309 | debug | Append results to description as markdown table |
 
 ## `ta_thehive_cortex/modalert_thehive_create_a_new_alert_helper.py`
 

@@ -146,7 +146,7 @@ SID. Test all three SID shapes: numeric, `scheduler__…`, `subsearch_…`.
 Re-measured 2026-08-30 against the installed 5.0.0 package rather than
 trusting this file: `[kv_thehive_datatypes]` is in `collections.conf`,
 `transforms.conf` points `thehive_datatypes` at it, and
-`modalert_thehive_common.py` reads/writes it with the non-destructive
+`modalert_thehive_common.py` (since #24: `datatypes.py`) reads/writes it with the non-destructive
 refresh and CSV-seed migration the ticket asked for. **Remeasure before
 acting on a checkbox, including one about your own past work.**
 

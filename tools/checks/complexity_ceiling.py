@@ -53,7 +53,7 @@ CEILINGS: dict[str, int] = {
     "thehive.py:TheHive4Splunk.get_observables_events": 18,
     "thehive.py:TheHive4Splunk.get_tasks_events": 18,
     "thehive_observables.py:THEHIVE_OBSERVABLES.stream_events": 17,
-    "ta_thehive_cortex/modalert_thehive_common.py:create_datatype_lookup": 16,
+    "ta_thehive_cortex/datatypes.py:create_datatype_lookup": 16,
 }
 
 

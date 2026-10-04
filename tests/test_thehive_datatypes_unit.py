@@ -25,6 +25,7 @@ sys.path.insert(0, os.path.join(APP_ROOT, 'TA-thehive-cortex', 'package', 'bin',
 
 with temporary_mocks(mocks):
     import modalert_thehive_common
+    import datatypes  # imported by modalert_thehive_common: same module object
 
 
 class FakeCollectionData:
@@ -54,7 +55,7 @@ class FakeCollectionData:
 
 class FakeKVStore:
     def __init__(self, data):
-        self._collections = {modalert_thehive_common.KV_DATATYPES_COLLECTION: data}
+        self._collections = {datatypes.KV_DATATYPES_COLLECTION: data}
 
     def __getitem__(self, name):
         collection = MagicMock()
@@ -106,7 +107,7 @@ class TestDatatypeLookup(unittest.TestCase):
         return {row["field_name"]: row for row in self.store.rows}
 
     def test_fills_empty_collection_from_thehive(self):
-        modalert_thehive_common.create_datatype_lookup(self.thehive)
+        datatypes.create_datatype_lookup(self.thehive)
 
         self.assertEqual(
             set(self._stored()), {"ip", "domain", "new-custom-type"}
@@ -121,7 +122,7 @@ class TestDatatypeLookup(unittest.TestCase):
              "datatype": "ip", "description": "custom mapping"}
         ]
 
-        modalert_thehive_common.create_datatype_lookup(self.thehive, force=False)
+        datatypes.create_datatype_lookup(self.thehive, force=False)
 
         self.thehive.observable_type.list.assert_not_called()
         self.assertEqual(list(self._stored()), ["src_ip"])
@@ -136,7 +137,7 @@ class TestDatatypeLookup(unittest.TestCase):
              "datatype": "ip", "description": ""},
         ]
 
-        modalert_thehive_common.create_datatype_lookup(self.thehive, force=True)
+        datatypes.create_datatype_lookup(self.thehive, force=True)
 
         rows = self._stored()
         # Custom rows are untouched
@@ -163,7 +164,7 @@ class TestDatatypeLookup(unittest.TestCase):
         self.thehive.observable_type.list.side_effect = Exception("API down")
 
         # force=True must not raise and must not touch what is stored
-        modalert_thehive_common.create_datatype_lookup(self.thehive, force=True)
+        datatypes.create_datatype_lookup(self.thehive, force=True)
 
         self.assertEqual(list(self._stored()), ["src_ip"])
         self.assertEqual(self.store.saved_batches, [])
@@ -171,7 +172,7 @@ class TestDatatypeLookup(unittest.TestCase):
     def test_unreadable_collection_aborts_rather_than_overwrite(self):
         self.store.fail_on_query = True
 
-        result = modalert_thehive_common.create_datatype_lookup(
+        result = datatypes.create_datatype_lookup(
             self.thehive, force=True
         )
 
@@ -188,7 +189,7 @@ class TestDatatypeLookup(unittest.TestCase):
             ]
         )
 
-        modalert_thehive_common.create_datatype_lookup(self.thehive, force=True)
+        datatypes.create_datatype_lookup(self.thehive, force=True)
 
         rows = self._stored()
         self.assertEqual(rows["src_ip"]["description"], "custom mapping")
@@ -207,7 +208,7 @@ class TestDatatypeLookup(unittest.TestCase):
              "datatype": "ip", "description": "already migrated"}
         ]
 
-        modalert_thehive_common.create_datatype_lookup(self.thehive, force=True)
+        datatypes.create_datatype_lookup(self.thehive, force=True)
 
         self.assertEqual(
             self._stored()["src_ip"]["description"], "already migrated"
@@ -221,7 +222,7 @@ class TestDatatypeLookup(unittest.TestCase):
              "datatype": "string", "description": ""},
         ]
 
-        data_type = modalert_thehive_common.get_datatype_dict(self.thehive)
+        data_type = datatypes.get_datatype_dict(self.thehive)
 
         # Refreshed once, and the custom mapping survived it
         self.thehive.observable_type.list.assert_called_once()
@@ -237,7 +238,7 @@ class TestDatatypeLookup(unittest.TestCase):
         ]
         self.thehive.observable_type.list.side_effect = Exception("API down")
 
-        data_type = modalert_thehive_common.get_datatype_dict(self.thehive)
+        data_type = datatypes.get_datatype_dict(self.thehive)
 
         self.assertEqual(data_type, {"src_ip": "ip"})
 
@@ -246,7 +247,7 @@ class TestDatatypeLookup(unittest.TestCase):
         would silently strip every observable from the payload."""
         self.thehive.splunk_client = None
 
-        self.assertEqual(modalert_thehive_common.get_datatype_dict(self.thehive), {})
+        self.assertEqual(datatypes.get_datatype_dict(self.thehive), {})
         self.thehive.logger_file.error.assert_called()
         self.thehive.observable_type.list.assert_not_called()
 
