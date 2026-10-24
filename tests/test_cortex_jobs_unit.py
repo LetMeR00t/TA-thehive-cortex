@@ -203,5 +203,36 @@ class TestCollectJob(unittest.TestCase):
         self.assertNotIn("cortex_job_updatedAt", event)
 
 
+class TestJobsQuery(unittest.TestCase):
+    """Gitea #45: Cortex 4.x cannot search a job by its `data`.
+
+    Measured on a real Cortex 4.2.0: its Elasticsearch maps `data` as `binary`
+    (index `cortex_6`), which is not indexed. Any server-side filter on it --
+    `Eq` or `_in` alike -- fails with `SearchError: all shards failed`, and the
+    whole search died. `dataType` and `workerDefinitionId` are keywords and
+    stay server-side; `data` is matched by the add-on on what comes back.
+    """
+
+    def test_no_filter_is_an_empty_query(self):
+        self.assertEqual(cortex_search_jobs.jobs_query("*", "*"), {})
+
+    def test_data_is_never_sent_to_cortex(self):
+        query = cortex_search_jobs.jobs_query("ip; domain", "A;B")
+        self.assertEqual(query, {'_and': (
+            {'_in': {'_field': 'dataType', '_values': ['ip', 'domain']}},
+            {'_in': {'_field': 'workerDefinitionId', '_values': ['A', 'B']}},
+        )})
+        self.assertNotIn("'data'", str(query))
+
+    def test_data_is_matched_exactly_by_the_add_on(self):
+        jobs = [Stub(data="192.0.2.10"), Stub(data="192.0.2.100"), Stub()]
+        kept = cortex_search_jobs.matching_data(jobs, "192.0.2.10")
+        self.assertEqual([j.data for j in kept], ["192.0.2.10"])
+
+    def test_no_data_filter_keeps_every_job(self):
+        jobs = [Stub(data="a"), Stub()]
+        self.assertEqual(cortex_search_jobs.matching_data(jobs, ""), jobs)
+
+
 if __name__ == '__main__':
     unittest.main()

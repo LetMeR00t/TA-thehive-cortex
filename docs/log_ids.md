@@ -120,6 +120,7 @@ explains the manual purge of `etc/apps/learned/local/props.conf`. Fall back to
 | `C40` | The named analyzer does not exist on this Cortex. | Check the name, and that the analyzer is enabled for the organisation. |
 | `CSJ-30` | The `wait` field of `cortexjobs` is not a number of seconds. | Falls back to 0, i.e. no waiting — the behaviour of every version before v5.0.0. Check the field in the SPL. |
 | `CSJ-33` | The artifacts of a job could not be read. | ⚠️ The report is kept: they are two separate calls. Only `cortex_job_artifacts` is missing from that row. Usually a transient Cortex error. |
+| `CSJ-34` | Cortex refused the job search; the line carries the query and Cortex's own answer. | `SearchError` on a field: that field is not searchable on this Cortex version. Otherwise check the `datatypes`/`analyzers` values and the `sort_jobs` field name. |
 
 ## Sending to TheHive
 
@@ -284,17 +285,18 @@ explains the manual purge of `etc/apps/learned/local/props.conf`. Fall back to
 
 | id | line | level | message |
 | :--- | ---: | :--- | :--- |
-| `15` | 46 | debug | Job details: … |
-| `31` | 56 | info | Job " … … … … … … |
-| `16` | 61 | debug | Report details: " … … … |
-| `20` | 78 | debug | Event before post processing: … |
-| `32` | 85 | info | Job " … … … … |
-| `33` | 106 | warn | ARTIFACTS_UNREACHABLE - artifacts of job " … … … |
-| `25` | 125 | debug | Event after post processing: … |
-| `1` | 143 | debug | Input keywords: … |
-| `2` | 144 | debug | Input results: … |
-| `30` | 162 | warn | WAIT_NOT_A_NUMBER - wait=" … … |
-| `10` | 182 | info | Query is: … |
+| `15` | 74 | debug | Job details: … |
+| `31` | 84 | info | Job " … … … … … … |
+| `16` | 89 | debug | Report details: " … … … |
+| `20` | 106 | debug | Event before post processing: … |
+| `32` | 113 | info | Job " … … … … |
+| `33` | 134 | warn | ARTIFACTS_UNREACHABLE - artifacts of job " … … … |
+| `25` | 153 | debug | Event after post processing: … |
+| `1` | 171 | debug | Input keywords: … |
+| `2` | 172 | debug | Input results: … |
+| `30` | 190 | warn | WAIT_NOT_A_NUMBER - wait=" … … |
+| `10` | 194 | info | Query is: … |
+| `34` | 203 | error | … |
 
 ## `dict_utils.py`
 
@@ -747,6 +749,6 @@ explains the manual purge of `etc/apps/learned/local/props.conf`. Fall back to
 | `2` | 110 | info | Successfully indexed {…} timeline events. |
 | `ERR` | 113 | error | Error during timeline collection: {…} |
 
-*366 call sites.*
+*367 call sites.*
 
 <!-- INVENTAIRE:FIN -->

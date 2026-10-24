@@ -14,10 +14,12 @@ import ta_thehive_cortex_declare
 
 # Standard library imports
 from copy import deepcopy
+import sys
 
 # Third-party imports
+import cortex4py.exceptions
 import splunk.Intersplunk
-from cortex4py.query import And, Eq, In
+from cortex4py.query import And, In
 
 # Local application/library specific imports
 from cortex import initialize_cortex_instance
@@ -34,6 +36,32 @@ SORT_JOBS = None
 # analyzer is still working, and its report is not a result yet.
 # ⚠️ "Deleted" belongs here: it is final, even though no report will follow.
 JOB_FINISHED_STATUSES = ("Success", "Failure", "Deleted")
+
+
+def jobs_query(filterDatatypes, filterAnalyzers):
+    """ Build the Cortex job search query from the filters Cortex can search """
+    elements = []
+    if filterDatatypes != FILTER_DATATYPES_DEFAULT:
+        elements.append(In("dataType", filterDatatypes.replace(" ","").split(";")))
+    if filterAnalyzers != FILTER_ANALYZERS_DEFAULT:
+        elements.append(In("workerDefinitionId", filterAnalyzers.replace(" ","").split(";")))
+
+    if len(elements) > 1:
+        return And(*elements)
+    return elements[0] if elements else {}
+
+
+def matching_data(jobs, filterData):
+    """ Keep the jobs whose data is exactly filterData.
+
+    Cortex 4.x maps a job's `data` as `binary`, which Elasticsearch does not
+    index: a server-side filter on it fails with "all shards failed".
+    shortcut: applied to the max_jobs jobs Cortex returned, so an older match
+    beyond that window is missed; raise max_jobs, or narrow by datatype/analyzer.
+    """
+    if filterData == FILTER_DATA_DEFAULT:
+        return jobs
+    return [job for job in jobs if getattr(job, "data", None) == filterData]
 
 
 def collect_job(cortex, job, wait, logger_file):
@@ -162,27 +190,20 @@ if __name__ == '__main__':
             logger_file.warn(id="30", message="WAIT_NOT_A_NUMBER - wait=\"" + str(waitJob) + "\" is not a number of seconds, not waiting for running jobs")
             waitJob = 0
 
-        # create the query from filters
-        query = {}
-        elements = []
-        if filterData != FILTER_DATA_DEFAULT:
-            element = Eq("data",filterData)
-            elements.append(element)
-        if filterDatatypes != FILTER_DATATYPES_DEFAULT:
-            element = In("dataType",filterDatatypes.replace(" ","").split(";"))
-            elements.append(element)
-        if filterAnalyzers != FILTER_ANALYZERS_DEFAULT:
-            element = In("workerDefinitionId",filterAnalyzers.replace(" ","").split(";"))
-            elements.append(element)
-
-        if len(elements)>1:
-            query = And(*elements)
-        elif len(elements)==1:
-            query = elements[0]
+        query = jobs_query(filterDatatypes, filterAnalyzers)
         logger_file.info(id="10",message="Query is: "+str(query))
     
         ## JOBS ##
-        jobs = cortex.jobs.find_all(query ,range='0-'+maxJobs, sort=sortJobs)
+        try:
+            jobs = cortex.jobs.find_all(query ,range='0-'+maxJobs, sort=sortJobs)
+        except cortex4py.exceptions.CortexException as e:
+            # cortex4py drops the server's answer: it is the only thing that says why
+            answer = getattr(getattr(e.__cause__, "response", None), "text", "")[:500]
+            message = "JOBS_SEARCH_REFUSED - Cortex refused the job search " + str(query) + ": " + type(e).__name__ + " " + answer
+            logger_file.error(id="34", message=message)
+            splunk.Intersplunk.generateErrorResults(message)
+            sys.exit(34)
+        jobs = matching_data(jobs, filterData)
 
         for job in jobs:
              result_copy = deepcopy(result)

@@ -422,7 +422,7 @@ This command is used to get jobs from Cortex (\$..\$ are tokens examples but you
 One row will result in executing the script one time. So if you specify 5 rows, the script will be executed 5 times and all results will be appended.
 If not set, no filter will be applied on the jobs history.
 
-* (Optional) **data**: Specify an exact match string for the data (Default: *)
+* (Optional) **data**: Specify an exact match string for the data (Default: *). ⚠️ Cortex 4.x cannot search on `data` (it does not index it), so the add-on matches it on the `max_jobs` jobs Cortex returns: narrow with `datatypes` or `analyzers`, or raise `max_jobs`, to reach older jobs.
 * (Optional) **datatypes**: A list of data types to search for separated by a semicolon (Default: *)
 * (Optional) **analyzers**: A list of analyzers name to search for separated by a semicolon (Default: *)
 * (Optional) **max_jobs**: The maximum number of jobs to return (Default: 100 or your own default)
