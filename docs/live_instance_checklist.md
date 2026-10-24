@@ -11,6 +11,23 @@
 >
 > Written 2026-08-20, against the work that will ship as v5.0.0.
 
+## Measured on 2026-10-24 — v5.0.0 archive, Splunk 10.2.1 + ES, TheHive 5.8.1, Cortex 4.2.0
+
+| Item | Result | How |
+| :--- | :--- | :--- |
+| A1 | ✅ every add-on log of the last hour carries `tathehivecortex:log` (commands and inputs alike) | `stats count by sourcetype` on `source=*TA-thehive-cortex_*.log` |
+| A2 | ✅ `package_contents.sh` green on the built archive | `tools/build.sh 5.0.0` |
+| B3 | ✅ REFRESH rewrites `cortex_analyzers` with the instance's analyzers | the panel's search, replayed |
+| B4 / B6 | ✅ superseded: the macro now names `_internal` **and** `cim_modactions`; both return events | `` `thehive_cortex_logs` \| stats count by index, sourcetype `` |
+| B7 | ✅ dashboards' CREATE panels only — alert action defaults are `alert_actions.conf` (severity HIGH, TLP/PAP AMBER), unchanged | `.conf` read |
+| B9 | ✅ the Cortex action sends `cortex_instance_id`/`analyzers`; an empty `analyzers` logs a named error, no `AttributeError` | `sendalert` |
+| C1 | ✅ answered: `jobs` → 404, entry removed | REST |
+| C2 | ✅ answered: `dashboard` → 200, linked from the nav | REST |
+| C4 | ✅ `kv_thehive_datatypes` readable (17 rows) | REST |
+| #28 | ✅ running job: `cortex_job_finished=0`, no report; `wait=30` → `atMost=30seconds` accepted, finished report returned | `cortexrun` + `cortexjobs` in one search |
+
+Not measured yet: **on screen** B1, B2, B5, C3; and B8 (invented `patternId`) and B9's `sighted` default, which need an object created in TheHive outside the e2e campaign.
+
 ## A. What unblocks an open ticket
 
 ### A1 — The command logs get their sourcetype back (#8)

@@ -19,6 +19,7 @@ created — including after a failure.
 | `E2E_SPLUNK_MGMT` | optional, defaults to `https://localhost:8089` |
 | `E2E_JOB_TIMEOUT`, `E2E_THEHIVE_TIMEOUT` | optional, seconds |
 | `E2E_THEHIVE_FUNCTION` | optional: the TheHive Function UC5 pushes to — `e2e-uc5-echo` (see below). Unset, UC5 **skips with the reason**. Not a secret |
+| `E2E_CORTEX_INSTANCE`, `E2E_CORTEX_ANALYZER` | optional: an add-on instance of type `Cortex3`, and an analyzer enabled on it that accepts `domain` (e.g. `Abuse_Finder_3_0`). Unset, the Cortex case **skips with the reason**. Not secrets |
 
 Put them in the environment, or in an **unversioned** `tests/e2e/.env`
 (`KEY=value` per line; the real environment always wins). There is **no
@@ -82,6 +83,7 @@ in place (user decision, 2026-09-27):
 | `e2e_uc4_notable_es_mode.py` | the one decision `es_mode` actually changes: `sourceRef` taken from the notable's `event_id`. ⚠️ It deliberately does **not** create a real notable — that would write into the `notable` index, which the campaign could not clean up |
 | `e2e_collection_roundtrip.py` | the **return trip**: an alert created from Splunk, collected back by the modular input into a throwaway index, checked on its content. ⚠️ Creates and drops its own index — indexed events cannot be deleted, so writing into the operator's `thehive` index would leave rows no teardown could remove |
 | `e2e_uc5_thehive_function.py` | pushing to a TheHive **Function**, asserted on **TheHive's side**: the Function turns the pushed events into one alert titled with the pushed `name`. Skips **with the reason** unless `E2E_THEHIVE_FUNCTION` is set. ⚠️ It used to skip because no Function existed (`listFunction` empty) — **not** for want of a licence, as this line wrongly said: the lab instance is Platinum |
+| `e2e_cortex_job.py` | the **Cortex** alert action, on the shipped `.conf` defaults: the job Cortex records carries the run's data, the analyzer, and a real AMBER for TLP and PAP — read back with `cortexjobs` (`wait=30`), finished, with its report. ⚠️ Read back through the add-on, not an independent client: the Cortex key lives only in Splunk's credential store and the campaign never copies one out. ⚠️ Cortex **jobs are left in place** (analysis history; deleting one needs that key); the analysed domain carries the run prefix. Seen red on the v4.2.2 TLP default (`'2' != '3'`) — an analyzer refuses a TLP above its maximum, so that defect also turns jobs into `Failure` |
 | `e2e_password_auth_mode.py` | the `password` authentication mode, on an account of its own (#38): either the alert is created, or the action says in terms of the **mode** (`TH111`) why TheHive refused it — never a bare `TH110`. ⚠️ The only case that writes `THEHIVE_USER`/`THEHIVE_PASSWORD` into Splunk's credential store; the account carries the run prefix and is deleted with the run |
 
 ⚠️ Asserting that the alert **exists** proves almost nothing. The defects that
