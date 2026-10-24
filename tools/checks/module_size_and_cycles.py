@@ -60,7 +60,6 @@ GENERATED = {
 #: commit, that is the signal the split is overdue, not that the check is wrong.
 CEILINGS: dict[str, int] = {
     "thehive.py": 1297,
-    "common.py": 897,
 }
 
 

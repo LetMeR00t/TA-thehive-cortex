@@ -55,8 +55,8 @@ FLOORS = [
     ("ta_thehive_cortex/observable_builder.py", "_observables_of", 90, 100),
     # Were at 0 % while calling sys.exit() on an unknown id -- a path that ended
     # the Splunk process and that nothing could reach.
-    ("common.py", "getInstanceURL", 90, 90),
-    ("common.py", "getInstanceUsernameApiKey", 90, 90),
+    ("settings_accessors.py", "getInstanceURL", 90, 90),
+    ("settings_accessors.py", "getInstanceUsernameApiKey", 90, 90),
 
     # The arbitration of SECRETS. It was at 0 % while existing in two copies,
     # so its floor is the only one set at 100: a pure function with no I/O has

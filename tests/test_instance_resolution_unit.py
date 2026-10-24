@@ -61,8 +61,8 @@ def settings_text(instances=None, match=None):
     """A Settings whose __init__ is bypassed: it connects to Splunk."""
     s = object.__new__(common.Settings)
     s.logger_file = MagicMock()
-    s._Settings__instances = instances if instances is not None else {"connue": dict(INSTANCE)}
-    s._Settings__id_to_name = match if match is not None else {}
+    s._instances = instances if instances is not None else {"connue": dict(INSTANCE)}
+    s._id_to_name = match if match is not None else {}
     return s
 
 

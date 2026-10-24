@@ -220,45 +220,17 @@ explains the manual purge of `etc/apps/learned/local/props.conf`. Fall back to
 
 | id | line | level | message |
 | :--- | ---: | :--- | :--- |
-| `S1` | 213 | debug | Python version detected: … |
-| `S2` | 232 | debug | Logging mode set to … |
-| `S3` | 250 | debug | Accounts retrieved: {…} |
-| `S3_SKIP` | 259 | debug | Skipping unusable stored value for account {…} |
-| `S3_ERROR` | 264 | error | Failed to access storage_passwords: {…} |
-| `S4` | 267 | debug | Passwords retrieved for accounts: {…} |
-| `S5` | 284 | debug | New instance detected, getting … |
-| `S13` | 317 | warn | Be aware that a client certificate for instance " … … … |
-| `S13b` | 339 | warn | Be aware that a CA certificate for instance " … … … |
-| `S14` | 390 | debug | New instance parsed, adding key " … … … |
-| `S15` | 406 | debug | Getting these additional parameters: … |
-| `S26` | 449 | debug | Configuration … … … … … |
-| `S27` | 459 | debug | Configuration … … … … |
-| `S28` | 474 | debug | Configuration retrieved for the filename ' … … … |
-| `S29` | 495 | debug | This account ( … … |
-| `S30` | 516 | error | … |
-| `S32` | 522 | debug | This instance ID ( … … … |
-| `S31` | 544 | error | … |
-| `S35` | 552 | debug | This instance ID ( … … … |
-| `S40` | 569 | debug | this instance id ( … … … … … |
-| `S41` | 579 | warn | Can't recover the setting " … … … … |
-| `S45` | 600 | debug | Getting this parameter : thehive_default_instance= … |
-| `S46` | 613 | debug | Getting this parameter : thehive_max_cases= … |
-| `S50` | 626 | debug | Getting this parameter: thehive_sort_cases= … |
-| `S51` | 638 | debug | Getting this parameter: thehive_max_alerts= … |
-| `S52` | 651 | debug | Getting this parameter: thehive_sort_alerts= … |
-| `S53` | 664 | debug | Getting this parameter: thehive_ttp_catalog_name= … |
-| `S54` | 677 | debug | Getting this parameter: thehive_creation_attachment_prefix= … |
-| `S57` | 691 | debug | Getting this parameter: thehive_cortex_http_timeout= … |
-| `S58` | 704 | debug | Getting this parameter: thehive_creation_max_retry= … |
-| `S55` | 717 | debug | Getting this parameter: … |
-| `S68` | 735 | debug | Getting this parameter: cortex_job_max_wait= … |
-| `S56` | 748 | debug | Getting this parameter: … |
-| `S60` | 756 | debug | Found parameter " … … … |
-| `S66` | 763 | error | … |
-| `S67` | 766 | debug | Parameter " … … … … |
-| `U1` | 784 | debug | Utils class initiated |
-| `U5` | 803 | debug | Event before processing (remove_unwanted_keys_from_dict): {…} |
-| `U10` | 810 | debug | Event after processing (remove_unwanted_keys_from_dict): {…} |
+| `S1` | 149 | debug | Python version detected: … |
+| `S2` | 168 | debug | Logging mode set to … |
+| `S3` | 186 | debug | Accounts retrieved: {…} |
+| `S3_SKIP` | 195 | debug | Skipping unusable stored value for account {…} |
+| `S3_ERROR` | 200 | error | Failed to access storage_passwords: {…} |
+| `S4` | 203 | debug | Passwords retrieved for accounts: {…} |
+| `S5` | 220 | debug | New instance detected, getting … |
+| `S13` | 253 | warn | Be aware that a client certificate for instance " … … … |
+| `S13b` | 275 | warn | Be aware that a CA certificate for instance " … … … |
+| `S14` | 326 | debug | New instance parsed, adding key " … … … |
+| `S15` | 342 | debug | Getting these additional parameters: … |
 
 ## `cortex.py`
 
@@ -323,6 +295,44 @@ explains the manual purge of `etc/apps/learned/local/props.conf`. Fall back to
 | `2` | 144 | debug | Input results: … |
 | `30` | 162 | warn | WAIT_NOT_A_NUMBER - wait=" … … |
 | `10` | 182 | info | Query is: … |
+
+## `dict_utils.py`
+
+| id | line | level | message |
+| :--- | ---: | :--- | :--- |
+| `U1` | 23 | debug | Utils class initiated |
+| `U5` | 42 | debug | Event before processing (remove_unwanted_keys_from_dict): {…} |
+| `U10` | 49 | debug | Event after processing (remove_unwanted_keys_from_dict): {…} |
+
+## `settings_accessors.py`
+
+| id | line | level | message |
+| :--- | ---: | :--- | :--- |
+| `S26` | 74 | debug | Configuration … … … … … |
+| `S27` | 84 | debug | Configuration … … … … |
+| `S28` | 99 | debug | Configuration retrieved for the filename ' … … … |
+| `S29` | 120 | debug | This account ( … … |
+| `S30` | 141 | error | … |
+| `S32` | 147 | debug | This instance ID ( … … … |
+| `S31` | 169 | error | … |
+| `S35` | 177 | debug | This instance ID ( … … … |
+| `S40` | 194 | debug | this instance id ( … … … … … |
+| `S41` | 204 | warn | Can't recover the setting " … … … … |
+| `S45` | 225 | debug | Getting this parameter : thehive_default_instance= … |
+| `S46` | 238 | debug | Getting this parameter : thehive_max_cases= … |
+| `S50` | 251 | debug | Getting this parameter: thehive_sort_cases= … |
+| `S51` | 263 | debug | Getting this parameter: thehive_max_alerts= … |
+| `S52` | 276 | debug | Getting this parameter: thehive_sort_alerts= … |
+| `S53` | 289 | debug | Getting this parameter: thehive_ttp_catalog_name= … |
+| `S54` | 302 | debug | Getting this parameter: thehive_creation_attachment_prefix= … |
+| `S57` | 316 | debug | Getting this parameter: thehive_cortex_http_timeout= … |
+| `S58` | 329 | debug | Getting this parameter: thehive_creation_max_retry= … |
+| `S55` | 342 | debug | Getting this parameter: … |
+| `S68` | 360 | debug | Getting this parameter: cortex_job_max_wait= … |
+| `S56` | 373 | debug | Getting this parameter: … |
+| `S60` | 381 | debug | Found parameter " … … … |
+| `S66` | 388 | error | … |
+| `S67` | 391 | debug | Parameter " … … … … |
 
 ## `ta_thehive_cortex/alert_actions_base.py`
 
