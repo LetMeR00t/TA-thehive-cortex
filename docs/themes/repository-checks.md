@@ -30,9 +30,14 @@ python tools/checks/settings_are_used.py
 python tools/checks/collection_options_honoured.py
 python tools/checks/alert_action_params.py
 python tools/checks/declarations_documented.py
+python tools/checks/coverage_floors.py          # needs `coverage` installed
 PYTHON=python3.9 tools/checks/pins_match_build.sh
+tools/checks/dependency_audit.sh                # pip-audit; accepted advisories in dependency_audit_accepted.txt
 tools/checks/tests_on_both_pythons.sh
 ```
+
+⚠️ On Windows, set `PYTHONIOENCODING=utf-8` first: the checks print emoji and a
+cp1252 console turns a passing check into a `UnicodeEncodeError`.
 
 **And before every tag, on the ARCHIVE:**
 
@@ -70,9 +75,10 @@ and nothing signals it.** Two builds a month apart ship different code while
 `defusedxml` and `sortedcontainers` were shipped without being listed --
 sixteen packages installed against thirteen declared.
 
-This is the direct neighbour of the defect in §7: the bare `lib/` rule of the
-standard Python `.gitignore` was swallowing `package/lib/requirements.txt`
-itself, so the build was not reproducible from a clone. Same family -- what
+This is the direct neighbour of the `.gitignore` lesson in
+[build-packaging-deployment.md](build-packaging-deployment.md): the bare `lib/`
+rule of the standard Python `.gitignore` was swallowing
+`package/lib/requirements.txt` itself, so the build was not reproducible from a clone. Same family -- what
 ships gets decided somewhere nobody is looking.
 
 ⚠️ **Run it against the Python the add-on TARGETS**, not the one you happen to
@@ -117,10 +123,11 @@ and it was caught by reading the number rather than the colour.
 Two guards that fail the same way from a diff: a **line ceiling** per module,
 and the **absence of an import cycle**.
 
-`thehive.py` is at 1293 lines and `common.py` at 893. Neither arrived there in
-a commit anyone would have questioned — a file grows one line at a time, and
-nobody sees it cross 400. The ceilings for those files are their measured size,
-so they are debts with a number on them; everything else gets 400.
+`thehive.py` reached 1293 lines and `common.py` 893 (2026-08). Neither arrived
+there in a commit anyone would have questioned — a file grows one line at a
+time, and nobody sees it cross 400. `common.py` has since been split back to 350
+(#24); `thehive.py`, at 1223 on 2026-10-24, is the debt left, with its measured
+ceiling in `CEILINGS`. Everything else gets 400.
 
 The cycle half ships with the split on purpose: `a imports b imports a` runs
 fine until the day an import moves to the top of a module, and splitting a

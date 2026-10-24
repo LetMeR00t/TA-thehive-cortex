@@ -113,8 +113,9 @@ workspace pod has no `python` binary at all and its `python3` is 3.11. An
 implicit interpreter produces a build that works on one machine and nowhere
 else, and the failure surfaces far from its cause.
 
-So `.github/workflows/ci.yml` names 3.9 for the build and 3.9 **and** 3.13 for
-the tests. ⚠️ Both test runs must be green: this add-on declares
+So the CI — `.gitea/workflows/ci.yml`, the authoritative one since 2026-09-27
+(#16), and its GitHub twin `.github/workflows/ci.yml` — names 3.9 for the build
+and 3.9 **and** 3.13 for the tests. ⚠️ Both test runs must be green: this add-on declares
 `python.required = 3.9, 3.13`, Splunk <= 10.1 serves 3.9 only, and 10.2 keeps
 3.9 as its default. Testing one of the two proves nothing about most of the
 installed base -- and the vendored `thehive4py` is heading for a release that
@@ -139,8 +140,10 @@ justify it exist.
 
 `ucc-gen` copies `package/bin` verbatim. A `__pycache__` left by a local test
 run therefore ships inside the `.spl` and fails Splunk Cloud vetting -- while
-`output/` and the source tree both look perfectly clean. That is why §3 says to
-check the archive, and `tools/checks/package_contents.sh` is that check.
+`output/` and the source tree both look perfectly clean. That is why
+[build-packaging-deployment.md](build-packaging-deployment.md) says to check
+the archive, and `tools/checks/package_contents.sh` is that check;
+`tools/build.sh` runs it on every archive it builds.
 
 ⚠️ It **refuses to run** when it finds no `.spl`, rather than passing. A check
 that goes green because it had nothing to inspect is worse than no check: it

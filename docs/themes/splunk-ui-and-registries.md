@@ -143,6 +143,11 @@ somewhere. That dictionary is the add-on's own hand-off between "I read the
 configuration" and "I use it", so a key that enters and never leaves is a value
 dropped on the floor.
 
+⚠️ Its blind spot, measured on 2026-10-24: a setting read through the alert
+actions' `helper.get_global_setting()` never enters `defaults`, so the check
+cannot see it. `splunk_es_alerts_index` is exactly that -- read into the alert
+arguments since at least v3.9.0, consumed by nothing, and green here.
+
 ⚠️ And when the check *cannot* be performed, do not turn it into a rejection.
 An unreachable catalogue forwards the ids with a warning: refusing would let an
 outage on our side silently drop legitimate data — punishing the user for our

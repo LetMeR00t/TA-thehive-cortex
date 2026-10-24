@@ -21,7 +21,9 @@ is declared as a configuration TAB in `globalConfig.json`, so a nav entry
 pointing at it as a view is provably wrong and fails the check. `jobs` is
 reported and does **not** fail: Splunk ships views this repository cannot
 enumerate, and failing on a name we cannot resolve is how a guard starts crying
-wolf -- after which it gets switched off and protects nothing.
+wolf -- after which it gets switched off and protects nothing. (`jobs` was then
+settled on a running Splunk -- `data/ui/views/jobs` answers 404, nobody
+provides it -- and removed from the nav.)
 
 ### A rename on one side of a gap, and a symptom that lies
 
@@ -42,6 +44,11 @@ Two rules came out of it:
 * **Match the shape of a generated name, never the list of today's names.**
   Enumerating the commands signs a regression at every command added. The
   stanzas now key on `TA-thehive-cortex_*` and `*_modalert`.
+  ⚠️ On any Splunk carrying Splunk_SA_CIM (every ES deployment) the
+  `*_modalert` stanzas are inert anyway: CIM's index-time `TRANSFORMS` move
+  those files to `cim_modactions` as `modular_alerts:<action>`, and an
+  index-time transform beats a `[source::]` sourcetype. Whatever reads the
+  add-on's logs goes through the `thehive_cortex_logs` macro, which knows both.
 * **Model every producer, not the one you remember.** Search commands go
   through `ta_logging.setup_logging()`; alert actions go through solnlib's
   `Logs().get_logger()`, which sets **no namespace** here and therefore writes
@@ -145,9 +152,12 @@ measurement after the fix, never to reason that the fix must have worked.
 
 `thehive.py` logged `Secret length: N, ends with: XXXX` -- the last four
 characters of a real API key, written to a file Splunk then indexes and anyone
-with access to the index can read. The length alone tells "empty" from
-"truncated" from "looks right", which is the entire reason the line exists.
+with access to the index can read.
 
-Verifications print **lengths or counts, never values**. That holds for a
-temporary debug line as much as for anything else: `TH_DEBUG_SECRET` was
-plainly written as a one-off, and it shipped in four releases.
+For a credential, a verification prints **whether it is there, and nothing
+else** -- not its length either: a length says *which* key is in play, across
+every log and screenshot it reaches (the rule `secrets_never_logged.py`
+enforces, see [repository-checks.md](repository-checks.md)). For anything that
+is not a secret, a count beats a value. That holds for a temporary debug line
+as much as for anything else: `TH_DEBUG_SECRET` was plainly written as a
+one-off, and it shipped in four releases.

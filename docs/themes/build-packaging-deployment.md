@@ -92,17 +92,32 @@ a future Splunk release, and the `warning` entries here are informational
 ## Autonomous Safe Deployment (CRITICAL)
 **NEVER** delete the `local/` folder in the Splunk directory during a deployment. 
 
-Deployment must be performed directly via shell commands (PowerShell) by strictly following these steps:
-1. Stop Splunk to release file locks.
-2. Temporarily move the existing `local/` folder to a backup directory outside the app's tree.
-3. Remove the old version of the application.
-4. Deploy the new build from `output/`.
-5. Restore the backed-up `local/` folder.
-6. Restart Splunk.
+Deploy the **archive**, the file Splunk receives, never `output/`. Strictly in
+this order:
+1. Copy the existing `local/` folder to a backup directory outside the app's tree.
+2. Extract the archive into an empty temporary directory.
+3. **Check the extracted tree** (`default/app.conf` exists, its `version` is the
+   one you built). Do not go further otherwise.
+4. Remove everything in the installed app **except `local/`**, then copy the
+   extracted tree over it.
+5. Check `local/` is identical to the backup.
+6. Restart Splunk (`POST /services/server/control/restart`; a full restart is
+   only needed for `props.conf`, see below).
 
-**Direct command example:**
-```powershell
-& "C:\Program Files\Splunk\bin\splunk.exe" stop; if (Test-Path "C:\Program Files\Splunk\etc\apps\TA-thehive-cortex\local") { Move-Item "C:\Program Files\Splunk\etc\apps\TA-thehive-cortex\local" "$env:TEMP\TA_local_backup" -Force }; Remove-Item "C:\Program Files\Splunk\etc\apps\TA-thehive-cortex" -Recurse -Force -ErrorAction SilentlyContinue; Copy-Item -Path "output\TA-thehive-cortex" -Destination "C:\Program Files\Splunk\etc\apps\" -Recurse -Force; if (Test-Path "$env:TEMP\TA_local_backup") { if (-not (Test-Path "C:\Program Files\Splunk\etc\apps\TA-thehive-cortex\local")) { New-Item -Path "C:\Program Files\Splunk\etc\apps\TA-thehive-cortex\local" -ItemType Directory }; Copy-Item -Path "$env:TEMP\TA_local_backup\*" -Destination "C:\Program Files\Splunk\etc\apps\TA-thehive-cortex\local" -Recurse -Force; Remove-Item "$env:TEMP\TA_local_backup" -Recurse -Force }; & "C:\Program Files\Splunk\bin\splunk.exe" start
+⚠️ Step 3 is not ceremony. On 2026-10-24 an extraction failed — Git Bash's GNU
+`tar` reads `C:/…` as `host:path` and needs `--force-local` — the chain went on
+regardless, and step 4 left an app holding nothing but `local/` until the copy
+was redone. Check the new tree **before** deleting the old one.
+
+**Command example (Git Bash):**
+```bash
+APP="/c/Program Files/Splunk/etc/apps/TA-thehive-cortex"; X="$(mktemp -d)"
+cp -r "$APP/local" "$X.local.bak" &&
+tar --force-local -xzf TA-thehive-cortex/TA-thehive-cortex-5.0.0.tar.gz -C "$X" &&
+grep -q '^version = 5.0.0' "$X/TA-thehive-cortex/default/app.conf" &&
+find "$APP" -mindepth 1 -maxdepth 1 ! -name local -exec rm -rf {} + &&
+cp -r "$X/TA-thehive-cortex/." "$APP/" &&
+diff -rq "$X.local.bak" "$APP/local" && echo "deployed, local/ intact"
 ```
 
 ---

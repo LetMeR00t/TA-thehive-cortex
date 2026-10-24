@@ -116,6 +116,25 @@ responder controller at all, so the direct route cannot express them. Anyone
 wanting responders is choosing to reopen this decision, not to add a feature on
 top of it.
 
+## `cortex4py` throws away the reason, so read `__cause__`
+
+The archived library maps every HTTP failure onto a handful of exceptions and
+drops what the server said: any `requests` `ConnectionError` -- a TLS refusal
+included -- becomes `ServiceUnavailableError`, and a `400` becomes
+`InvalidInputError("Invalid input exception")`. Both cost hours on 2026-10-24
+against Cortex 4.2.0: a private CA ignored by the Cortex client read as
+"service unavailable" (`C26`), and an unsearchable field read as "invalid
+input" (`CSJ-34`, Cortex's real answer being `SearchError: all shards failed`).
+
+The original exception is kept as `e.__cause__` (`raise … from exception`), and
+for an HTTP error `e.__cause__.response.text` is Cortex's own answer. Every place
+that reports a `cortex4py` failure should name that cause; the two above do.
+
+⚠️ Cortex 4.x maps a job's `data` as `binary` in Elasticsearch -- not indexed,
+so not searchable by any operator. `cortexjobs` therefore filters `data` itself
+(see `matching_data`). Check a field's mapping before building a server-side
+filter on it.
+
 ## A method the library has and nobody calls is a signal, not a curiosity
 
 Two of the three defects behind `cortexjobs` were exactly that shape:
