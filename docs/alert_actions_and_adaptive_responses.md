@@ -48,8 +48,8 @@ This TA provides an adaptative response/alert action. It takes the result of a s
 The overall process is as follows:
 
 - search for events & collect observables and custom fields.
-- rename splunk fields to match the field names listed in the lookup table `thehive_datatypes`. If it is still empty before the first alert,
-it will be initialised with the default datatypes (see [example file](../TA-thehive-cortex/README/thehive_datatypes.csv.sample))
+- rename splunk fields to match the field names listed in the lookup table `thehive_datatypes` (a KV store collection since v5.0.0). If it is still empty before the first alert,
+it is filled from your TheHive instance's observable types and from the CSV seed `lookups/thehive_datatypes.csv` (format: see the [example file](../TA-thehive-cortex/package/README/thehive_datatypes.csv.sample)); rows you add or edit are never overwritten by a later refresh
 - save your search as an alert.
 - set the alert action "thehive_create_a_new_alert": it will create an alert into TheHive.
 - set the alert action "thehive_add_observables": it will add observable(s) to an existing alert or case into TheHive using internal IDs (~12345).
@@ -342,30 +342,30 @@ In this example, alert title will be the value of field `myfield` from result se
 
 ### Alert overall description
 
-- TheHive instance: one of the instances defined in the instances dashboard. You can use "&lt;default&gt;" to use the default instance defined in the configuration page
+- TheHive instance: one of the instances defined under *Configuration > Instances*. You can use "&lt;default&gt;" to use the default instance defined in the configuration page
 - Case Template: A case template to use for imported alerts.
 - Type: The alert type. Defaults to "alert".
 - Source: The alert source. Defaults to "splunk".
 - Unique ID field: A field name that contains a unique identifier specific to the source event. You may use the field value to group artifacts from several rows under the same alert. The value for the field "unique" have to be the same on those rows.
-- Timestamp: A field name that contains a valid timestamp (epoch10 or epoch13 formats are supported). if not provided, default to now() 
+- Timestamp: A field name that contains a valid epoch timestamp, in seconds or milliseconds, a fractional part accepted (`_time` works). If not provided or unreadable, default to now(), and an unreadable value is logged (`THC-87`/`THC-88`)
 - Title: The title to use for created alerts. You can specify a field name to take the title from the row specified like a token usage in a dashboard (see below)
 - Description: The description to send with the alert. You can specify a field name to take the description from the row (see below)
 - Tags: Use single comma-separated string without quotes for multiple tags (ex. "badIP,spam").
 - Scope: you can choose to (option 1) include **only listed** fields in `thehive_datatypes` or (option 2) include **all fields** (default datatype is 'other')
-- Severity: Change the severity (Low/Medium/High) of the created alert. Default is High
+- Severity: Change the severity (Low/Medium/High/Critical) of the created alert. Default is High
 - TLP: Change the TLP of the created alert. Default is TLP:AMBER
 - PAP: Change the PAP of the created alert. Default is PAP:AMBER
 
 ### Add observable(s) overall description
 
-- TheHive instance: one of the instances defined in the instances dashboard. You can use "&lt;default&gt;" to use the default instance defined in the configuration page.
+- TheHive instance: one of the instances defined under *Configuration > Instances*. You can use "&lt;default&gt;" to use the default instance defined in the configuration page.
 - Target Alert/Case ID(s): A field name or static value (comma-separated) that contains the internal ID(s) of the target alert(s) or case(s) (format: ~[0-9]+). **For cases**, you can also provide the case number (e.g., 1234), and the app will automatically resolve its internal ID.
 - Target Type: A field name or static value ("alert" or "case") indicating the type of the target.
 - Tags: A field name or static value (comma-separated) for observable tags.
 - TLP: A field name or static value (WHITE, GREEN, AMBER, AMBER+STRICT, RED) for observable TLP.
 - PAP: A field name or static value (WHITE, GREEN, AMBER, RED) for observable PAP.
 - Is IOC: A field name or static value (true/false) indicating if the observable is an IOC.
-- Sighted: A field name or static value (true/false) indicating if the observable has been sighted.
+- Sighted: A field name or static value (true/false) indicating if the observable has been sighted. Default: not sighted.
 - Sighted Date: A field name containing the sighting date (Splunk epoch time). If Sighted is enabled and no date is found, it defaults to the current time.
 - Scope: you can choose to (option 1) include **only listed** fields in `thehive_datatypes` or (option 2) include **all fields** (default datatype is 'other').
 
@@ -374,7 +374,7 @@ When used as an Adaptive Response, the Splunk **Finding** must contain fields na
 
 ### Add timeline event overall description
 
-- TheHive instance: one of the instances defined in the instances dashboard. You can use "&lt;default&gt;" to use the default instance defined in the configuration page.
+- TheHive instance: one of the instances defined under *Configuration > Instances*. You can use "&lt;default&gt;" to use the default instance defined in the configuration page.
 - Target Case ID: A field name or static value that contains the internal ID of the target case (~[0-9]+) or the case number (e.g. 1234).
 - Event Title: A field name or static value for the timeline event title. Use `<inheritance>` to use the search name.
 - Event Description: A field name or static value for the timeline event description.
@@ -392,7 +392,7 @@ The `cortex_run_a_new_job` alert action starts one Cortex job per result row and
 - Data field name: the field of the results holding the value to analyze (default: `data`).
 - Datatype field name: the field of the results holding its Cortex datatype, e.g. `ip`, `domain` (default: `datatype`).
 - Analyzers: `all` to run every analyzer accepting the datatype, or analyzer names separated by `;`. Required.
-- TLP / PAP: the level sent with each job (default: AMBER).
+- TLP / PAP: the level sent with each job (default: AMBER). ⚠️ An analyzer refuses a job whose TLP or PAP is above its configured maximum (AMBER by default in Cortex): the job then ends in `Failure`.
 
 ### Manage fields to become observables
 
@@ -409,7 +409,7 @@ The `cortex_run_a_new_job` alert action starts one Cortex job per result row and
 In the alert form, you can specify a field name instead of a static string for following parameters:
 
 - Unique ID field: if you provide a field name, the result rows will be grouped under each unique value of this field. For example, if 5 rows have the value "alert1" in field **my_unique** and 3 rows have "alert2", then by mentioning in the form for parameter "unique" the field name "my_unique", the script will create 2 alerts in TH, one with observables from the first 5 rows (deduplicated) and a second with observables from the 3 other rows.
-- timestamp: you can provide a field containing a valid timestamp value (epoch10 or epoch13) for example _time
+- timestamp: you can provide a field containing a valid epoch timestamp (seconds or milliseconds, fractional accepted), for example _time
 - description: the description of the alert can be taken from the value of a field. Provide field name as it is in results
 - title: title of the alert can be taken from the value of a field. Provide field name as it is in results. It can be a mix so you can use a static string with a field result. If you have a field named "title" then you can specify : "My title is $result.title$"
 
@@ -419,7 +419,7 @@ In the alert form, you can specify a field name instead of a static string for f
 
 Within your search, you can specify composite fields. A composite field is a field containing a colon (:) used to separate a main key and a subkey such as `main key:subkey`. For instance, the composite field `ip:description` has a main key set to `ip` and a subkey set to `description`. 
 
-Those composite fields are used to enrich the observables information such as TLP, PAP, description etc. The `main key` shall be the field name of an observable defined in the thehive_datatype.csv lookup (datatype for the field will be deduce from this lookup) when the `subkey` shall be representing the information that you want to set.
+Those composite fields are used to enrich the observables information such as TLP, PAP, description etc. The `main key` shall be the field name of an observable defined in the `thehive_datatypes` lookup (datatype for the field will be deduced from this lookup) when the `subkey` shall be representing the information that you want to set.
 
 UC2 is showing a good example of how to use composite fields, here is the list of the possibilities:
 
@@ -430,12 +430,12 @@ UC2 is showing a good example of how to use composite fields, here is the list o
 - `<field>:tags`: Indicates the tags for the provided observable `<field>`. This shall be a string with the tags separated by a comma.
 - `<field>:is_ioc`: Indicates if the provided observable `<field>` is considered as an IOC. This shall be a string set to 0 (FALSE) or 1 (TRUE).
 - `<field>:sighted`: Indicates if the provided observable `<field>` was sighted. This shall be a string set to 0 (FALSE) or 1 (TRUE).
-- `<field>:sighted_at`: Indicates when the provided observable `<field>` was sighted This shall be string representing a UNIX timestamp.
+- `<field>:sighted_at`: Indicates when the provided observable `<field>` was sighted. This shall be a UNIX timestamp, in seconds or milliseconds, a fractional part accepted (what `relative_time()` produces).
 - `<field>:ignore_similarity`: Indicates if the provided observable `<field>` should be ignored regarding the similarities with other alerts/cases. This shall be a string set to 0 (FALSE) or 1 (TRUE).
 
 In order to be explicit on the usage, here is an example of the composite fields:
 
-> ⚠️ In this example, we consider that the field is named `src_ip` and the datatype defined in the thehive_datatype.csv lookup for this field is `ip`.
+> ⚠️ In this example, we consider that the field is named `src_ip` and the datatype defined in the `thehive_datatypes` lookup for this field is `ip`.
 
 | Field | Value | Main key | Subkey | Description
 |---|---|---|---|---|

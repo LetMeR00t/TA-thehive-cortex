@@ -26,7 +26,7 @@
 | C4 | ✅ `kv_thehive_datatypes` readable (17 rows) | REST |
 | #28 | ✅ running job: `cortex_job_finished=0`, no report; `wait=30` → `atMost=30seconds` accepted, finished report returned | `cortexrun` + `cortexjobs` in one search |
 
-Not measured yet: **on screen** B1, B2, B5, C3; and B8 (invented `patternId`) and B9's `sighted` default, which need an object created in TheHive outside the e2e campaign.
+Not measured yet: **on screen** B1, B2, B5, C3; and B8 (invented `patternId`), which needs an object created in TheHive outside the e2e campaign.
 
 ## A. What unblocks an open ticket
 
@@ -126,9 +126,10 @@ Clear the setting: everything must pass unchecked again, as before.
 the form sends them, and that an **empty** `analyzers` produces a message rather
 than an `AttributeError`.
 
-⚠️ `sighted_field`: its shipped default forced `sighted = False` on every
-observable. Confirm an observable created without touching that field is now
-**sighted**.
+✅ `sighted_field`: settled by reading the code on 2026-10-24 — the old `0` was
+read as the fixed text `"0"`, the new empty value as `"false"`: an observable is
+not sighted unless asked, before and after. This line used to expect the
+opposite.
 
 ## C. Only an instance can settle these
 
