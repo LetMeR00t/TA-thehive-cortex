@@ -14,6 +14,10 @@ PYSEC-2026-1998 2026-09-27 CVE-2025-66418 fixed in urllib3 2.6.0, blocked by spl
 PYSEC-2026-1994 2026-09-27 CVE-2025-66471 fixed in urllib3 2.6.0, blocked by splunktaucclib urllib3<2
 PYSEC-2026-1996 2026-09-27 CVE-2026-21441 fixed in urllib3 2.6.3, blocked by splunktaucclib urllib3<2
 PYSEC-2026-141  2026-09-27 CVE-2026-44431 fixed in urllib3 2.7.0, blocked by splunktaucclib urllib3<2
+# Re-checked 2026-10-24: splunktaucclib 8.2.0, main and develop all still pin urllib3<2.
+# The lift is upstream PR splunk/addonfactory-ucc-library#354 (open, unmerged); review by 2026-11-24.
+PYSEC-2026-4175 2026-10-24 CVE-2026-97687 fixed in urllib3 2.8.0, blocked by splunktaucclib urllib3<2
+PYSEC-2026-4177 2026-10-24 CVE-2026-97689 fixed in urllib3 2.8.0, blocked by splunktaucclib urllib3<2
 
 # requests 2.33.0 declares Requires-Python >=3.10; the add-on targets 3.9, the
 # floor Splunk defaults to (same reason dependabot.yml excludes >=2.33).
