@@ -190,5 +190,36 @@ class TestCortexAddJobAnalyzerCaching(unittest.TestCase):
             instance.addJob(data="192.0.2.10", dataType="ip", analyzers="Ghost")
 
 
+class TestCortexHonoursTheInstanceCaBundle(unittest.TestCase):
+    """Gitea #45: the Cortex client ignored the instance's CA Certificate Path.
+
+    `common.Settings` resolves `verify` per instance -- the PEM bundle under
+    local/, or True -- and every TheHive construction passes it on. The Cortex
+    one hardcoded `verify=True`, so a Cortex behind a private authority failed
+    TLS against the bundled certifi store, which cortex4py then reported as
+    `C26 SERVICE UNAVAILABLE`. Found on a real Cortex 4.2.0, not by reading.
+    """
+
+    def test_verify_comes_from_the_instance(self):
+        bundle = os.path.join("local", "cacert.crt")
+        settings = MagicMock()
+        settings.getInstanceUsernameApiKey.return_value = ("user", "key")
+        settings.getInstanceURL.return_value = "https://cortex.example:443"
+        settings.getHttpTimeout.return_value = "60"
+        settings.getInstanceSetting.side_effect = lambda _id, name: {
+            "authentication_type": "api_key",
+            "verify": bundle,
+        }.get(name)
+
+        with unittest.mock.patch.object(cortex_module, "client"), \
+             unittest.mock.patch.object(cortex_module, "LoggerFile"), \
+             unittest.mock.patch.object(cortex_module, "Settings", return_value=settings), \
+             unittest.mock.patch.object(cortex_module, "Cortex") as cortex_cls:
+            cortex_module.create_cortex_instance(
+                "cortex", {"session_key": "s", "sid": "1"}, MagicMock(), acronym="T")
+
+        self.assertEqual(cortex_cls.call_args.kwargs["verify"], bundle)
+
+
 if __name__ == '__main__':
     unittest.main()

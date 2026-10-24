@@ -70,7 +70,7 @@ explains the manual purge of `etc/apps/learned/local/props.conf`. Fall back to
 | `C9` | Cortex authentication type is not one of the expected values. | Same as `TH20`, on the Cortex side. |
 | `C15` | The Cortex API key is empty. | Re-enter it in the account; an empty key cannot connect. |
 | `C25` | Cortex answered 404. | The URL is reachable but is not a Cortex API root. Check the path. |
-| `C26` | Cortex answered "service unavailable". | Cortex is up but not ready, or behind a load balancer with no backend. |
+| `C26` | The connection to Cortex failed; the `Cause:` part names how. | An `SSLError` cause: the server certificate is not trusted, set the instance's **CA Certificate Path**. Otherwise Cortex is down, not ready, or behind a load balancer with no backend. |
 | `C27` | Cortex rejected the credentials. | The API key is wrong or has been revoked. |
 | `S13` `S13b` | A client or CA certificate is configured but the file was not found. | The path is relative to the search head that runs the search. A file present on one node is not present on the others. |
 | `S41` | A setting could not be read; the default is used. | Harmless in itself, but it means the configuration page never wrote that value. Open it and save once. |
@@ -238,28 +238,28 @@ explains the manual purge of `etc/apps/learned/local/props.conf`. Fall back to
 | :--- | ---: | :--- | :--- |
 | `C5` | 75 | debug | Connection to Splunk done |
 | `C6` | 77 | debug | Settings recovered |
-| `C7` | 99 | error | Cortex instance will be initialized with a password (not an API key) - This i… |
-| `C8` | 102 | debug | Cortex instance will be initialized with an API Key (not a password) |
-| `C9` | 105 | error | WRONG_AUTHENTICATION_TYPE - Authentication type is not one of the expected va… |
-| `C15` | 118 | error | API Key is null, this is the only way to connect to a Cortex instance |
-| `C19` | 121 | debug | Cortex object will be instanciated with url '{…}' |
-| `C20` | 123 | debug | Cortex object instanciated |
-| `C21` | 128 | debug | Cortex API connection to (URL=" … … |
-| `C25` | 130 | error | RESOURCE NOT FOUND - Cortex service is unavailable, is the configuration corr… |
-| `C26` | 133 | error | SERVICE UNAVAILABLE - Cortex service is unavailable, is the configuration cor… |
-| `C27` | 136 | error | AUTHENTICATION ERROR - Credentials are invalid |
-| `C30` | 144 | debug | Getting jobs: … |
-| `C35` | 159 | warn | UNKNOWN DATA TYPE - This data type ( … … |
-| `C40` | 184 | error | ANALYZER NOT FOUND - This analyzer ( … … |
-| `C41` | 186 | debug | Analyzers recovered: … |
-| `C42` | 189 | debug | Job instance created |
-| `C45` | 201 | debug | JOB sent: … |
-| `C46` | 205 | error | … … … |
-| `CJ1` | 222 | warn | UNKNOWN DATA TYPE - This data type ( … … |
-| `CJ5` | 229 | debug | [ … … … … |
-| `CJ6` | 230 | debug | [ … … … … |
-| `CJ7` | 231 | debug | [ … … … … |
-| `CJ8` | 232 | debug | [ … … … |
+| `C7` | 102 | error | Cortex instance will be initialized with a password (not an API key) - This i… |
+| `C8` | 105 | debug | Cortex instance will be initialized with an API Key (not a password) |
+| `C9` | 108 | error | WRONG_AUTHENTICATION_TYPE - Authentication type is not one of the expected va… |
+| `C15` | 121 | error | API Key is null, this is the only way to connect to a Cortex instance |
+| `C19` | 124 | debug | Cortex object will be instanciated with url '{…}' |
+| `C20` | 126 | debug | Cortex object instanciated |
+| `C21` | 131 | debug | Cortex API connection to (URL=" … … |
+| `C25` | 133 | error | RESOURCE NOT FOUND - Cortex service is unavailable, is the configuration corr… |
+| `C26` | 137 | error | SERVICE UNAVAILABLE - Cortex service is unavailable, is the configuration cor… |
+| `C27` | 140 | error | AUTHENTICATION ERROR - Credentials are invalid |
+| `C30` | 148 | debug | Getting jobs: … |
+| `C35` | 163 | warn | UNKNOWN DATA TYPE - This data type ( … … |
+| `C40` | 188 | error | ANALYZER NOT FOUND - This analyzer ( … … |
+| `C41` | 190 | debug | Analyzers recovered: … |
+| `C42` | 193 | debug | Job instance created |
+| `C45` | 205 | debug | JOB sent: … |
+| `C46` | 209 | error | … … … |
+| `CJ1` | 226 | warn | UNKNOWN DATA TYPE - This data type ( … … |
+| `CJ5` | 233 | debug | [ … … … … |
+| `CJ6` | 234 | debug | [ … … … … |
+| `CJ7` | 235 | debug | [ … … … … |
+| `CJ8` | 236 | debug | [ … … … |
 
 ## `cortex_refresh_analyzers.py`
 

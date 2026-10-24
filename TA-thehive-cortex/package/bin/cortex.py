@@ -91,6 +91,9 @@ def create_cortex_instance(instance_id, settings, logger, acronym, exec_id=None)
     cortex_proxies = configuration.getInstanceSetting(instance_id,"proxies")
     cortex_cert = configuration.getInstanceSetting(instance_id,"client_cert")
     cortex_cert = None if cortex_cert == "-" else cortex_cert
+    # Resolved by Settings: the instance's CA bundle under local/, or True
+    cortex_verify = configuration.getInstanceSetting(instance_id,"verify")
+    cortex_verify = True if cortex_verify is None else cortex_verify
     cortex_organisation = configuration.getInstanceSetting(instance_id,"organisation")
     cortex_version = configuration.getInstanceSetting(instance_id,"type") 
     cortex = None
@@ -100,7 +103,7 @@ def create_cortex_instance(instance_id, settings, logger, acronym, exec_id=None)
         sys.exit(7)
     elif (cortex_authentication_type == "api_key"):
         logger_file.debug(id="C8",message="Cortex instance will be initialized with an API Key (not a password)")
-        cortex = Cortex(url=cortex_url, apiKey=cortex_secret, sid=settings["sid"], proxies=cortex_proxies, verify=True, cert=cortex_cert, logger_file=logger_file, timeout=int(configuration.getHttpTimeout()))
+        cortex = Cortex(url=cortex_url, apiKey=cortex_secret, sid=settings["sid"], proxies=cortex_proxies, verify=cortex_verify, cert=cortex_cert, logger_file=logger_file, timeout=int(configuration.getHttpTimeout()))
     else:
         logger_file.error(id="C9",message="WRONG_AUTHENTICATION_TYPE - Authentication type is not one of the expected values (password or api_key), given value: "+str(cortex_authentication_type))
         sys.exit(20)
@@ -130,7 +133,8 @@ class Cortex(Api):
             self.logger_file.error(id="C25",message="RESOURCE NOT FOUND - Cortex service is unavailable, is the configuration correct ?")
             sys.exit(25)
         except cortex4py.exceptions.ServiceUnavailableError as e:
-            self.logger_file.error(id="C26",message="SERVICE UNAVAILABLE - Cortex service is unavailable, is the configuration correct ?")
+            # cortex4py folds every ConnectionError here, a TLS refusal included: name the cause
+            self.logger_file.error(id="C26",message="SERVICE UNAVAILABLE - Cortex service is unavailable, is the configuration correct ? Cause: "+repr(e.__cause__))
             sys.exit(26)
         except cortex4py.exceptions.AuthenticationError as e:
             self.logger_file.error(id="C27",message="AUTHENTICATION ERROR - Credentials are invalid")
