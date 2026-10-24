@@ -33,9 +33,15 @@ This Technical Add-on (TA) allows to **add interaction features** between [TheHi
 
 **Version 4.0.0** introduces a complete architectural migration to the **[Splunk UCC Framework](https://splunk.github.io/addonfactory-ucc-generator/)**, providing a modern, secure, and standardized configuration interface.
 
-- **TheHive Support**: Supporting TheHive 5. (For TheHive 3 or 4, please check legacy releases).
-- **Cortex Support**: Supporting Cortex 3.x.
-- **Python Requirement**: Optimized for **Python 3.9+** (Splunk Enterprise 9.x+).
+**Version 5.0.0** repairs much of what 4.x shipped broken, and changes a few behaviours on the way: read the [release notes](./release_notes/v5.0.0.md) before upgrading, one manual step is required.
+
+| | Minimum | Tested |
+| :--- | :--- | :--- |
+| **TheHive** | 5.2.0 (TLP 2.0 scale) | 5.8.1 |
+| **Cortex** | 3.0.0 | 4.2.0 |
+| **Splunk** | 9.3 (Python 3.9) | Enterprise 10.2.1 + ES (Python 3.13) |
+
+Why these minimums: see [Compatibility](./release_notes/v5.0.0.md#compatibility). For TheHive 3 or 4, use a legacy release.
 
 # What is TheHive/Cortex ?
 
@@ -70,11 +76,12 @@ Securely store your credentials (API Keys or User/Password) using Splunk's stand
 ## Instances
 Define your server endpoints and link them to the appropriate Account.
 1. Navigate to *Configuration > Instances*.
-2. Provide the server URL (HTTPS is mandatory).
+2. Provide the host, port and URI of the server. The add-on always connects over **HTTPS**: a Cortex serving plain HTTP (its default on port 9001) must be put behind a TLS reverse proxy.
 3. **SSL Management**: You can reference a custom CA bundle (PEM format) placed in the app's `local/` folder if you use self-signed certificates.
+4. **Proxy**: an outbound proxy is set per instance, with an optional proxy account.
 
 ## Global Settings
-Configure proxy settings and logging levels in the *Configuration > Settings* tab.
+Default instance, listing sizes and sort orders, creation retries, HTTP timeout and the Cortex job wait are set in the *Configuration > Settings* tab; the log level in *Configuration > Logging*. Each setting is described in the [Installation guide](./docs/installation.md#global-settings).
 
 # Data Collection (Inputs)
 
@@ -106,7 +113,8 @@ To ensure continuity with historical data and simplify searches across both lega
 | **Alerts** | `` `thehive_alerts` `` | `thehive:last_created:alerts`, `thehive:last_updated:alerts`, `thehive:alerts:*` |
 | **Observables** | `` `thehive_observables` `` | `thehive:last_created:observables`, `thehive:last_updated:observables`, `thehive:observables:*` |
 | **Audit Logs** | `` `thehive_audit` `` | `thehive:last_created:audit`, `thehive:audit` |
-| **Tasks** | `` `thehive_tasks` `` | `thehive:last_created:case_tasks`, `thehive:last_updated:case_tasks`, `thehive:tasks:*` |
+| **Tasks** | `` `thehive_tasks` `` | `thehive:last_created:case_tasks`, `thehive:last_updated:case_tasks`, `thehive:tasks:*`, `thehive:cases:tasks:*` |
+| **Add-on logs** | `` `thehive_cortex_logs` `` | `tathehivecortex:log` in `_internal`, plus `modular_alerts:thehive_*` / `modular_alerts:cortex_*` in `cim_modactions`, where Splunk_SA_CIM moves the alert action logs |
 
 # Usage
 
@@ -140,6 +148,7 @@ This TA provides several custom search commands to interact with TheHive and Cor
 ### Cortex Commands
 - `cortexjobs`: Search and retrieve history of jobs run on Cortex.
 - `cortexrun`: Trigger new analyzer jobs in Cortex for specific observables.
+- `cortexrefreshanalyzers`: Reload the list of enabled analyzers into Splunk (used by the *Cortex: Analyzers* dashboard).
 
 For detailed parameters and examples, see the [Commands guide](./docs/commands.md).
 

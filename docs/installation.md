@@ -6,7 +6,13 @@ This application contains all the python libraries to work autonomously.
 
 You should create a specific user and organization in your TheHive/Cortex instances to interact with Splunk.
 
-> ⚠️ If you were using an old application (such as v2.3.1) and wants to migrate to the last major version (v3.x.x), there is a change with the way how instances are stored into Splunk. It's not using anymore a KVStore but a CSV lookup to do so. Please, follow the below procedure
+Supported versions: TheHive **5.2.0** or later (tested on 5.8.1), Cortex **3.0.0** or later (tested on 4.2.0), Splunk **9.3** or later. Why these floors: see the [v5.0.0 release notes](../release_notes/v5.0.0.md#compatibility).
+
+> ⚠️ Upgrading from v4.x: read the [v5.0.0 release notes](../release_notes/v5.0.0.md) first — one manual step is required after the upgrade (learned sourcetypes). Upgrading from v3.x: read the [v4.0.0 release notes](../release_notes/v4.0.0.md), the configuration must be re-created.
+
+### Legacy: migrating from v2.x to v3.x
+
+> If you were using an old application (such as v2.3.1) and wants to migrate to v3.x.x, there is a change with the way how instances are stored into Splunk. It's not using anymore a KVStore but a CSV lookup to do so. Please, follow the below procedure
 
 Before the migration, you should backup your instances information using a:
 
@@ -25,8 +31,8 @@ Before using the application, you need to set up your environment settings. Plea
 You have to set up your accounts/instances configuration.
 An account is used to authenticate to one instance. You have to add every account you need to use and store the API Key as the password (**username/password authentication is only supported for TheHive, not Cortex, we recommand you to use an API key**)
 
-1. Go to the **TheHive/Cortex application > Settings > Configuration** (in the navigation bar)
-2. Under **Accounts**, you need to add any account you want to use with TheHive/Cortex
+1. Go to **Configuration** (in the navigation bar of the add-on)
+2. Under the **Accounts** tab, add any account you want to use with TheHive/Cortex
 
 - **Account name**: The name of the account, it will be reused to link an account to an instance.  
 - **Username**: The username of this account. For now, it's not used but we recommand you to keep the same name as you have on your instance (TheHive or Cortex)
@@ -39,14 +45,15 @@ An account is used to authenticate to one instance. You have to add every accoun
 
 Once you've done that, you can configure all your instances. An instance is an endpoint representing a TheHive or Cortex instance.
 
-1. Go to the **TheHive/Cortex application > Settings > Instances** (in the navigation bar)
-2. On this dashboard, you need to add every instance you want to use. To do so, select the "**Add a new instance**" as action and fill these fields:
+1. Go to **Configuration**, tab **Instances**
+2. Add every instance you want to use with **Add**, and fill these fields:
 
 - **Account name (Global accounts)**: This is the name of the account to use that you added under "Accounts". It will list you all available accounts you have previously set up.
 - **Authentication type**: Authentication type for your instance. Password is working only with TheHive but we recommand you to use an API key everytime. What each mode requires on the TheHive side:
   - **API key** (`api_key`): an API key generated for the account (the key goes in the account's password field). Nothing else.
   - **Password** (`password`): the credentials are sent as **HTTP Basic** on every call. TheHive reads them as `user:password[:otp]` and cuts at every `:`, so the password **must not contain `:`**; an account with **multi-factor authentication** cannot use this mode (its one-time code cannot be supplied); and the `basic` provider must be enabled in TheHive's `auth.providers` (it is by default). When TheHive refuses, the add-on logs `TH111`, naming the mode.
-- **Type**: Type of your instance (TheHive (v3 or v4) or Cortex (v3)).
+- **Type**: Type of your instance: `TheHive5` or `Cortex3`. `Cortex3` also covers Cortex 4.x, whose API is the same.
+- **Environment**: A label for the instance (`PRODUCTION`, `VALIDATION`, `INTEGRATION`, `DEVELOPMENT`), shown in the dashboards. It changes no behaviour.
 - **Organisation**: The name of the organisation against which api calls will be run. Default to "-" meaning None.
 - **Proxy URL**: A string that indicates what is the proxy URL to use for this instance if there is any. You can specify http/https if you want but the same value will be used for both protocols. Default to "-" meaning None
 - **Proxy account**: This is the name of the account to use for the proxy authentication (only basic) that you added under "Accounts". It will list you all available accounts you have previously set up. Default to "None".
@@ -56,7 +63,7 @@ Once you've done that, you can configure all your instances. An instance is an e
 - **Port**: Port used by your instance (Default:9000 for TheHive, 9001 for Cortex).
 - **URI**: Indicates what is the URI based for your instance. By default, TheHive/Cortex is installed at the root of the server so the URI would be "/". If you are using a Cloud instance, you may have to specify the URI used by your cloud instance. For example, if your TheHive instance is accessible with this URL : "https://my-cloud-website.com:443/mythehiveinstance", then you should specify in the URI field "/mythehiveinstance".
 
-> **Note**: Protocol used by default is HTTPS and can't be modified. Moreover, the certificate verification is mandatory and set to True (below screenshot is not up to date). If you use an HTTPS connection with a self-signed certificate or a custom certificate authority, declare that authority with the **CA Certificate Path** field described above: place the PEM bundle under "\$APP_FOLDER\$/local" and set the field to its filename.
+> **Note**: Protocol used by default is HTTPS and can't be modified. ⚠️ A Cortex installed with its defaults serves **plain HTTP** on port 9001, which the add-on cannot reach: put it behind a TLS reverse proxy and declare the proxy's host and port here. Moreover, the certificate verification is mandatory and set to True (below screenshot is not up to date). If you use an HTTPS connection with a self-signed certificate or a custom certificate authority, declare that authority with the **CA Certificate Path** field described above: place the PEM bundle under "\$APP_FOLDER\$/local" and set the field to its filename.
 >
 > ⚠️ Do **not** append your authority to the bundled "certifi" store ("\$APP_FOLDER\$/lib/certifi/cacert.pem"). That file is part of the delivered package: every upgrade of the add-on overwrites it, so the certificate silently disappears and every instance using it starts failing with `THE_HIVE_CERTIFICATE_FAILED`. Only the `local/` folder survives an upgrade.
 
@@ -69,6 +76,26 @@ On the above example, you can see a list of defined instances:
 - The 2nd example could be an on-premise instance with a client certificate to use for the authentication to a proxy
 - The 3rd example could be a Cloud instance with a custom URI to access the TheHive application but without any certificate check
 - The 4th example could be a Cloud instance with a custom URI to access the TheHive application, to a certain organisation and ensuring the certificate check
+
+### Global settings
+
+Under **Configuration**, tab **Settings**:
+
+| Setting | Default | What it does |
+| :--- | :--- | :--- |
+| TheHive Default Instance | – | The instance used wherever `<default>` is given as instance ID. |
+| TheHive Max Cases / Max Alerts | `1000` / `1000` | How many objects the listing commands and dashboards return. |
+| TheHive Sort Cases / Sort Alerts | `-startDate` / `-date` | Their sort order (`-` = descending). |
+| Cortex Max Jobs / Sort Jobs | `100` / `-createdAt` | Same, for `cortexjobs`. |
+| TheHive TTP Catalog Name | `Enterprise Attack` | The MITRE catalogue a TTP's `patternId` is checked against before it is sent (`THC-122` names a rejected id). An unreadable catalogue lets the ids through, with a warning (`THC-120`). |
+| TheHive Creation Attachment Prefix | `events_` | File name prefix of the search results attached to a created case or alert. |
+| TheHive Creation Max Retry | `2` | How many attempts a case or alert creation gets. |
+| Splunk Sanitize Backslashes | `ENABLED` | Turns the literal `\n` and `\r` of a description into real line breaks. |
+| Splunk ES Alerts Index | – | ⚠️ Read but used by no action in this version. |
+| HTTP Timeout (seconds) | `60` | Upper bound of every single call to TheHive or Cortex (1–600). A server that accepts the connection and never answers would otherwise hold a Splunk worker. |
+| Cortex Job Max Wait (seconds) | `0` | How long Cortex may hold a running job's report before answering (`waitreport`). `0` answers at once. Keep it below the HTTP Timeout. |
+
+Under **Configuration**, tab **Logging**: the log level of the add-on (see [Logging](#logging)).
 
 ### Inputs
 
@@ -173,8 +200,8 @@ You can configure those parameters:
 
 ### Logging
 
-You can enable a "debug" logging mode (under **Configuration**) to have more information in searches/logs.
-By default, all logging files are created under `$SPLUNK_HOME/var/log/splunk/`
+You can enable a "debug" logging mode (under **Configuration**, tab **Logging**) to have more information in searches/logs. A level that cannot be applied falls back to INFO and says why in the log.
+By default, all logging files are created under `$SPLUNK_HOME/var/log/splunk/` and indexed into `_internal` with the sourcetype `tathehivecortex:log`. On a Splunk carrying Splunk_SA_CIM (every Enterprise Security deployment), the **alert action** logs are moved to `cim_modactions` with a `modular_alerts:<action>` sourcetype instead. The macro `` `thehive_cortex_logs` `` searches both. Every log identifier is listed in [log_ids.md](./log_ids.md).
 
 You will be able to have these logs in your search.log too.
 

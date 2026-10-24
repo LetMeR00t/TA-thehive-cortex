@@ -62,7 +62,7 @@ If not set, no filter will be applied.
 * (Optional) **title**: Filter on a specific title (Default: *)
 * (Optional) **assignee**: Filter on a specific assignee (separated by ";") (Default: *)
 * (Optional) **date**: Filter on a specific date using the format "\$date1\$ TO \$date2\$" (Default: *)
-* (Optional) **max_cases**: The maximum number of cases to return (Default: 100 or your own default)
+* (Optional) **max_cases**: The maximum number of cases to return (Default: 1000 or your own default)
 * (Optional) **sort_cases**: The way how your cases are sorted (Default: "-startDate" or your own default)
 
 **Note**: These parameters are the **expected fields name**.
@@ -233,7 +233,7 @@ If not set, no filter will be applied.
 * (Optional) **read**: Filter on a specific read status (Default: *)
 * (Optional) **source**: Filter on a specific source (Default: *)
 * (Optional) **date**: Filter on a specific date using the format "\$date1\$ TO \$date2\$" (Default: *)
-* (Optional) **max_alerts**: The maximum number of alerts to return (Default: 100 or your own default)
+* (Optional) **max_alerts**: The maximum number of alerts to return (Default: 1000 or your own default)
 * (Optional) **sort_alerts**: The way how your alerts are sorted (Default: "-date" or your own default)
 
 **Note**: These parameters are the **expected fields name**.
@@ -299,7 +299,7 @@ This command is used to get one specific alert from TheHive (\$..\$ are tokens e
 ```spl
 | makeresults
 | eval alert_id = "$alert_id$"
-| thehivealerts $$INSTANCE_ID$$
+| thehivegetalert $$INSTANCE_ID$$
 ```
 
 ### Parameters (input results)
@@ -412,9 +412,11 @@ Every new field will start with "thehive_*". As an exemple, you can recover:
 This command is used to get jobs from Cortex (\$..\$ are tokens examples but you can use it directly in your searches).
 
 
+```spl
 | makeresults
 | eval data = "$filter_data$", datatypes = "$filter_datatypes$", analyzers = "$filter_analyzers$", max_jobs="$max_jobs$", sort_jobs="$sort_jobs$"
 | cortexjobs $$INSTANCE_ID$$
+```
 
 ### Parameters (input results)
 One row will result in executing the script one time. So if you specify 5 rows, the script will be executed 5 times and all results will be appended.
@@ -480,36 +482,51 @@ still returned — with `cortex_job_finished = 0` — so filter on it if you mea
 
 ### Examples
 
+```spl
 | makeresults count=1
 | cortexjobs $$INSTANCE_ID$$
 	# This will recover any job
-	
+```
+```spl
 | makeresults count=1
-| eval data = "github.com" 
+| eval data = "github.com"
 | cortexjobs $$INSTANCE_ID$$
 	# This will recover any job concerning the exact match "github.com" as data
-	
+```
+```spl
 | makeresults count=1
 | eval datatypes = "ip"
 | cortexjobs $$INSTANCE_ID$$
 	# This will recover any job based on an "ip" data type
-		 
+```
+```spl
 | makeresults count=1
 | eval datatypes = "ip;domain"
 | cortexjobs $$INSTANCE_ID$$
 	# This will recover any job based on an "ip" or "domain" data type
-		
+```
+```spl
 | makeresults count=1
-| eval analyzers = "Abuse_Finder_3_0 ;GoogleDNS_resolve_1_0_0" 
+| eval analyzers = "Abuse_Finder_3_0 ;GoogleDNS_resolve_1_0_0"
 | cortexjobs $$INSTANCE_ID$$
 	# This will recover any job based on the "Abuse_Finder_3_0" or "GoogleDNS_resolve_1_0_0" analyzers
+```
+```spl
+| makeresults count=1
+| eval datatypes = "ip", wait = 30
+| cortexjobs $$INSTANCE_ID$$
+| where cortex_job_finished = 1
+	# Lets Cortex hold each running job's report up to 30 seconds, then keeps finished jobs only
+```
 
 ## cortexrun
 This command is used to run new jobs to Cortex (\$..\$ are tokens examples but you can use it directly in your searches).
 
+```spl
 | makeresults
 | eval data = "$data$", dataType = "$dataType$", tlp = "$tlp$", pap = "$pap$", analyzers = "$analyzers$"
 | cortexrun $$INSTANCE_ID$$
+```
 
 ### Parameters (input results)
 
@@ -552,28 +569,35 @@ Every new field will start with "cortex_*". As an exemple, you can recover:
 
 ### Examples
 
-
+```spl
 | makeresults
 | eval data = "8.8.8.8", dataType = "ip"
 | cortexrun $$INSTANCE_ID$$
 	# This will start as many jobs as there is available analyzers for the data type "ip" with TLP and PAP level set to AMBER (default)
-
+```
+```spl
 | makeresults
 | eval data = "8.8.8.8;8.8.4.4", dataType = "ip", analyzers = "GoogleDNS_resolve_1_0_0;Abuse_Finder_3_0"
 | cortexrun $$INSTANCE_ID$$
 	# This will start four jobs (two data and two analyzers) with TLP and PAP level set to AMBER (default)
-	 
+```
+```spl
 | makeresults
-| eval data = "8.8.8.8;8.8.4.4", dataType = "ip", tlp = "GREEN", pap = "WHITE", analyzers = "GoogleDNS_resolve_1_0_0 ;Abuse_Finder_3_0"
+| eval data = "8.8.8.8;8.8.4.4", dataType = "ip", tlp = 1, pap = 0, analyzers = "GoogleDNS_resolve_1_0_0 ;Abuse_Finder_3_0"
 | cortexrun $$INSTANCE_ID$$
 	# This will start four jobs (two data and two analyzers) with TLP and PAP level set respectively to GREEN and WHITE
+```
+
+⚠️ `tlp` and `pap` are **numbers** (0 to 3). A name such as `"GREEN"` is not accepted and makes the command return an error.
 
 
 ## cortexrefreshanalyzers
 This command lists the analyzers enabled on a Cortex instance. It only reads Cortex: the "Analyzers" dashboard (action REFRESH) is what writes its result into the `cortex_analyzers` lookup.
 
+```spl
 | makeresults
 | cortexrefreshanalyzers $$INSTANCE_ID$$
+```
 
 ### Parameters (input results)
 
@@ -598,7 +622,9 @@ One row per analyzer. Every field starts with "cortex_analyzer_" and comes from 
 
 ### Examples
 
+```spl
 | makeresults
 | cortexrefreshanalyzers $$INSTANCE_ID$$
 | table cortex_analyzer_name, cortex_analyzer_dataTypeList
 	# Lists the analyzers of the instance and the datatypes each one accepts
+```

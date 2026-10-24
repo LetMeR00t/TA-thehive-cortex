@@ -47,12 +47,12 @@ You have to specify some inputs:
 
 - **Job SID (input data)**: SID of a search (you can retrieve SIDs from Splunk > Activity > Jobs)
 - **Title**: Title for this new alert
-- **Severity**: Severity for this new alert. You can use the field `th_severity` in the search to set the severity value from the results. You can use the following values (values between parenthesis will be processed the same way): [(W,0,WHITE),(G,1,GREEN),(A,2,AMBER),(AS,3,AMBER+STRICT),(R,4,RED)]
+- **Severity**: Severity for this new alert (default MEDIUM). You can use the field `th_severity` in the search to set the severity value from the results. You can use the following values (values between parenthesis will be processed the same way): [(1,LOW),(2,MEDIUM),(3,HIGH),(4,CRITICAL)]
 - **Tags**: Tags for this new alert (they are added by specifiying values in the "Enter a new tag" input)
-- **TLP**: TLP for this new alert. You can use the field `th_tlp` in the search to set the TLP value from the results. You can use the following values (values between parenthesis will be processed the same way): [(W,0,WHITE),(G,1,GREEN),(A,2,AMBER),(R,3,RED)]
-- **PAP**: PAP for this new alert. You can use the field `th_pap` in the search to set the PAP value from the results. You can use the following values (values between parenthesis will be processed the same way): [(W,0,WHITE),(G,1,GREEN),(A,2,AMBER),(R,3,RED)]
+- **TLP**: TLP for this new alert (default AMBER). You can use the field `th_tlp` in the search to set the TLP value from the results. You can use the following values (values between parenthesis will be processed the same way): [(W,0,WHITE),(G,1,GREEN),(A,2,AMBER),(AS,3,AMBER+STRICT),(R,4,RED)]
+- **PAP**: PAP for this new alert (default AMBER). You can use the field `th_pap` in the search to set the PAP value from the results. You can use the following values (values between parenthesis will be processed the same way): [(W,0,WHITE),(G,1,GREEN),(A,2,AMBER),(R,3,RED)]
 - **Source**: source of this alert (you can provide a field name to set this value from results)
-- **Timestamp field**: field containing a valid EPOCH timestamp (10-digit for s;13-digit for ms) - if not present, default to now()
+- **Timestamp field**: field containing a valid EPOCH timestamp (seconds or milliseconds, a fractional part is accepted) - if not present, default to now()
 - **Unique ID field**: the unique reference for this alert. If a field name is provided, it is used to group results rows in several alerts - default is SPK+now()
 - **Type**: type of alert (default is "alert")
 - **Case Template**: Case template to use by default when importing alert into a case
@@ -109,60 +109,39 @@ You have to specify some inputs:
 
 - **Job SID (input data)**: SID of a search (you can retrieve SIDs from Splunk > Activity > Jobs)
 - **Title**: Title for this new case
-- **Severity**: Severity for this new case. You can use the field `th_severity` in the search to set the severity value from the results. You can use the following values (values between parenthesis will be processed the same way): [(W,0,WHITE),(G,1,GREEN),(A,2,AMBER),(AS,3,AMBER+STRICT),(R,4,RED)]
+- **Severity**: Severity for this new case (default MEDIUM). You can use the field `th_severity` in the search to set the severity value from the results. You can use the following values (values between parenthesis will be processed the same way): [(1,LOW),(2,MEDIUM),(3,HIGH),(4,CRITICAL)]
 - **Tags**: Tags for this new case (they are added by specifiying values in the "Enter a new tag" input)
-- **TLP**: TLP for this new case. You can use the field `th_tlp` in the search to set the TLP value from the results. You can use the following values (values between parenthesis will be processed the same way): [(W,0,WHITE),(G,1,GREEN),(A,2,AMBER),(R,3,RED)]
-- **PAP**: PAP for this new case. You can use the field `th_pap` in the search to set the PAP value from the results. You can use the following values (values between parenthesis will be processed the same way): [(W,0,WHITE),(G,1,GREEN),(A,2,AMBER),(R,3,RED)]
+- **TLP**: TLP for this new case (default AMBER). You can use the field `th_tlp` in the search to set the TLP value from the results. You can use the following values (values between parenthesis will be processed the same way): [(W,0,WHITE),(G,1,GREEN),(A,2,AMBER),(AS,3,AMBER+STRICT),(R,4,RED)]
+- **PAP**: PAP for this new case (default AMBER). You can use the field `th_pap` in the search to set the PAP value from the results. You can use the following values (values between parenthesis will be processed the same way): [(W,0,WHITE),(G,1,GREEN),(A,2,AMBER),(R,3,RED)]
 - **Source**: source of this case (you can provide a field name to set this value from results)
-- **Timestamp field**: field containing a valid EPOCH timestamp (10-digit for s;13-digit for ms) - if not present, default to now()
+- **Timestamp field**: field containing a valid EPOCH timestamp (seconds or milliseconds, a fractional part is accepted) - if not present, default to now()
 - **Unique ID field**: the unique reference for this case. If a field name is provided, it is used to group results rows in several alerts
 - **Case Template**: Case template to use by default when importing alert into a case
 - **Scope**: a swithc to include all fields from result set (as type "other") or only field names listed in lookup table `thehive_datatypes`
 
 The search will create the new case accordingly
 
+## "TheHive: Statistics" dashboard
+
+Charts the distribution of one field of one TheHive entity — the same as TheHive's own dashboards, through the `thehivegetstats` command. Pick an **Instance**, a **Model** (Alert, Case, Observable, Task, TTP, Audit, …), a **Field** and a period, on the creation or the update date.
+
 # Dashboards for Cortex
 
-## "Cortex: Jobs" dashboard
+## "Cortex: Analyzers" dashboard
 
-The application integrates a preconfigured dashboard with searches allowing you to easily interface with Cortex.
+Lists the analyzers enabled on a Cortex instance, as Splunk knows them.
 
-![Jobs list](../images/jobs_list.png)
+- **LIST** reads the `cortex_analyzers` lookup.
+- **REFRESH** queries Cortex (`cortexrefreshanalyzers`) and rewrites that lookup. Run it after enabling or disabling an analyzer in Cortex.
 
-### Cortex History
+![Analyzers](../images/analyzers.png)
 
-You can retrieve the history of jobs in Cortex using the action "LIST".
-For each job, you can see :
+## Cortex jobs: from a search
 
-- **Status**: Current status for the job
-- **Data**: Data and datatype for the job
-- **Analyzer**: Analyzer used for the job
-- **Created At**: Date and time for the creation of the job
-- **Start Date**: Date and time for the start of the job (a created job could not be executed immediately)
-- **Created by**: User/Organization used to created the job
-- **TLP**: TLP specified for the job
-- **ID**: ID of the job
+Since v4.0.0 the add-on ships **no Cortex jobs dashboard**: its former "Cortex: Jobs" view did not survive the move to UCC. Jobs are listed and started from a search, with [`cortexjobs`](./commands.md#cortexjobs) and [`cortexrun`](./commands.md#cortexrun), or by an alert with the **Cortex: Run a new job** action.
 
-**Note: You can click on the ID to view the result of the job directly on Cortex** (you should be authenticated to Cortex)
+# Monitoring the add-on
 
-You can set filters for the history:
+## "Audit Logs" dashboard
 
-- **Data**: filtering the "data" field, regular expressions are not working, it must be the exact match string
-- **Data Types**: filtering on the "data types", several values can be specified
-- **Analyzers**: filtering on the "analyzers", several values can be specified
-
-### Run new tasks
-
-You can start new analyses from Splunk using the "RUN" action.
-
-![Jobs run](../images/jobs_run.png)
-
-You have to specify some inputs:
-
-- **Data**: data you want to analyze separated by a semicolon, they must be of the same data type
-- **Data type**: corresponding to the data type of data
-- **TLP**: TLP level to use for this analysis
-- **PAP**  PAP level to use for this analysis
-- **Analyzers**: analyzers to use, if "any" is set, it will use any enabled analyzers for the given data type
-
-The search will execute all jobs (one data with one analyzer) and return information such as the job ID.
+Shows what the add-on itself did — modular inputs, alert actions and search commands — from its own logs, through the `` `thehive_cortex_logs` `` macro. It refreshes every 60 seconds. If it stays empty, your role probably cannot search `_internal` (or `cim_modactions`, where Splunk_SA_CIM moves the alert action logs): see [Logging](./installation.md#logging).
