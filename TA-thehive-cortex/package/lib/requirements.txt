@@ -12,12 +12,12 @@ splunktaucclib==8.2.0
 splunk-sdk==2.1.1
 solnlib==7.0.0
 urllib3==1.26.20
-certifi==2026.10.19
-packaging==26.0
+certifi==2026.10.23
+packaging==26.3
 deprecation==2.1.0
 requests==2.32.5
-idna==3.15
-charset-normalizer==3.4.1
+idna==3.20
+charset-normalizer==3.5.2
 tomark==0.1.4
 
 # Transitive, pinned at the versions the resolver currently produces. They were
@@ -31,4 +31,4 @@ sortedcontainers==2.4.0
 # thehive4py 2.1.0, the agreed upgrade target for the vendored copy, declares
 # `typing_extensions==4.*` as a HARD dependency. Removing it now would mean
 # putting it back with that upgrade, and forgetting would fail at import time.
-typing-extensions==4.15.0
+typing-extensions==4.16.0
