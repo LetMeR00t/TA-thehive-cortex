@@ -84,7 +84,7 @@ You can monitor the executions of your inputs directly in the "Audit Logs" dashb
 
 ![Inputs](../images/inputs_audit_logs.png)
 
-Three types of inputs are available: Alerts & Cases, Observables and Audit
+Six types of inputs are available: Alerts & Cases, Observables, Audit, Timeline, Tasks and Instance Status. Each of the first five also comes as a one-shot "Backfill" input.
 
 #### Alerts & Cases
 

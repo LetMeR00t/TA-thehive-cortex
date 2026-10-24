@@ -33,6 +33,9 @@
   - [Tips \& Tricks](#tips--tricks)
     - [How to fill in form fields](#how-to-fill-in-form-fields)
     - [Alert overall description](#alert-overall-description)
+    - [Add observable(s) overall description](#add-observables-overall-description)
+    - [Add timeline event overall description](#add-timeline-event-overall-description)
+    - [Cortex run a new job overall description](#cortex-run-a-new-job-overall-description)
     - [Manage fields to become observables](#manage-fields-to-become-observables)
       - [Here some precisions](#here-some-precisions)
       - [Use fields to provide values for the alert](#use-fields-to-provide-values-for-the-alert)
@@ -51,6 +54,17 @@ it will be initialised with the default datatypes (see [example file](../TA-theh
 - set the alert action "thehive_create_a_new_alert": it will create an alert into TheHive.
 - set the alert action "thehive_add_observables": it will add observable(s) to an existing alert or case into TheHive using internal IDs (~12345).
 - you can pass additional info, TLP per observables, custom fields, modify title, description, etc. directly from the results of your search.
+
+The add-on ships six alert actions (also available as Splunk ES adaptive responses):
+
+| Alert action | Label in Splunk | What it does |
+|---|---|---|
+| `thehive_create_a_new_alert` | TheHive - Create a new alert | Creates an alert in TheHive (UC1, UC2, UC4) |
+| `thehive_create_a_new_case` | TheHive - Create a new case | Creates a case in TheHive (UC3) |
+| `thehive_run_function` | TheHive - Run a function | Pushes the results to a TheHive Function — requires a licence that includes Functions (UC5) |
+| `thehive_add_observables` | TheHive - Add observable(s) | Adds observables to an existing alert or case ([description](#add-observables-overall-description)) |
+| `thehive_add_timeline_event` | TheHive - Add timeline event | Adds a custom event to the timeline of an existing case ([description](#add-timeline-event-overall-description)) |
+| `cortex_run_a_new_job` | Cortex - Run a new job | Runs Cortex analyzers on a field of the results ([description](#cortex-run-a-new-job-overall-description)) |
 
 > Please note that the following examples are only there to formalize example of data and explain how the script is processing them
 
@@ -369,6 +383,16 @@ When used as an Adaptive Response, the Splunk **Finding** must contain fields na
 
 **Note for Adaptive Responses (Splunk ES):**
 You can dynamically pass field names issued from the Splunk **Finding** into the Adaptive Response parameters to map them correctly to the timeline event fields.
+
+### Cortex run a new job overall description
+
+The `cortex_run_a_new_job` alert action starts one Cortex job per result row and per analyzer. It does not wait for the jobs: read their status and reports afterwards with the [`cortexjobs`](commands.md#cortexjobs) command.
+
+- Cortex Instance ID: one of the instances of type Cortex defined in the configuration. You can use "&lt;default&gt;" to use the default instance defined in the configuration page.
+- Data field name: the field of the results holding the value to analyze (default: `data`).
+- Datatype field name: the field of the results holding its Cortex datatype, e.g. `ip`, `domain` (default: `datatype`).
+- Analyzers: `all` to run every analyzer accepting the datatype, or analyzer names separated by `;`. Required.
+- TLP / PAP: the level sent with each job (default: AMBER).
 
 ### Manage fields to become observables
 

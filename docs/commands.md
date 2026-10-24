@@ -37,6 +37,10 @@ Every command requires an "Instance ID" parameter which is used to specify which
 		- [Parameters (input results)](#parameters-input-results-7)
 		- [Return](#return-7)
 		- [Examples](#examples-7)
+	- [cortexrefreshanalyzers](#cortexrefreshanalyzers)
+		- [Parameters (input results)](#parameters-input-results-8)
+		- [Return](#return-8)
+		- [Examples](#examples-8)
 
 
 
@@ -505,7 +509,7 @@ This command is used to run new jobs to Cortex (\$..\$ are tokens examples but y
 
 | makeresults
 | eval data = "$data$", dataType = "$dataType$", tlp = "$tlp$", pap = "$pap$", analyzers = "$analyzers$"
-| cortexjobs $$INSTANCE_ID$$
+| cortexrun $$INSTANCE_ID$$
 
 ### Parameters (input results)
 
@@ -564,3 +568,37 @@ Every new field will start with "cortex_*". As an exemple, you can recover:
 | cortexrun $$INSTANCE_ID$$
 	# This will start four jobs (two data and two analyzers) with TLP and PAP level set respectively to GREEN and WHITE
 
+
+## cortexrefreshanalyzers
+This command lists the analyzers enabled on a Cortex instance. It only reads Cortex: the "Analyzers" dashboard (action REFRESH) is what writes its result into the `cortex_analyzers` lookup.
+
+| makeresults
+| cortexrefreshanalyzers $$INSTANCE_ID$$
+
+### Parameters (input results)
+
+None: the instance ID is the only parameter. The command runs once, whatever the number of input rows.
+
+### Return
+
+One row per analyzer. Every field starts with "cortex_analyzer_" and comes from the analyzer as Cortex describes it. As an example, you can recover:
+
+ - cortex_analyzer_id
+ - cortex_analyzer_name
+ - cortex_analyzer_analyzerDefinitionId
+ - cortex_analyzer_description
+ - cortex_analyzer_version
+ - cortex_analyzer_author
+ - cortex_analyzer_url
+ - cortex_analyzer_license
+ - cortex_analyzer_dataTypeList (multivalue)
+ - cortex_analyzer_rate
+ - cortex_analyzer_rateUnit
+ - cortex_analyzer_jobCache
+
+### Examples
+
+| makeresults
+| cortexrefreshanalyzers $$INSTANCE_ID$$
+| table cortex_analyzer_name, cortex_analyzer_dataTypeList
+	# Lists the analyzers of the instance and the datatypes each one accepts

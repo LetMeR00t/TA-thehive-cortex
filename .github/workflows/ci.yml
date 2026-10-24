@@ -157,6 +157,11 @@ jobs:
         # search. Two views were dead for four releases that way.
         run: python tools/checks/views_are_reachable.py
 
+      - name: Every declaration is documented
+        # cortexrefreshanalyzers had no online help and no doc, and
+        # cortex_run_a_new_job no doc: the gap sits between two files (#26).
+        run: python tools/checks/declarations_documented.py
+
       - name: Every setting is consumed
         # A setting read from the configuration and then dropped looks wired
         # from every angle. Only the last hop is missing.

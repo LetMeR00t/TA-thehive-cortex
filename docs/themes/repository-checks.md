@@ -29,6 +29,7 @@ python tools/checks/views_are_reachable.py
 python tools/checks/settings_are_used.py
 python tools/checks/collection_options_honoured.py
 python tools/checks/alert_action_params.py
+python tools/checks/declarations_documented.py
 PYTHON=python3.9 tools/checks/pins_match_build.sh
 tools/checks/tests_on_both_pythons.sh
 ```
@@ -171,3 +172,16 @@ list of 19 `extra_data` gaps reached zero on 2026-09-27 (every option is now
 collected, #37) and was removed rather than left empty. It also refuses an
 input that carries its own literal allow-list instead of calling
 `options_for`.
+
+### `declarations_documented.py`
+
+Compares what the add-on declares with what announces it: `commands.conf`
+with the `<name>-command` stanzas of `searchbnf.conf` and the `## <name>`
+sections of `docs/commands.md`; every `alert_actions.conf` stanza with
+`docs/alert_actions_and_adaptive_responses.md`; and the "<N> types of inputs"
+sentence of `docs/installation.md` with the input families of
+`globalConfig.json` (regular and one-shot count once). Seen red on its first
+run with the three gaps #26 measured: `cortexrefreshanalyzers` had no online
+help and no documentation, four alert actions out of six were never named in
+their own documentation, and the installation guide announced three input
+types for six. Neither file of a pair can notice the other is missing.
