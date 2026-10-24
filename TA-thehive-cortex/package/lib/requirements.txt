@@ -12,7 +12,7 @@ splunktaucclib==8.2.0
 splunk-sdk==2.1.1
 solnlib==7.0.0
 urllib3==1.26.20
-certifi==2026.2.25
+certifi==2026.10.19
 packaging==26.0
 deprecation==2.1.0
 requests==2.32.5
