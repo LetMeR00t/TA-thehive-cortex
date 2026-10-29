@@ -16,7 +16,7 @@ The Add-on uses the [Splunk UCC Generator](https://splunk.github.io/addonfactory
 To build the application, use the script -- it is the only supported way:
 
 ```bash
-PYTHON=/path/to/python3.9 tools/build.sh 5.0.0
+PYTHON=/path/to/python3.9 tools/build.sh 5.1.0
 ```
 
 It runs `ucc-gen build` with the interpreter named explicitly, purges compiled
@@ -113,8 +113,8 @@ was redone. Check the new tree **before** deleting the old one.
 ```bash
 APP="/c/Program Files/Splunk/etc/apps/TA-thehive-cortex"; X="$(mktemp -d)"
 cp -r "$APP/local" "$X.local.bak" &&
-tar --force-local -xzf TA-thehive-cortex/TA-thehive-cortex-5.0.0.tar.gz -C "$X" &&
-grep -q '^version = 5.0.0' "$X/TA-thehive-cortex/default/app.conf" &&
+tar --force-local -xzf TA-thehive-cortex/TA-thehive-cortex-5.1.0.tar.gz -C "$X" &&
+grep -q '^version = 5.1.0' "$X/TA-thehive-cortex/default/app.conf" &&
 find "$APP" -mindepth 1 -maxdepth 1 ! -name local -exec rm -rf {} + &&
 cp -r "$X/TA-thehive-cortex/." "$APP/" &&
 diff -rq "$X.local.bak" "$APP/local" && echo "deployed, local/ intact"

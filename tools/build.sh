@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Build the add-on archive the one way that ships what we think it ships.
 #
-#     PYTHON=/path/to/python3.9 tools/build.sh 5.0.0
+#     PYTHON=/path/to/python3.9 tools/build.sh 5.1.0
 #
 # ⚠️ Every step below used to be a line of prose in a document, to be
 # remembered by whoever built. Measured on a real Windows build of 5.0.0 that
@@ -34,7 +34,7 @@ set -euo pipefail
 
 VERSION="${1:-}"
 if [ -z "$VERSION" ]; then
-	echo "usage: PYTHON=<python3.9> $0 <version>   (e.g. 5.0.0)" >&2
+	echo "usage: PYTHON=<python3.9> $0 <version>   (e.g. 5.1.0)" >&2
 	exit 2
 fi
 
