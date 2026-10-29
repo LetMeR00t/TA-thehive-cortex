@@ -31,6 +31,7 @@ from thehive4py.query.sort import Asc, SortExpr
 from common import LoggerFile, Settings, Utils
 from ta_logging import setup_logging
 from timeline_events import TimelineEventsMixin
+import object_dates
 
 
 def initialize_thehive_instances(keywords, settings, acronym, logger_name="script"):
@@ -550,6 +551,21 @@ class TheHive4Splunk(TimelineEventsMixin, TheHiveApi):
     def logger_file(self):
         return self._logger_file
 
+    def _stamp_event_time(self, event: dict, date_field: str, extra_dates: tuple = ()) -> None:
+        """Convert a collected object's dates to seconds and set its _time, without raising.
+
+        A date TheHive left out used to raise KeyError and lose the whole pull
+        (see object_dates). The object is kept; the WARNING names the missing
+        date and the fields that were present -- names only, never values.
+        """
+        missing = object_dates.stamp(event, date_field, extra_dates, now=time.time())
+        if missing:
+            self.logger_file.warn(
+                id="TH127",
+                message=f"{event.get('_type', 'Object')} without {', '.join(missing)}: _time taken from the next available date. "
+                f"Fields present: {', '.join(sorted(event))}",
+            )
+
     def resolve_case_id(self, case_id_or_number: str) -> str:
         """This is used to resolve a case ID from either an internal ID (~123) or a case number (456)
 
@@ -656,12 +672,8 @@ class TheHive4Splunk(TimelineEventsMixin, TheHiveApi):
                 
                 # Post processing before indexing
                 ### Generic for all inputs
-                event["_createdAt"] = event["_createdAt"] / 1000
-                if "_updatedAt" in event and event["_updatedAt"] is not None:
-                    event["_updatedAt"] = event["_updatedAt"] / 1000
-
                 # Set the _time of the event to the created/updated time
-                event["_time"] = int(event.get(kwargs["date"], event.get("_createdAt", 0)))
+                self._stamp_event_time(event, kwargs["date"])
 
                 self._add_alert_details(event, kwargs["additional_information"])
 
@@ -795,12 +807,8 @@ class TheHive4Splunk(TimelineEventsMixin, TheHiveApi):
                     event["endDate"] = event["endDate"] / 1000
 
                 ### Generic for all inputs
-                event["_createdAt"] = event["_createdAt"] / 1000
-                if "_updatedAt" in event and event["_updatedAt"] is not None:
-                    event["_updatedAt"] = event["_updatedAt"] / 1000
-
                 # Set the _time of the event to the created/updated time
-                event["_time"] = int(event.get(kwargs["date"], event.get("_createdAt", 0)))
+                self._stamp_event_time(event, kwargs["date"])
 
                 if "observables" in kwargs["additional_information"]:
                     ## OBSERVABLES ##
@@ -997,12 +1005,8 @@ class TheHive4Splunk(TimelineEventsMixin, TheHiveApi):
                 # Post processing before indexing
 
                 ### Generic for all inputs
-                event["_createdAt"] = event["_createdAt"] / 1000
-                if "_updatedAt" in event and event["_updatedAt"] is not None:
-                    event["_updatedAt"] = event["_updatedAt"] / 1000
-
                 # Set the _time of the event to the created/updated time
-                event["_time"] = int(event.get(kwargs["date"], event.get("_createdAt", 0)))
+                self._stamp_event_time(event, kwargs["date"])
 
                 # Remove underscore at the beginning
                 for field in [
@@ -1100,12 +1104,8 @@ class TheHive4Splunk(TimelineEventsMixin, TheHiveApi):
                 # Post processing before indexing
 
                 ### Generic for all inputs
-                event["_createdAt"] = event["_createdAt"] / 1000
-                if "_updatedAt" in event and event["_updatedAt"] is not None:
-                    event["_updatedAt"] = event["_updatedAt"] / 1000
-
-                # Set the _time of the event to the created/updated time
-                event["_time"] = int(event["_createdAt"])
+                # Set the _time of the event to the created time
+                self._stamp_event_time(event, "_createdAt")
 
                 # Remove underscore at the beginning
                 for field in [
@@ -1178,21 +1178,9 @@ class TheHive4Splunk(TimelineEventsMixin, TheHiveApi):
             # Post processing before indexing
 
             ### Generic for all inputs
-            event["_createdAt"] = event["_createdAt"] / 1000
-            if "_updatedAt" in event and event["_updatedAt"] is not None:
-                event["_updatedAt"] = event["_updatedAt"] / 1000
-            if "_startDate" in event and event["_startDate"] is not None:
-                event["_startDate"] = event["_startDate"] / 1000
-
             # Set the _time of the event to the created/updated/start time
             # Use the date field specified in kwargs or default to createdAt
-            date_field = kwargs.get("date_field", "createdAt")
-            if date_field == "updatedAt" and "_updatedAt" in event:
-                event["_time"] = int(event["_updatedAt"])
-            elif date_field == "startDate" and "_startDate" in event:
-                event["_time"] = int(event["_startDate"])
-            else:
-                event["_time"] = int(event["_createdAt"])
+            self._stamp_event_time(event, "_" + kwargs.get("date_field", "createdAt").lstrip("_"), ("_startDate",))
 
             # Remove underscore at the beginning
             for field in [
