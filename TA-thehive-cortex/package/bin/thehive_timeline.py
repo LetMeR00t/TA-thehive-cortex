@@ -11,6 +11,8 @@ from splunklib import modularinput as smi
 # Local application imports
 import globals
 from thehive import create_thehive_instance_modular_input
+from logger_file import LoggerFile
+from collection_window import CollectionWindows
 from ta_logging import setup_logging
 from thehive4py.query.filters import Between
 from thehive4py.query.sort import Desc
@@ -31,6 +33,8 @@ class THEHIVE_TIMELINE(smi.Script):
         scheme.add_argument(smi.Argument('timeline_event_kinds', required_on_create=False))
         scheme.add_argument(smi.Argument('max_events_per_case', required_on_create=False))
         scheme.add_argument(smi.Argument('max_size_value', required_on_create=False))
+        scheme.add_argument(smi.Argument('lag_seconds', required_on_create=False))
+        scheme.add_argument(smi.Argument('max_catchup_seconds', required_on_create=False))
         scheme.add_argument(smi.Argument('fields_removal', required_on_create=False))
         return scheme
 
@@ -52,6 +56,10 @@ class THEHIVE_TIMELINE(smi.Script):
             def get_arg(self, key): return self.item.get(key)
             def get_output_index(self): return self.item.get("index", "default")
 
+        windows = CollectionWindows(inputs.metadata, stanza, input_item, LoggerFile(logger=custom_logger, command_id="MI-THTL", exec_id=exec_id))
+        if not windows.collect_here():
+            return
+
         helper = MockHelper(input_item, stanza, custom_logger, inputs, exec_id)
         (thehive, configuration, logger_file) = create_thehive_instance_modular_input(
             instance_id=helper.get_arg("instance_id"), 
@@ -68,14 +76,14 @@ class THEHIVE_TIMELINE(smi.Script):
         fields_removal = helper.get_arg("fields_removal") or ""
 
         # Logic for incremental polling
-        # We poll cases updated in the interval
-        interval = int(input_item.get("interval", 60))
+        # The window continues from this input's watermark (collection_window): a failed run is collected again
         now = time.time()
-        # Floor now to the minute (or interval) to avoid seconds shift
-        now = now - (now % interval)
-        d2 = int(now * 1000)
-        d1 = int((now - interval) * 1000)
-        
+        pull = "timeline:_updatedAt"
+        span = windows.next(pull, now)
+        if span is None:
+            return
+        d1, d2 = span
+
         # We use _updatedAt to find cases that might have new timeline events
         filters = Between("_updatedAt", d1, d2)
         
@@ -108,6 +116,7 @@ class THEHIVE_TIMELINE(smi.Script):
                 ))
 
             logger_file.info(id="2", message=f"Successfully indexed {len(new_events)} timeline events.")
+            windows.done(pull, span, len(new_events))
 
         except Exception as e:
             logger_file.error(id="ERR", message=f"Error during timeline collection: {str(e)}")

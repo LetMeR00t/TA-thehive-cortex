@@ -21,6 +21,8 @@ from _isolation import temporary_mocks, stub_splunklib  # noqa: E402
 
 APP_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(APP_ROOT, 'TA-thehive-cortex', 'package', 'bin'))
+# collection_window lives there; ta_thehive_cortex_declare (mocked here) adds it in Splunk
+sys.path.insert(0, os.path.join(APP_ROOT, 'TA-thehive-cortex', 'package', 'bin', 'ta_thehive_cortex'))
 
 # ⚠️ splunklib.modularinput gets a REAL stub, not a MagicMock: the module
 # under test does `class X(smi.Script)`, and inheriting from a mock makes
@@ -33,9 +35,15 @@ class TestTheHiveTasksIntegration(unittest.TestCase):
     def setUp(self):
         self.script = thehive_tasks.THEHIVE_TASKS()
         
+    @patch('thehive_tasks.CollectionWindows')
     @patch('thehive_tasks.create_thehive_instance_modular_input')
     @patch('thehive_tasks.setup_logging')
-    def test_stream_events_success(self, mock_logging, mock_create_mi):
+    def test_stream_events_success(self, mock_logging, mock_create_mi, mock_windows):
+        # The watermark (KV store, cluster state) is collection_window's job and
+        # has its own tests; here it hands out one window.
+        windows = mock_windows.return_value
+        windows.collect_here.return_value = True
+        windows.next.return_value = (1672534500000, 1672534800000)
         # Setup mocks
         mock_thehive = MagicMock()
         mock_logger_file = MagicMock()
@@ -69,6 +77,12 @@ class TestTheHiveTasksIntegration(unittest.TestCase):
         event = mock_ew.write_event.call_args[0][0]
         # In our simplified test, we don't have the real Event object, but we verify it's called
         self.assertIsNotNone(event)
+
+        # The window asked for is the one handed out, and the watermark moves
+        # only once the event was written.
+        windows.next.assert_called_once()
+        self.assertEqual("tasks:_updatedAt", windows.next.call_args[0][0])
+        windows.done.assert_called_once_with("tasks:_updatedAt", (1672534500000, 1672534800000), 1)
 
 if __name__ == '__main__':
     unittest.main()
