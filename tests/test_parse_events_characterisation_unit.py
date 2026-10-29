@@ -516,6 +516,20 @@ class TestTtp(Base):
         self.assertEqual("T1070", alert["ttps"][0]["patternId"])
         self.assertEqual("defense-evasion", alert["ttps"][0]["tactic"])
 
+    def test_splunk_es_multivalue_annotations_give_one_ttp_per_technique(self):
+        # Splunk sends multivalue fields as a joined column plus `__mv_<field>`;
+        # 5.0.0 sent one procedure "T1110, T1078", which TheHive rejects.
+        alert, _ = self.one({
+            "unique": "r",
+            "_time": "1700000000",
+            "annotations.mitre_attack.mitre_tactic": "credential-access\ninitial-access",
+            "__mv_annotations.mitre_attack.mitre_tactic": "$credential-access$;$initial-access$",
+            "annotations.mitre_attack": "T1110\nT1078",
+            "__mv_annotations.mitre_attack": "$T1110$;$T1078$",
+        })
+        self.assertEqual(["T1110", "T1078"], [t["patternId"] for t in alert["ttps"]])
+        self.assertEqual(["credential-access", "initial-access"], [t["tactic"] for t in alert["ttps"]])
+
 
 class TestReinjectedTable(Base):
 

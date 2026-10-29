@@ -230,6 +230,13 @@ def _read_epoch(raw, field_name, logger_file):
     return None
 
 
+def _split_joined(value):
+    """A value `_normalise_row` may have joined with ", ", as a list again."""
+    if isinstance(value, list):
+        return value
+    return [part.strip() for part in str(value).split(",") if part.strip()]
+
+
 def _resolve_ttps(alert, row, ttps):
     """TTPs given explicitly, or failing that the ones Splunk ES annotated."""
     if len(ttps) > 0:
@@ -241,12 +248,13 @@ def _resolve_ttps(alert, row, ttps):
     ):
         return
 
-    tactics = row["annotations.mitre_attack.mitre_tactic"]
-    technics = row["annotations.mitre_attack"]
-    if not isinstance(tactics, list):
-        tactics = [tactics]
-    if not isinstance(technics, list):
-        technics = [technics]
+    # ⚠️ `_normalise_row` has already joined multivalue fields into one
+    # ", "-separated string; split them back, or a finding with two techniques
+    # becomes ONE procedure with patternId "T1110, T1078", which TheHive
+    # rejects ("Invalid json") and the alert ends up with no TTP at all.
+    # Technique ids and tactic names never contain a comma.
+    tactics = _split_joined(row["annotations.mitre_attack.mitre_tactic"])
+    technics = _split_joined(row["annotations.mitre_attack"])
 
     date = datetime.datetime.fromtimestamp(
         int(float(row.get("_time", time.time())))

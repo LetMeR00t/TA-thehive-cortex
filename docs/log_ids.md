@@ -439,9 +439,9 @@ explains the manual purge of `etc/apps/learned/local/props.conf`. Fall back to
 | `THC-87` | 212 | warn | timestamp_field '{…}' holds a non-numeric value ('{…}'); falling back to curr… |
 | `THC-80` | 219 | debug | new Timestamp from row: {} |
 | `THC-88` | 225 | warn | timestamp_field '{…}' is neither a 10 nor a 13 digit epoch ('{…}'); falling b… |
-| `THC-115` | 268 | debug | observables found for an alert: … |
-| `THC-116` | 273 | debug | No observable found in current row (sourceRef={…}). |
-| `THC-77` | 309 | debug | Append results to description as markdown table |
+| `THC-115` | 276 | debug | observables found for an alert: … |
+| `THC-116` | 281 | debug | No observable found in current row (sourceRef={…}). |
+| `THC-77` | 317 | debug | Append results to description as markdown table |
 
 ## `ta_thehive_cortex/modalert_thehive_create_a_new_alert_helper.py`
 
