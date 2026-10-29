@@ -460,6 +460,27 @@ class TestTtp(Base):
         self.assertEqual("Notable event", alert["title"],
                          "the alert itself is unaffected by one unreadable field")
 
+    def test_a_multivalue_ttp_field_gives_one_ttp_per_value(self):
+        # Splunk sends a multivalue `ttp` as a joined column plus `__mv_ttp`;
+        # 5.0.0 split the joined string on "::" only, found 5 parts and dropped
+        # every TTP of the field as malformed.
+        alert, log = self.one({
+            "unique": "r",
+            "ttp": "defense-evasion::T1070::2026-01-15\ncredential-access::T1110::2026-01-15",
+            "__mv_ttp": "$defense-evasion::T1070::2026-01-15$;$credential-access::T1110::2026-01-15$",
+        }, catalogue={"T1070", "T1110"})
+        self.assertEqual(["T1070", "T1110"], [t["patternId"] for t in alert["ttps"]])
+        self.assertEqual("", log.get("helper_error", ""))
+
+    def test_one_malformed_value_of_a_multivalue_ttp_keeps_the_others(self):
+        alert, log = self.one({
+            "unique": "r",
+            "ttp": "defense-evasion::T1070::2026-01-15\nnonsense",
+            "__mv_ttp": "$defense-evasion::T1070::2026-01-15$;$nonsense$",
+        }, catalogue={"T1070"})
+        self.assertEqual(["T1070"], [t["patternId"] for t in alert["ttps"]])
+        self.assertIn("nonsense", log["helper_error"])
+
     def test_one_unreadable_ttp_does_not_lose_the_other_rows(self):
         """⚠️ The real cost of the crash, and the reason it was `serious`: the
         batch died, not the field. A row nobody had a problem with disappeared
