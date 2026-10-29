@@ -2588,6 +2588,40 @@
                             ]
                         },
                         {
+                            "field": "lag_seconds",
+                            "label": "Lag (seconds)",
+                            "type": "text",
+                            "defaultValue": "60",
+                            "help": "Collect only up to this many seconds ago, so TheHive has made its newest entries visible. Windows never overlap and never leave a gap.",
+                            "validators": [
+                                {
+                                    "type": "number",
+                                    "range": [
+                                        0,
+                                        3600
+                                    ],
+                                    "errorMsg": "Lag must be a number between 0 and 3600"
+                                }
+                            ]
+                        },
+                        {
+                            "field": "max_catchup_seconds",
+                            "label": "Max catch-up per run (seconds)",
+                            "type": "text",
+                            "defaultValue": "21600",
+                            "help": "After an outage the input collects the missed time, at most this much per run.",
+                            "validators": [
+                                {
+                                    "type": "number",
+                                    "range": [
+                                        60,
+                                        604800
+                                    ],
+                                    "errorMsg": "Max catch-up must be a number between 60 and 604800"
+                                }
+                            ]
+                        },
+                        {
                             "field": "fields_removal",
                             "label": "Fields removal",
                             "type": "text",
@@ -2966,6 +3000,40 @@
                                         1,
                                         1000000
                                     ]
+                                }
+                            ]
+                        },
+                        {
+                            "field": "lag_seconds",
+                            "label": "Lag (seconds)",
+                            "type": "text",
+                            "defaultValue": "60",
+                            "help": "Collect only up to this many seconds ago, so TheHive has made its newest entries visible. Windows never overlap and never leave a gap.",
+                            "validators": [
+                                {
+                                    "type": "number",
+                                    "range": [
+                                        0,
+                                        3600
+                                    ],
+                                    "errorMsg": "Lag must be a number between 0 and 3600"
+                                }
+                            ]
+                        },
+                        {
+                            "field": "max_catchup_seconds",
+                            "label": "Max catch-up per run (seconds)",
+                            "type": "text",
+                            "defaultValue": "21600",
+                            "help": "After an outage the input collects the missed time, at most this much per run.",
+                            "validators": [
+                                {
+                                    "type": "number",
+                                    "range": [
+                                        60,
+                                        604800
+                                    ],
+                                    "errorMsg": "Max catch-up must be a number between 60 and 604800"
                                 }
                             ]
                         },

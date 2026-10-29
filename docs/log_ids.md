@@ -761,17 +761,17 @@ explains the manual purge of `etc/apps/learned/local/props.conf`. Fall back to
 
 | id | line | level | message |
 | :--- | ---: | :--- | :--- |
-| `1` | 92 | info | Starting tasks collection for interval [from {…} to {…}] using {…} |
-| `2` | 111 | info | Successfully indexed {…} tasks. |
-| `ERR` | 114 | error | Error during tasks collection: {…} |
+| `1` | 100 | info | Starting tasks collection for interval [from {…} to {…}] using {…} |
+| `2` | 119 | info | Successfully indexed {…} tasks. |
+| `ERR` | 123 | error | Error during tasks collection: {…} |
 
 ## `thehive_timeline.py`
 
 | id | line | level | message |
 | :--- | ---: | :--- | :--- |
-| `1` | 92 | info | Starting timeline collection for interval [from {…} to {…}] |
-| `2` | 110 | info | Successfully indexed {…} timeline events. |
-| `ERR` | 113 | error | Error during timeline collection: {…} |
+| `1` | 100 | info | Starting timeline collection for interval [from {…} to {…}] |
+| `2` | 118 | info | Successfully indexed {…} timeline events. |
+| `ERR` | 122 | error | Error during timeline collection: {…} |
 
 *376 call sites.*
 
