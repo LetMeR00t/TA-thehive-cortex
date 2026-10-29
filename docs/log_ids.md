@@ -551,71 +551,71 @@ explains the manual purge of `etc/apps/learned/local/props.conf`. Fall back to
 
 | id | line | level | message |
 | :--- | ---: | :--- | :--- |
-| `TH1` | 47 | error | MISSING_INSTANCE_ID - No instance ID was given to the script |
-| `TH5` | 70 | debug | Connection to Splunk done |
-| `TH6` | 72 | debug | Settings recovered |
-| `TH10` | 93 | error | Your alert is using the <default> instance ID setting which is empty in your … |
-| `TH11` | 112 | debug | Secret present: {…} |
-| `TH15` | 136 | debug | TheHive instance will be initialized with a password (not an API key) |
-| `TH16` | 154 | debug | TheHive instance will be initialized with an API Key (not a password) |
-| `TH20` | 171 | error | WRONG_AUTHENTICATION_TYPE - Authentication type is not one of the expected va… |
-| `TH25` | 215 | debug | Settings recovered |
-| `TH30` | 224 | error | Your alert is using the <default> instance ID setting which is empty in your … |
-| `TH35` | 254 | debug | TheHive instance will be initialized with a password (not an API key) |
-| `TH40` | 272 | debug | TheHive instance will be initialized with an API Key (not a password) |
-| `TH50` | 289 | error | WRONG_AUTHENTICATION_TYPE - Authentication type is not one of the expected va… |
-| `TH2` | 378 | debug | Version is: … |
-| `TH119` | 383 | debug | Verification of CA cert path: {…}. Exists? {…} |
-| `TH31` | 412 | error | THE_HIVE_AUTHENTICATION - Password AND API Key are null values |
-| `TH41` | 418 | debug | TheHive instance is initialized, try a request to {} |
-| `TH45` | 429 | error | THE_HIVE_AUTHENTICATION_RESPONSE - Server didn't respond with a valid respons… |
-| `TH46` | 436 | debug | Payload content - Header names: … |
-| `TH47` | 441 | debug | Payload content - URL: … |
-| `TH51` | 446 | debug | TheHive API connection to (URL=" … … |
-| `TH60` | 453 | debug | TheHive API connection to (URL=" … … … … |
-| `TH85` | 494 | warn | THE_HIVE_CERTIFICATE_FAILED - It seems that the certificate verification fail… |
-| `TH90` | 504 | warn | THE_HIVE_HANDHSHAKE_FAILURE - It seems that the SSL handshake failed. A possi… |
-| `TH95` | 511 | warn | THE_HIVE_PROXY_AUTHENTICATION_ERROR - It seems that the connection to the pro… |
-| `TH100` | 520 | warn | THE_HIVE_PROXY_ERROR - It seems that the connection to the proxy has failed. … |
-| `TH111` | 529 | error | … |
-| `TH109` | 537 | error | THEHIVE_HTML_RESPONSE_ERROR - The server at {…} returned an HTML page instead… |
-| `TH110` | 542 | error | THEHIVE_CONNECTION_ERROR - Error: … … |
-| `TH127` | 563 | warn | {…} without {…}: _time taken from the next available date. Fields present: {…} |
-| `TH112` | 586 | info | Resolving internal ID for case number {…}... |
-| `TH113` | 591 | info | Case number {…} resolved to {…} |
-| `TH114` | 594 | warning | No case found with number {…} |
-| `TH118` | 597 | error | Error resolving case number {…}: {…} |
-| `TH115` | 609 | info | Retrieving instance status... |
-| `TH116` | 612 | info | Got instance status successfully |
-| `TH117` | 618 | error | FAILED_TO_GET_INSTANCE_STATUS - Error: {…} |
-| `TH120` | 639 | info | Retrieving alerts count... |
-| `TH121` | 641 | info | Got {…} alerts. Estimated time for processing all events: less than {…} secon… |
-| `TH125` | 719 | debug | Event after processing (check_and_reduce_values_size): {…} |
-| `TH126` | 726 | info | {…} events have been processed... |
-| `TH122` | 737 | debug | thehive - observables: … |
-| `TH123` | 743 | debug | thehive - attachments: … |
-| `TH124` | 751 | debug | thehive - ttps: … |
-| `TH130` | 767 | info | Retrieving cases count... |
-| `TH131` | 769 | info | Got {…} cases. Estimated time for processing all events: less than {…} seconds |
-| `TH133` | 819 | debug | thehive - observables: … |
-| `TH134` | 830 | debug | thehive - attachments: … |
-| `TH135` | 841 | debug | thehive - pages: … |
-| `TH136` | 852 | debug | thehive - ttps: … |
-| `TH137` | 896 | debug | Event after processing (check_and_reduce_values_size): {…} |
-| `TH138` | 903 | info | {…} events have been processed... |
-| `TH141` | 915 | info | Tasks recovery detected. Got {…} tasks with filters: {…}. |
-| `TH142` | 949 | debug | Event after processing (check_and_reduce_values_size): {…} |
-| `TH139` | 956 | debug | TheHive - Tasks: … |
-| `TH140` | 975 | info | Retrieving observables count... |
-| `TH143` | 977 | info | Got {…} observables. Estimated time for processing all events: less than {…} … |
-| `TH145` | 1049 | debug | Event after processing (check_and_reduce_values_size): {…} |
-| `TH146` | 1055 | info | {…} events have been processed... |
-| `TH170` | 1074 | info | Retrieving audit logs count... |
-| `TH171` | 1076 | info | Got {…} audit logs. Estimated time for processing all events: less than {…} s… |
-| `TH175` | 1137 | debug | Event after processing (check_and_reduce_values_size): {…} |
-| `TH176` | 1143 | info | {…} events have been processed... |
-| `TH190` | 1162 | info | Retrieving tasks... |
-| `TH191` | 1171 | info | Got {…} tasks. |
+| `TH1` | 48 | error | MISSING_INSTANCE_ID - No instance ID was given to the script |
+| `TH5` | 71 | debug | Connection to Splunk done |
+| `TH6` | 73 | debug | Settings recovered |
+| `TH10` | 94 | error | Your alert is using the <default> instance ID setting which is empty in your … |
+| `TH11` | 113 | debug | Secret present: {…} |
+| `TH15` | 137 | debug | TheHive instance will be initialized with a password (not an API key) |
+| `TH16` | 155 | debug | TheHive instance will be initialized with an API Key (not a password) |
+| `TH20` | 172 | error | WRONG_AUTHENTICATION_TYPE - Authentication type is not one of the expected va… |
+| `TH25` | 216 | debug | Settings recovered |
+| `TH30` | 225 | error | Your alert is using the <default> instance ID setting which is empty in your … |
+| `TH35` | 255 | debug | TheHive instance will be initialized with a password (not an API key) |
+| `TH40` | 273 | debug | TheHive instance will be initialized with an API Key (not a password) |
+| `TH50` | 290 | error | WRONG_AUTHENTICATION_TYPE - Authentication type is not one of the expected va… |
+| `TH2` | 379 | debug | Version is: … |
+| `TH119` | 384 | debug | Verification of CA cert path: {…}. Exists? {…} |
+| `TH31` | 417 | error | THE_HIVE_AUTHENTICATION - Password AND API Key are null values |
+| `TH41` | 423 | debug | TheHive instance is initialized, try a request to {} |
+| `TH45` | 434 | error | THE_HIVE_AUTHENTICATION_RESPONSE - Server didn't respond with a valid respons… |
+| `TH46` | 441 | debug | Payload content - Header names: … |
+| `TH47` | 446 | debug | Payload content - URL: … |
+| `TH51` | 451 | debug | TheHive API connection to (URL=" … … |
+| `TH60` | 458 | debug | TheHive API connection to (URL=" … … … … |
+| `TH85` | 499 | warn | THE_HIVE_CERTIFICATE_FAILED - It seems that the certificate verification fail… |
+| `TH90` | 509 | warn | THE_HIVE_HANDHSHAKE_FAILURE - It seems that the SSL handshake failed. A possi… |
+| `TH95` | 516 | warn | THE_HIVE_PROXY_AUTHENTICATION_ERROR - It seems that the connection to the pro… |
+| `TH100` | 525 | warn | THE_HIVE_PROXY_ERROR - It seems that the connection to the proxy has failed. … |
+| `TH111` | 534 | error | … |
+| `TH109` | 542 | error | THEHIVE_HTML_RESPONSE_ERROR - The server at {…} returned an HTML page instead… |
+| `TH110` | 547 | error | THEHIVE_CONNECTION_ERROR - Error: … … |
+| `TH127` | 568 | warn | {…} without {…}: _time taken from the next available date. Fields present: {…} |
+| `TH112` | 591 | info | Resolving internal ID for case number {…}... |
+| `TH113` | 596 | info | Case number {…} resolved to {…} |
+| `TH114` | 599 | warning | No case found with number {…} |
+| `TH118` | 602 | error | Error resolving case number {…}: {…} |
+| `TH115` | 614 | info | Retrieving instance status... |
+| `TH116` | 617 | info | Got instance status successfully |
+| `TH117` | 623 | error | FAILED_TO_GET_INSTANCE_STATUS - Error: {…} |
+| `TH120` | 644 | info | Retrieving alerts count... |
+| `TH121` | 646 | info | Got {…} alerts. Estimated time for processing all events: less than {…} secon… |
+| `TH125` | 724 | debug | Event after processing (check_and_reduce_values_size): {…} |
+| `TH126` | 731 | info | {…} events have been processed... |
+| `TH122` | 742 | debug | thehive - observables: … |
+| `TH123` | 748 | debug | thehive - attachments: … |
+| `TH124` | 756 | debug | thehive - ttps: … |
+| `TH130` | 772 | info | Retrieving cases count... |
+| `TH131` | 774 | info | Got {…} cases. Estimated time for processing all events: less than {…} seconds |
+| `TH133` | 824 | debug | thehive - observables: … |
+| `TH134` | 835 | debug | thehive - attachments: … |
+| `TH135` | 846 | debug | thehive - pages: … |
+| `TH136` | 857 | debug | thehive - ttps: … |
+| `TH137` | 901 | debug | Event after processing (check_and_reduce_values_size): {…} |
+| `TH138` | 908 | info | {…} events have been processed... |
+| `TH141` | 920 | info | Tasks recovery detected. Got {…} tasks with filters: {…}. |
+| `TH142` | 954 | debug | Event after processing (check_and_reduce_values_size): {…} |
+| `TH139` | 961 | debug | TheHive - Tasks: … |
+| `TH140` | 980 | info | Retrieving observables count... |
+| `TH143` | 982 | info | Got {…} observables. Estimated time for processing all events: less than {…} … |
+| `TH145` | 1054 | debug | Event after processing (check_and_reduce_values_size): {…} |
+| `TH146` | 1060 | info | {…} events have been processed... |
+| `TH170` | 1079 | info | Retrieving audit logs count... |
+| `TH171` | 1081 | info | Got {…} audit logs. Estimated time for processing all events: less than {…} s… |
+| `TH175` | 1142 | debug | Event after processing (check_and_reduce_values_size): {…} |
+| `TH176` | 1148 | info | {…} events have been processed... |
+| `TH190` | 1167 | info | Retrieving tasks... |
+| `TH191` | 1176 | info | Got {…} tasks. |
 
 ## `thehive_alerts_cases.py`
 

@@ -32,6 +32,7 @@ from common import LoggerFile, Settings, Utils
 from ta_logging import setup_logging
 from timeline_events import TimelineEventsMixin
 import object_dates
+import http_policy
 
 
 def initialize_thehive_instances(keywords, settings, acronym, logger_name="script"):
@@ -393,8 +394,10 @@ class TheHive4Splunk(TimelineEventsMixin, TheHiveApi):
                     verify=verify,
                     cert=cert,
                     organisation=organisation,
-                    # LOCAL PATCH relay (libs/LOCAL_PATCHES.md, G1)
-                    timeout=timeout,
+                    # LOCAL PATCH relay (libs/LOCAL_PATCHES.md, G1); (connect, read) and no
+                    # retried read timeouts: see http_policy
+                    timeout=http_policy.timeout(timeout),
+                    max_retries=http_policy.retries(),
                 )
             elif password is not None:
                 super().__init__(
@@ -405,8 +408,10 @@ class TheHive4Splunk(TimelineEventsMixin, TheHiveApi):
                     verify=verify,
                     cert=cert,
                     organisation=organisation,
-                    # LOCAL PATCH relay (libs/LOCAL_PATCHES.md, G1)
-                    timeout=timeout,
+                    # LOCAL PATCH relay (libs/LOCAL_PATCHES.md, G1); (connect, read) and no
+                    # retried read timeouts: see http_policy
+                    timeout=http_policy.timeout(timeout),
+                    max_retries=http_policy.retries(),
                 )
             else:
                 self.logger_file.error(
