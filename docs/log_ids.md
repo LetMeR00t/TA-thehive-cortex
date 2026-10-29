@@ -383,12 +383,12 @@ explains the manual purge of `etc/apps/learned/local/props.conf`. Fall back to
 | `THC-95` | 149 | debug | key is an observable: {} |
 | `THC-96` | 159 | debug | key is a custom field: {}, with type {} |
 | `THC-117` | 168 | warn | custom field '{…}' was NOT mapped: type '{…}' is not handled, or value '{…}' … |
-| `THC-122` | 227 | error | ttp '{…}' is not in the MITRE catalogue '{…}'; the TTP is dropped rather than… |
-| `THC-108` | 240 | debug | ttp was parsed correctly and added to the alert: {} |
-| `THC-109` | 245 | debug | ttp already exist, ignoring duplicates: {} |
-| `THC-105` | 257 | debug | key is added as another observable (scope is False): {} |
-| `THC-106` | 273 | warn | key is used by TheHive as an internal field (scope is False): {}. Key ignored… |
-| `THC-90` | 301 | debug | field to process: {…} |
+| `THC-122` | 237 | error | ttp '{…}' is not in the MITRE catalogue '{…}'; the TTP is dropped rather than… |
+| `THC-108` | 250 | debug | ttp was parsed correctly and added to the alert: {} |
+| `THC-109` | 255 | debug | ttp already exist, ignoring duplicates: {} |
+| `THC-105` | 267 | debug | key is added as another observable (scope is False): {} |
+| `THC-106` | 283 | warn | key is used by TheHive as an internal field (scope is False): {}. Key ignored… |
+| `THC-90` | 311 | debug | field to process: {…} |
 
 ## `ta_thehive_cortex/modalert_args.py`
 

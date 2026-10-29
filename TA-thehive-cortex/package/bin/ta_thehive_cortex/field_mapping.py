@@ -193,6 +193,16 @@ def _malformed_ttp(ctx, value):
 
 def _extract_ttp(ctx, key, value):
     ctx.consume("ttp")
+    # ⚠️ A multivalue `ttp` reaches this point joined with ", " (the row is
+    # normalised first). Split on "::" alone, two values made one five-part
+    # string and BOTH were dropped as malformed. Each value stands on its own:
+    # one unreadable value costs that value only.
+    for one in value.split(","):
+        if one.strip():
+            _extract_one_ttp(ctx, one.strip())
+
+
+def _extract_one_ttp(ctx, value):
     # Expected pattern is: tactic::patternId::occurDate
     parts = value.split("::")
 
