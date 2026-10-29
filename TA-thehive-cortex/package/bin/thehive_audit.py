@@ -11,6 +11,8 @@ import splunk.entity as entity
 # Local application imports
 import globals
 from thehive import create_thehive_instance_modular_input
+from logger_file import LoggerFile
+from collection_window import CollectionWindows
 from ta_logging import setup_logging
 from thehive4py.query.filters import Between
 
@@ -28,6 +30,8 @@ class THEHIVE_AUDIT(smi.Script):
         scheme.add_argument(smi.Argument('name', title='Name', description='Name', required_on_create=True))
         scheme.add_argument(smi.Argument('instance_id', required_on_create=False))
         scheme.add_argument(smi.Argument('max_size_value', required_on_create=False))
+        scheme.add_argument(smi.Argument('lag_seconds', required_on_create=False))
+        scheme.add_argument(smi.Argument('max_catchup_seconds', required_on_create=False))
         scheme.add_argument(smi.Argument('fields_removal', required_on_create=False))
         return scheme
 
@@ -63,6 +67,10 @@ class THEHIVE_AUDIT(smi.Script):
                     self.log_error(f"Error: {str(e)}")
                 return [username, ""]
 
+        windows = CollectionWindows(inputs.metadata, stanza, input_item, LoggerFile(logger=custom_logger, command_id="MI-THA", exec_id=exec_id))
+        if not windows.collect_here():
+            return
+
         helper = MockHelper(input_item, stanza, custom_logger, inputs, exec_id)
         (thehive, configuration, logger_file) = create_thehive_instance_modular_input(instance_id=helper.get_arg("instance_id"), helper=helper, acronym="MI-THA", logger=custom_logger, exec_id=exec_id)
 
@@ -71,17 +79,15 @@ class THEHIVE_AUDIT(smi.Script):
             "fields_removal": helper.get_arg("fields_removal") or "",
         }
 
-        interval = int(input_item.get("interval", 60))
-        now = time.time()
-        # Floor now to the interval to avoid seconds shift
-        d2 = now - (now % interval)
-        d1 = d2 - interval
-        filters = Between("_createdAt", int(d1 * 1000), int(d2 * 1000))
+        span = windows.next("audit", time.time())
+        if span is None:
+            return
 
         try:
-            new_events = thehive.get_audit_logs_events(filters=filters, **modular_input_args)
+            new_events = thehive.get_audit_logs_events(filters=Between("_createdAt", span[0], span[1]), **modular_input_args)
             for event in new_events:
                 ew.write_event(smi.Event(source="thehive:"+stanza, host=thehive.session.hive_url[8:], index=helper.get_output_index(), sourcetype="thehive:audit", data=json.dumps(event)))
+            windows.done("audit", span, len(new_events))
         except Exception as e:
             logger_file.error(id="MI-ERR", message=f"Error: {str(e)}")
 

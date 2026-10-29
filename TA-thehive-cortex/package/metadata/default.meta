@@ -13,3 +13,8 @@ access = read : [ * ], write : [ admin, sc_admin ]
 
 [nav]
 access = read : [ * ], write : [ admin, sc_admin ]
+
+# Watermarks of the live inputs: written by the inputs only, never shared outside the add-on.
+[collections/thehive_cortex_checkpoints]
+access = read : [ admin, sc_admin ], write : [ admin, sc_admin ]
+export = none

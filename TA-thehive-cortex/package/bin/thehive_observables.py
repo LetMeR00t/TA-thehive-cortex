@@ -11,6 +11,8 @@ import splunk.entity as entity
 # Local application imports
 import globals
 from thehive import create_thehive_instance_modular_input
+from logger_file import LoggerFile
+from collection_window import CollectionWindows
 from ta_logging import setup_logging
 from thehive4py.query.filters import Between
 
@@ -28,6 +30,8 @@ class THEHIVE_OBSERVABLES(smi.Script):
         scheme.add_argument(smi.Argument('name', title='Name', description='Name', required_on_create=True))
         scheme.add_argument(smi.Argument('instance_id', required_on_create=False))
         scheme.add_argument(smi.Argument('max_size_value', required_on_create=False))
+        scheme.add_argument(smi.Argument('lag_seconds', required_on_create=False))
+        scheme.add_argument(smi.Argument('max_catchup_seconds', required_on_create=False))
         scheme.add_argument(smi.Argument('event_mode', required_on_create=False))
         scheme.add_argument(smi.Argument('fields_removal', required_on_create=False))
         scheme.add_argument(smi.Argument('extra_data', required_on_create=False))
@@ -68,6 +72,10 @@ class THEHIVE_OBSERVABLES(smi.Script):
                 self.log_error(f"Credentials NOT FOUND for {username} in TA-thehive-cortex storage/passwords")
                 return [username, ""]
 
+        windows = CollectionWindows(inputs.metadata, stanza, input_item, LoggerFile(logger=custom_logger, command_id="MI-THO", exec_id=exec_id))
+        if not windows.collect_here():
+            return
+
         helper = MockHelper(input_item, stanza, custom_logger, inputs, exec_id)
         (thehive, configuration, logger_file) = create_thehive_instance_modular_input(instance_id=helper.get_arg("instance_id"), helper=helper, acronym="MI-THO", logger=custom_logger, exec_id=exec_id)
 
@@ -80,30 +88,21 @@ class THEHIVE_OBSERVABLES(smi.Script):
 
         dates = (helper.get_arg("date") or "").split(",") if isinstance(helper.get_arg("date"), str) else (helper.get_arg("date") or ["_updatedAt", "_createdAt"])
 
+        now = time.time()
         for date_field in dates:
             modular_input_args["date"] = date_field
             date_mode = date_field.lstrip("_")
-            interval = int(input_item.get("interval", 60))
-            now = time.time()
-            # Floor now to the interval to avoid seconds shift
-            d2 = now - (now % interval)
-            d1 = d2 - interval
-
-            # Robust filter logic
-            if d1 is not None and d2 is not None:
-                filters = Between(date_field, int(d1 * 1000), int(d2 * 1000))
-            elif d1 is not None:
-                from thehive4py.query.filters import Gte
-                filters = Gte(date_field, int(d1 * 1000))
-            elif d2 is not None:
-                from thehive4py.query.filters import Lte
-                filters = Lte(date_field, int(d2 * 1000))
-            else:
-                filters = None
-
-            new_events = thehive.get_observables_events(filters=filters, **modular_input_args)
-            for event in new_events:
-                ew.write_event(smi.Event(source="thehive:"+stanza, host=thehive.session.hive_url[8:], index=helper.get_output_index(), sourcetype="thehive:observables:"+date_mode, data=json.dumps(event)))
+            pull = "observables:" + date_field
+            span = windows.next(pull, now)
+            if span is None:
+                continue
+            try:
+                new_events = thehive.get_observables_events(filters=Between(date_field, span[0], span[1]), **modular_input_args)
+                for event in new_events:
+                    ew.write_event(smi.Event(source="thehive:"+stanza, host=thehive.session.hive_url[8:], index=helper.get_output_index(), sourcetype="thehive:observables:"+date_mode, data=json.dumps(event)))
+                windows.done(pull, span, len(new_events))
+            except Exception as e:
+                logger_file.error(id="MI-ERR", message=f"Error: {str(e)}")
 
 if __name__ == '__main__':
     exit_code = THEHIVE_OBSERVABLES().run(sys.argv)
