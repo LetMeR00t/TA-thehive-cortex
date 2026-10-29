@@ -11,6 +11,8 @@ import splunk.entity as entity
 # Local application imports
 import globals
 from thehive import create_thehive_instance_modular_input
+from logger_file import LoggerFile
+from collection_window import CollectionWindows
 from ta_logging import setup_logging
 from collection_options import options_for
 from thehive4py.query.filters import Between
@@ -34,6 +36,8 @@ class THEHIVE_ALERTS_CASES(smi.Script):
         scheme.add_argument(smi.Argument('extra_data', required_on_create=False))
         scheme.add_argument(smi.Argument('date', required_on_create=False))
         scheme.add_argument(smi.Argument('max_size_value', required_on_create=False))
+        scheme.add_argument(smi.Argument('lag_seconds', required_on_create=False))
+        scheme.add_argument(smi.Argument('max_catchup_seconds', required_on_create=False))
         scheme.add_argument(smi.Argument('fields_removal', required_on_create=False))
         return scheme
 
@@ -69,6 +73,10 @@ class THEHIVE_ALERTS_CASES(smi.Script):
                     self.log_error(f"Error: {str(e)}")
                 return [username, ""]
 
+        windows = CollectionWindows(inputs.metadata, stanza, input_item, LoggerFile(logger=custom_logger, command_id="MI-THAC", exec_id=exec_id))
+        if not windows.collect_here():
+            return
+
         helper = MockHelper(input_item, stanza, custom_logger, inputs, exec_id)
         (thehive, configuration, logger_file) = create_thehive_instance_modular_input(instance_id=helper.get_arg("instance_id"), helper=helper, acronym="MI-THAC", logger=custom_logger, exec_id=exec_id)
 
@@ -85,6 +93,7 @@ class THEHIVE_ALERTS_CASES(smi.Script):
             "extra_data": (helper.get_arg("extra_data") or "").split(",") if isinstance(helper.get_arg("extra_data"), str) else (helper.get_arg("extra_data") or [])
         }
 
+        now = time.time()
         for input_type in types:
             for date_field in dates:
                 if input_type == "alerts" and date_field == "startDate": continue
@@ -99,12 +108,11 @@ class THEHIVE_ALERTS_CASES(smi.Script):
                 current_modular_input_args["date"] = date_field
                 date_mode = "occuredDate" if date_field == "date" else date_field.lstrip("_")
                 
-                interval = int(input_item.get("interval", 60))
-                now = time.time()
-                # Floor now to the interval to avoid seconds shift
-                d2 = now - (now % interval)
-                d1 = d2 - interval
-                filters = Between(date_field, int(d1 * 1000), int(d2 * 1000))
+                pull = input_type + ":" + date_field
+                span = windows.next(pull, now)
+                if span is None:
+                    continue
+                filters = Between(date_field, span[0], span[1])
                 
                 try:
                     if input_type == "cases":
@@ -117,6 +125,7 @@ class THEHIVE_ALERTS_CASES(smi.Script):
                     
                     for event in new_events:
                         ew.write_event(smi.Event(source="thehive:"+stanza, host=thehive.session.hive_url[8:], index=helper.get_output_index(), sourcetype="thehive:"+input_type+":"+date_mode, data=json.dumps(event)))
+                    windows.done(pull, span, len(new_events))
                 except Exception as e:
                     logger_file.error(id="MI-ERR", message=f"Error: {str(e)}")
 

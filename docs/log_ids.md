@@ -161,7 +161,11 @@ explains the manual purge of `etc/apps/learned/local/props.conf`. Fall back to
 | `MI-ERR-COLLECT` | The collection itself failed. | Read the attached error; it is the API's. |
 | `MI-BTSK-ERR-DATE` `MI-BTL-ERR-DATE` | Same as `MI-ERR-DATES`, for tasks and timeline backfills. | |
 | `ERR` | A collection failed. ⚠️ This bare code appears in several inputs — read the **prefix** to know which. | |
-| `MI-ERR` | A collection failed, for the alerts/cases and audit inputs. | |
+| `MI-ERR` | A collection failed, for the alerts/cases, audit and observables inputs. | Nothing is lost: the input's watermark stays where it was and the next run collects the same window again. Read the attached error if it repeats. |
+| `KV` | The KV store is **disabled** on this instance (`server.conf [kvstore] disabled = true`, found on some heavy forwarders), so the live inputs keep their watermarks in the input's checkpoint directory, on this instance only. | Collection continues. On a search head cluster the watermarks are then not shared between members. |
+| `KVWAIT` | The KV store is enabled but **not ready** (starting after a restart, or failed), so this run did not collect. | Nothing is lost: the watermark waits and the next run catches up. A few lines right after a restart are normal; if it repeats, check the KV store status (`splunk show kvstore-status`). |
+| `KVOPEN` | The watermark store (KV store collection or checkpoint directory) could not be opened, so this run did not collect. | Nothing is lost: the next run catches up. If it repeats, read the error type and check the KV store or the checkpoint directory's permissions. |
+| `CKPT` | A window was collected and written, but its watermark could not be saved. | The next run collects that window again, so a few events can be indexed twice; summaries de-duplicate on the audit/object id. Check the KV store if it repeats. |
 | `MA-ERR` `MA-WRN` | Error and warning of the alert action framework itself. | These come from the base class, before the add-on's own code runs. |
 | `TH117` | The instance status could not be fetched. | The status input cannot reach TheHive. |
 | `TH183` | The timeline of a case could not be fetched. | Often a case deleted between listing and fetching. |
@@ -354,6 +358,18 @@ explains the manual purge of `etc/apps/learned/local/props.conf`. Fall back to
 | `145` | 103 | warn | Uncompressing Splunk search results file located at {…}... |
 | `148` | 133 | error | Error during uncompressing process: {…} |
 | `146` | 176 | error | Attachment format isn't supported, given: {…} |
+
+## `ta_thehive_cortex/collection_window.py`
+
+| id | line | level | message |
+| :--- | ---: | :--- | :--- |
+| `SKIP` | 129 | info | input={…} not collected here: {…} |
+| `WIN` | 139 | info | input={…} pull={…} window={…}-{…} behind_s={…} … |
+| `CKPT` | 148 | error | input={…} pull={…} watermark not saved, the next run collects this window aga… |
+| `DONE` | 150 | info | input={…} pull={…} events={…} watermark={…} |
+| `KVWAIT` | 158 | warn | input={…} not collected this run: {…}; the watermark waits and the next run c… |
+| `KVOPEN` | 163 | warn | input={…} not collected this run: the {…} watermark store could not be opened… |
+| `KV` | 166 | warn | input={…} {…}: watermarks kept in the checkpoint directory of this instance o… |
 
 ## `ta_thehive_cortex/datatypes.py`
 
@@ -621,13 +637,13 @@ explains the manual purge of `etc/apps/learned/local/props.conf`. Fall back to
 
 | id | line | level | message |
 | :--- | ---: | :--- | :--- |
-| `MI-ERR` | 121 | error | Error: {…} |
+| `MI-ERR` | 130 | error | Error: {…} |
 
 ## `thehive_audit.py`
 
 | id | line | level | message |
 | :--- | ---: | :--- | :--- |
-| `MI-ERR` | 86 | error | Error: {…} |
+| `MI-ERR` | 92 | error | Error: {…} |
 
 ## `thehive_get_alert.py`
 
@@ -698,6 +714,12 @@ explains the manual purge of `etc/apps/learned/local/props.conf`. Fall back to
 | `2` | 93 | info | Successfully indexed instance status. |
 | `ERR` | 96 | error | Error during instance status collection: {…} |
 
+## `thehive_observables.py`
+
+| id | line | level | message |
+| :--- | ---: | :--- | :--- |
+| `MI-ERR` | 105 | error | Error: {…} |
+
 ## `thehive_search_alerts.py`
 
 | id | line | level | message |
@@ -751,6 +773,6 @@ explains the manual purge of `etc/apps/learned/local/props.conf`. Fall back to
 | `2` | 110 | info | Successfully indexed {…} timeline events. |
 | `ERR` | 113 | error | Error during timeline collection: {…} |
 
-*368 call sites.*
+*376 call sites.*
 
 <!-- INVENTAIRE:FIN -->
