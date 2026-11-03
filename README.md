@@ -39,7 +39,7 @@ This Technical Add-on (TA) allows to **add interaction features** between [TheHi
 | :--- | :--- | :--- |
 | **TheHive** | 5.2.0 (TLP 2.0 scale) | 5.8.1 |
 | **Cortex** | 3.0.0 | 4.2.0 |
-| **Splunk** | 9.3 (Python 3.9) | Enterprise 10.2.1 + ES (Python 3.13) |
+| **Splunk** | 9.3 (Python 3.9) | Enterprise 10.6.1 + ES 8.4.0 (5.2.0); 10.2.1 + ES (5.0.0, 5.1.0) |
 
 Why these minimums: see [Compatibility](./release_notes/v5.0.0.md#compatibility). For TheHive 3 or 4, use a legacy release.
 

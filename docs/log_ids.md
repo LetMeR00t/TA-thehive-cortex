@@ -126,7 +126,10 @@ explains the manual purge of `etc/apps/learned/local/props.conf`. Fall back to
 
 | Code | Meaning | What to do |
 | :--- | :--- | :--- |
-| `THCA-122` `THCC-…` | The object already exists (duplicate); a retry follows. | Normal when a scheduled alert fires twice on overlapping windows. Use a stable `unique_id_field`. |
+| `THCA-122` | The alert already exists in TheHive (or answered 409): counted as a success since 5.2.0, **no retry**. | Normal when a notable or a scheduled search is sent again. Set `notable_status` so ES stops re-sending it. |
+| `THCC-…` | The case already exists (duplicate); a retry follows. | Normal when a scheduled search fires twice on overlapping windows. Use a stable `unique_id_field`. |
+| `128` (`THCA-128`) | A notable could not be set to the configured `notable_status` (HTTP error). | ⚠️ The alert exists in TheHive: only the ES status is stale. Check the Splunk user has `edit_notable_events` and the status ID exists in ES. |
+| `129` (`THCA-129`) | The notable update raised an exception. | Same consequence as `THCA-128`; the message carries the exception. |
 | `THCA-123` `THCC-126` | Creation failed; another attempt follows. | Read the attached error: it is the server's own message. |
 | `THCC-135` `THCA-126` | The server accepted the request but returned **no id**. | ⚠️ Same event, two different codes — the two helpers never agreed. The object was probably not created: a validation rejection answered with 200. Check the payload in the attached `data=`. |
 | `THCA-124` `THCC-127` | Every attempt failed. | ⚠️ The object was **not** created. Raise `thehive_creation_max_retry` only if the cause is transient. |
@@ -463,23 +466,23 @@ explains the manual purge of `etc/apps/learned/local/props.conf`. Fall back to
 
 | id | line | level | message |
 | :--- | ---: | :--- | :--- |
-| `55` | 49 | debug | Arguments recovered: … |
-| `56` | 52 | info | Configuration is ready. Creating the alert... |
-| `57` | 55 | debug | TheHive URL instance used after retrieving the configuration: … |
-| `58` | 60 | debug | Processing following instance ID: … |
-| `1` | 92 | warn | Cannot determine external link url={}, results_link={} |
-| `120` | 119 | debug | Processing alert: … |
-| `122` | 121 | via helper | passed as `duplicate` to create_with_retry |
-| `123` | 121 | via helper | passed as `retry` to create_with_retry |
-| `124` | 121 | via helper | passed as `exhausted` to create_with_retry |
-| `125` | 132 | info | TheHive alert {} is successfully created on url={} |
-| `126` | 141 | error | TheHive alert creation has failed. url={}, data={}, content={} |
-| `140` | 168 | info | Processing attachment of the Splunk search results to the alert... |
-| `151` | 187 | error | The search results could not be prepared for attachment: {…} |
-| `149` | 198 | via helper | passed as `uploading` to upload_attachment |
-| `150` | 198 | via helper | passed as `failed` to upload_attachment |
-| `155` | 198 | via helper | passed as `attached` to upload_attachment |
-| `160` | 198 | via helper | passed as `not_attached` to upload_attachment |
+| `55` | 52 | debug | Arguments recovered: … |
+| `56` | 55 | info | Configuration is ready. Creating the alert... |
+| `57` | 58 | debug | TheHive URL instance used after retrieving the configuration: … |
+| `58` | 63 | debug | Processing following instance ID: … |
+| `1` | 95 | warn | Cannot determine external link url={}, results_link={} |
+| `120` | 122 | debug | Processing alert: … |
+| `122` | 124 | via helper | passed as `duplicate` to create_with_retry |
+| `123` | 124 | via helper | passed as `retry` to create_with_retry |
+| `124` | 124 | via helper | passed as `exhausted` to create_with_retry |
+| `125` | 151 | info | TheHive alert {} is successfully created on url={} |
+| `126` | 160 | error | TheHive alert creation has failed. url={}, data={}, content={} |
+| `140` | 187 | info | Processing attachment of the Splunk search results to the alert... |
+| `151` | 206 | error | The search results could not be prepared for attachment: {…} |
+| `149` | 217 | via helper | passed as `uploading` to upload_attachment |
+| `150` | 217 | via helper | passed as `failed` to upload_attachment |
+| `155` | 217 | via helper | passed as `attached` to upload_attachment |
+| `160` | 217 | via helper | passed as `not_attached` to upload_attachment |
 
 ## `ta_thehive_cortex/modalert_thehive_create_a_new_case_helper.py`
 
@@ -517,6 +520,14 @@ explains the manual purge of `etc/apps/learned/local/props.conf`. Fall back to
 | `70` | 119 | debug | Run function "{}" with the events: |
 | `75` | 128 | info | Function was run on the events: {} |
 | `80` | 132 | error | Function didn't run correctly on the events: {} |
+
+## `ta_thehive_cortex/notable_update.py`
+
+| id | line | level | message |
+| :--- | ---: | :--- | :--- |
+| `129` | 42 | warning | Notable {…} could not be updated: {…} |
+| `127` | 49 | info | Notable {…} set to status {…} |
+| `128` | 53 | warning | Notable {…} could not be updated (HTTP {…}): {…} |
 
 ## `ta_thehive_cortex/observable_builder.py`
 
@@ -773,6 +784,6 @@ explains the manual purge of `etc/apps/learned/local/props.conf`. Fall back to
 | `2` | 118 | info | Successfully indexed {…} timeline events. |
 | `ERR` | 122 | error | Error during timeline collection: {…} |
 
-*376 call sites.*
+*379 call sites.*
 
 <!-- INVENTAIRE:FIN -->

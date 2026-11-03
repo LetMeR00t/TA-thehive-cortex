@@ -254,4 +254,15 @@
         </div>
     </div>
 
+    <div class="control-group">
+        <label class="control-label" for="notable_status">[Splunk ES] Notable status once sent</label>
+
+        <div class="controls">
+            <span class="help-block">
+                    Review status ID to set on the notable once TheHive holds its alert (created now or already existing), so it is not sent again. Empty = leave the notable untouched. Only in ES mode. The Splunk user needs the edit_notable_events capability.
+            </span>
+            <input type="text" name="action.thehive_create_a_new_alert.param.notable_status" id="notable_status" />
+        </div>
+    </div>
+
 </form>

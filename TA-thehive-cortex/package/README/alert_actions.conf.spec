@@ -19,6 +19,7 @@ param.description_results_enable = <string>
 param.description_results_keep_observable = <string>
 param.attach_results = <string>
 param.attach_format = <string>
+param.notable_status = <string>
 
 [thehive_create_a_new_case]
 python.version = python3

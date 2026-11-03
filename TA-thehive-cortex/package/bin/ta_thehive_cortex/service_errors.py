@@ -34,6 +34,15 @@ def is_duplicate(e):
     return "already exists" in text or "duplicate" in text or code in (400, 409)
 
 
+def is_already_exists(e):
+    """TheHive says, in so many words, that the object is already there.
+
+    Stricter than `is_duplicate` on purpose: a bare 400 is also what a
+    malformed payload answers, and that must never be taken for a success.
+    """
+    return "already exists" in str(e).lower() or status_code(e) == 409
+
+
 def response_detail(e):
     """The response body, when there is one, as a message suffix.
 

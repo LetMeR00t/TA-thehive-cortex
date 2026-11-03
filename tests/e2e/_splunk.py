@@ -97,7 +97,7 @@ class SplunkClient:
 
     # -- saved searches ---------------------------------------------------
 
-    def create_saved_search(self, name, search, action, parameters):
+    def create_saved_search(self, name, search, action, parameters, earliest="-5m"):
         """A scheduled saved search carrying one alert action.
 
         ⚠️ It is scheduled on purpose. Alert actions belong to the scheduler:
@@ -110,8 +110,9 @@ class SplunkClient:
             "is_scheduled": "1",
             # Far enough in the future that the scheduler never fires it on its
             # own: the test decides when it runs, and cleans up right after.
-            "cron_schedule": "0 5 31 2 *",
-            "dispatch.earliest_time": "-5m",
+            # Feb 29, not Feb 31: Splunk 10.6 rejects an impossible date.
+            "cron_schedule": "0 5 29 2 *",
+            "dispatch.earliest_time": earliest,
             "dispatch.latest_time": "now",
             "alert_type": "always",
             "alert.track": "0",

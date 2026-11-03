@@ -20,8 +20,9 @@ import shutil
 from thehive4py.types.alert import InputAlert
 
 from attachment_builder import AttachmentError, build_attachment
-from creation_retry import create_with_retry
+from creation_retry import DUPLICATE, create_with_retry
 from modalert_args import common_args, prepare_instances, default_if_blank
+from notable_update import mark_notable_handled
 from post_creation import attach_procedures, upload_attachment
 
 # Local application/library specific imports
@@ -46,6 +47,8 @@ def process_event(helper, *args, **kwargs):
         alert_args["alert_mode"] = default_if_blank(helper.get_param("alert_mode"), "es_mode")
         alert_args["type"] = default_if_blank(helper.get_param("type"), "alert")
         alert_args["dashboard"] = default_if_blank(helper.get_param("dashboard"), None)
+        # Blank = feature off: the notable is left alone, as before 5.2.0.
+        alert_args["notable_status"] = (helper.get_param("notable_status") or "").strip()
         logger_file.debug(id="55", message="Arguments recovered: " + str(alert_args))
 
         # Create the alert
@@ -124,7 +127,23 @@ def create_alert(
             logger_file=thehive.logger_file,
             ids={"duplicate": "122", "retry": "123", "exhausted": "124"},
             context=lambda: f"TheHive alert url={thehive.session.hive_url}, data={alert}",
+            duplicate_is_success=True,
         )
+
+        # TheHive holds this alert (created now, or already there): the notable
+        # must stop being picked up. Only ES rows carry an event_id as sourceRef.
+        if new_alert is DUPLICATE or (new_alert is not None and "_id" in new_alert):
+            notable_status = alert_args["notable_status"]
+            if notable_status and "@@notable@@" in srcRef:
+                mark_notable_handled(
+                    helper.settings.get("session_key"),
+                    srcRef,
+                    notable_status,
+                    thehive.logger_file,
+                )
+
+        if new_alert is DUPLICATE:
+            continue
 
         if new_alert is not None:
             if "_id" in new_alert:

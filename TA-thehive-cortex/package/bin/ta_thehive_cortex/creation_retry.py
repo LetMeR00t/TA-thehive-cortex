@@ -21,11 +21,24 @@ The condition is now `if not created`, which is the question actually being
 asked, and nothing outside an except block reaches the exception.
 """
 
-from service_errors import is_duplicate, status_code as _status_code
+from service_errors import (
+    is_already_exists,
+    is_duplicate,
+    status_code as _status_code,
+)
+
+#: Returned instead of an object when TheHive already holds it and the caller
+#: asked for that to count as a success (`duplicate_is_success`).
+DUPLICATE = object()
 
 
-def create_with_retry(create, max_retry, logger_file, ids, context):
+def create_with_retry(create, max_retry, logger_file, ids, context,
+                      duplicate_is_success=False):
     """Call `create()` until it returns, at most `max_retry + 1` times.
+
+    With `duplicate_is_success`, "already exists" is an ANSWER, not a blip:
+    retrying it only repeats the same refusal (5,101 rejected creations for 40
+    distinct alerts in one day). The loop stops at once and returns `DUPLICATE`.
 
     `ids` names the log identifier of each outcome:
       * `duplicate`  the server says the object already exists (optional)
@@ -50,6 +63,15 @@ def create_with_retry(create, max_retry, logger_file, ids, context):
             # the `as e` name as soon as the block ends, and both copies of
             # this loop used it afterwards.
             last_error = e
+            if duplicate_is_success and is_already_exists(e):
+                logger_file.info(
+                    id=ids["duplicate"],
+                    message=(
+                        "Already exists in TheHive, nothing to create "
+                        f"(Status={_status_code(e)}). {context()}"
+                    ),
+                )
+                return DUPLICATE
             code = _status_code(e)
             duplicate = is_duplicate(e)
             if duplicate and ids.get("duplicate"):

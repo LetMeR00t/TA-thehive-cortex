@@ -21,7 +21,7 @@ for p in (BIN, os.path.join(BIN, 'ta_thehive_cortex')):
     if p not in sys.path:
         sys.path.insert(0, p)
 
-from creation_retry import create_with_retry  # noqa: E402
+from creation_retry import DUPLICATE, create_with_retry  # noqa: E402
 
 
 class RecordingLogger:
@@ -33,6 +33,9 @@ class RecordingLogger:
 
     def error(self, id="?", message=""):
         self.rows.append(("error", id, message))
+
+    def info(self, id="?", message=""):
+        self.rows.append(("info", id, message))
 
     def ids(self, level=None):
         return [i for n, i, _ in self.rows if level is None or n == level]
@@ -147,6 +150,47 @@ class TheDuplicateCase(Base):
         self.launch([ServiceError("already exists"), {"_id": "~1"}],
                     ids={"retry": "126", "exhausted": "127"})
         self.assertEqual(self.recorder.ids("warning"), ["126"])
+
+
+class ADuplicateThatCountsAsSuccess(Base):
+    """5,101 refused creations for 40 alerts: "already exists" is an answer."""
+
+    def launch_dup(self, results):
+        calls = {"n": 0}
+
+        def create():
+            r = results[calls["n"]]
+            calls["n"] += 1
+            if isinstance(r, Exception):
+                raise r
+            return r
+
+        returned = create_with_retry(create, 2, self.recorder, IDS, context,
+                                     duplicate_is_success=True)
+        return returned, calls["n"]
+
+    def test_already_exists_is_not_retried(self):
+        returned, calls = self.launch_dup([ServiceError("Alert already exists")] * 3)
+        self.assertIs(returned, DUPLICATE)
+        self.assertEqual(calls, 1)
+        self.assertEqual(self.recorder.ids("error"), [])
+        self.assertEqual(self.recorder.ids(), ["122"])
+
+    def test_code_409_is_not_retried(self):
+        returned, calls = self.launch_dup([ServiceError("nope", status_code=409)] * 3)
+        self.assertIs(returned, DUPLICATE)
+        self.assertEqual(calls, 1)
+
+    def test_a_bare_400_is_never_taken_for_a_success(self):
+        # A malformed payload also answers 400: that must stay a failure.
+        returned, calls = self.launch_dup([ServiceError("bad", status_code=400)] * 3)
+        self.assertIsNone(returned)
+        self.assertEqual(self.recorder.ids("error"), ["125"])
+
+    def test_default_behaviour_is_unchanged(self):
+        returned, calls = self.launch([ServiceError("already exists")] * 3)
+        self.assertIsNone(returned)
+        self.assertEqual(calls, 3)
 
 
 class ContextIsBuiltOnlyWhenLogging(Base):
